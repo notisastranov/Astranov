@@ -1,6 +1,6 @@
 /**
- * Guest pizza hunt — Build 20260822093000-pin-on-globe
- * From #127 · PATCH: shops must appear on the LIVE 3D globe.
+ * Guest pizza hunt — Build 20260822110000-origin-tap
+ * PATCH #127 only · origin + pin-tap hard fix.
  *
  * Guest `order me a pizza` / pizza:
  *   - hunts public.vendors bbox (delivery_enabled restaurants)
@@ -11,24 +11,44 @@
  *   - no Astranov Kitchen · no 85-pt · no Mesh Alpha
  *   - twin CLIs stay
  *
- * ORIGIN LAW (this patch):
- *   origin = real YOU pin if located, else current camera look-at (viewLatLng/focusPos).
- *   NEVER silent Rhodes 36.43,28.22 while the camera is elsewhere.
- *   If look-at has zero shops → ask Locate once in CLI (no Google wall).
+ * ORIGIN LAW (20260822110000):
+ *   YOU = window._snPhysPos / real GPS ONLY if user located THIS session.
+ *   Else current camera look-at (viewLatLng / focusPos).
+ *   NEVER Kalithea 36.387557,28.222533 · NEVER silent Rhodes 36.43,28.22 as you.
+ *   _snLastPos is polluted by setFocus (village/HQ) — NEVER treat as YOU alone.
+ *   Empty ocean / SA / no vendors in bbox → CLI Locate CTA only · zero shop list · zero fake you.
+ *
+ * After successful hunt: face pin cluster if pins are off current camera,
+ * or keep camera and only pin vendors already in view.
+ *
+ * PIN TAP: vendor pulse → SNCli.log name·km·⭐ only.
+ * Block plaza/POI dump (Πλατεία…, 18 POIs, 80 real shops). No camera drift to SA.
+ *
  * Product law: if it is not on the globe it is not shipped.
  */
 (function (G) {
   'use strict';
-  // Allow re-install of patched build on hot reload
+  // Force re-install of this build even if older pizza-hunt already bound
   G.__snGuestPizzaHunt0822 = 1;
-  var BUILD = '20260822093000-pin-on-globe';
+  var BUILD = '20260822110000-origin-tap';
   var hunting = false;
   var lastPins = [];
   var pinMeshes = [];
   var clickUnsub = null;
   var askedLocate = false;
+  var suppressPoiUntil = 0;
+  var canvasTapBound = false;
 
-  var FOOD = /restaurant|fast_food|cafe|bar|pub|food|pizza|pizzeria|bakery|taverna|grill|souvlaki|kebab|burger|sushi|kitchen|deli|ice_cream|dessert|market/i;
+  // Known fake / HQ defaults that must NEVER be reported as YOU
+  var FAKE_YOU = [
+    { lat: 36.387557, lng: 28.222533, r: 0.02, name: 'Kalithea' },
+    { lat: 36.434, lng: 28.217, r: 0.06, name: 'Rhodes silent' },
+    { lat: 36.43, lng: 28.22, r: 0.05, name: 'Rhodes center' },
+    { lat: 36.443, lng: 28.226, r: 0.04, name: 'Rhodes town' },
+  ];
+
+  var FOOD =
+    /restaurant|fast_food|cafe|bar|pub|food|pizza|pizzeria|bakery|taverna|grill|souvlaki|kebab|burger|sushi|kitchen|deli|ice_cream|dessert|market/i;
   var PIZZA_RE =
     /\b(order\s+(me\s+)?(a\s+)?pizza|pizza\s*(please|order|near|nearby|delivery)?|get\s+(me\s+)?pizza|i\s+want\s+(a\s+)?pizza|find\s+pizza|pizza\s+shops?|hungry\s+for\s+pizza)\b/i;
   var ORDER_FOOD_RE =
@@ -60,39 +80,59 @@
     }
   }
 
+  function nearFake(lat, lng) {
+    if (!isFinite(lat) || !isFinite(lng)) return true;
+    for (var i = 0; i < FAKE_YOU.length; i++) {
+      var f = FAKE_YOU[i];
+      if (Math.abs(lat - f.lat) <= f.r && Math.abs(lng - f.lng) <= f.r) return f.name;
+    }
+    return null;
+  }
+
+  /** True only when user actually Located this browser session. */
+  function hasSessionLocate() {
+    try {
+      if (G._snLocatedThisSession) return true;
+    } catch (_) {}
+    try {
+      if (G._snPhysPos && (G._snPhysPos.fromGps || G._snPhysPos.session || G._snPhysPos.ts)) {
+        if (!nearFake(+G._snPhysPos.lat, +G._snPhysPos.lng)) return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  function markSessionLocate(lat, lng, extra) {
+    try {
+      G._snLocatedThisSession = true;
+      var row = Object.assign(
+        { lat: +lat, lng: +lng, fromGps: true, session: true, ts: Date.now() },
+        extra || {}
+      );
+      G._snPhysPos = row;
+      G._snLastPos = row;
+    } catch (_) {}
+  }
+
   /**
    * Origin for bbox hunt.
-   * Priority: real YOU → tasks pos → camera look-at (viewLatLng) → focusPos.
-   * NEVER invent Rhodes while the camera is on another continent.
+   * Priority:
+   *   1) real YOU only if located THIS session (_snPhysPos + session flag)
+   *   2) current camera look-at (viewLatLng → focusPos)
+   * NEVER invent Kalithea / silent Rhodes as you.
+   * NEVER trust bare _snLastPos (setFocus pollutes it from village/HQ).
    */
   function resolveOrigin() {
-    var you = null;
     try {
-      if (G._snLastPos && G._snLastPos.lat != null && G._snLastPos.lng != null) {
-        you = { lat: +G._snLastPos.lat, lng: +G._snLastPos.lng, source: 'you' };
-      }
-    } catch (_) {}
-    try {
-      if (!you && G._snPhysPos && G._snPhysPos.lat != null) {
-        you = { lat: +G._snPhysPos.lat, lng: +G._snPhysPos.lng, source: 'phys' };
-      }
-    } catch (_) {}
-    try {
-      if (!you && G.SNTasks && SNTasks.pos && SNTasks.pos.lat != null) {
-        you = { lat: +SNTasks.pos.lat, lng: +SNTasks.pos.lng, source: 'tasks' };
-      }
-    } catch (_) {}
-    try {
-      if (!you && G.SNProfiles && SNProfiles.me) {
-        var me = SNProfiles.me();
-        if (me && me.lat != null && me.lng != null) {
-          you = { lat: +me.lat, lng: +me.lng, source: 'profile' };
+      if (hasSessionLocate() && G._snPhysPos && G._snPhysPos.lat != null) {
+        var plat = +G._snPhysPos.lat;
+        var plng = +G._snPhysPos.lng;
+        if (isFinite(plat) && isFinite(plng) && !nearFake(plat, plng)) {
+          return { lat: plat, lng: plng, source: 'you' };
         }
       }
     } catch (_) {}
-    if (you && isFinite(you.lat) && isFinite(you.lng)) return you;
 
-    // Camera look-at — the land the guest is actually seeing
     try {
       if (G.SNGlobe && typeof SNGlobe.viewLatLng === 'function') {
         var look = SNGlobe.viewLatLng();
@@ -115,7 +155,22 @@
       }
     } catch (_) {}
 
-    // No silent Rhodes. Caller must handle null → ask Locate.
+    return null;
+  }
+
+  function cameraLook() {
+    try {
+      if (G.SNGlobe && typeof SNGlobe.viewLatLng === 'function') {
+        var look = SNGlobe.viewLatLng();
+        if (look && look.lat != null && isFinite(look.lat)) return { lat: +look.lat, lng: +look.lng };
+      }
+    } catch (_) {}
+    try {
+      if (G.SNGlobe && typeof SNGlobe.focusPos === 'function') {
+        var f = SNGlobe.focusPos();
+        if (f && f.lat != null && isFinite(f.lat)) return { lat: +f.lat, lng: +f.lng };
+      }
+    } catch (_) {}
     return null;
   }
 
@@ -174,7 +229,6 @@
     return FOOD.test(blob) || v.delivery_enabled === true;
   }
 
-  /** Never open the auth modal for guest pizza browse. */
   function blockAuthModalOnPizza() {
     try {
       var modal = document.getElementById('sn-auth-modal');
@@ -204,7 +258,6 @@
     } catch (_) {}
   }
 
-  /** Soft face nearest shop — no goToTier, no street map, no village teleport. */
   function stayPutSoft(nearest) {
     try {
       if (G.SNMap && SNMap.active && typeof SNMap.close === 'function') SNMap.close();
@@ -231,10 +284,6 @@
     } catch (_) {}
   }
 
-  /**
-   * Drop real 3D pins on the live globe. Product law: if not on the globe, not shipped.
-   * Uses SNGlobe.pulse (THREE markers on pivot) — long-lived so guest can tap.
-   */
   function paintPins(rows, origin) {
     clearPizzaPins();
     if (!rows || !rows.length) return 0;
@@ -258,18 +307,22 @@
         emoji: v.emoji || '🍕',
       });
 
-      // Primary: live WebGL globe pulse pin
       if (ready) {
         try {
           var mesh = SNGlobe.pulse(lat, lng, color, label, 180000);
           if (mesh) {
+            try {
+              mesh.userData = mesh.userData || {};
+              mesh.userData.snVendor = true;
+              mesh.userData.snName = v.name;
+              mesh.userData.snKm = km;
+            } catch (_) {}
             pinMeshes.push(mesh);
             painted++;
           }
         } catch (_) {}
       }
 
-      // Optional space-links field pin (if module loaded)
       try {
         if (G.SNSpaceLinks && typeof SNSpaceLinks.addFieldPin === 'function') {
           SNSpaceLinks.addFieldPin(
@@ -289,7 +342,58 @@
     return painted;
   }
 
-  /** Guest taps a globe pin → CLI names the shop (no auth wall). */
+  function hitVendorAt(cx, cy) {
+    if (!lastPins.length) return null;
+    var hit = null;
+    var best = 1e9;
+    try {
+      if (G.SNGlobe && typeof SNGlobe.pickLatLng === 'function') {
+        var ll = SNGlobe.pickLatLng(cx, cy);
+        if (ll && ll.lat != null) {
+          lastPins.forEach(function (p) {
+            var d = haversineKm(ll, p);
+            if (d < best) {
+              best = d;
+              hit = p;
+            }
+          });
+          var tol = 45;
+          try {
+            if (G.SNGlobe && typeof SNGlobe.currentTier === 'function') {
+              var t = String(SNGlobe.currentTier() || '');
+              if (t === 'city' || t === 'street' || t === 'local') tol = 8;
+              else if (t === 'regional') tol = 18;
+              else if (t === 'national') tol = 35;
+            }
+          } catch (_) {}
+          if (best > tol) hit = null;
+        }
+      }
+    } catch (_) {}
+    return hit;
+  }
+
+  function announceVendor(hit) {
+    if (!hit) return;
+    suppressPoiUntil = Date.now() + 2500;
+    try {
+      if (G.SNGlobe) G.SNGlobe.consumeClick = true;
+    } catch (_) {}
+    log(
+      'Shop · ' +
+        String(hit.name || 'vendor').slice(0, 36) +
+        (hit.km != null && isFinite(hit.km) ? ' · ' + Number(hit.km).toFixed(1) + 'km' : '') +
+        ' · ⭐',
+      'ok'
+    );
+    preview(String(hit.name || 'shop').slice(0, 40) + ' · ⭐');
+    try {
+      if (G.SNGlobe && typeof SNGlobe.pulse === 'function') {
+        SNGlobe.pulse(hit.lat, hit.lng, 0xff9f43, hit.name || 'shop', 12000);
+      }
+    } catch (_) {}
+  }
+
   function installPinTap() {
     try {
       if (clickUnsub) {
@@ -301,40 +405,51 @@
       if (!G.SNGlobe || typeof SNGlobe.onClick !== 'function') return;
       clickUnsub = SNGlobe.onClick(function (cx, cy) {
         if (!lastPins.length) return false;
-        var hit = null;
-        try {
-          if (typeof SNGlobe.pickLatLng === 'function') {
-            var ll = SNGlobe.pickLatLng(cx, cy);
-            if (ll && ll.lat != null) {
-              var best = 1e9;
-              lastPins.forEach(function (p) {
-                var d = haversineKm(ll, p);
-                if (d < best) {
-                  best = d;
-                  hit = p;
-                }
-              });
-              // ~25 km pick tolerance at globe scale (generous for finger)
-              if (best > 28) hit = null;
-            }
-          }
-        } catch (_) {}
+        if (Date.now() < suppressPoiUntil) return true;
+        var hit = hitVendorAt(cx, cy);
         if (!hit) return false;
-        log(
-          'Shop · ' +
-            String(hit.name || 'vendor').slice(0, 36) +
-            (hit.km != null ? ' · ' + hit.km.toFixed(1) + 'km' : '') +
-            ' · ⭐ · Google only at pay',
-          'ok'
-        );
-        preview(String(hit.name || 'shop').slice(0, 40) + ' · ⭐');
-        try {
-          if (G.SNGlobe && typeof SNGlobe.pulse === 'function') {
-            SNGlobe.pulse(hit.lat, hit.lng, 0xff9f43, hit.name || 'shop', 12000);
-          }
-        } catch (_) {}
+        announceVendor(hit);
         return true;
       });
+    } catch (_) {}
+
+    try {
+      if (canvasTapBound) return;
+      var canvas =
+        (G.SNGlobe && G.SNGlobe.getRenderer && G.SNGlobe.getRenderer() && G.SNGlobe.getRenderer().domElement) ||
+        document.querySelector('#globe canvas') ||
+        document.querySelector('canvas');
+      if (!canvas) return;
+      canvasTapBound = true;
+      var downX = 0;
+      var downY = 0;
+      var downT = 0;
+      canvas.addEventListener(
+        'pointerdown',
+        function (e) {
+          downX = e.clientX;
+          downY = e.clientY;
+          downT = performance.now();
+        },
+        true
+      );
+      canvas.addEventListener(
+        'pointerup',
+        function (e) {
+          if (!lastPins.length) return;
+          if (performance.now() - downT > 320) return;
+          if (Math.hypot(e.clientX - downX, e.clientY - downY) > 10) return;
+          var hit = hitVendorAt(e.clientX, e.clientY);
+          if (!hit) return;
+          try {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+          } catch (_) {}
+          announceVendor(hit);
+        },
+        true
+      );
     } catch (_) {}
   }
 
@@ -387,7 +502,7 @@
     scored.forEach(function (s, i) {
       var name = String(s.v.name || 'shop').slice(0, 32);
       var kmS = s.km < 99 ? s.km.toFixed(1) + 'km' : '—';
-      log((i + 1) + ' · ' + name + ' · ' + kmS + ' · ⭐', 'ok');
+      log(i + 1 + ' · ' + name + ' · ' + kmS + ' · ⭐', 'ok');
     });
     log('Tap a pin on the globe · Google only at pay / HOLD ⭐', 'dim');
     preview(scored[0].v.name + ' · ' + scored[0].km.toFixed(1) + 'km · ⭐');
@@ -401,14 +516,11 @@
     askedLocate = true;
     log('Camera has no local shops · type Locate once (no Google wall)', 'ok');
     preview('Locate → then pizza');
-    // Soft auto-locate if globe API exists — no auth modal
     try {
       if (G.SNGlobe && typeof SNGlobe.locate === 'function') {
         void SNGlobe.locate().then(function (row) {
           if (row && row.lat != null) {
-            try {
-              G._snLastPos = { lat: +row.lat, lng: +row.lng };
-            } catch (_) {}
+            markSessionLocate(row.lat, row.lng, { fallback: !!row.fallback });
             log(
               'Located · ' +
                 (+row.lat).toFixed(3) +
@@ -429,12 +541,37 @@
       if (G.SNCli && typeof SNCli.gpsLocate === 'function') {
         void SNCli.gpsLocate({ allowIp: true, allowSoft: true }).then(function (row) {
           if (row && row.lat != null) {
-            G._snLastPos = { lat: +row.lat, lng: +row.lng };
+            markSessionLocate(row.lat, row.lng, { soft: true });
             log('Located · type pizza again', 'ok');
           }
         });
       }
     } catch (_) {}
+  }
+
+  function faceClusterIfNeeded(use, origin) {
+    if (!use || !use.length) return;
+    var cam = cameraLook();
+    var nearest = use
+      .map(function (v) {
+        return {
+          lat: +v.lat,
+          lng: +v.lng,
+          name: v.name,
+          km: origin ? haversineKm(origin, { lat: +v.lat, lng: +v.lng }) : 99,
+          camKm: cam ? haversineKm(cam, { lat: +v.lat, lng: +v.lng }) : 0,
+        };
+      })
+      .sort(function (a, b) {
+        return a.km - b.km;
+      })[0];
+    if (!nearest) return;
+
+    if (cam && nearest.camKm < 80) {
+      if (nearest.km < 40) stayPutSoft(nearest);
+      return;
+    }
+    stayPutSoft(nearest);
   }
 
   async function huntPizza(raw) {
@@ -455,19 +592,26 @@
 
     var origin = resolveOrigin();
     if (!origin) {
-      log('No origin yet · looking at camera center…', 'dim');
+      clearPizzaPins();
+      log('No origin yet · type Locate once (GPS)', 'dim');
       askLocateOnce();
       hunting = false;
       return true;
     }
 
+    if (origin.source === 'you' && nearFake(origin.lat, origin.lng)) {
+      var cam2 = cameraLook();
+      if (cam2) origin = { lat: cam2.lat, lng: cam2.lng, source: 'camera' };
+      else {
+        clearPizzaPins();
+        askLocateOnce();
+        hunting = false;
+        return true;
+      }
+    }
+
     log(
-      'Origin · ' +
-        origin.source +
-        ' · ' +
-        origin.lat.toFixed(3) +
-        ', ' +
-        origin.lng.toFixed(3),
+      'Origin · ' + origin.source + ' · ' + origin.lat.toFixed(3) + ', ' + origin.lng.toFixed(3),
       'dim'
     );
 
@@ -483,7 +627,6 @@
       } catch (_) {}
     }
 
-    // Prefer pizza-ish names first when query is pizza.
     var pizzaish = rows.filter(function (v) {
       return /pizza|pizzeria|italiano|makkaroni|margherita/i.test(
         String(v.name || '') + ' ' + String(v.category || '')
@@ -498,10 +641,12 @@
       : rows;
 
     if (!use.length) {
-      // Camera somewhere empty (e.g. South America ocean) — do NOT list Rhodes km
       clearPizzaPins();
-      listInCli([], origin);
+      log('No delivery shops near view · type Locate to hunt near you', 'dim');
+      preview('Locate → then pizza');
       if (origin.source === 'camera' || origin.source === 'focus' || origin.source === 'focus-cache') {
+        askLocateOnce();
+      } else if (!hasSessionLocate()) {
         askLocateOnce();
       } else {
         log('No delivery shops in 16 km · spin globe or try another area', 'dim');
@@ -521,23 +666,7 @@
       log('Globe pulse unavailable · list only (SNGlobe not ready)', 'dim');
     }
 
-    var nearest = use
-      .map(function (v) {
-        return {
-          lat: +v.lat,
-          lng: +v.lng,
-          name: v.name,
-          km: haversineKm(origin, { lat: +v.lat, lng: +v.lng }),
-        };
-      })
-      .sort(function (a, b) {
-        return a.km - b.km;
-      })[0];
-
-    // Soft face nearest only when shops are near the current origin (same view)
-    if (nearest && nearest.km < 40) {
-      stayPutSoft(nearest);
-    }
+    faceClusterIfNeeded(use, origin);
 
     if (isGuest()) {
       log('Guest browse · sign in only when you HOLD ⭐ / pay', 'dim');
@@ -568,7 +697,6 @@
   function install() {
     blockAuthModalOnPizza();
     if (!G.SNCli || typeof SNCli.run !== 'function') return;
-    // Re-bind on patch so new logic wins even if old guard set
     if (SNCli.__snGuestPizzaHuntBuild === BUILD) return;
     SNCli.__snGuestPizzaHuntBuild = BUILD;
     SNCli.__snGuestPizzaHunt = 1;
@@ -576,6 +704,17 @@
     SNCli.run = function (raw) {
       try {
         var s = String(raw || '').trim();
+        if (/^locate\b/i.test(s) || /^gps\b/i.test(s)) {
+          var p = prev(raw);
+          setTimeout(function () {
+            try {
+              if (G._snPhysPos && G._snPhysPos.lat != null && !nearFake(+G._snPhysPos.lat, +G._snPhysPos.lng)) {
+                markSessionLocate(G._snPhysPos.lat, G._snPhysPos.lng);
+              }
+            } catch (_) {}
+          }, 1200);
+          return p;
+        }
         if (isPizzaLine(s)) {
           void huntPizza(s);
           return Promise.resolve(true);
@@ -609,8 +748,8 @@
         void huntPizza(v);
         return true;
       }
-      if (form && input && !input._snPizzaHunt) {
-        input._snPizzaHunt = 1;
+      if (form && input && !input._snPizzaHunt110) {
+        input._snPizzaHunt110 = 1;
         form.addEventListener(
           'submit',
           function (ev) {
@@ -626,8 +765,8 @@
           true
         );
       }
-      if (topIn && !topIn._snPizzaHunt) {
-        topIn._snPizzaHunt = 1;
+      if (topIn && !topIn._snPizzaHunt110) {
+        topIn._snPizzaHunt110 = 1;
         topIn.addEventListener(
           'keydown',
           function (ev) {
@@ -639,21 +778,23 @@
     } catch (_) {}
 
     try {
-      if (G.SNMarket && typeof SNMarket.fulfillFoodIntent === 'function' && !SNMarket._snPizzaHunt) {
-        var ful = SNMarket.fulfillFoodIntent.bind(SNMarket);
-        SNMarket.fulfillFoodIntent = async function (q, opts) {
-          var line = String(q || (opts && opts.text) || '');
-          if (isGuest() && !snDebug() && (isPizzaLine(line) || /pizza|food|meal/i.test(line))) {
-            await huntPizza(line || 'order me a pizza');
-            return {
-              ok: true,
-              guest_browse: true,
-              reply: 'Shops on globe · Google only at pay / HOLD ⭐',
-            };
-          }
-          return ful(q, opts);
-        };
-        SNMarket._snPizzaHunt = true;
+      if (G.SNMarket && typeof SNMarket.fulfillFoodIntent === 'function') {
+        if (!SNMarket._snPizzaHunt110) {
+          var ful = SNMarket.fulfillFoodIntent.bind(SNMarket);
+          SNMarket.fulfillFoodIntent = async function (q, opts) {
+            var line = String(q || (opts && opts.text) || '');
+            if (isGuest() && !snDebug() && (isPizzaLine(line) || /pizza|food|meal/i.test(line))) {
+              await huntPizza(line || 'order me a pizza');
+              return {
+                ok: true,
+                guest_browse: true,
+                reply: 'Shops on globe · Google only at pay / HOLD ⭐',
+              };
+            }
+            return ful(q, opts);
+          };
+          SNMarket._snPizzaHunt110 = true;
+        }
       }
     } catch (_) {}
   }
@@ -661,6 +802,7 @@
   function boot() {
     install();
     blockAuthModalOnPizza();
+    installPinTap();
   }
 
   boot();
