@@ -141,6 +141,9 @@
         if (A.user && (evt === 'SIGNED_IN' || evt === 'INITIAL_SESSION' || evt === 'USER_UPDATED')) {
           if (!global.__snPaidMindArmed) armOwnerPaidGrok();
           greetArrival(A.user, evt);
+          try {
+            if (global.SNPulse && SNPulse.onLogin) SNPulse.onLogin();
+          } catch (_) {}
         } else if (!A.user && evt === 'SIGNED_OUT') {
           try {
             localStorage.removeItem('sn:owner-session');

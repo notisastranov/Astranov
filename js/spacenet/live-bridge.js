@@ -36,7 +36,7 @@
 
   var lastSeq = 0;
   var timer = null;
-  var pollMs = 3000;
+  var pollMs = 1600;
 
   function log(m, c) {
     try {

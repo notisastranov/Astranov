@@ -861,6 +861,7 @@
     '/js/spacenet/ai.js',
     '/js/spacenet/omma.js',
     '/js/spacenet/fluid.js',
+    '/js/spacenet/pulse.js',
     '/js/spacenet/spacexai.js',
     '/js/spacenet/youtube.js',
     '/js/spacenet/os-will.js',
@@ -1341,6 +1342,15 @@
       try {
         if (global.SNLiveBridge && SNLiveBridge.start) SNLiveBridge.start();
       } catch (_) {}
+      try {
+        if (global.SNPulse && SNPulse.boot) {
+          var on = false;
+          try {
+            on = !!(global.SNAuth && SNAuth.user);
+          } catch (_) {}
+          SNPulse.boot(on ? 'login' : 'boot');
+        }
+      } catch (_) {}
     } catch (_) {}
     materializeHud();
     setSub('HUD');
@@ -1469,6 +1479,8 @@
       'space-stage': { src: '/js/spacenet/space-stage.js', global: 'SNStage' },
       bridge: { src: '/js/spacenet/live-bridge.js', global: 'SNLiveBridge' },
       'live-bridge': { src: '/js/spacenet/live-bridge.js', global: 'SNLiveBridge' },
+      pulse: { src: '/js/spacenet/pulse.js', global: 'SNPulse' },
+      fluid: { src: '/js/spacenet/fluid.js', global: 'SNFluid' },
       usage: { src: '/js/spacenet/usage.js', global: 'SNUsage' },
       scenarios: { src: '/js/spacenet/scenarios.js', global: 'SNScenarios' },
       prefs: { src: '/js/spacenet/prefs.js', global: 'SNPrefs' },

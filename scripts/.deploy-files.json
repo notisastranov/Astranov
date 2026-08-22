@@ -25,6 +25,8 @@
     "js/spacenet/helper.js",
     "js/spacenet/home.js",
     "js/spacenet/live-bridge.js",
+    "js/spacenet/pulse.js",
+    "js/spacenet/fluid.js",
     "js/spacenet/map.js",
     "js/spacenet/market-live.js",
     "js/spacenet/market.js",
