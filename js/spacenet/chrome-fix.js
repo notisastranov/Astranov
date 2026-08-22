@@ -1,11 +1,13 @@
-/* Astranov chrome-fix loader · 20260822170500-hud-law
- * Loads chrome-fix-body. Placeholders: owner law. Never restore coach dump.
+/* Astranov chrome-fix loader · 20260822234500-call-chrome
+ * Loads chrome-fix-body. Twin-law copy: HUD "Heads up display..." · bottom "command line interface".
+ * Call dock: "Call · place or answer". Never restore coach dump.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260822170500-hud-law';
-  var TOP_PH = 'Command the HUD · show, hide, or reshape';
-  var BOT_PH = 'Command the HUD · show, hide, or reshape';
+  var BUILD = '20260822234500-call-chrome';
+  var TOP_PH = 'Heads up display...';
+  var BOT_PH = 'command line interface';
+  var CALL_LABEL = 'Call · place or answer';
   function enforceHud() {
     try {
       var top = document.getElementById('stc-cmd-in');
@@ -17,6 +19,11 @@
       if (bot) {
         bot.placeholder = BOT_PH;
         bot.setAttribute('aria-label', BOT_PH);
+      }
+      var call = document.getElementById('sn-rib-call');
+      if (call) {
+        call.setAttribute('aria-label', CALL_LABEL);
+        call.setAttribute('title', CALL_LABEL);
       }
       var coach = document.getElementById('cli-coach');
       if (coach && coach.parentNode) coach.parentNode.removeChild(coach);

@@ -1,11 +1,13 @@
-/* Astranov chrome-fix body · Build 20260822161000-hud-law
- * Restore HUD law: 10px handles, no coach dump, 36px circle buttons, no wasted void.
+/* Astranov chrome-fix body · Build 20260822234500-call-chrome
+ * Twin-law copy: HUD "Heads up display..." · bottom "command line interface".
+ * Call dock: "Call · place or answer". 10px handles, no coach dump.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260822161000-hud-law';
-  var TOP_PH = 'Command the HUD · show, hide, or reshape';
-  var BOT_PH = 'Command the HUD · show, hide, or reshape';
+  var BUILD = '20260822234500-call-chrome';
+  var TOP_PH = 'Heads up display...';
+  var BOT_PH = 'command line interface';
+  var CALL_LABEL = 'Call · place or answer';
 
   function injectCss() {
     var old = document.getElementById('sn-chrome-fix-css');
@@ -198,6 +200,11 @@
       if (bot) {
         bot.placeholder = BOT_PH;
         bot.setAttribute('aria-label', BOT_PH);
+      }
+      var call = document.getElementById('sn-rib-call');
+      if (call) {
+        call.setAttribute('aria-label', CALL_LABEL);
+        call.setAttribute('title', CALL_LABEL);
       }
     } catch (_) {}
   }

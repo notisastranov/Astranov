@@ -868,7 +868,7 @@
       icon: ICO.call,
       emoji: '📞',
       text: 'Call',
-      title: 'Video call · place or answer',
+      title: 'Call · place or answer',
       id: 'sn-rib-call',
     },
     { act: 'add', icon: ICO.add, emoji: '➕', text: 'Add', title: 'Add', id: 'sn-rib-add' },
@@ -1823,6 +1823,8 @@
         '"' +
         (b.id ? ' id="' + b.id + '"' : '') +
         ' title="' +
+        title +
+        '" aria-label="' +
         title +
         '" aria-pressed="' +
         (onCls ? 'true' : 'false') +

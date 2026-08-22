@@ -1,18 +1,21 @@
 /**
  * SpaceNet CALL = glowing great-circle on the live SNGlobe.
- * Build: 20260822233000-call-arc
+ * Build: 20260822234500-call-chrome
  *
  * Guest tap/type "call" → ONLY Google GIS sign-in.
  *   no u-xxxx room, no me-av avatar, no plaza fallback, no VIDEO CALL modal.
  * Signed-in → arc between me pin and them (or a demo peer pin).
  * CLI line: "Call name arc"
  * Camera may ease/rotate to frame the arc. Never teleport. Never pulse/flyGlobeTo/projectPin.
+ * Twin-law chrome: HUD "Heads up display..." · bottom "command line interface".
+ * Dock 📞 aria-label: "Call · place or answer".
  */
 (function (G) {
   'use strict';
-  if (G.__snCallArc233000) return;
-  G.__snCallArc233000 = 1;
-  var BUILD = '20260822233000-call-arc';
+  if (G.__snCallArc234500) return;
+  G.__snCallArc234500 = 1;
+  var BUILD = '20260822234500-call-chrome';
+  var CALL_LABEL = 'Call · place or answer';
 
   var RHODES = { lat: 36.4341, lng: 28.2176 };
   var KALITHEA = { lat: 36.387557, lng: 28.222533 };
@@ -678,6 +681,16 @@
     } catch (_) {}
   }
 
+  function labelCallBtn() {
+    try {
+      var btn = document.getElementById('sn-rib-call');
+      if (!btn) btn = document.querySelector('#sn-task-ribbon [data-act="call"]');
+      if (!btn) return;
+      btn.setAttribute('aria-label', CALL_LABEL);
+      btn.setAttribute('title', CALL_LABEL);
+    } catch (_) {}
+  }
+
   function bindRibbon() {
     try {
       if (document._snCallArcClick) return;
@@ -737,6 +750,7 @@
     installCli();
     bindInputs();
     bindRibbon();
+    labelCallBtn();
   }
 
   function init() {
