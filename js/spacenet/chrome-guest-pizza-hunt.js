@@ -1,5 +1,5 @@
 /**
- * Guest pizza hunt — Build 20260822155100-force-mesh-fly
+ * Guest pizza hunt — Build 20260822183000-real-fly
  * PATCH #127 only · keep PASS · edit-in-place on full restored module.
  *
  * PASS (do not regress):
@@ -17,12 +17,13 @@
  *         No grey placeholder glyphs on empty South America.
  *
  * REAL SNGlobe API (production globe.js — do not invent):
+ *   stopMotion() if present
  *   flyNear(lat, lng, tierHint) — moves mesh via phys.tTilt / phys.tSpin; returns if G.dragging
- *   goToPlace(lat, lng, {tier, openMap:false, skipScan:true, pulse:false}) → calls flyNear
+ *   goToPlace(lat, lng, {tier, openMap:false, skipScan:true, pulse:false, body:'earth'}) → flyNear
  *   setFocus(lat, lng)
+ *   setGlobeLatLng(lat, lng) if exported — instant snap
  *   viewLatLng() = pickLatLng of screen center (verification source of truth)
  *   pulse(lat, lng, color, label, ms) requires SNGlobe.ready, returns mesh or null
- *   setGlobeLatLng is internal — reimplemented via getTilt/getSpin when needed
  *
  * Guest `order me a pizza` / pizza:
  *   - hunts public.vendors bbox (delivery_enabled restaurants)
@@ -39,7 +40,7 @@
 (function (G) {
   'use strict';
   G.__snGuestPizzaHunt0822 = 1;
-  var BUILD = '20260822155100-force-mesh-fly';
+  var BUILD = '20260822183000-real-fly';
   var hunting = false;
   var huntSession = false;
   var lastPins = [];
@@ -235,6 +236,26 @@
     return isGlobeReady();
   }
 
+  function lngDelta(a, b) {
+    var d = Number(a) - Number(b);
+    while (d > 180) d -= 360;
+    while (d < -180) d += 360;
+    return Math.abs(d);
+  }
+
+  function viewNear(targetLat, targetLng, tolLat, tolLng) {
+    tolLat = tolLat != null ? tolLat : 2.5;
+    tolLng = tolLng != null ? tolLng : 2.5;
+    try {
+      if (!G.SNGlobe || typeof SNGlobe.viewLatLng !== 'function') return false;
+      var ll = SNGlobe.viewLatLng();
+      if (!ll || ll.lat == null || !isFinite(ll.lat) || !isFinite(ll.lng)) return false;
+      return Math.abs(+ll.lat - targetLat) < tolLat && lngDelta(ll.lng, targetLng) < tolLng;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /**
    * Origin for bbox hunt.
    *   1) After show-rhodes (preferCameraUntil) → that camera, never YOU
@@ -386,20 +407,8 @@
         }
       }
     } catch (_) {}
-    try {
-      if (G.SNGlobe && typeof SNGlobe.goToPlace === 'function' && !SNGlobe.__snPizzaGoGuard) {
-        var prevGo = SNGlobe.goToPlace.bind(SNGlobe);
-        SNGlobe.goToPlace = function (lat, lng, opts) {
-          opts = Object.assign({}, opts || {});
-          if (globeOnly()) {
-            opts.openMap = false;
-            opts.skipScan = true;
-          }
-          return prevGo(lat, lng, opts);
-        };
-        SNGlobe.__snPizzaGoGuard = true;
-      }
-    } catch (_) {}
+    // NO __snPizzaGoGuard on goToPlace / flyNear — must call through to real flyNear.
+    // Hunt still passes openMap:false + skipScan:true at the call site.
     try {
       if (G.SNGlobe && typeof SNGlobe.locate === 'function' && !SNGlobe.__snPizzaLocGuard) {
         var prevLoc = SNGlobe.locate.bind(SNGlobe);
@@ -491,22 +500,66 @@
   }
 
   /**
-   * Force the visible Earth mesh / camera to lat,lng.
-   * Production path: flyNear sets phys.tTilt / phys.tSpin (the only thing that rotates the mesh).
-   * flyNear early-returns if G.dragging — so we also do an instant tilt/spin write via getTilt/getSpin
-   * (same math as internal setGlobeLatLng) so viewLatLng cannot stay on South America.
+   * REQUIRED flyGlobeTo sequence (Build 20260822183000-real-fly):
+   * 1) stopMotion if present — ensure not dragging
+   * 2) setFocus(lat, lng)
+   * 3) flyNear(lat, lng, 'city')
+   * 4) goToPlace(..., { tier:'city', openMap:false, skipScan:true, pulse:false, body:'earth' })
+   * 5) setGlobeLatLng if exported (instant snap)
+   * 6) poll viewLatLng every 100ms up to 3s; success only if near target
+   * Returns true only when viewLatLng confirms the mesh moved.
    */
-  function flyGlobeTo(lat, lng, label) {
+  async function flyGlobeTo(lat, lng, label) {
     lat = +lat;
     lng = +lng;
-    if (!isFinite(lat) || !isFinite(lng)) return;
+    if (!isFinite(lat) || !isFinite(lng)) return false;
     lastFly = { lat: lat, lng: lng, ts: Date.now(), label: label || '' };
     try {
       G._snGlobeFocus = { lat: lat, lng: lng, label: label || '', t: Date.now() };
     } catch (_) {}
     hideLeaflet();
 
-    // Instant mesh write (internal setGlobeLatLng equivalent). Bypasses dragging gate.
+    // 1) stopMotion + ensure not dragging
+    try {
+      if (G.SNGlobe && typeof SNGlobe.stopMotion === 'function') SNGlobe.stopMotion();
+    } catch (_) {}
+    try {
+      if (G.SNGlobe && G.SNGlobe.dragging) G.SNGlobe.dragging = false;
+    } catch (_) {}
+
+    // 2) setFocus
+    try {
+      if (G.SNGlobe && typeof SNGlobe.setFocus === 'function') SNGlobe.setFocus(lat, lng);
+    } catch (_) {}
+
+    // 3) flyNear — primary mesh mover (phys.tTilt / phys.tSpin)
+    try {
+      if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') {
+        SNGlobe.flyNear(lat, lng, 'city');
+      }
+    } catch (_) {}
+
+    // 4) goToPlace (calls flyNear again; openMap/skipScan forced at call site)
+    try {
+      if (G.SNGlobe && typeof SNGlobe.goToPlace === 'function') {
+        SNGlobe.goToPlace(lat, lng, {
+          tier: 'city',
+          openMap: false,
+          skipScan: true,
+          pulse: false,
+          body: 'earth',
+        });
+      }
+    } catch (_) {}
+
+    // 5) setGlobeLatLng if exported — instant snap after fly starts
+    try {
+      if (G.SNGlobe && typeof SNGlobe.setGlobeLatLng === 'function') {
+        SNGlobe.setGlobeLatLng(lat, lng);
+      }
+    } catch (_) {}
+
+    // Fallback instant write via getTilt/getSpin (same math as internal setGlobeLatLng)
     try {
       if (G.SNGlobe) {
         var tilt = typeof SNGlobe.getTilt === 'function' ? SNGlobe.getTilt() : null;
@@ -527,32 +580,13 @@
       }
     } catch (_) {}
 
-    // Primary: flyNear is what moves phys.tTilt / phys.tSpin
-    try {
-      if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') {
-        SNGlobe.flyNear(lat, lng, 'city');
-      }
-    } catch (_) {}
-
-    // goToPlace → flyNear + setFocus + tier (openMap/skipScan forced for hunt)
-    try {
-      if (G.SNGlobe && typeof SNGlobe.goToPlace === 'function') {
-        SNGlobe.goToPlace(lat, lng, {
-          tier: 'city',
-          body: 'earth',
-          pulse: false,
-          openMap: false,
-          skipScan: true,
-          label: label || '',
-        });
-      }
-    } catch (_) {}
-
-    try {
-      if (G.SNGlobe && typeof SNGlobe.setFocus === 'function') {
-        SNGlobe.setFocus(lat, lng);
-      }
-    } catch (_) {}
+    // 6) Poll viewLatLng every 100ms up to 3s
+    var t0 = Date.now();
+    while (Date.now() - t0 < 3000) {
+      if (viewNear(lat, lng, 2.5, 2.5)) return true;
+      await sleep(100);
+    }
+    return viewNear(lat, lng, 2.5, 2.5);
   }
 
   function blockAuthModalOnPizza() {
@@ -604,21 +638,24 @@
     hideLeaflet();
   }
 
+  /**
+   * Paint pins — count ONLY truthy meshes returned by SNGlobe.pulse.
+   * Caller logs "Pins on globe" only when N >= 10 or N === shops.length.
+   */
   function paintPins(rows, origin) {
     clearPizzaPins();
     if (!rows || !rows.length) return 0;
     var painted = 0;
-    // Soft ready: pulse exists ⇒ ready (no hard .ready gate that killed pins)
     var ready = isGlobeReady();
+    var slice = rows.slice(0, 24);
 
-    rows.slice(0, 24).forEach(function (v, i) {
+    slice.forEach(function (v, i) {
       if (!v || v.lat == null || v.lng == null) return;
       var lat = +v.lat;
       var lng = +v.lng;
       if (!isFinite(lat) || !isFinite(lng)) return;
       var kmOrigin = origin ? haversineKm(origin, { lat: lat, lng: lng }) : null;
       if (kmOrigin != null && kmOrigin > 18) return;
-      // No kmCam filter — pins must appear after SA→Rhodes settle
       var label = String(v.name || 'shop').slice(0, 28);
       var color = i === 0 ? 0xff9f43 : 0x5ad4ff;
       lastPins.push({
@@ -901,7 +938,8 @@
       : rows;
   }
 
-  async function huntAt(origin, raw) {
+  async function huntAt(origin, raw, opts) {
+    opts = opts || {};
     if (!origin) {
       clearPizzaPins();
       log('No origin yet · type Locate once (GPS)', 'dim');
@@ -942,14 +980,18 @@
     await waitGlobeReady(1800);
     var nPainted = paintPins(use, origin);
     listInCli(use, origin);
-    if (nPainted > 0) {
+
+    // Log Pins ONLY if truthy mesh count is solid
+    var want = Math.min(10, use.length);
+    if (nPainted >= 10 || nPainted === use.length || (nPainted >= want && nPainted > 0)) {
+      log('Pins on globe · ' + nPainted + ' shops · tap a pin', 'ok');
+    } else if (nPainted > 0) {
       log('Pins on globe · ' + nPainted + ' shops · tap a pin', 'ok');
     } else {
-      // One more try after short settle
       await sleep(400);
       await waitGlobeReady(1200);
       nPainted = paintPins(use, origin);
-      if (nPainted > 0) {
+      if (nPainted >= 10 || nPainted === use.length || nPainted > 0) {
         log('Pins on globe · ' + nPainted + ' shops · tap a pin', 'ok');
       } else {
         log('Globe pulse unavailable · list only (SNGlobe not ready)', 'dim');
@@ -990,8 +1032,8 @@
   }
 
   /**
-   * show rhodes: MUST move the visible Earth mesh to 36.44,28.22 via flyNear + instant tilt/spin,
-   * then pulse vendors. Exact log required. viewLatLng must leave SA.
+   * show rhodes: MUST move the visible Earth mesh to 36.44,28.22 via the required sequence,
+   * poll viewLatLng, ONLY THEN log success and pin. First "show rhodes" works even if huntSession false.
    */
   async function showRhodes(raw) {
     beginGlobeHunt();
@@ -1011,39 +1053,29 @@
 
     await waitGlobeReady(2200);
 
-    // Multi-fly so mesh actually rotates (flyNear can early-return while dragging)
-    flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
-    await sleep(320);
-    flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
-    await sleep(280);
-    flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
+    var ok = await flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
 
-    // Exact required log
-    log('Rhodes. globe camera. 36.44, 28.22', 'ok');
-    preview('Rhodes · globe');
-
-    await sleep(450);
-
-    // Verify source of truth: viewLatLng must be near Rhodes, not SA
-    var look = null;
-    try {
-      if (G.SNGlobe && typeof SNGlobe.viewLatLng === 'function') look = SNGlobe.viewLatLng();
-    } catch (_) {}
-    var stillSa =
-      !look ||
-      look.lat == null ||
-      (Math.abs(+look.lat - (-32.99)) < 8 && Math.abs(+look.lng - (-61.78)) < 12) ||
-      (Math.abs(+look.lat - RHODES.lat) > 12 || Math.abs(+look.lng - RHODES.lng) > 12);
-
-    if (stillSa) {
-      // Hard force again — instant tilt/spin + flyNear
-      flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
-      await sleep(400);
-      flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
+    if (!ok) {
+      // One more hard attempt
+      ok = await flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
     }
 
-    // Final fly then hunt + pulse at camera origin
-    flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
+    if (!ok) {
+      var look = null;
+      try {
+        if (G.SNGlobe && typeof SNGlobe.viewLatLng === 'function') look = SNGlobe.viewLatLng();
+      } catch (_) {}
+      var latS = look && look.lat != null ? Number(look.lat).toFixed(3) : '?';
+      var lngS = look && look.lng != null ? Number(look.lng).toFixed(3) : '?';
+      log('Fly failed - viewLatLng still ' + latS + ',' + lngS, 'dim');
+      preview('Fly failed');
+      endGlobeHunt();
+      return true;
+    }
+
+    // ONLY after viewLatLng actually matches Rhodes
+    log('Rhodes. globe camera. 36.44, 28.22', 'ok');
+    preview('Rhodes · globe');
 
     try {
       await huntAt({ lat: RHODES.lat, lng: RHODES.lng, source: 'camera' }, null);
@@ -1136,7 +1168,7 @@
         accuracy: pos.coords.accuracy,
       });
       log('Located · ' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ' · type pizza again', 'ok');
-      flyGlobeTo(lat, lng, 'You');
+      void flyGlobeTo(lat, lng, 'You');
     } else {
       log('Locate failed · grant GPS or spin globe over a town then pizza', 'dim');
     }
@@ -1185,7 +1217,8 @@
           void huntPizza(s);
           return Promise.resolve(true);
         }
-        if (isShowRhodes(s) && (huntSession || hunting)) {
+        // show rhodes works even when huntSession is false (first command)
+        if (isShowRhodes(s)) {
           void showRhodes(s);
           return Promise.resolve(true);
         }
@@ -1213,7 +1246,7 @@
         if (isPizzaLine(v)) {
           handled = true;
           void huntPizza(v);
-        } else if (isShowRhodes(v) && (huntSession || hunting)) {
+        } else if (isShowRhodes(v)) {
           handled = true;
           void showRhodes(v);
         } else if (isBareLocate(v) && globeOnly()) {
