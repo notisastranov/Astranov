@@ -5144,7 +5144,7 @@ if (
             if (hfTtsActive || synthSpeaking() || Date.now() < hfMutedUntil) return;
             const send = String(hfPending || '').trim();
             if (send && handsfreeOn && !hfBusy) commitVoice(send);
-          }, 2000);
+          }, 3200);
         }
       } catch (e) {
         log('Voice result · ' + (e.message || e), 'err');

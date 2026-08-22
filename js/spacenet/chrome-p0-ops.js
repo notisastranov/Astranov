@@ -259,32 +259,23 @@
       btn.addEventListener(
         'click',
         function (ev) {
-          setTimeout(function () {
-            var fly = document.getElementById('sn-rib-fly');
-            if (fly && fly.classList.contains('open')) {
-              fly.querySelectorAll('[data-pick]').forEach(function (opt) {
-                var id = opt.getAttribute('data-pick');
-                if (!id || id === '__close') return;
-                opt.onclick = function (e) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  try {
-                    fly.classList.remove('open');
-                  } catch (_) {}
-                  runAdd(id);
-                };
-              });
+          try {
+            ev.preventDefault();
+            ev.stopPropagation();
+          } catch (_) {}
+          try {
+            if (global.SNField && SNField.ribbonAct) {
+              SNField.ribbonAct('add');
               return;
             }
+          } catch (_) {}
+          try {
             if (global.SNTopo && SNTopo.openAddMenu) {
               SNTopo.openAddMenu();
               return;
             }
-            cliLog('ADD · choose in CLI:  pin  |  post  |  task  |  vendor  |  poly', 'ok');
-            try {
-              if (global.SNCli && SNCli.preview) SNCli.preview('add · type pin / post / task');
-            } catch (_) {}
-          }, 80);
+          } catch (_) {}
+          cliLog('ADD · pin · post · task · vendor · poly', 'ok');
         },
         true
       );

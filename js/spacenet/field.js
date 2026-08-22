@@ -904,7 +904,7 @@
     var st = document.createElement('style');
     st.id = 'sn-rib-fly-css';
     st.textContent = [
-      '#sn-rib-fly{position:fixed;inset:0;z-index:135;display:none;pointer-events:none}',
+      '#sn-rib-fly{position:fixed;inset:0;z-index:220;display:none;pointer-events:none}',
       '#sn-rib-fly.open{display:block;pointer-events:auto}',
       '#sn-rib-fly .sn-rib-fly-bg{position:absolute;inset:0;background:rgba(0,4,12,.45);backdrop-filter:blur(4px)}',
       '#sn-rib-fly .sn-rib-fly-sheet{position:fixed;z-index:136;width:min(320px,calc(100vw - 16px));',

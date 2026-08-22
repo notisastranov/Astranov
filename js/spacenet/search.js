@@ -1500,7 +1500,14 @@
     }
 
     var hit = out.places && out.places[0];
-    if (hit && looksLikePlaceHit(hit) && out.kind !== 'video' && !isQuestionQuery(q)) {
+    if (
+      hit &&
+      looksLikePlaceHit(hit) &&
+      out.kind !== 'video' &&
+      out.kind !== 'thing' &&
+      !thingNoun &&
+      !isQuestionQuery(q)
+    ) {
       var k = String(hit.kind || hit.type || '').toLowerCase();
       var citylike = /city|town|village|country|island|capital|suburb|administrative|hamlet|state/.test(k);
       if (explicitPlace || citylike || (hit.importance != null && hit.importance > 0.45)) {
@@ -1508,6 +1515,13 @@
         out.confidence = explicitPlace ? 0.92 : 0.74;
         out.why = 'geocode is a real place';
       }
+    }
+
+    if (thingNoun) {
+      out.kind = 'thing';
+      out.confidence = Math.max(out.confidence, 0.86);
+      out.why = 'product / object';
+      out.places = [];
     }
 
     if (out.kind === 'unknown' && out.wiki && out.wiki.text) {
@@ -1802,6 +1816,13 @@
     if (!s) s = { query: q, kind: 'unknown', wiki: null, wikiHits: [], web: [], places: [] };
     s.acted = [];
     s.ask = null;
+    if (
+      /\b(laptop|laptops|macbook|notebook|computer|iphone|android|tablet|headphones|earbuds|charger)\b/i.test(q) &&
+      !/\b(street|city|town|village|go to|fly)\b/i.test(q)
+    ) {
+      s.kind = 'thing';
+      s.places = [];
+    }
 
     var bodyHit = String(q || '').match(
       /\b(earth|mars|moon|luna|jupiter|saturn|venus|mercury|neptune|uranus|europa|titan|io|ganymede|callisto|pluto|sun)\b/i
@@ -1844,7 +1865,7 @@
     if (s.places && s.places[0] && s.places[0].lat != null) pin = s.places[0];
     if (!pin && s.wiki && s.wiki.lat != null)
       pin = { name: s.wiki.title, lat: s.wiki.lat, lng: s.wiki.lng, kind: 'wiki' };
-    if (!pin && s.kind !== 'video') {
+    if (!pin && s.kind !== 'video' && s.kind !== 'thing' && s.kind !== 'person' && !isQuestionQuery(q)) {
       try {
         var g2 = await geocode(q);
         if (g2 && g2[0]) {
