@@ -1,11 +1,11 @@
-/* Astranov mute · Build 20260823001000-nairobi-ladder
- * Kill beeps + load chrome-nairobi-ladder (honest NATIONAL → CITY → STREETS fly).
+/* Astranov mute · Build 20260823003000-nairobi-rungs
+ * Kill beeps + load chrome-nairobi-ladder (honest NATIONAL → CITY → STREETS rungs).
  * Does NOT load chrome-guest-pizza-hunt (#127) or chrome-call-arc (#129).
  * Does NOT overwrite SNGlobe.flyGlobeTo when #127 already defined it.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823001000-nairobi-ladder';
+  var BUILD = '20260823003000-nairobi-rungs';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 

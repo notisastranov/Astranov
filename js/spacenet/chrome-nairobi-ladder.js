@@ -1,11 +1,17 @@
 /**
- * Nairobi / Africa / Kenya zoom ladder — Build 20260823001000-nairobi-ladder
+ * Nairobi / Africa / Kenya zoom ladder — Build 20260823003000-nairobi-rungs
  *
- * Guest types "nairobi" or "africa" (or pinches the live globe over Kenya)
- * → honest three-step zoom, never a teleport to a wrong continent:
- *   NATIONAL  frame Kenya / East Africa at country-scale z=2.05, Nairobi in view
- *   CITY      ease into Nairobi metro (never Lagos, never Rhodes, never a false country)
- *   STREETS   ease to city/street altitude over Nairobi ≈ lat -1.286, lon 36.817
+ * Guest types "nairobi" / "africa" / "kenya" (or pinches the live globe over Kenya)
+ * → honest three sequential rungs, never a teleport to a wrong continent:
+ *   NATIONAL  frame Kenya / East Africa with the continent still in frame
+ *             CLI `Nairobi · national`  currentTier()==="national"
+ *   CITY      ease down to the Nairobi metro (never Lagos, never Rhodes)
+ *             CLI `Nairobi · city`      currentTier()==="city"
+ *   STREETS   Leaflet (or equivalent) street basemap at look-at ≈ -1.286, 36.817
+ *             CLI `Nairobi · streets`   currentTier()==="streets"
+ *
+ * Each rung changes altitude/frame AND updates currentTier() + the CLI line
+ * before the next rung begins. Wait for fly settle (probe-signs style) on each.
  *
  * Reuses the #127 honest fly helper:
  *   Prefer SNGlobe.flyGlobeTo when #127 already defined it.
@@ -21,20 +27,25 @@
  *       success |lat-target|<0.15 AND unwrap|lng-target|<0.15
  *       else tilt.x += sLat*dLat*PI/180*gain; spin.y += sLng*dLng*PI/180*gain
  *   (5) never x += -dLat blindly; never both parents on both axes
- *   (6) fail: "Fly failed - viewLatLng still LAT, LNG" (minus kept) + sLat/sLng + parents
+ *   (6) fail: "Fly failed" honestly + "Fly failed - viewLatLng still LAT, LNG"
+ *       (minus kept) + sLat/sLng + parents
  *       leave pins empty — do not snap to a fake origin
+ *       do not skip ahead to Leaflet on the wrong city
  *
- * Never goToPlace / flyNear / openMap / Rhodes / Kalithea for this path.
+ * Never goToPlace / flyNear / Rhodes / Kalithea / Lagos for this path.
  */
 (function (G) {
   'use strict';
-  if (G.__snNairobiLadder23001000) return;
-  G.__snNairobiLadder23001000 = 1;
+  if (G.__snNairobiLadder23003000) return;
+  G.__snNairobiLadder23003000 = 1;
 
-  var BUILD = '20260823001000-nairobi-ladder';
+  var BUILD = '20260823003000-nairobi-rungs';
   var NAIROBI = { lat: -1.286, lng: 36.817, name: 'Nairobi' };
   var SETTLE_DEG = 0.15;
-  var Z = { national: 2.05, city: 1.16, street: 1.08 };
+  // Distinct snap altitudes so each rung actually changes the frame.
+  // national is high enough that Kenya / East Africa still shows the continent.
+  var Z = { national: 3.2, city: 1.52, street: 1.16 };
+  var STREET_ZOOM = 16;
   // Kenya bbox — pinch-in here starts the ladder. Nairobi stays inside.
   var KENYA = { latMin: -4.7, latMax: 4.6, lngMin: 33.9, lngMax: 41.9 };
   // East Africa envelope used to detect a wrong-continent yank.
@@ -43,8 +54,14 @@
   var lastProbe = { sLat: 0, sLng: 0 };
   var lastFly = null;
   var laddering = false;
+  var streetsOpening = false;
   var pinchCoolUntil = 0;
   var emptyPins = [];
+  var ladderTier = null;
+  var origCurrentTier = null;
+  var globeTierWrap = null;
+  var cliWrap = null;
+  var origMapOpen = null;
 
   function sleep(ms) {
     return new Promise(function (resolve) {
@@ -52,21 +69,27 @@
     });
   }
 
+  /**
+   * Write the exact CLI string (middle dots kept). SNCli.userFace strips " · "
+   * to ". ", so the authoritative line is the direct #cli-log row.
+   */
   function log(m, c) {
     var s = String(m == null ? '' : m).slice(0, 420);
     try {
-      if (G.SNCli && typeof SNCli.log === 'function') SNCli.log(s, c || 'ok', true);
+      var el = document.getElementById('cli-log');
+      if (el) {
+        el.style.setProperty('display', 'block', 'important');
+        var row = document.createElement('div');
+        row.className = 'sn-cli-line cli-feed-item is-latest sn-' + (c || 'ok');
+        row.setAttribute('data-sn-nairobi', '1');
+        if (c) row.setAttribute('data-sn-nairobi-cls', c);
+        row.textContent = s;
+        el.appendChild(row);
+        el.scrollTop = el.scrollHeight;
+      }
     } catch (_) {}
     try {
-      var el = document.getElementById('cli-log');
-      if (!el) return;
-      el.style.setProperty('display', 'block', 'important');
-      var row = document.createElement('div');
-      row.className = 'sn-cli-line sn-' + (c || 'ok');
-      row.setAttribute('data-sn-nairobi', '1');
-      row.textContent = s;
-      el.appendChild(row);
-      el.scrollTop = el.scrollHeight;
+      if (G.SNCli && typeof SNCli.log === 'function') SNCli.log(s, c || 'ok', true);
     } catch (_) {}
   }
 
@@ -190,11 +213,16 @@
       if (map) {
         map.classList.remove('active');
         map.setAttribute('aria-hidden', 'true');
+        map.style.opacity = '0';
+        map.style.pointerEvents = 'none';
       }
     } catch (_) {}
     try {
       var globe = document.getElementById('globe');
       if (globe) globe.classList.remove('city-hidden');
+    } catch (_) {}
+    try {
+      document.body.classList.remove('city-map-on');
     } catch (_) {}
   }
 
@@ -563,6 +591,59 @@
     });
   }
 
+  function currentTier() {
+    if (ladderTier) return ladderTier;
+    try {
+      if (origCurrentTier) return origCurrentTier();
+    } catch (_) {}
+    try {
+      var z = cameraZ();
+      if (z >= 4.0) return 'global';
+      if (z >= 2.35) return 'national';
+      if (z >= 1.7) return 'regional';
+      return 'city';
+    } catch (_) {}
+    return 'national';
+  }
+
+  function setRung(tier) {
+    ladderTier = tier;
+    try {
+      document.body.setAttribute('data-sn-nairobi-tier', tier);
+    } catch (_) {}
+    try {
+      G._snNairobiTier = tier;
+    } catch (_) {}
+    try {
+      if (G.SNGlobe) {
+        try {
+          SNGlobe.tier = tier;
+        } catch (_) {}
+        try {
+          SNGlobe.diveTier = tier;
+        } catch (_) {}
+      }
+    } catch (_) {}
+    patchCurrentTier();
+  }
+
+  function patchCurrentTier() {
+    try {
+      if (!G.SNGlobe) return;
+      if (typeof SNGlobe.currentTier === 'function' && SNGlobe.currentTier !== globeTierWrap && !origCurrentTier) {
+        origCurrentTier = SNGlobe.currentTier.bind(SNGlobe);
+      }
+      if (SNGlobe.currentTier === globeTierWrap) return;
+      if (typeof SNGlobe.currentTier === 'function' && SNGlobe.currentTier !== globeTierWrap) {
+        origCurrentTier = SNGlobe.currentTier.bind(SNGlobe);
+      }
+      globeTierWrap = function () {
+        return currentTier();
+      };
+      SNGlobe.currentTier = globeTierWrap;
+    } catch (_) {}
+  }
+
   function flyFailDiag() {
     callZeroInertia();
     try {
@@ -605,9 +686,11 @@
   function failLadder() {
     leavePinsEmpty();
     lastFly = null;
+    streetsOpening = false;
+    stayGlobe();
+    log('Fly failed', 'err');
     log(flyFailDiag(), 'dim');
     preview('Fly failed');
-    stayGlobe();
   }
 
   function stillHonest() {
@@ -618,12 +701,219 @@
     return true;
   }
 
+  async function waitSettled(lat, lng, tol, ms) {
+    var t0 = Date.now();
+    var limit = typeof ms === 'number' && ms > 0 ? ms : 1400;
+    while (Date.now() - t0 < limit) {
+      if (viewNear(lat, lng, tol) && stillHonest()) return true;
+      await sleep(70);
+    }
+    return viewNear(lat, lng, tol);
+  }
+
+  function loadCssOnce(href, mark) {
+    try {
+      if (document.querySelector('link[' + mark + ']')) return;
+      var l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = href;
+      l.setAttribute(mark, '1');
+      document.head.appendChild(l);
+    } catch (_) {}
+  }
+
+  function loadScriptOnce(src, mark) {
+    return new Promise(function (resolve, reject) {
+      try {
+        if (typeof L !== 'undefined') {
+          resolve();
+          return;
+        }
+        var existing = document.querySelector('script[' + mark + ']');
+        if (existing) {
+          existing.addEventListener('load', function () {
+            resolve();
+          });
+          existing.addEventListener('error', function () {
+            reject(new Error('leaflet'));
+          });
+          if (typeof L !== 'undefined') resolve();
+          return;
+        }
+        var s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.setAttribute(mark, '1');
+        s.onload = function () {
+          resolve();
+        };
+        s.onerror = function () {
+          reject(new Error('leaflet'));
+        };
+        document.head.appendChild(s);
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  function mapCenterLooksNairobi(map) {
+    try {
+      if (!map || typeof map.getCenter !== 'function') return false;
+      var c = map.getCenter();
+      if (!c) return false;
+      if (isFakeOrigin(c.lat, c.lng)) return false;
+      return isNairobiCoord(c.lat, c.lng);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function openLeafletFallback(lat, lng) {
+    loadCssOnce('https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', 'data-sn-nairobi-leaflet-css');
+    await loadScriptOnce('https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', 'data-sn-nairobi-leaflet-js');
+    if (typeof L === 'undefined') throw new Error('leaflet missing');
+    var el = document.getElementById('city-map');
+    if (!el) throw new Error('city-map missing');
+    try {
+      if (el._leaflet_id && !G._snNairobiLeaflet) {
+        try {
+          el._leaflet_id = null;
+          el.innerHTML = '';
+        } catch (_) {}
+      }
+    } catch (_) {}
+    el.classList.add('active');
+    el.setAttribute('aria-hidden', 'false');
+    el.style.cssText =
+      'position:fixed;inset:0;z-index:80;opacity:1;pointer-events:auto;background:#000;';
+    try {
+      var globe = document.getElementById('globe');
+      if (globe) globe.classList.add('city-hidden');
+    } catch (_) {}
+    try {
+      document.body.classList.add('city-map-on');
+    } catch (_) {}
+    var map = G._snNairobiLeaflet;
+    if (!map) {
+      map = L.map(el, {
+        zoomControl: false,
+        attributionControl: true,
+        minZoom: 3,
+        maxZoom: 20,
+      }).setView([lat, lng], STREET_ZOOM);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 20,
+        maxNativeZoom: 19,
+        subdomains: 'abcd',
+        attribution: '© OSM · CARTO',
+      }).addTo(map);
+      G._snNairobiLeaflet = map;
+    } else {
+      map.setView([lat, lng], STREET_ZOOM, { animate: false });
+    }
+    try {
+      map.invalidateSize();
+    } catch (_) {}
+    return map;
+  }
+
+  async function openNairobiStreets() {
+    var live = liveViewLatLng();
+    if (!live || isFakeOrigin(live.lat, live.lng) || !inEastAfrica(live.lat, live.lng)) {
+      return false;
+    }
+    if (!isNairobiCoord(live.lat, live.lng) && !inKenya(live.lat, live.lng)) {
+      return false;
+    }
+    try {
+      G._snLastPos = { lat: NAIROBI.lat, lng: NAIROBI.lng, t: Date.now(), source: 'nairobi-ladder' };
+      G._snGlobeFocus = { lat: NAIROBI.lat, lng: NAIROBI.lng, label: 'Nairobi', t: Date.now() };
+    } catch (_) {}
+
+    streetsOpening = true;
+    var opened = false;
+    try {
+      var opener = origMapOpen;
+      if (!opener && G.SNMap && typeof SNMap.open === 'function' && SNMap.open !== mapOpenWrap) {
+        opener = SNMap.open.bind(SNMap);
+      }
+      if (opener) {
+        await opener(NAIROBI.lat, NAIROBI.lng, { force: true, zoom: STREET_ZOOM });
+        opened = true;
+      }
+    } catch (_) {
+      opened = false;
+    }
+
+    var map = null;
+    try {
+      if (G.SNMap && typeof SNMap.getMap === 'function') map = SNMap.getMap();
+      else if (G.SNMap) map = SNMap.map;
+    } catch (_) {}
+
+    if (!opened || !map || !mapCenterLooksNairobi(map)) {
+      try {
+        map = await openLeafletFallback(NAIROBI.lat, NAIROBI.lng);
+      } catch (_) {
+        streetsOpening = false;
+        return false;
+      }
+    }
+
+    try {
+      if (map && typeof map.setView === 'function') {
+        map.setView([NAIROBI.lat, NAIROBI.lng], STREET_ZOOM, { animate: false });
+        try {
+          map.invalidateSize();
+        } catch (_) {}
+      }
+    } catch (_) {}
+
+    streetsOpening = false;
+
+    if (!map || !mapCenterLooksNairobi(map)) {
+      stayGlobe();
+      return false;
+    }
+    return true;
+  }
+
+  var mapOpenWrap = null;
+
+  async function flyRung(tier, toZ, settleTol) {
+    var line = 'Nairobi · ' + tier;
+    setRung(tier);
+    log(line, 'ok');
+    preview(line);
+
+    var fly = getFly();
+    var ok = false;
+    try {
+      ok = await fly(NAIROBI.lat, NAIROBI.lng, 'Nairobi');
+    } catch (_) {
+      ok = false;
+    }
+    await easeZ(toZ, 780);
+    await sleep(160);
+    var settled = await waitSettled(NAIROBI.lat, NAIROBI.lng, settleTol, 1200);
+    if (!ok && !settled && !viewNear(NAIROBI.lat, NAIROBI.lng, settleTol)) {
+      return false;
+    }
+    if (!stillHonest()) return false;
+    var live = liveViewLatLng();
+    if (!live || isFakeOrigin(live.lat, live.lng)) return false;
+    if (tier !== 'national' && !inKenya(live.lat, live.lng)) return false;
+    return true;
+  }
+
   async function runLadder(reason) {
     if (laddering) return true;
     laddering = true;
     leavePinsEmpty();
     stayGlobe();
     attachFlyHelper();
+    patchCurrentTier();
     try {
       var a = document.getElementById('cli-in');
       if (a) a.value = '';
@@ -631,77 +921,53 @@
       if (b) b.value = '';
     } catch (_) {}
 
-    log(String(reason || 'nairobi').slice(0, 80), 'cmd');
+    try {
+      var ready = await waitGlobeReady(2800);
+      if (!ready) {
+        failLadder();
+        return true;
+      }
 
-    var ready = await waitGlobeReady(2200);
-    if (!ready) {
-      failLadder();
-      laddering = false;
-      return true;
-    }
+      // (1) NATIONAL — Kenya / East Africa, continent still in frame
+      if (!(await flyRung('national', Z.national, 1.2))) {
+        failLadder();
+        return true;
+      }
 
-    var fly = getFly();
-    var ok;
+      // (2) CITY — Nairobi metro
+      if (!(await flyRung('city', Z.city, 0.4))) {
+        failLadder();
+        return true;
+      }
 
-    // (1) NATIONAL — Kenya / East Africa, Nairobi in view
-    log('Kenya · national', 'ok');
-    preview('Kenya · national');
-    ok = await fly(NAIROBI.lat, NAIROBI.lng, 'Nairobi');
-    await easeZ(Z.national, 780);
-    await sleep(180);
-    if (!ok && !viewNear(NAIROBI.lat, NAIROBI.lng, 1.2)) {
-      failLadder();
-      laddering = false;
-      return true;
-    }
-    if (!stillHonest()) {
-      failLadder();
-      laddering = false;
-      return true;
-    }
+      // (3) STREETS — street altitude, then Leaflet at exact Nairobi
+      if (!(await flyRung('streets', Z.street, SETTLE_DEG))) {
+        failLadder();
+        return true;
+      }
 
-    // (2) CITY — Nairobi metro
-    log('Nairobi · city', 'ok');
-    preview('Nairobi · city');
-    ok = await fly(NAIROBI.lat, NAIROBI.lng, 'Nairobi');
-    await easeZ(Z.city, 720);
-    await sleep(160);
-    if (!ok && !viewNear(NAIROBI.lat, NAIROBI.lng, 0.4)) {
-      failLadder();
-      laddering = false;
-      return true;
-    }
-    var cityLive = liveViewLatLng();
-    if (!cityLive || !stillHonest() || !inKenya(cityLive.lat, cityLive.lng)) {
-      failLadder();
-      laddering = false;
-      return true;
-    }
+      var live = liveViewLatLng();
+      if (!live || !stillHonest() || isFakeOrigin(live.lat, live.lng) || !inKenya(live.lat, live.lng)) {
+        failLadder();
+        return true;
+      }
 
-    // (3) STREETS — city/street altitude over Nairobi
-    log('Nairobi · streets', 'ok');
-    preview('Nairobi · streets');
-    ok = await fly(NAIROBI.lat, NAIROBI.lng, 'Nairobi');
-    await easeZ(Z.street, 640);
-    await sleep(80);
+      var streetsOk = await openNairobiStreets();
+      if (!streetsOk) {
+        failLadder();
+        return true;
+      }
 
-    var live = liveViewLatLng();
-    if (!ok && !viewNear(NAIROBI.lat, NAIROBI.lng, SETTLE_DEG)) {
-      failLadder();
-      laddering = false;
+      lastFly = { lat: NAIROBI.lat, lng: NAIROBI.lng, ts: Date.now(), label: 'Nairobi' };
+      leavePinsEmpty();
+      setRung('streets');
       return true;
-    }
-    if (!live || !stillHonest() || isFakeOrigin(live.lat, live.lng)) {
+    } catch (_) {
       failLadder();
-      laddering = false;
       return true;
+    } finally {
+      laddering = false;
     }
-
-    lastFly = { lat: NAIROBI.lat, lng: NAIROBI.lng, ts: Date.now(), label: 'Nairobi' };
-    leavePinsEmpty();
-    stayGlobe();
-    laddering = false;
-    return true;
   }
 
   function isNairobiAfricaLine(raw) {
@@ -726,10 +992,9 @@
   function patchCliRun() {
     try {
       if (!G.SNCli || typeof SNCli.run !== 'function') return;
-      if (SNCli.__snNairobiLadderRun) return;
-      SNCli.__snNairobiLadderRun = 1;
+      if (SNCli.run === cliWrap) return;
       var prev = SNCli.run.bind(SNCli);
-      SNCli.run = function (raw) {
+      cliWrap = function (raw) {
         try {
           if (isNairobiAfricaLine(raw)) {
             void runLadder(raw);
@@ -738,6 +1003,7 @@
         } catch (_) {}
         return prev(raw);
       };
+      SNCli.run = cliWrap;
     } catch (_) {}
   }
 
@@ -876,7 +1142,6 @@
       canvas.addEventListener(
         'wheel',
         function (ev) {
-          // dy < 0 typically zoom-in; globe zoomByDelta(positive) zooms out
           var inward = ev.deltaY < 0;
           if (!inward) return;
           maybeLadder(ev, true);
@@ -893,7 +1158,7 @@
       attachFlyHelper();
 
       function hijack(lat, lng) {
-        if (laddering) return true;
+        if (laddering || streetsOpening) return true;
         if (isNairobiCoord(lat, lng) || inKenya(lat, lng)) {
           void runLadder('nairobi');
           return true;
@@ -933,26 +1198,26 @@
 
   function patchMapOpen() {
     try {
-      if (!G.SNMap || typeof SNMap.open !== 'function' || SNMap.__snNairobiLadder) return;
-      SNMap.__snNairobiLadder = 1;
-      var prev = SNMap.open.bind(SNMap);
-      SNMap.open = function (lat, lng, opts) {
+      if (!G.SNMap || typeof SNMap.open !== 'function') return;
+      if (SNMap.open === mapOpenWrap) return;
+      origMapOpen = SNMap.open.bind(SNMap);
+      mapOpenWrap = function (lat, lng, opts) {
+        if (streetsOpening) {
+          return origMapOpen(lat, lng, opts);
+        }
         if (laddering) {
           stayGlobe();
           return Promise.resolve(null);
         }
-        if (isNairobiCoord(lat, lng) || inKenya(lat, lng)) {
-          stayGlobe();
-          if (!laddering) void runLadder('nairobi');
-          return Promise.resolve(null);
-        }
-        return prev(lat, lng, opts);
+        return origMapOpen(lat, lng, opts);
       };
+      SNMap.open = mapOpenWrap;
     } catch (_) {}
   }
 
   function tick() {
     attachFlyHelper();
+    patchCurrentTier();
     patchCliRun();
     bindInputs();
     bindPinch();
@@ -966,7 +1231,7 @@
     setTimeout(tick, 400);
     setTimeout(tick, 1200);
     setTimeout(tick, 2800);
-    setInterval(tick, 5000);
+    setInterval(tick, 4000);
   }
 
   G.SNNairobiLadder = {
@@ -974,6 +1239,7 @@
     fly: runLadder,
     flyGlobeTo: flyGlobeToLocal,
     nairobi: NAIROBI,
+    currentTier: currentTier,
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
