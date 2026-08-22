@@ -1,10 +1,12 @@
-/* Astranov mute · Build 20260811223000
- * Kill alert beeps, oscillator spam, auto speechSynthesis noise.
- * SpeechRecognition on Android often triggers keyboard/system beeps — we soft-gate restarts.
+/* Astranov mute · Build 20260823005000-kalithea
+ * Kill beeps + load chrome-kalithea-village (real Rhodes village object).
+ * Does NOT load chrome-guest-pizza-hunt (#127), chrome-call-arc (#129),
+ * or chrome-nairobi-ladder (#130). Does NOT overwrite SNGlobe.flyGlobeTo
+ * when #127 already defined it.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260811223000-mute';
+  var BUILD = '20260823005000-kalithea';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -29,7 +31,7 @@
                 try {
                   osc.frequency.value = 0;
                 } catch (_) {}
-                return; // swallow beep
+                return;
               }
               return start.apply(osc, arguments);
             };
@@ -49,14 +51,10 @@
     } catch (_) {}
   }
 
-  /** Soft-gate aggressive handsfree restarts that beep on Android */
   function softGateHandsfree() {
     try {
       if (!global.SNCli || SNCli.__snBeepGate) return;
       SNCli.__snBeepGate = true;
-      // Prefer text when silver is active unless user forced voice
-      var desc = Object.getOwnPropertyDescriptor(SNCli, 'toggleHandsfree');
-      // wrap if function exists
       if (typeof SNCli.toggleHandsfree === 'function') {
         var prev = SNCli.toggleHandsfree.bind(SNCli);
         SNCli.toggleHandsfree = function () {
@@ -67,15 +65,35 @@
     } catch (_) {}
   }
 
+  function loadScript(src, mark) {
+    try {
+      if (document.querySelector('script[' + mark + ']')) return;
+      var s = document.createElement('script');
+      s.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(BUILD);
+      s.async = false;
+      s.setAttribute(mark, '1');
+      (document.head || document.documentElement).appendChild(s);
+    } catch (_) {}
+  }
+
+  function loadChain() {
+    loadScript('/js/spacenet/chrome-kalithea-village.js', 'data-sn-kalithea-village');
+  }
+
   function boot() {
     patchAudio();
     silenceSpeech();
     patchFieldAlerts();
     softGateHandsfree();
+    loadChain();
   }
 
   boot();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  setTimeout(loadChain, 0);
+  setTimeout(loadChain, 500);
+  setTimeout(loadChain, 800);
+  setTimeout(loadChain, 2500);
   setInterval(function () {
     patchAudio();
     patchFieldAlerts();
@@ -87,5 +105,5 @@
       silenceSpeech();
   }, 4000);
 
-  global.SNChromeMute = { build: BUILD, silence: silenceSpeech };
+  global.SNChromeMute = { build: BUILD, silence: silenceSpeech, loadChain: loadChain };
 })(typeof window !== 'undefined' ? window : globalThis);
