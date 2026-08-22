@@ -1,10 +1,10 @@
-/* Astranov mute · Build 20260822070000
- * Kill beeps + load P0 restore: chrome-cli-answer (twin CLI + actual answers).
- * Does NOT load guest-pass oneCli hide. Currency ⭐ path via answer module.
+/* Astranov mute · Build 20260822071500
+ * Kill beeps + load chrome-cli-answer (paint twin CLIs + visible log + no orbit yank).
+ * Does NOT load guest-pass oneCli. ⭐ path via answer module.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260822070000-mute-twin-answer';
+  var BUILD = '20260822071500-mute-paint-twin';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -75,7 +75,6 @@
   }
 
   function loadChain() {
-    // P0 only: answer + twin lock. No oneCli hide from guest-pass.
     loadScript('/js/spacenet/chrome-cli-answer.js', 'data-sn-cli-answer');
   }
 
