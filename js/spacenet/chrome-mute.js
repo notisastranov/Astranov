@@ -1,4 +1,4 @@
-/* Astranov mute · Build 20260822183000-real-fly
+/* Astranov mute · Build 20260822210000-rhodes-settle
  * Kill beeps + load:
  *   - chrome-cli-answer (twin CLI + cli-log paint + answers)  ← #126 keep
  *   - chrome-guest-pizza-hunt (vendors bbox pins · Google only at pay)
@@ -6,7 +6,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260822183000-real-fly';
+  var BUILD = '20260822210000-rhodes-settle';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
