@@ -1,6 +1,6 @@
 /**
- * Guest pizza hunt — Build 20260822120000-no-fake-you
- * PATCH #127 only · keep PASS · fix FAIL leftovers from 20260822110000-origin-tap.
+ * Guest pizza hunt — Build 20260822151200-fly-pulse
+ * PATCH #127 only · keep PASS · edit-in-place on full restored c8ac1c46 module.
  *
  * PASS (do not regress):
  *   pizza over South America → Origin · camera · -32.946, -61.777
@@ -30,7 +30,7 @@
 (function (G) {
   'use strict';
   G.__snGuestPizzaHunt0822 = 1;
-  var BUILD = '20260822120000-no-fake-you';
+  var BUILD = '20260822151200-fly-pulse';
   var hunting = false;
   var huntSession = false;
   var lastPins = [];
@@ -202,6 +202,28 @@
       return { lat: lastFly.lat, lng: lastFly.lng };
     }
     return null;
+  }
+
+  /** Soft: pulse exists ⇒ treat ready. Never happy-path list-only when SNGlobe is on page. */
+  function isGlobeReady() {
+    try {
+      if (G.SNGlobe && typeof SNGlobe.pulse === 'function') return true;
+      if (G.SNGlobe && G.SNGlobe.ready === true) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  async function waitGlobeReady(ms) {
+    var t0 = Date.now();
+    var limit = typeof ms === 'number' && ms > 0 ? ms : 2400;
+    try {
+      if (G.SNGlobe && typeof SNGlobe.init === 'function') SNGlobe.init();
+    } catch (_) {}
+    while (Date.now() - t0 < limit) {
+      if (isGlobeReady()) return true;
+      await sleep(90);
+    }
+    return isGlobeReady();
   }
 
   /**
@@ -540,7 +562,8 @@
     clearPizzaPins();
     if (!rows || !rows.length) return 0;
     var painted = 0;
-    var ready = !!(G.SNGlobe && G.SNGlobe.ready && typeof SNGlobe.pulse === 'function');
+    // Soft ready: pulse exists ⇒ ready (no hard .ready gate that killed pins)
+    var ready = isGlobeReady();
     var cam = cameraLook() || origin;
 
     rows.slice(0, 24).forEach(function (v, i) {
@@ -550,8 +573,7 @@
       if (!isFinite(lat) || !isFinite(lng)) return;
       var kmOrigin = origin ? haversineKm(origin, { lat: lat, lng: lng }) : null;
       if (kmOrigin != null && kmOrigin > 18) return;
-      var kmCam = cam ? haversineKm(cam, { lat: lat, lng: lng }) : kmOrigin;
-      if (kmCam != null && kmCam > 80) return;
+      // Dropped kmCam > 80 filter — it killed Rhodes pins while camera settled from SA
       var label = String(v.name || 'shop').slice(0, 28);
       var color = i === 0 ? 0xff9f43 : 0x5ad4ff;
       lastPins.push({
@@ -871,12 +893,22 @@
       return true;
     }
 
+    // Wait for globe ready so pulses land (soft)
+    await waitGlobeReady(1800);
     var nPainted = paintPins(use, origin);
     listInCli(use, origin);
     if (nPainted > 0) {
       log('Pins on globe · ' + nPainted + ' shops · tap a pin', 'ok');
     } else {
-      log('Globe pulse unavailable · list only (SNGlobe not ready)', 'dim');
+      // One more try after short settle
+      await sleep(400);
+      await waitGlobeReady(1200);
+      nPainted = paintPins(use, origin);
+      if (nPainted > 0) {
+        log('Pins on globe · ' + nPainted + ' shops · tap a pin', 'ok');
+      } else {
+        log('Globe pulse unavailable · list only (SNGlobe not ready)', 'dim');
+      }
     }
 
     faceClusterIfNeeded(use, origin);
@@ -927,10 +959,17 @@
 
     log(String(raw || 'show rhodes').slice(0, 80), 'cmd');
     preferCameraUntil = Date.now() + 180000;
+
+    // Stronger fly: wait ready, multi-fly, exact log
+    await waitGlobeReady(2200);
     flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
-    log('Rhodes · globe camera · ' + RHODES.lat.toFixed(2) + ', ' + RHODES.lng.toFixed(2), 'ok');
-    preview('Rhodes · globe');
     await sleep(280);
+    flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
+    log('Rhodes. globe camera. 36.44, 28.22', 'ok');
+    preview('Rhodes · globe');
+    await sleep(320);
+    flyGlobeTo(RHODES.lat, RHODES.lng, 'Rhodes');
+
     try {
       await huntAt({ lat: RHODES.lat, lng: RHODES.lng, source: 'camera' }, null);
     } finally {
