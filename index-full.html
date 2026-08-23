@@ -1,1 +1,40 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="en" class="skin-spacex theme-dark" data-theme-mode="auto">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Astranov SpaceNet Operating System</title>
+<meta name="theme-color" content="#000105" id="meta-theme-color" />
+<meta name="astranov-build" content="20260823195000-ai-listen-dock" />
+<meta name="astranov-continuity" content="20260823195000-ai-listen-dock" />
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta name="description" content="Astranov SpaceNet — delivery on the globe. Power on · locate · marina · polygons · pay." />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="icon" href="/icon.png" type="image/png" />
+<link rel="stylesheet" href="/css/spacenet.css" />
+</head>
+<body>
+<div id="globe-root"></div>
+<div id="sn-topchrome">
+  <div id="sn-topchrome-drag" class="sn-drag-handle" title="Drag"></div>
+  <div id="sn-brand">ASTRANOV</div>
+  <button type="button" id="sn-power-btn" class="sn-power" title="Power">⏻</button>
+</div>
+<div id="panel">
+  <div id="cli-drag" class="sn-drag-handle" title="Drag"></div>
+  <div id="sn-task-ribbon" aria-label="Quick actions"></div>
+  <div id="cli-log" class="cli-feed" aria-live="polite"></div>
+  <form id="cli-form" autocomplete="off">
+    <input id="cli-in" type="text" enterkeyhint="go" placeholder="Command the HUD · show, hide, or reshape" />
+    <button type="submit" id="btn-send" title="Send">↵</button>
+    <button type="button" class="sn-rib-btn" data-act="handsfree" id="sn-rib-hf">🎤 AI</button>
+  </form>
+</div>
+<script src="/js/spacenet/chrome-mute.js?v=20260823195000-ai-listen-dock"></script>
+<script src="/js/spacenet/chrome-fix.js?v=20260823195000-ai-listen-dock"></script>
+<script src="/js/spacenet/chrome-radar.js?v=20260823195000-ai-listen-dock"></script>
+<script src="/js/spacenet/os-bootloader.js?v=20260823195000-ai-listen-dock"></script>
+<script src="/js/spacenet/guardian.js?v=20260823195000-ai-listen-dock"></script>
+</body>
+</html>
