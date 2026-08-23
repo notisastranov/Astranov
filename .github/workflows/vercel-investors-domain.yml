@@ -61,7 +61,9 @@ jobs:
           print('using', hit.get('name'), pid, 'team', team)
           qs = ('?teamId=' + team) if team else ''
           st, d = api('POST', f'https://api.vercel.com/v10/projects/{pid}/domains' + qs, {'name': 'investors.astranov.eu'})
-          print('add domain', st, d)
+          print('add investors', st, d)
+          st, d = api('POST', f'https://api.vercel.com/v10/projects/{pid}/domains' + qs, {'name': 'exchange.astranov.eu'})
+          print('add exchange', st, d)
           st, listed = api('GET', f'https://api.vercel.com/v9/projects/{pid}/domains' + qs)
           names = [x.get('name') for x in (listed.get('domains') or [])]
           print('domains', names)
