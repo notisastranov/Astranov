@@ -151,11 +151,10 @@ def main():
             st, j = http("POST", f"https://api.cloudflare.com/client/v4/zones/{zid}/dns_records", payload, ch)
         print("dns", name, "->", content, "proxied", proxied, st, j.get("success"), j.get("errors"))
 
-    # Orange-cloud so Cloudflare Universal SSL covers *.astranov.eu.
-    # Grey CNAME to vercel-dns with no Vercel domain = dead TLS (handshake abort).
-    # Worker fetches https://astranov.eu/investors|exchange so origin Host is the live apex.
-    upsert_cname("exchange", "www.astranov.eu", True)
-    upsert_cname("investors", "www.astranov.eu", True)
+    # investors.astranov.eu is GitHub Pages (grey → notisastranov.github.io) so it can have its own TLS.
+    # Do not orange it — that 525s. exchange still tries Pages-less Vercel until a host exists.
+    upsert_cname("exchange", "cname.vercel-dns.com", False)
+    upsert_cname("investors", "notisastranov.github.io", False)
 
     # 1) Zone-level worker (legacy, zone permission)
     st, j = http(
