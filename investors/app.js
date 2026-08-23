@@ -143,11 +143,17 @@
     }
   };
 
+  function absMedia(u) {
+    if (!u) return 'https://astranov.eu/icon.png';
+    if (/^https?:/i.test(u)) return u;
+    return 'https://astranov.eu' + (u.charAt(0) === '/' ? u : '/' + u);
+  }
+
   function imgsOf(id) {
     var m = META[id] || {};
     var folder = m.folder || id;
     return (m.images || ['00.jpg']).map(function (f) {
-      return '/media/projects/' + folder + '/' + f;
+      return 'https://astranov.eu/media/projects/' + folder + '/' + f;
     });
   }
 
@@ -302,7 +308,7 @@
       var imgTd = document.createElement('td');
       var img = document.createElement('img');
       img.className = 'thumb';
-      img.src = p.photo || '/icon.png';
+      img.src = absMedia(p.photo || '/icon.png');
       img.alt = p.name;
       imgTd.appendChild(img);
       tr.appendChild(imgTd);
@@ -419,7 +425,7 @@
   }
 
   async function loadDeck() {
-    var seed = await fetch('/investors/budget.json?v=20260823190000-investors').then(function (r) { return r.json(); });
+    var seed = await fetch(new URL('budget.json', location.href)).then(function (r) { return r.json(); });
     deck = seed;
     try {
       var remote = await fetch(SB_URL + '/functions/v1/investor-budget', {
