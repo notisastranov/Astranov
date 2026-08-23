@@ -1,16 +1,17 @@
-/* Astranov mute · Build 20260824011000-place-earth
+/* Astranov mute · Build 20260824014000-place-land
  * PR #174 only. Do not merge. Does not edit #130/#131.
  * Guest / must serve the ASTRANOV globe (public/index.html is Vercel output).
  *
- * Load order: chrome-place-earth (SNGlobe / flyGlobeTo adapter) BEFORE
+ * Load chrome-place-earth FIRST. Wait until window.SNGlobe is the LIVE
+ * globe.js object (pulse + getEarth + viewLatLng + flyGlobeTo) BEFORE
  * chrome-nairobi-ladder.js (37083) and chrome-kalithea-village.js (43964).
- * Those two scripts do not load until SNGlobe.flyGlobeTo exists.
- * No runtime GitHub fetch. Cache-bust 20260824011000-place-earth.
+ * No stub. No getter. No runtime GitHub fetch.
+ * Cache-bust 20260824014000-place-land.
  * pizza/laptop/HOLD/twin/listen/research unchanged.
  */
 (function (global) {
-  'use strict';
-  var BUILD = '20260824011000-place-earth';
+  "use strict";
+  var BUILD = "20260824014000-place-land";
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
   var placesQueued = false;
@@ -56,7 +57,7 @@
     try {
       if (!global.SNCli || SNCli.__snBeepGate) return;
       SNCli.__snBeepGate = true;
-      if (typeof SNCli.toggleHandsfree === 'function') {
+      if (typeof SNCli.toggleHandsfree === "function") {
         var prev = SNCli.toggleHandsfree.bind(SNCli);
         SNCli.toggleHandsfree = function () {
           global.__SN_MUTE_BEEPS = true;
@@ -67,44 +68,50 @@
   }
 
   function hasMark(mark) {
-    try { if (document.querySelector('script[' + mark + ']')) return true; } catch (_) {}
+    try { if (document.querySelector("script[" + mark + "]")) return true; } catch (_) {}
     return false;
   }
 
   function loadScript(src, mark) {
     try {
       if (hasMark(mark)) return;
-      if (document.querySelector('script[src*="' + src.replace(/^\/js\/spacenet\//, '') + '"]')) return;
-      var s = document.createElement('script');
-      s.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(BUILD);
+      if (document.querySelector('script[src*="' + src.replace(/^\/js\/spacenet\//, "") + '"]')) return;
+      var s = document.createElement("script");
+      s.src = src + (src.indexOf("?") >= 0 ? "&" : "?") + "v=" + encodeURIComponent(BUILD);
       s.async = false;
-      s.setAttribute(mark, '1');
+      s.setAttribute(mark, "1");
       (document.head || document.documentElement).appendChild(s);
     } catch (_) {}
   }
 
-  function snGlobeFlyReady() {
+  function isLiveGlobe() {
     try {
-      if (!global.SNGlobe) return false;
-      if (typeof SNGlobe.flyGlobeTo !== 'function') return false;
-      if (typeof SNGlobe.viewLatLng !== 'function') return false;
-      if (SNGlobe.ready === true) return true;
-      if (typeof SNGlobe.getEarth === 'function' && SNGlobe.getEarth()) return true;
+      var g = global.SNGlobe;
+      if (!g || typeof g !== "object") return false;
+      if (g.__snPlaceEarthThin) return false;
+      if (typeof g.flyGlobeTo !== "function") return false;
+      if (typeof g.viewLatLng !== "function") return false;
+      if (typeof g.pulse !== "function") return false;
+      if (typeof g.getEarth !== "function") return false;
+      if (typeof g.getCamera !== "function") return false;
+      if (g.ready === true) return true;
+      if (g.getEarth()) return true;
+      if (g.getCamera()) return true;
     } catch (_) {}
     return false;
   }
 
   function loadPlaceScripts() {
-    loadScript('/js/spacenet/chrome-nairobi-ladder.js', 'data-sn-nairobi-ladder');
-    loadScript('/js/spacenet/chrome-kalithea-village.js', 'data-sn-kalithea-village');
+    loadScript("/js/spacenet/chrome-nairobi-ladder.js", "data-sn-nairobi-ladder");
+    loadScript("/js/spacenet/chrome-kalithea-village.js", "data-sn-kalithea-village");
   }
 
   function waitThenLoadPlaces() {
-    if (hasMark('data-sn-nairobi-ladder') && hasMark('data-sn-kalithea-village')) return;
+    if (hasMark("data-sn-nairobi-ladder") && hasMark("data-sn-kalithea-village")) return;
     try {
-      if (global.SNPlaceEarth && typeof SNPlaceEarth.ensure === 'function') SNPlaceEarth.ensure();
+      if (global.SNPlaceEarth && typeof SNPlaceEarth.ensure === "function") SNPlaceEarth.ensure();
     } catch (_) {}
-    if (snGlobeFlyReady()) {
+    if (isLiveGlobe()) {
       loadPlaceScripts();
       return;
     }
@@ -114,9 +121,13 @@
     function tick() {
       tries++;
       try {
-        if (global.SNPlaceEarth && typeof SNPlaceEarth.ensure === 'function') SNPlaceEarth.ensure();
+        if (global.SNPlaceEarth && typeof SNPlaceEarth.ensure === "function") SNPlaceEarth.ensure();
       } catch (_) {}
-      if (snGlobeFlyReady() || tries > 80) {
+      if (isLiveGlobe()) {
+        loadPlaceScripts();
+        return;
+      }
+      if (tries > 120) {
         loadPlaceScripts();
         return;
       }
@@ -126,15 +137,15 @@
   }
 
   function loadChain() {
-    loadScript('/js/spacenet/chrome-place-earth.js', 'data-sn-place-earth');
-    loadScript('/js/spacenet/chrome-cli-answer.js', 'data-sn-cli-answer');
-    loadScript('/js/spacenet/chrome-guest-laptop-hunt.js', 'data-sn-guest-laptop');
-    loadScript('/js/spacenet/chrome-research-stay.js', 'data-sn-research-stay');
-    loadScript('/js/spacenet/chrome-call-arc.js', 'data-sn-call-arc');
-    loadScript('/js/spacenet/chrome-ai-listen.js', 'data-sn-ai-listen');
+    loadScript("/js/spacenet/chrome-place-earth.js", "data-sn-place-earth");
+    loadScript("/js/spacenet/chrome-cli-answer.js", "data-sn-cli-answer");
+    loadScript("/js/spacenet/chrome-guest-laptop-hunt.js", "data-sn-guest-laptop");
+    loadScript("/js/spacenet/chrome-research-stay.js", "data-sn-research-stay");
+    loadScript("/js/spacenet/chrome-call-arc.js", "data-sn-call-arc");
+    loadScript("/js/spacenet/chrome-ai-listen.js", "data-sn-ai-listen");
     waitThenLoadPlaces();
-    loadScript('/js/spacenet/chrome-guest-pizza-hunt.js', 'data-sn-guest-pizza');
-    loadScript('/js/spacenet/chrome-hold-pay.js', 'data-sn-hold-pay');
+    loadScript("/js/spacenet/chrome-guest-pizza-hunt.js", "data-sn-guest-pizza");
+    loadScript("/js/spacenet/chrome-hold-pay.js", "data-sn-hold-pay");
   }
 
   function boot() {
@@ -146,8 +157,8 @@
   }
 
   boot();
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () {
       boot();
       loadChain();
     });
@@ -168,4 +179,4 @@
   }, 4000);
 
   global.SNChromeMute = { build: BUILD, silence: silenceSpeech, loadChain: loadChain };
-})(typeof window !== 'undefined' ? window : globalThis);
+})(typeof window !== "undefined" ? window : globalThis);

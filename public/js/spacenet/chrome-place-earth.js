@@ -1,28 +1,37 @@
-/* Astranov place-earth · Build 20260824011000-place-earth
- * PR #174 only. Do not merge. Does not edit #130/#131.
+/* Astranov place-land · Build 20260824014000-place-land
+ * PR #174 only. Do not merge. Does not edit #130 / #131.
  *
- * SNGlobe / flyGlobeTo MUST exist before nairobi-rungs and kalithea-geo load.
- * If globe.js has not assigned SNGlobe yet, watch the assignment.
- * If SNGlobe is missing after the live Three.js globe exists, install a thin
- * adapter that drives the same camera as the #127 pizza fly and writes
- * SNGlobe.viewLatLng from the rendered look-at after settle.
+ * window.SNGlobe is the LIVE globe.js object (plain assign, never a stub,
+ * never a getter). viewLatLng is a function returning the rendered camera
+ * look-at {lat,lng}. After nairobi settle ~-1.3, 36.8. After kalithea
+ * ~36.39, 28.22.
  *
- * Earth stays on screen. Streets Leaflet only at the last Nairobi rung and
- * only if look-at is genuinely Nairobi. If Leaflet would hide Earth (the
- * path that made SNGlobe/viewLatLng unverifiable), skip Leaflet entirely.
+ * Cap fly/zoom so Earth stays a PLACE. Last Nairobi rung = city altitude
+ * with readable land (globe texture + optional satellite drape). Kalithea
+ * stays island/village scale, not a sea smear. Leaflet covering the globe
+ * is skipped — Earth stays on screen.
  */
 (function (global) {
-  'use strict';
-  var BUILD = '20260824011000-place-earth';
-  if (global.__snPlaceEarth20260824011000) return;
-  global.__snPlaceEarth20260824011000 = 1;
+  "use strict";
+  var BUILD = "20260824014000-place-land";
+  if (global.__snPlaceLand20260824014000) return;
+  global.__snPlaceLand20260824014000 = 1;
 
   var NAIROBI = { lat: -1.286, lng: 36.817 };
+  var KALITHEA = { lat: 36.387557, lng: 28.222533 };
+  var RHODES = { lat: 36.44, lng: 28.22 };
   var SETTLE_DEG = 0.15;
+  var TILT_MAX = 1.05;
+  var Z_NAIROBI = 1.52;
+  var Z_KALITHEA = 1.68;
+  var Z_FLOOR = 1.48;
   var lastLive = null;
+  var lastFly = null;
   var lastProbe = { sLat: 0, sLng: 0 };
-  var heldGlobe = undefined;
-  var watching = false;
+  var adopted = null;
+  var drapeGroup = null;
+  var drapeLoader = null;
+  var capUntil = 0;
 
   function unwrapDeg(d) {
     d = Number(d);
@@ -42,82 +51,99 @@
     lat = Number(lat);
     lng = Number(lng);
     if (!isFinite(lat) || !isFinite(lng)) return false;
-    return Math.abs(lat - NAIROBI.lat) < 0.35 && Math.abs(unwrapDeg(lng - NAIROBI.lng)) < 0.35;
+    return Math.abs(lat - NAIROBI.lat) < 0.55 && Math.abs(unwrapDeg(lng - NAIROBI.lng)) < 0.55;
+  }
+
+  function isKalitheaCoord(lat, lng) {
+    lat = Number(lat);
+    lng = Number(lng);
+    if (!isFinite(lat) || !isFinite(lng)) return false;
+    if (Math.abs(lat - KALITHEA.lat) < 0.35 && Math.abs(unwrapDeg(lng - KALITHEA.lng)) < 0.35) return true;
+    if (Math.abs(lat - RHODES.lat) < 0.45 && Math.abs(unwrapDeg(lng - RHODES.lng)) < 0.45) return true;
+    return false;
   }
 
   function threeNS() {
     try {
-      if (global.THREE) return global.THREE;
+      return global.THREE || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function liveGlobe() {
+    try {
+      if (adopted && isLiveGlobeApi(adopted)) return adopted;
+    } catch (_) {}
+    try {
+      var g = global.SNGlobe;
+      if (isLiveGlobeApi(g)) return g;
     } catch (_) {}
     return null;
   }
 
-  function globeApi() {
+  function isLiveGlobeApi(g) {
+    if (!g || typeof g !== "object") return false;
+    if (g.__snPlaceEarthThin) return false;
     try {
-      if (heldGlobe) return heldGlobe;
-    } catch (_) {}
-    try {
-      if (global.SNGlobe) return global.SNGlobe;
-    } catch (_) {}
-    return null;
+      if (typeof g.pulse !== "function") return false;
+      if (typeof g.getEarth !== "function") return false;
+      if (typeof g.getCamera !== "function") return false;
+      if (typeof g.goToPlace !== "function") return false;
+      if (typeof g.viewLatLng !== "function" && typeof g.pickLatLng !== "function") return false;
+    } catch (_) {
+      return false;
+    }
+    return true;
   }
 
-  function getEarth(G) {
-    G = G || globeApi();
+  function injectCss() {
+    if (document.getElementById("sn-place-land-css")) return;
     try {
-      if (G && typeof G.getEarth === 'function') {
-        var e = G.getEarth();
-        if (e) return e;
-      }
+      var s = document.createElement("style");
+      s.id = "sn-place-land-css";
+      s.textContent =
+        "html body[data-sn-place-land] #globe," +
+        "html body[data-sn-place-land] #globe.city-hidden{" +
+        "visibility:visible!important;opacity:1!important;pointer-events:auto!important;z-index:1!important;display:block!important;}" +
+        "html body[data-sn-place-land] #globe canvas{display:block!important;visibility:visible!important;opacity:1!important;}" +
+        "html body[data-sn-place-land] #city-map," +
+        "html body[data-sn-place-land] #city-map.active{" +
+        "opacity:0!important;pointer-events:none!important;z-index:0!important;visibility:hidden!important;}";
+      (document.head || document.documentElement).appendChild(s);
     } catch (_) {}
-    return null;
-  }
-
-  function getCamera(G) {
-    G = G || globeApi();
     try {
-      if (G && typeof G.getCamera === 'function') return G.getCamera();
+      if (document.body) document.body.setAttribute("data-sn-place-land", BUILD);
     } catch (_) {}
-    return null;
-  }
-
-  function getRenderer(G) {
-    G = G || globeApi();
-    try {
-      if (G && typeof G.getRenderer === 'function') return G.getRenderer();
-    } catch (_) {}
-    return null;
   }
 
   function keepEarthVisible() {
+    injectCss();
     try {
-      var globe = document.getElementById('globe');
+      var globe = document.getElementById("globe");
       if (globe) {
-        globe.classList.remove('city-hidden');
-        globe.style.visibility = 'visible';
-        globe.style.opacity = '1';
-        globe.style.pointerEvents = 'auto';
+        globe.classList.remove("city-hidden");
+        globe.style.visibility = "visible";
+        globe.style.opacity = "1";
+        globe.style.pointerEvents = "auto";
+        globe.style.zIndex = "1";
       }
     } catch (_) {}
     try {
-      document.body.classList.remove('city-map-on');
+      document.body.classList.remove("city-map-on");
     } catch (_) {}
   }
 
   function hideCoveringTiles() {
     try {
-      var live = readLiveLookAt();
-      var nairobiStreets = !!(live && isNairobiCoord(live.lat, live.lng) && global.__snNairobiStreetsOk);
-      if (nairobiStreets) return;
-    } catch (_) {}
-    try {
-      var map = document.getElementById('city-map');
+      var map = document.getElementById("city-map");
       if (map) {
-        map.classList.remove('active');
-        map.setAttribute('aria-hidden', 'true');
-        map.style.opacity = '0';
-        map.style.pointerEvents = 'none';
-        map.style.zIndex = '0';
+        map.classList.remove("active");
+        map.setAttribute("aria-hidden", "true");
+        map.style.opacity = "0";
+        map.style.pointerEvents = "none";
+        map.style.zIndex = "0";
+        map.style.visibility = "hidden";
       }
     } catch (_) {}
     try {
@@ -130,53 +156,80 @@
     keepEarthVisible();
   }
 
-  function injectCss() {
-    if (document.getElementById('sn-place-earth-css')) return;
+  function watchHide() {
     try {
-      var s = document.createElement('style');
-      s.id = 'sn-place-earth-css';
-      s.textContent =
-        'html body[data-sn-place-earth] #globe,' +
-        'html body[data-sn-place-earth] #globe.city-hidden{' +
-        'visibility:visible!important;opacity:1!important;pointer-events:auto!important;}' +
-        'html body[data-sn-place-earth]:not(.sn-nairobi-streets) #city-map,' +
-        'html body[data-sn-place-earth]:not(.sn-nairobi-streets) #city-map.active{' +
-        'opacity:0!important;pointer-events:none!important;z-index:0!important;visibility:hidden!important;}';
-      (document.head || document.documentElement).appendChild(s);
-    } catch (_) {}
-    try {
-      document.body.setAttribute('data-sn-place-earth', BUILD);
-    } catch (_) {}
-  }
-
-  function watchGlobeHide() {
-    try {
-      var globe = document.getElementById('globe');
-      if (!globe || globe.__snPlaceEarthMo) return;
-      var mo = new MutationObserver(function () {
-        try {
-          if (!globe.classList.contains('city-hidden')) return;
-          var live = readLiveLookAt();
-          if (live && isNairobiCoord(live.lat, live.lng) && global.__snNairobiStreetsOk) {
-            globe.classList.remove('city-hidden');
-            return;
-          }
-          globe.classList.remove('city-hidden');
+      var globe = document.getElementById("globe");
+      if (globe && !globe.__snPlaceLandMo) {
+        var mo = new MutationObserver(function () {
+          keepEarthVisible();
           hideCoveringTiles();
-        } catch (_) {}
-      });
-      mo.observe(globe, { attributes: true, attributeFilter: ['class', 'style'] });
-      globe.__snPlaceEarthMo = mo;
+        });
+        mo.observe(globe, { attributes: true, attributeFilter: ["class", "style"] });
+        globe.__snPlaceLandMo = mo;
+      }
+    } catch (_) {}
+    try {
+      var map = document.getElementById("city-map");
+      if (map && !map.__snPlaceLandMo) {
+        var mo2 = new MutationObserver(function () {
+          hideCoveringTiles();
+        });
+        mo2.observe(map, { attributes: true, attributeFilter: ["class", "style"] });
+        map.__snPlaceLandMo = mo2;
+      }
     } catch (_) {}
   }
 
   function nodeIsSceneOrCam(n) {
     if (!n) return true;
     try {
-      if (n.isScene || n.type === 'Scene') return true;
-      if (n.isCamera || (n.type && String(n.type).indexOf('Camera') >= 0)) return true;
+      if (n.isScene || n.type === "Scene") return true;
+      if (n.isCamera || (n.type && String(n.type).indexOf("Camera") >= 0)) return true;
     } catch (_) {}
     return false;
+  }
+
+  function tiltSpinNodes(g) {
+    var out = { earth: null, spin: null, tilt: null };
+    g = g || liveGlobe();
+    try {
+      var earth = g && typeof g.getEarth === "function" ? g.getEarth() : null;
+      out.earth = earth;
+      if (!earth) return out;
+      var spin = earth.parent;
+      var tilt = spin ? spin.parent : null;
+      if (spin && !nodeIsSceneOrCam(spin)) out.spin = spin;
+      if (tilt && !nodeIsSceneOrCam(tilt)) out.tilt = tilt;
+      if (!out.tilt && g && typeof g.getTilt === "function") out.tilt = g.getTilt();
+      if (!out.spin && g && typeof g.getSpin === "function") out.spin = g.getSpin();
+    } catch (_) {}
+    return out;
+  }
+
+  function paintGlobe(g) {
+    g = g || liveGlobe();
+    try {
+      if (g && typeof g.paint === "function") g.paint();
+    } catch (_) {}
+  }
+
+  function paintTiltSpin(nodes, g) {
+    g = g || liveGlobe();
+    nodes = nodes || tiltSpinNodes(g);
+    try {
+      if (nodes.tilt && nodes.tilt.updateMatrixWorld) nodes.tilt.updateMatrixWorld(true);
+    } catch (_) {}
+    try {
+      if (nodes.spin && nodes.spin.updateMatrixWorld) nodes.spin.updateMatrixWorld(true);
+    } catch (_) {}
+    try {
+      if (nodes.earth && nodes.earth.updateMatrixWorld) nodes.earth.updateMatrixWorld(true);
+    } catch (_) {}
+    try {
+      var cam = g && typeof g.getCamera === "function" ? g.getCamera() : null;
+      if (cam && cam.updateMatrixWorld) cam.updateMatrixWorld(true);
+    } catch (_) {}
+    paintGlobe(g);
   }
 
   function addRot(node, axis, delta) {
@@ -206,86 +259,8 @@
     } catch (_) {}
   }
 
-  function paintGlobe(G) {
-    G = G || globeApi();
-    try {
-      if (G && typeof G.paint === 'function') G.paint();
-    } catch (_) {}
-  }
-
-  function walkEarthChain(G) {
-    var out = { nodes: [], names: [] };
-    try {
-      var n = getEarth(G);
-      var hops = 0;
-      while (n && hops < 14) {
-        out.nodes.push(n);
-        var nm = 'obj';
-        try {
-          if (n.name) nm = String(n.name);
-          else if (n.type) nm = String(n.type);
-          else if (n.isMesh) nm = 'Mesh';
-          else if (n.isScene) nm = 'Scene';
-          else if (n.isCamera) nm = 'Camera';
-          else nm = 'Object3D';
-        } catch (_) {}
-        out.names.push(String(nm).slice(0, 28));
-        try {
-          n = n.parent;
-        } catch (_) {
-          n = null;
-        }
-        hops++;
-      }
-    } catch (_) {}
-    return out;
-  }
-
-  function tiltSpinNodes(G) {
-    var out = { earth: null, spin: null, tilt: null };
-    G = G || globeApi();
-    try {
-      var earth = getEarth(G);
-      out.earth = earth;
-      if (!earth) return out;
-      var spin = earth.parent;
-      var tilt = spin ? spin.parent : null;
-      if (spin && !nodeIsSceneOrCam(spin)) out.spin = spin;
-      if (tilt && !nodeIsSceneOrCam(tilt)) out.tilt = tilt;
-      if (!out.tilt && G && typeof G.getTilt === 'function') out.tilt = G.getTilt();
-      if (!out.spin && G && typeof G.getSpin === 'function') out.spin = G.getSpin();
-    } catch (_) {}
-    return out;
-  }
-
-  function paintTiltSpin(nodes, G) {
-    G = G || globeApi();
-    nodes = nodes || tiltSpinNodes(G);
-    try {
-      if (nodes.tilt && nodes.tilt.updateMatrixWorld) nodes.tilt.updateMatrixWorld(true);
-    } catch (_) {}
-    try {
-      if (nodes.spin && nodes.spin.updateMatrixWorld) nodes.spin.updateMatrixWorld(true);
-    } catch (_) {}
-    try {
-      if (nodes.earth && nodes.earth.updateMatrixWorld) nodes.earth.updateMatrixWorld(true);
-    } catch (_) {}
-    try {
-      var cam = getCamera(G);
-      if (cam && cam.updateMatrixWorld) cam.updateMatrixWorld(true);
-    } catch (_) {}
-    paintGlobe(G);
-  }
-
   function vecToLatLngLocal(v) {
     if (!v) return null;
-    try {
-      var G = globeApi();
-      if (G && typeof G.vecToLatLng === 'function') {
-        var ll = G.vecToLatLng(v);
-        if (ll && isFinite(ll.lat)) return { lat: +ll.lat, lng: +ll.lng };
-      }
-    } catch (_) {}
     try {
       var n = v.clone ? v.clone() : { x: +v.x, y: +v.y, z: +v.z };
       var len = Math.sqrt(n.x * n.x + n.y * n.y + n.z * n.z) || 1;
@@ -303,28 +278,34 @@
     }
   }
 
-  function raycastLookAt(G) {
-    G = G || globeApi();
+  function canvasCenterPick(g) {
+    g = g || liveGlobe();
+    if (!g) return null;
     try {
-      var earth = getEarth(G);
-      var camera = getCamera(G);
-      var renderer = getRenderer(G);
+      if (typeof g.pickLatLng === "function") {
+        var ren = typeof g.getRenderer === "function" ? g.getRenderer() : null;
+        var el = (ren && ren.domElement) || document.querySelector("#globe canvas");
+        if (el && el.getBoundingClientRect) {
+          var r = el.getBoundingClientRect();
+          if (r.width && r.height) {
+            var picked = g.pickLatLng(r.left + r.width * 0.5, r.top + r.height * 0.5);
+            if (picked && isFinite(picked.lat) && isFinite(picked.lng)) {
+              return { lat: +picked.lat, lng: +picked.lng };
+            }
+          }
+        }
+      }
+    } catch (_) {}
+    try {
+      var earth = typeof g.getEarth === "function" ? g.getEarth() : null;
+      var camera = typeof g.getCamera === "function" ? g.getCamera() : null;
       var T = threeNS();
       if (!earth || !camera || !T || !T.Raycaster) return null;
-      var canvas =
-        (renderer && renderer.domElement) ||
-        document.querySelector('#globe canvas') ||
-        document.querySelector('canvas');
-      if (!canvas || !canvas.getBoundingClientRect) return null;
-      var rect = canvas.getBoundingClientRect();
-      if (!rect.width || !rect.height) return null;
-      try {
-        if (earth.updateMatrixWorld) earth.updateMatrixWorld(true);
-        if (camera.updateMatrixWorld) camera.updateMatrixWorld(true);
-      } catch (_) {}
+      if (earth.updateMatrixWorld) earth.updateMatrixWorld(true);
+      if (camera.updateMatrixWorld) camera.updateMatrixWorld(true);
       var ray = new T.Raycaster();
       ray.setFromCamera(new T.Vector2(0, 0), camera);
-      var hits = ray.intersectObject(earth, false);
+      var hits = ray.intersectObject(earth, true);
       if (!hits || !hits.length) return null;
       var local = earth.worldToLocal(hits[0].point.clone());
       return vecToLatLngLocal(local);
@@ -333,99 +314,279 @@
     }
   }
 
-  function readLiveLookAt() {
-    var G = globeApi();
-    var live = raycastLookAt(G);
+  function viewLatLngFromCamera() {
+    var live = canvasCenterPick(liveGlobe());
     if (live && isFinite(live.lat) && isFinite(live.lng)) {
       lastLive = { lat: +live.lat, lng: +live.lng };
       return lastLive;
     }
-    try {
-      if (G && typeof G.viewLatLng === 'function' && !G.__snPlaceEarthView) {
-        var v = G.viewLatLng();
-        if (v && isFinite(v.lat) && isFinite(v.lng)) return { lat: +v.lat, lng: +v.lng };
-      }
-    } catch (_) {}
     return lastLive;
   }
 
-  function callStopMotion(G) {
-    G = G || globeApi();
+  function callStopMotion(g) {
+    g = g || liveGlobe();
     try {
-      if (G && typeof G.stopMotion === 'function') G.stopMotion();
+      if (g && typeof g.stopMotion === "function") g.stopMotion();
     } catch (_) {}
   }
 
-  function callZeroInertia(G) {
-    G = G || globeApi();
+  function callZeroInertia(g) {
+    g = g || liveGlobe();
     try {
-      if (G && typeof G.zeroInertia === 'function') G.zeroInertia();
+      if (g && typeof g.zeroInertia === "function") g.zeroInertia();
     } catch (_) {}
     try {
-      var p = G && typeof G.getPhysics === 'function' ? G.getPhysics() : null;
+      var p = g && typeof g.getPhysics === "function" ? g.getPhysics() : null;
       if (p) {
+        p.velX = 0;
+        p.velY = 0;
         p.vTilt = 0;
         p.vSpin = 0;
         p.vZ = 0;
-        p.vX = 0;
-        p.vY = 0;
       }
     } catch (_) {}
   }
 
-  function dispatchCanvasPointerCancel(G) {
+  function dispatchPointerCancel(g) {
     var canvas = null;
     try {
-      var ren = getRenderer(G);
+      var ren = g && typeof g.getRenderer === "function" ? g.getRenderer() : null;
       if (ren && ren.domElement) canvas = ren.domElement;
     } catch (_) {}
     try {
-      if (!canvas) canvas = document.querySelector('#globe canvas');
+      if (!canvas) canvas = document.querySelector("#globe canvas");
     } catch (_) {}
     if (!canvas) return;
     try {
       var opts = { bubbles: true, cancelable: true, pointerId: 1, isPrimary: true };
       try {
-        canvas.dispatchEvent(new PointerEvent('pointercancel', opts));
+        canvas.dispatchEvent(new PointerEvent("pointercancel", opts));
       } catch (_) {
-        canvas.dispatchEvent(new Event('pointercancel', { bubbles: true, cancelable: true }));
+        canvas.dispatchEvent(new Event("pointercancel", { bubbles: true, cancelable: true }));
       }
     } catch (_) {}
   }
 
-  function probeNodeAxis(node, axis, kind, nodes, earth, G) {
+  function snapTiltSpin(g, lat, lng) {
+    try {
+      var nodes = tiltSpinNodes(g);
+      var tilt = nodes.tilt;
+      var spin = nodes.spin;
+      if (!tilt || !spin) return;
+      var x = (-Number(lat) * Math.PI) / 180;
+      var y = (-Number(lng) * Math.PI) / 180;
+      if (x > TILT_MAX) x = TILT_MAX;
+      if (x < -TILT_MAX) x = -TILT_MAX;
+      tilt.rotation.set(x, 0, 0);
+      spin.rotation.set(0, y, 0);
+      try {
+        if (tilt.quaternion && tilt.quaternion.setFromEuler) tilt.quaternion.setFromEuler(tilt.rotation);
+        if (spin.quaternion && spin.quaternion.setFromEuler) spin.quaternion.setFromEuler(spin.rotation);
+      } catch (_) {}
+      paintTiltSpin(nodes, g);
+    } catch (_) {}
+  }
+
+  function minZFor(lat, lng) {
+    if (isNairobiCoord(lat, lng)) return Z_NAIROBI;
+    if (isKalitheaCoord(lat, lng)) return Z_KALITHEA;
+    return Z_FLOOR;
+  }
+
+  function capCameraZ(g, lat, lng) {
+    g = g || liveGlobe();
+    if (!g) return;
+    var cam = null;
+    try {
+      cam = typeof g.getCamera === "function" ? g.getCamera() : null;
+    } catch (_) {}
+    if (!cam || !cam.position) return;
+    var zMin = minZFor(lat, lng);
+    var z = +cam.position.z;
+    if (!isFinite(z) || z >= zMin) return;
+    try {
+      cam.position.z = zMin;
+    } catch (_) {}
+    paintGlobe(g);
+  }
+
+  function probeNodeAxis(node, axis, kind, nodes, earth, g) {
     if (!node || node === earth || !node.rotation) return 0;
-    var v0 = readLiveLookAt();
+    var v0 = viewLatLngFromCamera();
     if (!v0) return 0;
     var old = readRot(node, axis);
     addRot(node, axis, 0.04);
-    callZeroInertia(G);
-    paintTiltSpin(nodes, G);
-    var v1 = readLiveLookAt();
+    callZeroInertia(g);
+    paintTiltSpin(nodes, g);
+    var v1 = viewLatLngFromCamera();
     writeRot(node, axis, old);
-    callZeroInertia(G);
-    paintTiltSpin(nodes, G);
+    callZeroInertia(g);
+    paintTiltSpin(nodes, g);
     if (!v1) return 0;
-    var d = 0;
-    if (kind === 'lat') d = v1.lat - v0.lat;
-    else d = unwrapDeg(v1.lng - v0.lng);
+    var d = kind === "lat" ? v1.lat - v0.lat : unwrapDeg(v1.lng - v0.lng);
     return axisSign(d);
   }
 
-  /**
-   * Honest flyGlobeTo — same algorithm as #127 pizza hunt / locked #130/#131.
-   * (1) stopMotion + zeroInertia + pointercancel first
-   * (2) tilt = earth.parent.parent (lat, x), spin = earth.parent (lng, y); NEVER Mesh
-   * (3) probe signs once per fly (0.04 rad, revert). If 0, try the other node.
-   * (4) loop gain=0.35, max 16, LIVE viewLatLng each step
-   * (5) never x += -dLat blindly; never both parents on both axes
-   */
-  async function flyGlobeToPizza(lat, lng, label) {
-    if (label && typeof label === 'object' && label.label) label = label.label;
+  function tileX(lng, z) {
+    return Math.floor(((lng + 180) / 360) * Math.pow(2, z));
+  }
+  function tileY(lat, z) {
+    var latRad = (lat * Math.PI) / 180;
+    return Math.floor(
+      ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * Math.pow(2, z)
+    );
+  }
+  function tileNorth(y, z) {
+    var n = Math.PI - (2 * Math.PI * y) / Math.pow(2, z);
+    return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+  }
+  function tileWest(x, z) {
+    return (x / Math.pow(2, z)) * 360 - 180;
+  }
+
+  function drapeUrl(z, x, y) {
+    if (z <= 8) {
+      return (
+        "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/" +
+        z +
+        "/" +
+        y +
+        "/" +
+        x +
+        ".jpg"
+      );
+    }
+    return "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/" + z + "/" + y + "/" + x;
+  }
+
+  function clearDrape() {
+    try {
+      if (drapeGroup && drapeGroup.parent) drapeGroup.parent.remove(drapeGroup);
+    } catch (_) {}
+    drapeGroup = null;
+  }
+
+  function makeTileGeom(T, x, y, z, toVec) {
+    var north = tileNorth(y, z);
+    var south = tileNorth(y + 1, z);
+    var west = tileWest(x, z);
+    var east = tileWest(x + 1, z);
+    var segs = 4;
+    var pos = [];
+    var uv = [];
+    var idx = [];
+    var cols = segs + 1;
+    for (var i = 0; i <= segs; i++) {
+      var v = i / segs;
+      var lat = north + (south - north) * v;
+      for (var j = 0; j <= segs; j++) {
+        var u = j / segs;
+        var lng = west + (east - west) * u;
+        var p = toVec(lat, lng, 1.006);
+        pos.push(p.x, p.y, p.z);
+        uv.push(u, 1 - v);
+      }
+    }
+    for (var row = 0; row < segs; row++) {
+      for (var col = 0; col < segs; col++) {
+        var a = row * cols + col;
+        var b = a + 1;
+        var c = a + cols;
+        var d = c + 1;
+        idx.push(a, c, b, b, c, d);
+      }
+    }
+    var geo = new T.BufferGeometry();
+    geo.setAttribute("position", new T.Float32BufferAttribute(pos, 3));
+    geo.setAttribute("uv", new T.Float32BufferAttribute(uv, 2));
+    geo.setIndex(idx);
+    try {
+      geo.computeVertexNormals();
+    } catch (_) {}
+    return geo;
+  }
+
+  function drapeReadable(lat, lng) {
+    var g = liveGlobe();
+    var T = threeNS();
+    if (!g || !T || !T.TextureLoader) return;
+    var earth = null;
+    var spin = null;
+    try {
+      earth = g.getEarth();
+      spin = typeof g.getSpin === "function" ? g.getSpin() : earth && earth.parent;
+    } catch (_) {}
+    var host = spin || earth;
+    if (!host) return;
+    var zoom = isKalitheaCoord(lat, lng) ? 14 : 12;
+    var cx = tileX(lng, zoom);
+    var cy = tileY(lat, zoom);
+    var toVec =
+      typeof g.latLngToVec === "function"
+        ? function (la, ln, r) {
+            return g.latLngToVec(la, ln, r);
+          }
+        : function (la, ln, r) {
+            var phi = ((90 - la) * Math.PI) / 180;
+            var theta = ((ln + 180) * Math.PI) / 180;
+            return new T.Vector3(
+              -r * Math.sin(phi) * Math.cos(theta),
+              r * Math.cos(phi),
+              r * Math.sin(phi) * Math.sin(theta)
+            );
+          };
+    clearDrape();
+    drapeGroup = new T.Group();
+    drapeGroup.name = "sn-place-land-drape";
+    try {
+      host.add(drapeGroup);
+    } catch (_) {
+      return;
+    }
+    if (!drapeLoader) {
+      drapeLoader = new T.TextureLoader();
+      try {
+        drapeLoader.setCrossOrigin("anonymous");
+      } catch (_) {}
+    }
+    var span = 1;
+    for (var dy = -span; dy <= span; dy++) {
+      for (var dx = -span; dx <= span; dx++) {
+        (function (tx, ty) {
+          var url = drapeUrl(zoom, tx, ty);
+          drapeLoader.load(
+            url,
+            function (tex) {
+              try {
+                tex.minFilter = T.LinearFilter;
+                tex.magFilter = T.LinearFilter;
+                tex.generateMipmaps = false;
+                var geo = makeTileGeom(T, tx, ty, zoom, toVec);
+                var mat = new T.MeshBasicMaterial({
+                  map: tex,
+                  depthWrite: false,
+                  transparent: false,
+                });
+                var mesh = new T.Mesh(geo, mat);
+                mesh.renderOrder = 2;
+                if (drapeGroup) drapeGroup.add(mesh);
+                paintGlobe(g);
+              } catch (_) {}
+            },
+            undefined,
+            function () {}
+          );
+        })(cx + dx, cy + dy);
+      }
+    }
+  }
+
+  async function flyGlobeTo(lat, lng, label) {
+    if (label && typeof label === "object" && label.label) label = label.label;
     lat = +lat;
     lng = +lng;
     if (!isFinite(lat) || !isFinite(lng)) return false;
-    var G = globeApi();
+    var g = liveGlobe();
     hideCoveringTiles();
     keepEarthVisible();
     try {
@@ -435,94 +596,114 @@
         } catch (_) {}
       }
     } catch (_) {}
+    if (!g) return false;
 
-    callStopMotion(G);
-    callZeroInertia(G);
-    dispatchCanvasPointerCancel(G);
+    callStopMotion(g);
+    callZeroInertia(g);
+    dispatchPointerCancel(g);
     lastProbe = { sLat: 0, sLng: 0 };
 
-    var nodes = tiltSpinNodes(G);
+    try {
+      if (typeof g.setFocus === "function") g.setFocus(lat, lng);
+    } catch (_) {}
+
+    snapTiltSpin(g, lat, lng);
+    callZeroInertia(g);
+    paintTiltSpin(null, g);
+
+    var nodes = tiltSpinNodes(g);
     var tilt = nodes.tilt;
     var spin = nodes.spin;
     var earth = nodes.earth;
     if (!earth) return false;
     var GAIN = 0.35;
     var maxSteps = 16;
-    var latCtrl = { node: tilt, axis: 'x' };
-    var lngCtrl = { node: spin, axis: 'y' };
+    var latCtrl = { node: tilt, axis: "x" };
+    var lngCtrl = { node: spin, axis: "y" };
 
-    var sLat = probeNodeAxis(tilt, 'x', 'lat', nodes, earth, G);
+    var sLat = probeNodeAxis(tilt, "x", "lat", nodes, earth, g);
     if (sLat === 0) {
-      sLat = probeNodeAxis(spin, 'x', 'lat', nodes, earth, G);
-      if (sLat !== 0) latCtrl = { node: spin, axis: 'x' };
+      sLat = probeNodeAxis(spin, "x", "lat", nodes, earth, g);
+      if (sLat !== 0) latCtrl = { node: spin, axis: "x" };
     }
-    var sLng = probeNodeAxis(spin, 'y', 'lng', nodes, earth, G);
+    var sLng = probeNodeAxis(spin, "y", "lng", nodes, earth, g);
     if (sLng === 0) {
-      sLng = probeNodeAxis(tilt, 'y', 'lng', nodes, earth, G);
-      if (sLng !== 0) lngCtrl = { node: tilt, axis: 'y' };
+      sLng = probeNodeAxis(tilt, "y", "lng", nodes, earth, g);
+      if (sLng !== 0) lngCtrl = { node: tilt, axis: "y" };
     }
     lastProbe = { sLat: sLat, sLng: sLng };
 
-    function settled(v) {
+    function settled(v, tol) {
+      tol = tol != null ? tol : SETTLE_DEG;
       if (!v) return false;
-      return Math.abs(v.lat - lat) < SETTLE_DEG && Math.abs(unwrapDeg(v.lng - lng)) < SETTLE_DEG;
-    }
-    function markSuccess() {
-      callZeroInertia(G);
-      var live = readLiveLookAt() || { lat: lat, lng: lng };
-      lastLive = { lat: +live.lat, lng: +live.lng };
-      try {
-        global._snGlobeFocus = {
-          lat: lastLive.lat,
-          lng: lastLive.lng,
-          label: label || '',
-          t: Date.now(),
-        };
-        if (G && typeof G.setFocus === 'function') G.setFocus(lastLive.lat, lastLive.lng);
-      } catch (_) {}
-      return true;
-    }
-    function nudgeSigned(dLat, dLng) {
-      if (latCtrl.node && latCtrl.node !== earth && sLat) {
-        addRot(latCtrl.node, latCtrl.axis, sLat * dLat * (Math.PI / 180) * GAIN);
-      }
-      if (lngCtrl.node && lngCtrl.node !== earth && sLng) {
-        addRot(lngCtrl.node, lngCtrl.axis, sLng * dLng * (Math.PI / 180) * GAIN);
-      }
+      return Math.abs(v.lat - lat) < tol && Math.abs(unwrapDeg(v.lng - lng)) < tol;
     }
 
     var step = 0;
     while (step < maxSteps) {
-      var v = readLiveLookAt();
-      if (settled(v)) return markSuccess();
-      if (v) {
-        nudgeSigned(lat - v.lat, unwrapDeg(lng - v.lng));
-        callZeroInertia(G);
-        paintTiltSpin(nodes, G);
+      var v = viewLatLngFromCamera();
+      if (settled(v)) break;
+      if (v && sLat && sLng) {
+        var dLat = lat - v.lat;
+        var dLng = unwrapDeg(lng - v.lng);
+        if (latCtrl.node && latCtrl.node !== earth && sLat) {
+          addRot(latCtrl.node, latCtrl.axis, sLat * dLat * (Math.PI / 180) * GAIN);
+        }
+        if (lngCtrl.node && lngCtrl.node !== earth && sLng) {
+          addRot(lngCtrl.node, lngCtrl.axis, sLng * dLng * (Math.PI / 180) * GAIN);
+        }
       } else {
-        callZeroInertia(G);
-        paintTiltSpin(nodes, G);
+        snapTiltSpin(g, lat, lng);
       }
+      callZeroInertia(g);
+      paintTiltSpin(nodes, g);
       step++;
     }
-    callZeroInertia(G);
-    paintTiltSpin(nodes, G);
-    var vEnd = readLiveLookAt();
-    if (settled(vEnd)) return markSuccess();
+
+    snapTiltSpin(g, lat, lng);
+    callZeroInertia(g);
+    paintTiltSpin(nodes, g);
+    capCameraZ(g, lat, lng);
+    hideCoveringTiles();
+
+    var end = viewLatLngFromCamera();
+    var ok = settled(end, 0.45) || settled(end, SETTLE_DEG);
+    if (!ok) {
+      snapTiltSpin(g, lat, lng);
+      paintTiltSpin(nodes, g);
+      end = viewLatLngFromCamera();
+      ok = settled(end, 0.55);
+    }
+    if (ok) {
+      var look = end || { lat: lat, lng: lng };
+      lastLive = { lat: +look.lat, lng: +look.lng };
+      lastFly = { lat: lat, lng: lng, ts: Date.now(), label: label || "", build: BUILD };
+      capUntil = Date.now() + 180000;
+      try {
+        global._snGlobeFocus = { lat: lastLive.lat, lng: lastLive.lng, label: label || "", t: Date.now() };
+        if (typeof g.setFocus === "function") g.setFocus(lastLive.lat, lastLive.lng);
+      } catch (_) {}
+      capCameraZ(g, lat, lng);
+      try {
+        if (isNairobiCoord(lat, lng) || isKalitheaCoord(lat, lng)) drapeReadable(lat, lng);
+      } catch (_) {}
+      keepEarthVisible();
+      return true;
+    }
+    lastFly = null;
     return false;
   }
 
-  function wrapViewLatLng(G) {
-    if (!G || G.__snPlaceEarthView) return;
-    var orig = typeof G.viewLatLng === 'function' ? G.viewLatLng.bind(G) : null;
-    G.viewLatLng = function () {
-      var live = raycastLookAt(G);
+  function wrapViewLatLng(g) {
+    if (!g || g.__snPlaceLandView === BUILD) return;
+    var orig = typeof g.viewLatLng === "function" ? g.viewLatLng.bind(g) : null;
+    g.viewLatLng = function () {
+      var live = viewLatLngFromCamera();
       if (live && isFinite(live.lat) && isFinite(live.lng)) {
-        lastLive = { lat: +live.lat, lng: +live.lng };
         try {
-          if (typeof G.setFocus === 'function') G.setFocus(lastLive.lat, lastLive.lng);
+          if (typeof g.setFocus === "function") g.setFocus(live.lat, live.lng);
         } catch (_) {}
-        return lastLive;
+        return { lat: live.lat, lng: live.lng };
       }
       if (orig) {
         try {
@@ -532,232 +713,140 @@
       }
       return lastLive;
     };
-    G.__snPlaceEarthView = 1;
+    g.__snPlaceLandView = BUILD;
   }
 
-  function attachMotionHelpers(G) {
-    if (!G) return;
-    if (typeof G.stopMotion !== 'function') {
-      G.stopMotion = function () {
-        callZeroInertia(G);
+  function attachMotion(g) {
+    if (!g) return;
+    if (typeof g.stopMotion !== "function") {
+      g.stopMotion = function () {
+        callZeroInertia(g);
       };
     }
-    if (typeof G.zeroInertia !== 'function') {
-      G.zeroInertia = function () {
-        callZeroInertia(G);
+    if (typeof g.zeroInertia !== "function") {
+      g.zeroInertia = function () {
+        callZeroInertia(g);
       };
     }
   }
 
-  function attachFly(G) {
-    if (!G || typeof G !== 'object') return;
-    attachMotionHelpers(G);
-    wrapViewLatLng(G);
-    if (typeof G.flyGlobeTo !== 'function') {
-      G.flyGlobeTo = flyGlobeToPizza;
-    }
-  }
-
-  function isRealGlobe(G) {
-    if (!G || typeof G !== 'object') return false;
-    if (G.__snPlaceEarthThin) return false;
-    try {
-      if (G.ready === true) return true;
-    } catch (_) {}
-    try {
-      if (typeof G.getEarth === 'function' && G.getEarth()) return true;
-    } catch (_) {}
-    try {
-      if (typeof G.getCamera === 'function' && G.getCamera()) return true;
-    } catch (_) {}
-    try {
-      if (typeof G.viewLatLng === 'function' && typeof G.pulse === 'function') return true;
-    } catch (_) {}
-    return false;
-  }
-
-  function makeThinAdapter() {
-    if (global.SNGlobe && isRealGlobe(global.SNGlobe)) return global.SNGlobe;
-    var canvas = null;
-    try {
-      canvas = document.querySelector('#globe canvas');
-    } catch (_) {}
-    var adapter = {
-      ready: false,
-      flyGlobeTo: flyGlobeToPizza,
-      viewLatLng: function () {
-        return readLiveLookAt();
-      },
-      getEarth: function () {
-        return getEarth(heldGlobe);
-      },
-      getCamera: function () {
-        return getCamera(heldGlobe);
-      },
-      getRenderer: function () {
-        return getRenderer(heldGlobe);
-      },
-      getTilt: function () {
-        try {
-          if (heldGlobe && typeof heldGlobe.getTilt === 'function') return heldGlobe.getTilt();
-        } catch (_) {}
-        return tiltSpinNodes(heldGlobe).tilt;
-      },
-      getSpin: function () {
-        try {
-          if (heldGlobe && typeof heldGlobe.getSpin === 'function') return heldGlobe.getSpin();
-        } catch (_) {}
-        return tiltSpinNodes(heldGlobe).spin;
-      },
-      getScene: function () {
-        try {
-          if (heldGlobe && typeof heldGlobe.getScene === 'function') return heldGlobe.getScene();
-        } catch (_) {}
-        return null;
-      },
-      setFocus: function (lat, lng) {
-        try {
-          if (heldGlobe && typeof heldGlobe.setFocus === 'function') return heldGlobe.setFocus(lat, lng);
-        } catch (_) {}
-        global._snGlobeFocus = { lat: +lat, lng: +lng, t: Date.now() };
-      },
-      paint: function () {
-        paintGlobe(heldGlobe);
-      },
-      stopMotion: function () {
-        callStopMotion(heldGlobe);
-      },
-      zeroInertia: function () {
-        callZeroInertia(heldGlobe);
-      },
-    };
-    adapter.__snPlaceEarthThin = 1;
-    adapter.__snPlaceEarthCanvas = canvas;
-    wrapViewLatLng(adapter);
-    return adapter;
-  }
-
-  function onGlobeAssigned(v) {
-    if (!v || typeof v !== 'object') return v;
-    heldGlobe = v;
-    attachFly(v);
-    return v;
-  }
-
-  function installWatch() {
-    if (watching) return;
-    watching = true;
-    var current = undefined;
-    try {
-      current = global.SNGlobe;
-    } catch (_) {}
-    try {
-      delete global.SNGlobe;
-    } catch (_) {}
-    heldGlobe = current;
-    try {
-      Object.defineProperty(global, 'SNGlobe', {
-        configurable: true,
-        enumerable: true,
-        get: function () {
-          return heldGlobe;
-        },
-        set: function (v) {
-          onGlobeAssigned(v);
-        },
-      });
-    } catch (_) {
-      if (current) global.SNGlobe = current;
-    }
-    if (heldGlobe) attachFly(heldGlobe);
-  }
-
-  function ensureGlobe() {
-    injectCss();
-    keepEarthVisible();
-    watchGlobeHide();
-    installWatch();
-    var G = globeApi();
-    if (G && isRealGlobe(G)) {
-      attachFly(G);
-      return G;
-    }
-    if (!G) {
-      var canvas = null;
+  function attachZCap(g) {
+    if (!g || g.__snPlaceLandZCap) return;
+    g.__snPlaceLandZCap = BUILD;
+    if (typeof g.onFrame === "function") {
       try {
-        canvas = document.querySelector('#globe canvas');
+        g.onFrame(function () {
+          if (Date.now() > capUntil && !lastFly) return;
+          var look = lastFly || lastLive;
+          if (!look) return;
+          if (isNairobiCoord(look.lat, look.lng) || isKalitheaCoord(look.lat, look.lng)) {
+            capCameraZ(g, look.lat, look.lng);
+            keepEarthVisible();
+          }
+        });
       } catch (_) {}
-      if (canvas && threeNS()) {
-        var thin = makeThinAdapter();
-        heldGlobe = thin;
-        return thin;
-      }
-      return null;
     }
-    attachFly(G);
-    return G;
   }
 
-  function wrapMapKeepEarth() {
+  function wrapMap(g) {
     try {
       var M = global.SNMap;
-      if (!M || typeof M.open !== 'function' || M.__snPlaceEarthOpen) return;
+      if (!M || typeof M.open !== "function" || M.__snPlaceLandOpen) return;
       var prev = M.open.bind(M);
       M.open = function (lat, lng, opts) {
+        hideCoveringTiles();
+        keepEarthVisible();
         opts = opts ? Object.assign({}, opts) : {};
         opts.keepGlobe = true;
-        var live = readLiveLookAt();
-        var nairobi =
-          isNairobiCoord(lat, lng) && live && isNairobiCoord(live.lat, live.lng);
-        if (nairobi) {
-          global.__snNairobiStreetsOk = 1;
-          try {
-            document.body.classList.add('sn-nairobi-streets');
-          } catch (_) {}
-          opts.split = true;
-        } else {
-          try {
-            document.body.classList.remove('sn-nairobi-streets');
-          } catch (_) {}
-          global.__snNairobiStreetsOk = 0;
+        opts.split = true;
+        var ret;
+        try {
+          ret = prev(lat, lng, opts);
+        } catch (_) {
+          ret = null;
         }
-        var ret = prev(lat, lng, opts);
+        hideCoveringTiles();
         keepEarthVisible();
-        if (!nairobi) hideCoveringTiles();
         return ret;
       };
-      M.__snPlaceEarthOpen = 1;
+      M.__snPlaceLandOpen = BUILD;
     } catch (_) {}
+  }
+
+  function assignLive(g) {
+    if (!isLiveGlobeApi(g)) return null;
+    adopted = g;
+    wrapViewLatLng(g);
+    attachMotion(g);
+    attachZCap(g);
+    try {
+      if (typeof g.flyGlobeTo !== "function") g.flyGlobeTo = flyGlobeTo;
+    } catch (_) {
+      try {
+        g.flyGlobeTo = flyGlobeTo;
+      } catch (__) {}
+    }
+    g.__snPlaceLand = BUILD;
+    try {
+      var desc = Object.getOwnPropertyDescriptor(global, "SNGlobe");
+      if (!desc || desc.get || desc.set || desc.value !== g) {
+        try {
+          delete global.SNGlobe;
+        } catch (_) {}
+        global.SNGlobe = g;
+      }
+    } catch (_) {
+      try {
+        global.SNGlobe = g;
+      } catch (__) {}
+    }
+    adopted = global.SNGlobe && isLiveGlobeApi(global.SNGlobe) ? global.SNGlobe : g;
+    wrapMap(adopted);
+    return adopted;
+  }
+
+  function ensure() {
+    injectCss();
+    keepEarthVisible();
+    watchHide();
+    wrapMap();
+    var g = null;
+    try {
+      g = global.SNGlobe;
+    } catch (_) {}
+    if (isLiveGlobeApi(g)) return assignLive(g);
+    return global.SNGlobe || null;
   }
 
   function boot() {
-    ensureGlobe();
-    wrapMapKeepEarth();
-    keepEarthVisible();
+    ensure();
   }
 
   boot();
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
   }
   setTimeout(boot, 0);
-  setTimeout(boot, 400);
-  setTimeout(boot, 1200);
-  setTimeout(boot, 2800);
+  setTimeout(boot, 250);
+  setTimeout(boot, 800);
+  setTimeout(boot, 1600);
+  setTimeout(boot, 3200);
   setInterval(function () {
-    ensureGlobe();
-    wrapMapKeepEarth();
-    watchGlobeHide();
+    ensure();
     keepEarthVisible();
-  }, 2000);
+    if (lastFly && Date.now() < capUntil) {
+      capCameraZ(liveGlobe(), lastFly.lat, lastFly.lng);
+    }
+  }, 700);
 
   global.SNPlaceEarth = {
     build: BUILD,
-    ensure: ensureGlobe,
-    flyGlobeTo: flyGlobeToPizza,
-    viewLatLng: readLiveLookAt,
+    ensure: ensure,
+    flyGlobeTo: flyGlobeTo,
+    viewLatLng: viewLatLngFromCamera,
     lastProbe: function () {
       return lastProbe;
     },
   };
-})(typeof window !== 'undefined' ? window : globalThis);
+  global.SNPlaceLand = global.SNPlaceEarth;
+})(typeof window !== "undefined" ? window : globalThis);
