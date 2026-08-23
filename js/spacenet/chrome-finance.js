@@ -4,7 +4,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823200000-presence';
+  var BUILD = '20260823201000-price';
   if (global.__SN_FINANCE === BUILD) return;
   global.__SN_FINANCE = BUILD;
 
@@ -518,7 +518,8 @@
         eur(1600) +
         ' (not permitted).</p>' +
         '<p>Rates: 2026 island new-build ~€2.2–2.8k/m² · heavy village restore ~€0.9–1.4k/m². 15% contingency inside packages. Land usually extra.</p>' +
-        '<p><a href="https://investors.astranov.eu" style="color:#7ec8ff">Open the full table on investors.astranov.eu</a> · also <a href="/investors/" style="color:#7ec8ff">astranov.eu/investors</a></p>';
+        '<p><a href="https://investors.astranov.eu" style="color:#7ec8ff">Open the full table on investors.astranov.eu</a> · also <a href="/investors/" style="color:#7ec8ff">astranov.eu/investors</a></p>' +
+        '<p>SpaceNet Presence · any client subdomain <b>€330 / year</b> · globe behind, real pins, profile + picture + preview.</p>';
     } else if (tab === 'over') {
       body.innerHTML =
         '<p><b>Oversustainable</b> is the law on every pin. Top technology is not used to “pollute less.” It is used to <b>not pollute</b>, to <b>restore the planet</b> (land, water, houses, olives), and to <b>produce goods and services</b> — stays, food, energy, work — on top of money.</p>' +
