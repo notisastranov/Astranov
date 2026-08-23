@@ -4,7 +4,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823190000-investors';
+  var BUILD = '20260823192000-click';
   if (global.__SN_FINANCE === BUILD) return;
   global.__SN_FINANCE = BUILD;
 
@@ -547,7 +547,19 @@
     body.querySelectorAll('tr[data-id]').forEach(function (tr) {
       tr.style.cursor = 'pointer';
       tr.onclick = function () {
-        focus = tr.getAttribute('data-id');
+        var id = tr.getAttribute('data-id');
+        focus = id;
+        var hit = null;
+        PACKAGES.forEach(function (p) {
+          if (p.id === id || p.pin === id) hit = p;
+        });
+        try {
+          if (hit && hit.pin && global.SNProjects && SNProjects.open) {
+            close();
+            SNProjects.open(hit.pin, true);
+            return;
+          }
+        } catch (_) {}
         render();
       };
     });
