@@ -1,0 +1,7 @@
+name = "investors-astranov"
+main = "src/index.js"
+compatibility_date = "2026-07-01"
+workers_dev = true
+
+[vars]
+ORIGIN = "https://astranov.eu"

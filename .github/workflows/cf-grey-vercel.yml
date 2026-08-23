@@ -74,12 +74,16 @@ jobs:
           # Vercel: apex A 76.76.21.21 and www CNAME cname.vercel-dns.com
           upsert("A", "astranov.eu", "76.76.21.21", False)
           upsert("CNAME", "www.astranov.eu", "cname.vercel-dns.com", False)
-          upsert("CNAME", "investors.astranov.eu", "cname.vercel-dns.com", False)
+          # investors.astranov.eu is orange-cloud + worker (see cf-investors-host.yml).
+          # Do not grey-cloud it here — Vercel has no cert for that host.
 
           # Also try delete worker routes if permitted
           st, routes = api("GET", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/workers/routes")
           print("routes", st, routes.get("success"), routes.get("result"), routes.get("errors"))
           for r in routes.get("result") or []:
+            if (r.get("pattern") or "").startswith("investors.astranov.eu"):
+              print(" keep investors route", r.get("pattern"))
+              continue
             st, j = api("DELETE", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/workers/routes/{r['id']}")
             print(" del route", r.get("pattern"), st, j.get("success"), j.get("errors"))
 

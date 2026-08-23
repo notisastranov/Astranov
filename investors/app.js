@@ -467,7 +467,7 @@
       await sb.auth.signOut();
       return;
     }
-    var redirect = location.origin + location.pathname.replace(/\/$/, '') + '/';
+    var redirect = 'https://investors.astranov.eu/';
     await sb.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: redirect }
