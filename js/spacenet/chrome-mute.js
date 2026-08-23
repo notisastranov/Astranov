@@ -1,5 +1,8 @@
-/* Astranov mute · Build 20260823201000-ai-listen-hit
+/* Astranov mute · Build 20260823203000-ai-listen-hit2
  * Kill beeps + load chrome-ai-listen (guest SpeechRecognition → CLI → paid mind).
+ * Primary load is the <script> tag in index.html. loadChain is a backup if
+ * that tag is missing (cached HTML). Skip if chrome-ai-listen.js is already
+ * in the document so inject-order cannot drop the hit layer.
  * Does NOT load chrome-guest-pizza-hunt (#127), chrome-call-arc (#129),
  * chrome-nairobi-ladder (#130), chrome-kalithea-village (#131),
  * chrome-guest-laptop-hunt (#132), or chrome-research-stay (#164).
@@ -7,7 +10,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823201000-ai-listen-hit';
+  var BUILD = '20260823203000-ai-listen-hit2';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -66,8 +69,17 @@
     } catch (_) {}
   }
 
+  function hasListenScript() {
+    try {
+      if (document.querySelector('script[data-sn-ai-listen]')) return true;
+      if (document.querySelector('script[src*="chrome-ai-listen.js"]')) return true;
+    } catch (_) {}
+    return false;
+  }
+
   function loadScript(src, mark) {
     try {
+      if (hasListenScript()) return;
       if (document.querySelector('script[' + mark + ']')) return;
       var s = document.createElement('script');
       s.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(BUILD);
@@ -78,6 +90,7 @@
   }
 
   function loadChain() {
+    if (hasListenScript()) return;
     loadScript('/js/spacenet/chrome-ai-listen.js', 'data-sn-ai-listen');
   }
 
@@ -86,13 +99,17 @@
     silenceSpeech();
     patchFieldAlerts();
     softGateHandsfree();
-    loadChain();
   }
 
   boot();
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  setTimeout(loadChain, 0);
-  setTimeout(loadChain, 500);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      boot();
+      loadChain();
+    });
+  } else {
+    loadChain();
+  }
   setTimeout(loadChain, 800);
   setTimeout(loadChain, 2500);
   setInterval(function () {

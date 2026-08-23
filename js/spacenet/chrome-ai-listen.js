@@ -1,14 +1,19 @@
 /**
- * Guest AI listen — Build 20260823201000-ai-listen-hit
+ * Guest AI listen — Build 20260823203000-ai-listen-hit2
  * ONE guest box: robot/mic/AI in the LIVE guest-visible CLI.
  * Dock #sn-rib-hf / ribbon hf / Talk button → SAME path as CLI listen.
  * Press → browser SpeechRecognition → real transcript in #cli-log
  * → POST /api/ai allow_paid:true → real Grok answer in that same CLI.
  *
- * HIT-TEST (this patch): #sn-rib-hf "Talk to Astranov · mic on" sat UNDER
- * #sn-brand / #stc-cmd so elementFromPoint missed it (silent guest taps).
- * Raise pointer-events + z-index; dedicated #sn-rib-hf-hit overlay calls
- * the same debounced toggleListen path. No twin-CLI chrome restyle.
+ * HIT-TEST 2: after hard-refresh #sn-rib-hf-hit was NULL (mute cache /
+ * inject order). elementFromPoint over #sn-rib-hf returned #sn-brand
+ * (stack: sn-brand → sn-brand-row → sn-topchrome-panel → sn-rib-icon →
+ * sn-rib-hf) and duplicate #sn-rib-hf ids existed.
+ * This patch: on boot create exactly ONE #sn-rib-hf-hit as document.body
+ * last child, position:fixed over the Talk/mic icon, pointer-events:auto,
+ * z-index 2147483646, click → same debounced toggleListen. Dedupe
+ * duplicate #sn-rib-hf ids (keep one). Direct <script> in index.html.
+ * No twin-CLI chrome restyle.
  *
  * NEW overlay. Do not edit locked siblings:
  *   #126 chrome-cli-answer.js
@@ -33,11 +38,17 @@
  */
 (function (G) {
   'use strict';
-  if (G.__snAiListen20260823201000) return;
+  if (G.__snAiListen20260823203000) {
+    try {
+      if (G.SNAiListen && typeof SNAiListen.attachHit === 'function') SNAiListen.attachHit();
+    } catch (_) {}
+    return;
+  }
+  G.__snAiListen20260823203000 = 1;
   G.__snAiListen20260823201000 = 1;
   G.__snAiListen20260823195000 = 1;
 
-  var BUILD = '20260823201000-ai-listen-hit';
+  var BUILD = '20260823203000-ai-listen-hit2';
   var freezeUntil = 0;
   var freezeSnap = null;
   var freezeAllowFly = false;
@@ -768,6 +779,9 @@
     } catch (_) {}
   }
 
+  var HIT_Z = '2147483646';
+  var hitMo = null;
+
   function injectHitCss() {
     try {
       var id = 'sn-ai-listen-hit-css';
@@ -778,21 +792,12 @@
         (document.head || document.documentElement).appendChild(css);
       }
       css.textContent = [
-        '#sn-rib-hf, #sn-rib-hf-src, #btn-handsfree, [data-act="handsfree"], [data-rib-id="hf"] {',
-        '  pointer-events: auto !important;',
-        '}',
-        '#sn-rib-hf, #' + HIT_ID + ' {',
-        '  pointer-events: auto !important;',
-        '  z-index: 240 !important;',
-        '  touch-action: manipulation !important;',
-        '}',
         '#' + HIT_ID + ' {',
-        '  position: absolute !important;',
-        '  inset: 0 !important;',
-        '  width: 100% !important;',
-        '  height: 100% !important;',
-        '  min-width: 44px !important;',
-        '  min-height: 44px !important;',
+        '  position: fixed !important;',
+        '  z-index: ' + HIT_Z + ' !important;',
+        '  pointer-events: auto !important;',
+        '  touch-action: manipulation !important;',
+        '  display: block !important;',
         '  border: 0 !important;',
         '  padding: 0 !important;',
         '  margin: 0 !important;',
@@ -800,221 +805,252 @@
         '  cursor: pointer !important;',
         '  -webkit-tap-highlight-color: transparent !important;',
         '  border-radius: 999px !important;',
+        '  min-width: 44px !important;',
+        '  min-height: 44px !important;',
         '}',
-        '#' + HIT_ID + '[data-sn-hit-body="1"] {',
-        '  position: fixed !important;',
-        '  inset: auto !important;',
-        '}',
-        '#sn-brand, #sn-brand-row { pointer-events: none !important; }',
-        '#sn-topchrome-panel { pointer-events: none !important; }',
-        '#sn-power-btn, #sn-brand-row #sn-power-btn, #btn-home, #field-radar, #sn-task-launch, #field-balance-hud, #sn-topchrome-drag {',
-        '  pointer-events: auto !important;',
-        '}',
-        '#stc-cmd { pointer-events: none !important; }',
-        '#stc-cmd-in, #stc-cmd input { pointer-events: auto !important; }',
       ].join('\n');
     } catch (_) {}
   }
 
-  function findMicVisual() {
+  function dedupeRibHf() {
+    var nodes = [];
     try {
-      var nodes = document.querySelectorAll(
-        '#sn-rib-hf, #sn-rib-hf-src, #btn-handsfree, [data-act="handsfree"], [data-rib-id="hf"], button[title*="Talk to Astranov"]'
-      );
-      var best = null;
-      var bestArea = 0;
-      for (var i = 0; i < nodes.length; i++) {
-        var n = nodes[i];
-        if (!n || n.id === HIT_ID) continue;
-        var r = n.getBoundingClientRect();
-        var a = r.width * r.height;
-        if (a > bestArea) {
-          best = n;
-          bestArea = a;
-        }
-      }
-      return best;
+      nodes = Array.prototype.slice.call(document.querySelectorAll('[id="sn-rib-hf"]'));
     } catch (_) {
-      return null;
+      nodes = [];
     }
-  }
-
-  function micCovered(btn) {
-    if (!btn) return true;
-    try {
-      var r = btn.getBoundingClientRect();
-      var x = r.left + Math.max(8, r.width / 2);
-      var y = r.top + Math.max(8, r.height / 2);
-      if (!isFinite(x) || !isFinite(y) || r.width < 2 || r.height < 2) return true;
-      var topEl = document.elementFromPoint(x, y);
-      if (!topEl) return true;
-      if (btn === topEl || (btn.contains && btn.contains(topEl))) return false;
-      if (topEl.id === HIT_ID) {
-        if (btn.contains && btn.contains(topEl)) return false;
-        return false;
-      }
-      if (isMicDockTarget(topEl)) return false;
-      var id = topEl.id || '';
-      if (
-        id === 'sn-brand' ||
-        id === 'stc-cmd' ||
-        id === 'stc-cmd-in' ||
-        id === 'sn-brand-row' ||
-        id === 'sn-topchrome-panel' ||
-        id === 'sn-topchrome' ||
-        id === 'sn-power-btn'
-      )
-        return true;
+    var keep = null;
+    var keepScore = -1;
+    var i;
+    for (i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (!n || n.id === HIT_ID) continue;
+      var r;
       try {
-        if (topEl.closest && topEl.closest('#sn-brand, #stc-cmd, #sn-brand-row, #sn-topchrome-panel, #sn-topchrome'))
-          return true;
+        r = n.getBoundingClientRect();
+      } catch (_) {
+        r = { width: 0, height: 0, top: 9999, bottom: 0, right: 0 };
+      }
+      var vis = r.width >= 2 && r.height >= 2 && r.bottom > 0 && r.right > 0;
+      var topish = r.top >= 0 && r.top < 160;
+      var score = (vis ? 1000 : 0) + (topish ? 400 : 0) + r.width * r.height;
+      try {
+        if (n.closest && n.closest('#sn-topchrome, #sn-topchrome-panel, #sn-brand-row, .sn-rib-icon')) score += 250;
       } catch (_) {}
-      return false;
-    } catch (_) {
-      return true;
+      if (score > keepScore) {
+        keep = n;
+        keepScore = score;
+      }
     }
+    if (!keep && nodes.length) keep = nodes[0];
+    var srcUsed = false;
+    try {
+      srcUsed = !!document.getElementById('sn-rib-hf-src');
+    } catch (_) {}
+    for (i = 0; i < nodes.length; i++) {
+      if (nodes[i] === keep) continue;
+      try {
+        nodes[i].removeAttribute('id');
+        nodes[i].id = srcUsed ? 'sn-rib-hf-dup' : 'sn-rib-hf-src';
+        srcUsed = true;
+      } catch (_) {}
+    }
+    return keep || null;
   }
 
-  function promoteMic(btn) {
-    if (!btn || btn.id === HIT_ID) return btn;
+  function findTalkIcon() {
+    var keep = dedupeRibHf();
+    var nodes = [];
     try {
-      var spacer = document.getElementById('sn-rib-hf-slot');
-      if (btn.parentElement !== document.body) {
-        if (!spacer && btn.parentNode) {
-          spacer = document.createElement('span');
-          spacer.id = 'sn-rib-hf-slot';
-          spacer.setAttribute('aria-hidden', 'true');
-          spacer.style.cssText =
-            'display:inline-flex;flex:0 0 36px;width:36px;height:36px;min-width:36px;min-height:36px;align-items:center;justify-content:center;';
-          btn.parentNode.insertBefore(spacer, btn);
+      nodes = Array.prototype.slice.call(
+        document.querySelectorAll(
+          '#sn-rib-hf, #sn-rib-hf-src, #sn-rib-hf-dup, #btn-handsfree, [data-act="handsfree"], [data-rib-id="hf"], .sn-rib-icon, button[title*="Talk to Astranov"]'
+        )
+      );
+    } catch (_) {
+      nodes = [];
+    }
+    var best = keep;
+    var bestScore = keep ? 1 : -1;
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (!n || n.id === HIT_ID) continue;
+      var r;
+      try {
+        r = n.getBoundingClientRect();
+      } catch (_) {
+        continue;
+      }
+      if (r.width < 2 || r.height < 2) continue;
+      var score = r.width * r.height;
+      if (r.top >= 0 && r.top < 160) score += 50000;
+      try {
+        if (n.closest && n.closest('#sn-topchrome, #sn-topchrome-panel, #sn-brand-row, .sn-rib-icon')) score += 20000;
+      } catch (_) {}
+      if (n.id === 'sn-rib-hf') score += 10000;
+      var act = '';
+      try {
+        act = (n.getAttribute && n.getAttribute('data-act')) || '';
+      } catch (_) {}
+      if (act === 'handsfree') score += 8000;
+      if (score > bestScore) {
+        best = n;
+        bestScore = score;
+      }
+    }
+    return best;
+  }
+
+  function applyHitBox(hit, icon) {
+    var left = 12;
+    var top = 12;
+    var w = 48;
+    var h = 48;
+    var r = null;
+    try {
+      if (icon && icon.getBoundingClientRect) r = icon.getBoundingClientRect();
+    } catch (_) {}
+    if (r && r.width >= 2 && r.height >= 2) {
+      left = r.left - 4;
+      top = r.top - 4;
+      w = Math.max(44, r.width + 8);
+      h = Math.max(44, r.height + 8);
+    } else {
+      try {
+        var host =
+          document.getElementById('sn-brand-row') ||
+          document.getElementById('sn-topchrome-panel') ||
+          document.getElementById('stc-compact') ||
+          document.getElementById('sn-topchrome');
+        if (host) {
+          var hr = host.getBoundingClientRect();
+          w = 48;
+          h = 48;
+          left = Math.max(0, hr.right - 56);
+          top = Math.max(0, hr.top + Math.max(0, (hr.height - 48) / 2));
         }
-        document.body.appendChild(btn);
-      }
-      var host = document.getElementById('sn-rib-hf-slot') || spacer || btn;
-      var r = host.getBoundingClientRect();
-      var w = Math.max(44, r.width || 36);
-      var h = Math.max(44, r.height || 36);
-      var left = r.left;
-      var top = r.top;
-      if (!r.width || !r.height) {
-        try {
-          var form = document.getElementById('cli-form') || document.getElementById('panel');
-          if (form) {
-            var fr = form.getBoundingClientRect();
-            left = fr.left + 8;
-            top = fr.top + 6;
-          }
-        } catch (_) {}
-      }
-      btn.style.setProperty('position', 'fixed', 'important');
-      btn.style.setProperty('left', Math.max(0, left) + 'px', 'important');
-      btn.style.setProperty('top', Math.max(0, top) + 'px', 'important');
-      btn.style.setProperty('width', w + 'px', 'important');
-      btn.style.setProperty('height', h + 'px', 'important');
-      btn.style.setProperty('z-index', '240', 'important');
-      btn.style.setProperty('pointer-events', 'auto', 'important');
-      btn.style.setProperty('margin', '0', 'important');
-      btn.title = TALK_TITLE;
-      btn.setAttribute('aria-label', TALK_TITLE);
-      if (!btn.getAttribute('data-act')) btn.setAttribute('data-act', 'handsfree');
-      if (!btn.id || btn.id === 'sn-rib-hf-src') btn.id = 'sn-rib-hf';
-    } catch (_) {}
-    return btn;
+      } catch (_) {}
+    }
+    hit.style.setProperty('position', 'fixed', 'important');
+    hit.style.setProperty('inset', 'auto', 'important');
+    hit.style.setProperty('right', 'auto', 'important');
+    hit.style.setProperty('bottom', 'auto', 'important');
+    hit.style.setProperty('left', Math.max(0, left) + 'px', 'important');
+    hit.style.setProperty('top', Math.max(0, top) + 'px', 'important');
+    hit.style.setProperty('width', w + 'px', 'important');
+    hit.style.setProperty('height', h + 'px', 'important');
+    hit.style.setProperty('z-index', HIT_Z, 'important');
+    hit.style.setProperty('pointer-events', 'auto', 'important');
+    hit.style.setProperty('display', 'block', 'important');
+    hit.style.setProperty('background', 'transparent', 'important');
+    hit.style.setProperty('border', '0', 'important');
+    hit.style.setProperty('padding', '0', 'important');
+    hit.style.setProperty('margin', '0', 'important');
+    hit.style.setProperty('cursor', 'pointer', 'important');
+    hit.style.setProperty('touch-action', 'manipulation', 'important');
   }
 
-  function placeBodyHit(hit, btn) {
+  function mountHit(hit) {
     try {
-      var r = btn && btn.getBoundingClientRect ? btn.getBoundingClientRect() : null;
-      var slot = document.getElementById('sn-rib-hf-slot');
-      if ((!r || r.width < 2 || r.height < 2) && slot) r = slot.getBoundingClientRect();
-      var left = 12;
-      var top = 12;
-      var w = 48;
-      var h = 48;
-      if (r && r.width >= 2 && r.height >= 2) {
-        left = r.left - 4;
-        top = r.top - 4;
-        w = Math.max(48, r.width + 8);
-        h = Math.max(48, r.height + 8);
-      } else {
-        try {
-          var form = document.getElementById('cli-form') || document.getElementById('panel');
-          if (form) {
-            var fr = form.getBoundingClientRect();
-            left = fr.left + 4;
-            top = fr.top + 2;
-          }
-        } catch (_) {}
+      if (!hit) return hit;
+      var root = document.body;
+      if (root) {
+        if (hit.parentNode !== root || root.lastElementChild !== hit) {
+          root.appendChild(hit);
+        }
+        return hit;
       }
-      if (hit.parentElement !== document.body) {
-        try {
-          document.body.appendChild(hit);
-        } catch (_) {}
+      var panel = document.getElementById('sn-topchrome-panel');
+      if (panel) {
+        if (hit.parentNode !== panel || panel.lastElementChild !== hit) {
+          panel.appendChild(hit);
+        }
+        return hit;
       }
-      hit.setAttribute('data-sn-hit-body', '1');
-      hit.style.setProperty('position', 'fixed', 'important');
-      hit.style.setProperty('left', Math.max(0, left) + 'px', 'important');
-      hit.style.setProperty('top', Math.max(0, top) + 'px', 'important');
-      hit.style.setProperty('width', w + 'px', 'important');
-      hit.style.setProperty('height', h + 'px', 'important');
-      hit.style.setProperty('inset', 'auto', 'important');
-      hit.style.setProperty('z-index', '241', 'important');
-      hit.style.setProperty('pointer-events', 'auto', 'important');
-      hit.style.setProperty('display', 'block', 'important');
+      if (document.documentElement && hit.parentNode !== document.documentElement) {
+        document.documentElement.appendChild(hit);
+      }
     } catch (_) {}
+    return hit;
   }
 
-  function getOrCreateHit() {
-    var hit = document.getElementById(HIT_ID);
-    if (hit) return hit;
-    hit = document.createElement('button');
+  function makeHitEl() {
+    var hit = document.createElement('button');
     hit.id = HIT_ID;
     hit.type = 'button';
     hit.setAttribute('data-act', 'handsfree');
     hit.setAttribute('data-rib-id', 'hf');
     hit.setAttribute('data-sn-ai-listen-hit', '1');
+    hit.setAttribute('data-sn-build', BUILD);
     hit.title = TALK_TITLE;
     hit.setAttribute('aria-label', TALK_TITLE);
     hit.textContent = '';
-    try {
-      document.body.appendChild(hit);
-    } catch (_) {}
     return hit;
   }
 
-  function ensureHit() {
+  function bindHitEl(hit) {
+    if (!hit || hit._snAiListenHitBound) return;
+    hit._snAiListenHitBound = 1;
+    hit.addEventListener('pointerdown', onMicDockGesture, true);
+    hit.addEventListener('click', onMicDockGesture, true);
+    hit.addEventListener('pointerup', onMicDockGesture, true);
+    hit.addEventListener('touchend', onMicDockGesture, true);
+  }
+
+  function attachHit() {
     try {
       injectHitCss();
-      var visual = findMicVisual();
-      var hit = getOrCreateHit();
-      if (visual) {
-        visual.title = TALK_TITLE;
-        visual.setAttribute('aria-label', TALK_TITLE);
-        visual.style.setProperty('pointer-events', 'auto', 'important');
-        visual.style.setProperty('z-index', '160', 'important');
+      var all = [];
+      try {
+        all = Array.prototype.slice.call(document.querySelectorAll('[id="' + HIT_ID + '"]'));
+      } catch (_) {
+        all = [];
       }
-      var covered = micCovered(visual);
-      if (visual && covered) {
-        visual = promoteMic(visual);
-        covered = micCovered(visual);
-      }
-      if (visual && !covered) {
+      var hit = all[0] || null;
+      for (var i = 1; i < all.length; i++) {
         try {
-          if (hit.parentElement !== visual) visual.appendChild(hit);
+          if (all[i] && all[i].parentNode) all[i].parentNode.removeChild(all[i]);
         } catch (_) {}
-        hit.removeAttribute('data-sn-hit-body');
-        hit.style.removeProperty('left');
-        hit.style.removeProperty('top');
-        hit.style.setProperty('position', 'absolute', 'important');
-        hit.style.setProperty('inset', '-6px', 'important');
-        hit.style.setProperty('width', 'auto', 'important');
-        hit.style.setProperty('height', 'auto', 'important');
-        hit.style.setProperty('z-index', '3', 'important');
-        hit.style.setProperty('pointer-events', 'auto', 'important');
-        if (micCovered(visual)) placeBodyHit(hit, visual);
-      } else {
-        placeBodyHit(hit, visual);
       }
+      if (!hit) hit = makeHitEl();
+      hit.id = HIT_ID;
+      hit.setAttribute('data-sn-ai-listen-hit', '1');
+      hit.setAttribute('data-sn-build', BUILD);
+      hit.title = TALK_TITLE;
+      hit.setAttribute('aria-label', TALK_TITLE);
+      mountHit(hit);
+      var icon = findTalkIcon();
+      if (icon) {
+        try {
+          icon.title = TALK_TITLE;
+          icon.setAttribute('aria-label', TALK_TITLE);
+        } catch (_) {}
+      }
+      applyHitBox(hit, icon);
+      mountHit(hit);
+      bindHitEl(hit);
+      try {
+        G.__snRibHfHit = document.getElementById(HIT_ID) || hit;
+      } catch (_) {}
+      return document.getElementById(HIT_ID) || hit;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function watchHit() {
+    try {
+      if (hitMo) return;
+      hitMo = new MutationObserver(function () {
+        try {
+          var hit = document.getElementById(HIT_ID);
+          var body = document.body;
+          if (!hit || !body || hit.parentNode !== body || body.lastElementChild !== hit) {
+            attachHit();
+          }
+        } catch (_) {}
+      });
+      hitMo.observe(document.documentElement, { childList: true, subtree: true });
     } catch (_) {}
   }
 
@@ -1029,7 +1065,7 @@
     try {
       btn = el.closest
         ? el.closest(
-            '#sn-rib-hf, #sn-rib-hf-hit, #sn-rib-hf-src, #btn-handsfree, [data-act="handsfree"], [data-rib-id="hf"], [data-sn-ai-listen-hit], button[title*="Talk to Astranov"], button[title*="Listening"]'
+            '#sn-rib-hf, #sn-rib-hf-hit, #sn-rib-hf-src, #sn-rib-hf-dup, #btn-handsfree, [data-act="handsfree"], [data-rib-id="hf"], [data-sn-ai-listen-hit], button[title*="Talk to Astranov"], button[title*="Listening"]'
           )
         : null;
     } catch (_) {}
@@ -1045,6 +1081,7 @@
           id === 'sn-rib-hf' ||
           id === 'sn-rib-hf-hit' ||
           id === 'sn-rib-hf-src' ||
+          id === 'sn-rib-hf-dup' ||
           id === 'btn-handsfree' ||
           act === 'handsfree' ||
           rid === 'hf' ||
@@ -1148,11 +1185,13 @@
     bindMic();
     bindInputs();
     gateGoogle();
-    ensureHit();
+    attachHit();
   }
 
   function init() {
     injectHitCss();
+    attachHit();
+    watchHit();
     tick();
     setTimeout(tick, 0);
     setTimeout(tick, 50);
@@ -1163,8 +1202,8 @@
     setTimeout(tick, 2800);
     setInterval(tick, 2500);
     try {
-      window.addEventListener('resize', ensureHit, { passive: true });
-      window.addEventListener('scroll', ensureHit, { passive: true, capture: true });
+      window.addEventListener('resize', attachHit, { passive: true });
+      window.addEventListener('scroll', attachHit, { passive: true, capture: true });
     } catch (_) {}
   }
 
@@ -1178,8 +1217,19 @@
     answer: answerListen,
     stayPut: stayGlobe,
     viewLatLng: viewLatLng,
+    attachHit: attachHit,
+    hit: function () {
+      try {
+        return document.getElementById(HIT_ID);
+      } catch (_) {
+        return null;
+      }
+    },
   };
 
+  try {
+    attachHit();
+  } catch (_) {}
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })(typeof window !== 'undefined' ? window : globalThis);
