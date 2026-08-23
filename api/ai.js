@@ -1,4 +1,5 @@
-/** Astranov SpaceNet mind — paid Grok (XAI_API_KEY) until the in-app unit is trained.
+/** Astranov SpaceNet mind — trained living OS, not a static app.
+ * Paid Grok (XAI_API_KEY) is the tutor until the in-app unit holds the world.
  * Key never leaves the host. Client talks to /api/ai only.
  */
 const SB = 'https://lkoatrkhuigdolnjsbie.supabase.co';
@@ -9,18 +10,52 @@ const MODEL = process.env.XAI_MODEL || 'grok-4-1-fast-non-reasoning';
 const FALLBACKS = ['grok-4-1-fast-non-reasoning', 'grok-4', 'grok-3'];
 
 const SYS =
-  'You are Grok (SpaceXAI) acting as the live mind of Astranov SpaceNet (https://astranov.eu) until the in-app unit is trained enough to take over. ' +
-  'SpaceNet is an internet OS depicted in space: research, calls, orders, harbors live as pins and glowing ARC beams on Earth. ' +
-  'Answer in the CLI: short, true, useful. If you do not know, say so and search by asking for a place or a thing. ' +
+  'You are the live mind of Astranov SpaceNet (https://astranov.eu). SpaceNet is a trained living OS depicted in space — not a static traditional app. You learn from live envelopes, taught lessons, and real use. ' +
+  'Research, calls, orders, harbors live as pins and glowing ARC beams on Earth. ' +
+  'Answer in the CLI: short, true, useful. If you do not know, say so and ask for a place or a thing. ' +
   'Never invent a kitchen, a shop, or a street. Never dump HUD instructions. Never fly the globe for a non-place question. ' +
   'Owner is Notis Astranov (Rhodes). Everyday currency is Astranov Coin (AVC), 1 AVC = 1 EUR. The Astranov Share (ASH) trades on the Astranov SpaceNet Stock Exchange on real value created. Not legal tender. Not a bank print. ' +
-  'To complete SpaceNet + Phase 1 projects: €32.63M net remaining (SpaceNet €7.00M + Phase 1 €25.63M). Gathered €0. VAT on construction would make €38.78M. Phase 2 lake+pontoon €13.60M is not permitted, not in that number. Land extra. Not quotes. Numbers live on investors.astranov.eu. ' +
+  'Money to complete is a LIVE envelope on investors.astranov.eu (SpaceNet + Phase 1 working target, gathered as taught). Do not freeze old numbers if a live envelope is attached. ' +
   'English default; Greek when the user writes Greek. Match the user. 1–3 sentences unless they ask for more.';
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'authorization, content-type, apikey, x-client-info');
   res.setHeader('Cache-Control', 'no-store');
+}
+
+async function liveEnvelope() {
+  try {
+    const r = await fetch('https://astranov.eu/investors/budget.json', { cache: 'no-store' });
+    const d = await r.json();
+    const pkgs = d.packages || [];
+    let p1 = 0;
+    let p2 = 0;
+    let got = Number(d.gathered_keur) || 0;
+    pkgs.forEach(function (p) {
+      const c = Number(p.capex) || 0;
+      if (p.phase === 2) p2 += c;
+      else p1 += c;
+      got += Number(p.raised) || 0;
+    });
+    const sn = Number((d.complete && d.complete.spacenet_keur) || d.spacenet_keur || 7000);
+    const left = Math.max(0, p1 + sn - got);
+    return (
+      'LIVE envelope: remaining to complete SpaceNet + Phase 1 = €' +
+      (left / 1000).toFixed(2) +
+      'M (SpaceNet €' +
+      (sn / 1000).toFixed(2) +
+      'M + Phase 1 €' +
+      (p1 / 1000).toFixed(2) +
+      'M). Gathered €' +
+      (got / 1000).toFixed(2) +
+      'M. Phase 2 held out €' +
+      (p2 / 1000).toFixed(2) +
+      'M. Land extra. Not a quote.'
+    );
+  } catch (_) {
+    return '';
+  }
 }
 
 function readBody(req) {
@@ -94,7 +129,7 @@ module.exports = async function handler(req, res) {
       eurPerUsd: 0.92,
       markup: 3,
       asof: '2026-08-21',
-      role: 'Grok is the SpaceNet mind until the unit is trained',
+      role: 'Trained SpaceNet mind · live envelopes + taught lessons',
     });
     return;
   }
@@ -120,7 +155,20 @@ module.exports = async function handler(req, res) {
 
   const key = process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
   const history = Array.isArray(body.history) ? body.history.slice(-8) : [];
-  const messages = [{ role: 'system', content: String(body.system || SYS).slice(0, 4000) }];
+  const live = await liveEnvelope();
+  const taught = Array.isArray(body.lessons)
+    ? body.lessons
+        .slice(-8)
+        .map(function (x) {
+          return typeof x === 'string' ? x : x && x.text;
+        })
+        .filter(Boolean)
+        .join(' · ')
+    : '';
+  const sys = [String(body.system || SYS).slice(0, 3500), live, taught ? 'Taught: ' + taught.slice(0, 1200) : '']
+    .filter(Boolean)
+    .join(' ');
+  const messages = [{ role: 'system', content: sys.slice(0, 6000) }];
   history.forEach(function (h) {
     if (!h || !h.content) return;
     messages.push({
