@@ -1,10 +1,10 @@
-/* Astranov chrome-fix loader · 20260823194500-oversustain
+/* Astranov chrome-fix loader · 20260823200000-presence
  * Loads chrome-fix-body. Placeholders: owner law. Never restore coach dump.
  * Loads chrome-earth-levels: national/city/ocean stay on the 3D globe.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823194500-oversustain';
+  var BUILD = '20260823200000-presence';
   var TOP_PH = 'Command the HUD · show, hide, or reshape';
   var BOT_PH = 'Command the HUD · show, hide, or reshape';
   function enforceHud() {
@@ -101,6 +101,13 @@
     s.setAttribute('data-sn-finance', '1');
     document.head.appendChild(s);
   }
+  function loadPresence() {
+    if (document.querySelector('script[data-sn-presence]')) return;
+    var s = document.createElement('script');
+    s.src = '/js/spacenet/chrome-presence.js?v=' + BUILD;
+    s.setAttribute('data-sn-presence', '1');
+    document.head.appendChild(s);
+  }
   function earthHome() {
     try {
       if (document.body.classList.contains('sn-order-live')) return;
@@ -129,6 +136,7 @@
     loadEarth();
     loadProjects();
     loadFinance();
+    loadPresence();
     enforceHud();
     earthHome();
   }
@@ -138,6 +146,7 @@
   setTimeout(loadEarth, 400);
   setTimeout(loadProjects, 500);
   setTimeout(loadFinance, 600);
+  setTimeout(loadPresence, 650);
   setTimeout(earthHome, 1800);
   setTimeout(earthHome, 4000);
   setInterval(enforceHud, 3500);
@@ -148,6 +157,7 @@
       loadEarth();
     loadProjects();
     loadFinance();
+    loadPresence();
     });
   } else {
     enforceHud();
@@ -155,6 +165,7 @@
     loadEarth();
     loadProjects();
     loadFinance();
+    loadPresence();
   }
   global.SNChromeFixLoader = { build: BUILD, enforceHud: enforceHud, earthHome: earthHome };
 })(typeof window !== 'undefined' ? window : globalThis);

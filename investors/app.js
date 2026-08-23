@@ -1,4 +1,4 @@
-/* investors.astranov.eu · 20260823194500-oversustain */
+/* investors.astranov.eu · 20260823200000-presence */
 (function () {
   'use strict';
   var OWNER = 'notisastranov@gmail.com';
@@ -143,6 +143,40 @@
     }
   };
 
+  function snTell(msg) {
+    try {
+      var f = document.getElementById('sn-back');
+      if (f && f.contentWindow)
+        f.contentWindow.postMessage(Object.assign({ sn: 'presence' }, msg), 'https://astranov.eu');
+    } catch (_) {}
+  }
+
+  function renderCards() {
+    var host = document.getElementById('pcards');
+    if (!host) return;
+    host.innerHTML = '';
+    Object.keys(META).forEach(function (id) {
+      var m = META[id];
+      var p = byId(id);
+      if (!m.lat) return;
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'pcard';
+      var photo = absMedia((p && p.photo) || '/media/projects/' + m.folder + '/' + (m.images[0] || '00.jpg'));
+      b.innerHTML =
+        '<img src="' + photo + '" alt="">' +
+        '<div class="p"><b>' + ((p && p.name) || id) + '</b><span>' + ((p && p.place) || '') + '</span></div>';
+      b.onclick = function () {
+        host.querySelectorAll('.pcard').forEach(function (c) { c.classList.remove('on'); });
+        b.classList.add('on');
+        snTell({ op: 'fly', lat: m.lat, lng: m.lng, label: (p && p.name) || id, tier: 'city' });
+        snTell({ op: 'open', id: m.pin || id });
+        openSheet(id);
+      };
+      host.appendChild(b);
+    });
+  }
+
   function absMedia(u) {
     if (!u) return 'https://astranov.eu/icon.png';
     if (/^https?:/i.test(u)) return u;
@@ -276,6 +310,11 @@
     var globe = document.getElementById('sheet-globe');
     var q = m.pin || id;
     globe.href = 'https://astranov.eu/?project=' + encodeURIComponent(q);
+    document.getElementById('sheet-globe').onclick = function (e) {
+      e.preventDefault();
+      snTell({ op: 'fly', lat: m.lat, lng: m.lng, label: (p && p.name) || id, tier: 'city' });
+      snTell({ op: 'open', id: m.pin || id });
+    };
     document.getElementById('sheet').classList.add('open');
     try {
       history.replaceState(null, '', '#' + id);
@@ -390,6 +429,7 @@
     renderModel();
     renderTabs();
     renderTable();
+    renderCards();
     document.getElementById('owner-bar').classList.toggle('hidden', !owner);
   }
 
@@ -522,6 +562,19 @@
     if (e.key === 'ArrowRight') {
       slide++;
       showSlide(liveImgs[openId] || imgsOf(openId));
+    }
+  });
+
+  window.addEventListener('message', function (e) {
+    if (e.origin !== 'https://astranov.eu') return;
+    var d = e.data || {};
+    if (d.sn === 'presence' && d.op === 'ready') {
+      snTell({ op: 'planet' });
+      var pins = Object.keys(META).map(function (id) {
+        var m = META[id];
+        return { id: m.pin || id, name: id, lat: m.lat, lng: m.lng, color: '#44ccff' };
+      }).filter(function (p) { return p.lat; });
+      snTell({ op: 'glow', pins: pins });
     }
   });
 
