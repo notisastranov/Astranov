@@ -1,16 +1,16 @@
-/* SpaceNet unit trainer · 20260823224000-keepon
+/* SpaceNet unit trainer · 20260823203000-keeppulse
  * Living mind: live envelopes + taught lessons. Not static programming.
  * Does not restyle CLI placeholders. Not a training sim.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823224000-keepon';
+  var BUILD = '20260823203000-keeppulse';
   if (global.__SN_MIND_FACTS === BUILD) return;
   global.__SN_MIND_FACTS = BUILD;
 
   var KEY = 'sn:unit-lessons-v1';
   var HASH = 'sn:unit-env-hash-v1';
-  var SEED_MARK = 'sn:unit-seed-v1';
+  var SEED_MARK = 'sn:unit-seed-v2';
   var envelope = null;
   var SB = 'https://lkoatrkhuigdolnjsbie.supabase.co';
   var SB_KEY =
@@ -22,9 +22,18 @@
     'To complete SpaceNet + Phase 1 is the LIVE envelope on investors.astranov.eu. Gathered starts at €0 until a real wire.',
     'Rhodes: Fanes, Koskinou, Kallithea. Sitia Crete: Petras, Trypitos, Agia Fotia, Lagokefalo, Rousa Eklisia. Real GPS. Not invented towns.',
     'Never invent a kitchen, shop, or street. OSM shops. Oversustainable: restore the planet and produce goods, not offset.',
+    'Architect Notis Astranov operates from Rhodes, South Aegean. Real island, not a sim.',
     'Until the subdomain has its own cert, the live investors table is the HUD command budget on the globe. Never bounce to a dead SSL page.'
   ];
   var pulses = 0;
+
+  function looksLesson(s) {
+    var t = String(s || '').trim();
+    if (t.length < 12) return false;
+    if (/^(locate|gps|shops|pizza|call|drive|poly|global|city|map|power|login|budget|finance|investors?|train|teach|unit)\b/i.test(t))
+      return false;
+    return true;
+  }
 
   function log(m, k) {
     try {
@@ -208,11 +217,18 @@
         try {
           var ctx = contextBlock();
           if (ctx && opts && typeof opts === 'object') opts.system = (opts.system || '') + ' ' + ctx;
-          if (ctx && global.SNMindBridge && SNMindBridge.S) {
-            /* prefix last user with live context via history side-channel */
+          if (looksLesson(msg)) saveLesson(String(msg).slice(0, 400));
+        } catch (_) {}
+        var ret = prev(msg, opts);
+        try {
+          if (ret && typeof ret.then === 'function') {
+            return ret.then(function (ans) {
+              if (ans && looksLesson(msg)) saveLesson('Use: ' + String(msg).slice(0, 160) + ' → ' + String(ans).slice(0, 200));
+              return ans;
+            });
           }
         } catch (_) {}
-        return prev(msg, opts);
+        return ret;
       };
       SNMindBridge._snTrainWrap = 1;
     } catch (_) {}
@@ -234,8 +250,14 @@
       var book = pair[1];
       var pins = '';
       try {
-        if (global.SNProjects && SNProjects.list) pins = SNProjects.list().length + ' pins';
-        else if (global.SNProjects && SNProjects.projects) pins = String(SNProjects.projects.length);
+        var all = (global.SNProjects && SNProjects.all) || [];
+        if (all.length) {
+          pins = all
+            .map(function (p) {
+              return p.name + '@' + p.lat + ',' + p.lng;
+            })
+            .join('; ');
+        }
       } catch (_) {}
       var sig =
         (env && env.line) +
@@ -254,6 +276,7 @@
           localStorage.setItem(HASH, sig);
         } catch (_) {}
         saveLesson(env.line);
+        if (pins) saveLesson('Live project pins: ' + pins.slice(0, 700));
         if (book && book.share) {
           saveLesson(
             'Live ASH NAV ' +
