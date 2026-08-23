@@ -4,7 +4,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823204000-asx';
+  var BUILD = '20260823205000-ash50';
   if (global.__SN_FINANCE === BUILD) return;
   global.__SN_FINANCE = BUILD;
 
@@ -528,8 +528,8 @@
         '<div class="pill"><b>+</b>Restore what was sliding to ruin</div>' +
         '<div class="pill"><b>×</b>Produce real output</div></div>' +
         '<p><b>Astranov Coin</b> is everyday money: <b>1 AVC = 1 EUR</b>. Live work-mint at <a href="https://coin.astranov.eu" style="color:#7ec8ff">coin.astranov.eu</a>. Not legal tender. Not a bank print.</p>' +
-        '<p>The <b>Astranov Share (ASH)</b> lives on the <a href="/exchange" style="color:#7ec8ff">Astranov SpaceNet Stock Exchange</a>. Negotiated on real value created. Opening NAV <b>25.63 AVC</b> · 1,000,000 shares · Phase 1 envelope €25.63M.</p>' +
-        '<p>Value of the Share: projects, the space map, deposits (metals, stones, assets), and real users. Coin stays 1=1 so buying bread stays simple. Not a licensed national exchange. Not an offer of securities.</p>';
+        '<p>The <b>Astranov Share (ASH)</b> lives on the <a href="/exchange" style="color:#7ec8ff">Astranov SpaceNet Stock Exchange</a>. Indicative designed NAV <b>50.00 AVC</b> · <b>1,000,000 shares</b> · designed value <b>€50M</b>.</p>' +
+        '<p>Stack: Phase 1 projects €25.63M · Phase 2 designed €13.60M · SpaceNet €7M · Astranov brand €3.77M. Estimate, not an appraisal. Coin stays 1=1 EUR.</p>';
     } else if (tab === 'phase1') {
       body.innerHTML = tableFor(p1) + '<p class="warn">Phase 1 is the permitted-path envelope. Lake and Brothers pontoon are out.</p>';
     } else if (tab === 'restore') {

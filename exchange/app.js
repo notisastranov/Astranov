@@ -1,11 +1,11 @@
-/* Astranov SpaceNet Stock Exchange · 20260823204000-asx */
+/* Astranov SpaceNet Stock Exchange · 20260823205000-ash50 */
 (function () {
   'use strict';
   var OWNER = 'notisastranov@gmail.com';
   var SB_URL = 'https://lkoatrkhuigdolnjsbie.supabase.co';
   var SB_KEY =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb2F0cmtodWlnZG9sbmpzYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODIwOTIsImV4cCI6MjA5NDQ1ODA5Mn0.qf6Kg93YLJ0coTdVQa4baU0ppOdFY5WkmVzMvEV6ejI';
-  var book = { bids: [], asks: [], share: { last_eur: 25.63, nav_eur: 25.63, authorized: 1000000 }, tape: [] };
+  var book = { v: 2, bids: [], asks: [], share: { last_eur: 50, nav_eur: 50, authorized: 1000000, designed_keur: 50000 }, layers: [], tape: [] };
   var sb = null;
   var session = null;
   var owner = false;
@@ -21,8 +21,21 @@
     document.getElementById('pills').innerHTML =
       '<span class="pill">NAV ' + fmt(sh.nav_eur) + ' AVC</span>' +
       '<span class="pill">' + (sh.authorized || 0).toLocaleString('en-GB') + ' shares</span>' +
-      '<span class="pill">Phase 1 envelope €' + ((sh.phase1_nav_keur || 25630) / 1000).toFixed(2) + 'M</span>' +
+      '<span class="pill">Designed value €' + ((sh.designed_keur || 50000) / 1000).toFixed(0) + 'M</span>' +
       '<span class="pill">1 AVC = 1 EUR</span>';
+    var layers = book.layers || [];
+    var el = document.getElementById('layers');
+    if (el) {
+      el.innerHTML = layers
+        .map(function (L) {
+          return (
+            '<div class="pill" style="display:block;border-radius:10px;margin:6px 0">' +
+            '<b>' + (L.keur / 1000).toFixed(2) + 'M</b> ' + L.name +
+            ' <span style="color:#9ec4ee">· ' + (L.note || '') + '</span></div>'
+          );
+        })
+        .join('');
+    }
     var bids = (book.bids || []).slice().sort(function (a, b) { return b.px - a.px; });
     var asks = (book.asks || []).slice().sort(function (a, b) { return a.px - b.px; });
     var html = '';
@@ -44,7 +57,7 @@
     document.getElementById('who').textContent = owner ? 'Owner · book live' : 'Public book';
     document.getElementById('auth-btn').textContent = session ? 'Sign out' : 'Owner login';
     var px = document.getElementById('px');
-    if (px && !px.dataset.touched) px.value = fmt(sh.last_eur || 25.63);
+    if (px && !px.dataset.touched) px.value = fmt(sh.last_eur || 50);
   }
 
   function match(side, px, qty, who) {
@@ -104,14 +117,19 @@
     });
   };
 
-  fetch('book.json?v=20260823204000-asx')
+  fetch('book.json?v=20260823205000-ash50')
     .then(function (r) { return r.json(); })
     .then(function (j) {
       book = j;
       book.tape = book.tape || [];
       try {
         var loc = JSON.parse(localStorage.getItem('sn_asx_book') || 'null');
-        if (loc && loc.bids) book = loc;
+        if (loc && loc.v >= 2 && loc.bids) {
+          book.bids = loc.bids;
+          book.asks = loc.asks;
+          book.tape = loc.tape || [];
+          if (loc.share && loc.share.last_eur) book.share.last_eur = loc.share.last_eur;
+        }
       } catch (_) {}
       render();
     })

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Astranov SpaceNet Stock Exchange</title>
-  <meta name="astranov-build" content="20260823204000-asx" />
+  <meta name="astranov-build" content="20260823205000-ash50" />
   <meta name="description" content="Astranov SpaceNet Stock Exchange — electronic shares marketplace. Home of the Astranov Share. Coin is 1 = 1 euro." />
   <link rel="icon" href="https://astranov.eu/icon.png" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
@@ -19,7 +19,7 @@
     header h1 { margin:0; font:700 15px/1.2 "Space Grotesk",Inter,sans-serif; flex:1; }
     header .who { color:var(--muted); font-size:12px; }
     header button { height:34px; padding:0 12px; border-radius:999px; border:1px solid rgba(126,200,255,.4); background:rgba(20,40,70,.6); color:#e8f2ff; font:650 12px/1 Inter,system-ui; cursor:pointer; }
-    .board { display:grid; grid-template-columns:1.1fr .9fr 1fr; gap:12px; padding:12px; overflow:auto; flex:1; }
+    .board { display:grid; grid-template-columns:1.15fr .85fr 1fr; gap:12px; padding:12px; overflow:auto; flex:1; }
     .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px; backdrop-filter:blur(10px); }
     .card h2 { margin:0 0 8px; font:700 13px/1 "Space Grotesk",Inter,sans-serif; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
     .last { font:700 42px/1 "Space Grotesk",Inter,sans-serif; color:var(--gold); }
@@ -54,8 +54,9 @@
         <h2>Astranov Share · ASH</h2>
         <div class="last" id="last">— <small>AVC</small></div>
         <div class="meta" id="pills"></div>
-        <p>Negotiated on <b>real value created</b> — projects, the space map, deposits, and use — not on thin air.</p>
+        <p>Negotiated on <b>real value created</b> — brand, SpaceNet, and every designed project — not on thin air.</p>
         <p>Everyday money is <b>Astranov Coin</b>: <b>1 AVC = 1 EUR</b>. Shares here. Coins in the street.</p>
+        <div id="layers"></div>
         <p class="warn" id="disclaimer"></p>
       </div>
       <div class="card">
@@ -75,7 +76,7 @@
             <input id="qty" type="number" min="1" step="1" value="100" />
           </label>
           <label>Price AVC
-            <input id="px" type="number" min="0.01" step="0.01" value="25.63" />
+            <input id="px" type="number" min="0.01" step="0.01" value="50.00" />
           </label>
           <label>Name
             <input id="who-in" type="text" maxlength="40" placeholder="Your name" />
@@ -89,6 +90,6 @@
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20260823204000-asx"></script>
+  <script src="app.js?v=20260823205000-ash50"></script>
 </body>
 </html>
