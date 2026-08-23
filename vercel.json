@@ -35,8 +35,13 @@
     }
   ],
   "rewrites": [
+    { "source": "/", "has": [{ "type": "host", "value": "investors.astranov.eu" }], "destination": "/investors/index.html" },
+    { "source": "/index.html", "has": [{ "type": "host", "value": "investors.astranov.eu" }], "destination": "/investors/index.html" },
+    { "source": "/app.js", "has": [{ "type": "host", "value": "investors.astranov.eu" }], "destination": "/investors/app.js" },
+    { "source": "/budget.json", "has": [{ "type": "host", "value": "investors.astranov.eu" }], "destination": "/investors/budget.json" },
+    { "source": "/investors", "destination": "/investors/index.html" },
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" },
-    { "source": "/((?!api/|js/|icon|manifest|assets/|sw\\.js|briefings/|privacy|terms|robots|favicon).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|js/|icon|manifest|assets/|media/|investors|sw\\.js|briefings/|privacy|terms|robots|favicon).*)", "destination": "/index.html" }
   ]
 }

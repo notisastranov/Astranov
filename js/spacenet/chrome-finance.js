@@ -4,7 +4,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823183000-finance';
+  var BUILD = '20260823190000-investors';
   if (global.__SN_FINANCE === BUILD) return;
   global.__SN_FINANCE = BUILD;
 
@@ -295,6 +295,27 @@
     }
   ];
 
+  var PHOTOS = {
+    motorhouses: '/media/projects/kallithea/02.jpg',
+    'kallithea-commons': '/media/projects/kallithea/01.jpg',
+    lake: '/media/projects/kallithea/00-topo.svg',
+    'koskinou-bar': '/media/projects/koskinou/00.jpg',
+    bodega: '/media/projects/bodega/00.jpg',
+    'house-art': '/media/projects/house-art/00.jpg',
+    'fanes-restore': '/media/projects/fanes/00.jpg',
+    'koskinou-restore': '/media/projects/koskinou/01.jpg',
+    'kallithea-restore': '/media/projects/kallithea/13.jpg',
+    lofts: '/media/projects/lofts/00.jpg',
+    villa: '/media/projects/villa/00.jpg',
+    yachtclub: '/media/projects/sitia/00.jpg',
+    'rousa-restore': '/media/projects/rousa/00.jpg',
+    'lagokefalo-restore': '/media/projects/lagokefalo/00.jpg',
+    'agia-restore': '/media/projects/agia-fotia/00.jpg',
+    trypitos: '/media/projects/trypitos/00.jpg',
+    yacht: '/media/projects/yacht/00.jpg',
+    brothers: '/media/projects/brothers/00.jpg'
+  };
+
   function logCli(msg, kind) {
     try {
       if (global.SNCli && SNCli.log) SNCli.log(msg, kind || 'ok');
@@ -337,6 +358,7 @@
       '#sn-fin-body th,#sn-fin-body td{text-align:left;padding:7px 6px;border-bottom:1px solid rgba(180,220,255,.1)}' +
       '#sn-fin-body th{color:#9ec4ee;font:650 10px/1 Inter,system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase}' +
       '#sn-fin-body td.n{text-align:right;font-variant-numeric:tabular-nums;color:#e8c36a}' +
+      '#sn-fin-body td img{width:56px;height:38px;object-fit:cover;border-radius:6px;display:block;background:#05080f}' +
       '#sn-fin-body .warn{color:#f3d48a;font:500 12px/1.4 Inter,system-ui,sans-serif}' +
       '#sn-fin-body .split{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}' +
       '#sn-fin-body .pill{flex:1;min-width:140px;border:1px solid rgba(232,195,106,.35);border-radius:12px;padding:10px}' +
@@ -396,14 +418,17 @@
 
   function tableFor(list) {
     var html =
-      '<table><thead><tr><th>Package</th><th>Place</th><th>What</th><th>CAPEX</th></tr></thead><tbody>';
+      '<table><thead><tr><th></th><th>Package</th><th>Place</th><th>What</th><th>CAPEX</th></tr></thead><tbody>';
     var tot = 0;
     list.forEach(function (p) {
       tot += p.capex;
+      var photo = p.photo || PHOTOS[p.id] || '/icon.png';
       html +=
         '<tr data-id="' +
         p.id +
-        '"><td>' +
+        '"><td><img src="' +
+        photo +
+        '" alt=""></td><td>' +
         p.name +
         '</td><td>' +
         p.place +
@@ -414,13 +439,13 @@
         '</td></tr>';
     });
     html +=
-      '<tr><td colspan="3"><b>Subtotal net</b></td><td class="n"><b>' +
+      '<tr><td colspan="4"><b>Subtotal net</b></td><td class="n"><b>' +
       eur(tot) +
       '</b></td></tr>' +
-      '<tr><td colspan="3">VAT 24% (construction)</td><td class="n">' +
+      '<tr><td colspan="4">VAT 24% (construction)</td><td class="n">' +
       eur(vat(tot)) +
       '</td></tr>' +
-      '<tr><td colspan="3"><b>If VAT applies in full</b></td><td class="n"><b>' +
+      '<tr><td colspan="4"><b>Total if VAT applies in full</b></td><td class="n"><b>' +
       eur(tot + vat(tot)) +
       '</b></td></tr></tbody></table>';
     return html;
@@ -491,7 +516,8 @@
         ' · Brothers pontoon ' +
         eur(1600) +
         ' (not permitted).</p>' +
-        '<p>Rates: 2026 island new-build ~€2.2–2.8k/m² · heavy village restore ~€0.9–1.4k/m². 15% contingency inside packages. Land usually extra.</p>';
+        '<p>Rates: 2026 island new-build ~€2.2–2.8k/m² · heavy village restore ~€0.9–1.4k/m². 15% contingency inside packages. Land usually extra.</p>' +
+        '<p><a href="https://investors.astranov.eu" style="color:#7ec8ff">Open the full table on investors.astranov.eu</a> · also <a href="/investors/" style="color:#7ec8ff">astranov.eu/investors</a></p>';
     } else if (tab === 'phase1') {
       body.innerHTML = tableFor(p1) + '<p class="warn">Phase 1 is the permitted-path envelope. Lake and Brothers pontoon are out.</p>';
     } else if (tab === 'restore') {

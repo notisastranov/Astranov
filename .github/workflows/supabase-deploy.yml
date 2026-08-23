@@ -91,6 +91,7 @@ jobs:
           supabase functions deploy voice          --no-verify-jwt
           supabase functions deploy auditor-api  --no-verify-jwt
           supabase functions deploy gtiles        --no-verify-jwt
+          supabase functions deploy investor-budget --no-verify-jwt
           supabase functions deploy vendor-crawler --no-verify-jwt
 
       - name: Set Edge Function secrets
