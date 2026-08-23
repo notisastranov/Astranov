@@ -74,6 +74,7 @@ jobs:
           # Vercel: apex A 76.76.21.21 and www CNAME cname.vercel-dns.com
           upsert("A", "astranov.eu", "76.76.21.21", False)
           upsert("CNAME", "www.astranov.eu", "cname.vercel-dns.com", False)
+          upsert("CNAME", "investors.astranov.eu", "cname.vercel-dns.com", False)
 
           # Also try delete worker routes if permitted
           st, routes = api("GET", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/workers/routes")

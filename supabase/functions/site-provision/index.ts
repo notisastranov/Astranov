@@ -11,7 +11,7 @@ const cors = {
 }
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9])?$/
-const RESERVED = new Set(['www', 'api', 'app', 'mail', 'admin', 'astranov', 'booker', 'superbooking', 'frogschool', 'yachts'])
+const RESERVED = new Set(['www', 'api', 'app', 'mail', 'admin', 'astranov', 'booker', 'superbooking', 'frogschool', 'yachts', 'investors'])
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })

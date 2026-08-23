@@ -4,7 +4,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823183000-finance';
+  var BUILD = '20260823190000-investors';
   if (global.__SN_PROJECTS === BUILD) return;
   global.__SN_PROJECTS = BUILD;
 

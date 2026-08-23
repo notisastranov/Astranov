@@ -39,6 +39,9 @@ verify_jwt = false
 [functions.gtiles]
 verify_jwt = false
 
+[functions.investor-budget]
+verify_jwt = false
+
 
 [functions.coders-bridge]
 verify_jwt = false
