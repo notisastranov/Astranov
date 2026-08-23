@@ -259,6 +259,7 @@ serve(async (req) => {
           GROQ: !!Deno.env.get('GROQ_API_KEY'),
           GEMINI: !!Deno.env.get('GEMINI_API_KEY'),
           ANTHROPIC: !!(Deno.env.get('ANTHROPIC_PAID_API_KEY') || Deno.env.get('ANTHROPIC_API_KEY')),
+          GOOGLE_MAPS: !!(Deno.env.get('GOOGLE_MAPS_API_KEY') || Deno.env.get('GOOGLE_PLACES_API_KEY') || Deno.env.get('GOOGLE_MAPS_KEY')),
         },
         architect: (Deno.env.get('ARCHITECT_EMAIL') || 'notisastranov@gmail.com').toLowerCase(),
       })
@@ -277,6 +278,7 @@ serve(async (req) => {
           GROQ: !!Deno.env.get('GROQ_API_KEY'),
           GEMINI: !!Deno.env.get('GEMINI_API_KEY'),
           ANTHROPIC: !!(Deno.env.get('ANTHROPIC_PAID_API_KEY') || Deno.env.get('ANTHROPIC_API_KEY')),
+          GOOGLE_MAPS: !!(Deno.env.get('GOOGLE_MAPS_API_KEY') || Deno.env.get('GOOGLE_PLACES_API_KEY') || Deno.env.get('GOOGLE_MAPS_KEY')),
         },
       })
     }
