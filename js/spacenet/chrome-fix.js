@@ -1,10 +1,10 @@
-/* Astranov chrome-fix loader · 20260823180000-kallithea
+/* Astranov chrome-fix loader · 20260823181000-plots
  * Loads chrome-fix-body. Placeholders: owner law. Never restore coach dump.
  * Loads chrome-earth-levels: national/city/ocean stay on the 3D globe.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823180000-kallithea';
+  var BUILD = '20260823181000-plots';
   var TOP_PH = 'Command the HUD · show, hide, or reshape';
   var BOT_PH = 'Command the HUD · show, hide, or reshape';
   function enforceHud() {
