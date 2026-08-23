@@ -1,4 +1,4 @@
-/* Astranov mute · Build 20260823195000-ai-listen-dock
+/* Astranov mute · Build 20260823201000-ai-listen-hit
  * Kill beeps + load chrome-ai-listen (guest SpeechRecognition → CLI → paid mind).
  * Does NOT load chrome-guest-pizza-hunt (#127), chrome-call-arc (#129),
  * chrome-nairobi-ladder (#130), chrome-kalithea-village (#131),
@@ -7,7 +7,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823195000-ai-listen-dock';
+  var BUILD = '20260823201000-ai-listen-hit';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
