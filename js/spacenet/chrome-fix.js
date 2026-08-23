@@ -1,9 +1,10 @@
-/* Astranov chrome-fix loader · 20260822170500-hud-law
+/* Astranov chrome-fix loader · 20260823151000-earth-levels
  * Loads chrome-fix-body. Placeholders: owner law. Never restore coach dump.
+ * Loads chrome-earth-levels: national/city/ocean stay on the 3D globe.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260822170500-hud-law';
+  var BUILD = '20260823151000-earth-levels';
   var TOP_PH = 'Command the HUD · show, hide, or reshape';
   var BOT_PH = 'Command the HUD · show, hide, or reshape';
   function enforceHud() {
@@ -79,9 +80,17 @@
     s.setAttribute('data-sn-p0-ops', '1');
     document.head.appendChild(s);
   }
+  function loadEarth() {
+    if (document.querySelector('script[data-sn-earth-levels]')) return;
+    var s = document.createElement('script');
+    s.src = '/js/spacenet/chrome-earth-levels.js?v=' + BUILD;
+    s.setAttribute('data-sn-earth-levels', '1');
+    document.head.appendChild(s);
+  }
   function earthHome() {
     try {
       if (document.body.classList.contains('sn-order-live')) return;
+      if (document.body.classList.contains('sn-streets-on')) return;
       var globe = document.getElementById('globe');
       if (globe) {
         globe.classList.remove('city-hidden');
@@ -103,12 +112,14 @@
   function afterGood() {
     loadFace();
     loadOps();
+    loadEarth();
     enforceHud();
     earthHome();
   }
   load('/js/spacenet/chrome-fix-body.js?v=' + BUILD, afterGood);
   setTimeout(afterGood, 1200);
   setTimeout(loadOps, 2500);
+  setTimeout(loadEarth, 400);
   setTimeout(earthHome, 1800);
   setTimeout(earthHome, 4000);
   setInterval(enforceHud, 3500);
@@ -116,10 +127,12 @@
     document.addEventListener('DOMContentLoaded', function () {
       enforceHud();
       earthHome();
+      loadEarth();
     });
   } else {
     enforceHud();
     earthHome();
+    loadEarth();
   }
   global.SNChromeFixLoader = { build: BUILD, enforceHud: enforceHud, earthHome: earthHome };
 })(typeof window !== 'undefined' ? window : globalThis);
