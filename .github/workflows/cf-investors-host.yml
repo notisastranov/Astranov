@@ -12,6 +12,9 @@ on:
 jobs:
   host:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     permissions:
       contents: write
       pages: write
@@ -25,11 +28,24 @@ jobs:
           publish_dir: ./investors
           cname: investors.astranov.eu
           force_orphan: true
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        continue-on-error: true
+        with:
+          enablement: true
+          html_url: https://investors.astranov.eu
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: investors
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
       - name: Enable Pages custom domain
         continue-on-error: true
         run: |
-          gh api -X POST repos/notisastranov/astranov.eu/pages -f build_type=legacy -F source[branch]=gh-pages -F source[path]=/ || true
-          gh api -X PUT repos/notisastranov/astranov.eu/pages -f cname=investors.astranov.eu -F https_enforced=false || true
+          gh api -X POST repos/${{ github.repository }}/pages -f build_type=workflow || true
+          gh api -X PUT repos/${{ github.repository }}/pages -f cname=investors.astranov.eu -F https_enforced=false || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Grey-cloud DNS investors → github.io
