@@ -1,13 +1,13 @@
-/* Astranov mute · Build 20260824002000-place-vend
+/* Astranov mute · Build 20260824003000-place-vend2
  * Copy of #173 twin-cli loadChain + ADD locked place modules as REAL static files.
  * Full JS bytes of locked #130 chrome-nairobi-ladder.js and #131 chrome-kalithea-village.js
  * are written to /js/spacenet/* so plain GET returns >10KB JS. No runtime GitHub fetch.
- * No gzip-only variant. Cache-bust 20260824002000-place-vend.
+ * No gzip-only variant. Cache-bust 20260824003000-place-vend2.
  * pizza/laptop/HOLD/twin/listen/research unchanged.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260824002000-place-vend';
+  var BUILD = '20260824003000-place-vend2';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
