@@ -1,0 +1,26 @@
+{
+  "venue": "Astranov SpaceNet Stock Exchange",
+  "disclaimer": "Electronic shares marketplace on SpaceNet. Not a licensed national exchange. Not an offer of securities. Astranov Share is negotiated on real value created. Astranov Coin is 1 = 1 EUR for everyday life.",
+  "coin": { "name": "Astranov Coin", "ticker": "AVC", "eur": 1 },
+  "share": {
+    "name": "Astranov Share",
+    "ticker": "ASH",
+    "authorized": 1000000,
+    "phase1_nav_keur": 25630,
+    "nav_eur": 25.63,
+    "last_eur": 25.63,
+    "currency": "Astranov Coin (1 AVC = 1 EUR)"
+  },
+  "bids": [
+    {"px": 25.40, "qty": 1200},
+    {"px": 25.20, "qty": 3400},
+    {"px": 25.00, "qty": 8000},
+    {"px": 24.50, "qty": 15000}
+  ],
+  "asks": [
+    {"px": 25.80, "qty": 900},
+    {"px": 26.00, "qty": 2500},
+    {"px": 26.40, "qty": 6000},
+    {"px": 27.00, "qty": 10000}
+  ]
+}

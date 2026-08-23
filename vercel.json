@@ -42,9 +42,10 @@
     { "source": "/app.js", "has": [{ "type": "host", "value": "investors.astranov.eu" }], "destination": "/investors/app.js" },
     { "source": "/budget.json", "has": [{ "type": "host", "value": "investors.astranov.eu" }], "destination": "/investors/budget.json" },
     { "source": "/presence", "destination": "/presence/index.html" },
+    { "source": "/exchange", "destination": "/exchange/index.html" },
     { "source": "/investors", "destination": "/investors/index.html" },
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" },
-    { "source": "/((?!api/|js/|icon|manifest|assets/|media/|investors|presence|sw\\.js|briefings/|privacy|terms|robots|favicon).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|js/|icon|manifest|assets/|media/|investors|presence|exchange|sw\\.js|briefings/|privacy|terms|robots|favicon).*)", "destination": "/index.html" }
   ]
 }
