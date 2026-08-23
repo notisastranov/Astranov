@@ -1,29 +1,32 @@
 /**
- * Guest HOLD ⭐ / pay gate — Build 20260823223000-hold-pay
+ * Guest HOLD ⭐ / pay gate — Build 20260823230000-hold-card
  * NEW overlay on the #171 combine branch. Do not edit locked siblings:
  *   #171 pizza/laptop/research/ai-listen/call-arc/twin-cli
  *   #164 #169 #132 #127 #121 #122–#125 #128
  *
  * BOX: after a pizza or laptop hunt, tapping a shop pin prints
  *   Shop · name · km · ⭐
- * Guest HOLD ⭐ / pay → ONLY the Google GIS Sign-in wall (Privacy · Terms),
- * same wall as CALL (SNAuth.signInGoogleGis). Camera stays. Pins stay.
+ * Guest HOLD ⭐ / pay → SAME guest Sign-in CARD that CALL opens
+ * (Sign in with Google · Privacy · Terms · Cancel). Never a raw
+ * accounts.google.com/gsi/button iframe. Cancel dismisses; clock + CLI
+ * keep running. Camera stays. Pins stay.
  *
  * No fake DRIVER EN ROUTE. No me-av. No free 80 æ / Mesh Alpha.
  * Currency ⭐. Wallet stays ⭐ 0.00 until a real signed-in eur_balance.
- * Never INSERT into public.orders. No courier theatre.
+ * Never INSERT into public.orders. No courier theatre. Do not complete a pay.
  *
- * DONE-WHEN (guest): hunt tap shop → HOLD is Google only.
+ * DONE-WHEN (guest): hunt tap shop → HOLD is the CALL Sign-in card.
  */
 (function (G) {
   'use strict';
-  if (G.__snHoldPay20260823223000) return;
+  if (G.__snHoldPay20260823230000) return;
+  G.__snHoldPay20260823230000 = 1;
   G.__snHoldPay20260823223000 = 1;
 
-  var BUILD = '20260823223000-hold-pay';
+  var BUILD = '20260823230000-hold-card';
   var CHIP_ID = 'sn-hold-pay-chip';
+  var CARD_ID = 'sn-hold-signin';
   var selected = null;
-  var wallUntil = 0;
   var lastShopLine = '';
   var lastShopAt = 0;
   var fetchWrapped = false;
@@ -175,92 +178,236 @@
     } catch (_) {}
   }
 
-  function injectWallCss() {
-    if (document.getElementById('sn-hold-pay-css')) return;
+  function injectCardCss() {
+    if (document.getElementById('sn-hold-card-css')) return;
     var st = document.createElement('style');
-    st.id = 'sn-hold-pay-css';
+    st.id = 'sn-hold-card-css';
     st.textContent =
-      'html.sn-hold-pay-wall #sn-auth-modal,' +
-      'html.sn-hold-pay-wall #sn-auth-modal.open,' +
-      'html.sn-hold-pay-wall #sn-auth-modal.show,' +
-      'html.sn-hold-pay-wall #sn-auth-modal.sn-open,' +
-      'html.sn-hold-pay-wall #sn-auth-modal[hidden]{' +
-      'display:flex!important;visibility:visible!important;opacity:1!important;' +
-      'pointer-events:auto!important;z-index:2147483000!important}' +
-      'html.sn-hold-pay-wall #sn-auth-gsi{display:flex!important;visibility:visible!important}' +
-      '#sn-auth-card .sn-auth-note a{color:#cfe8ff;text-decoration:none;border-bottom:1px solid rgba(61,158,255,.45)}';
+      '#' +
+      CARD_ID +
+      '{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;' +
+      'background:rgba(0,4,12,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:20px;' +
+      'pointer-events:auto}' +
+      '#' +
+      CARD_ID +
+      '[hidden]{display:none!important}' +
+      '#' +
+      CARD_ID +
+      ' .sn-hold-card{width:min(400px,100%);max-height:min(92vh,640px);overflow:auto;' +
+      'background:linear-gradient(165deg,#061018 0%,#0a1624 55%,#050c14 100%);' +
+      'border:1px solid rgba(61,158,255,.35);border-radius:18px;padding:28px 24px 22px;' +
+      'box-shadow:0 24px 80px rgba(0,40,80,.55),0 0 40px rgba(61,158,255,.12);' +
+      'color:#e8f2ff;font-family:system-ui,-apple-system,Segoe UI,sans-serif;text-align:center}' +
+      '#' +
+      CARD_ID +
+      ' .sn-auth-mark{font-size:13px;letter-spacing:.28em;font-weight:700;color:#3d9eff;margin:0 0 6px}' +
+      '#' +
+      CARD_ID +
+      ' h2{margin:0 0 8px;font-size:22px;font-weight:650;color:#fff;letter-spacing:.02em}' +
+      '#' +
+      CARD_ID +
+      ' .sn-auth-copy{font-size:13px;line-height:1.45;color:#a8c4dc;margin:0 0 20px}' +
+      '#' +
+      CARD_ID +
+      ' .sn-hold-google{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:min(280px,100%);' +
+      'cursor:pointer;border:1px solid rgba(61,158,255,.55);border-radius:999px;padding:12px 18px;margin:0 0 16px;' +
+      'font:700 14px/1.2 system-ui;letter-spacing:.02em;background:linear-gradient(180deg,#0a1624,#050c14);color:#e8f4ff;' +
+      'box-shadow:0 8px 28px rgba(0,0,0,.45),0 0 18px rgba(61,158,255,.25)}' +
+      '#' +
+      CARD_ID +
+      ' .sn-hold-google:hover{border-color:#7ec8ff;color:#fff}' +
+      '#' +
+      CARD_ID +
+      ' .sn-auth-note{font-size:11px;color:#6a8aaa;margin:0 0 14px;line-height:1.4}' +
+      '#' +
+      CARD_ID +
+      ' .sn-auth-note a{color:#cfe8ff;text-decoration:none;border-bottom:1px solid rgba(61,158,255,.45)}' +
+      '#' +
+      CARD_ID +
+      ' .sn-auth-close{background:transparent;border:1px solid rgba(138,180,217,.25);color:#8ab4d9;' +
+      'border-radius:999px;padding:8px 18px;font-size:12px;cursor:pointer}' +
+      '#' +
+      CARD_ID +
+      ' .sn-auth-close:hover{border-color:#3d9eff;color:#cfe8ff}';
     try {
       (document.head || document.documentElement).appendChild(st);
     } catch (_) {}
   }
 
-  function ensureLegal() {
-    try {
-      var card = document.getElementById('sn-auth-card');
-      if (!card) return;
-      var note = card.querySelector('.sn-auth-note');
-      if (!note) {
-        note = document.createElement('p');
-        note.className = 'sn-auth-note';
-        card.appendChild(note);
-      }
-      if (!/Privacy/i.test(String(note.textContent || ''))) {
-        note.innerHTML = '<a href="/privacy">Privacy</a> · <a href="/terms">Terms</a>';
-      }
-    } catch (_) {}
-  }
-
-  function watchModal() {
+  function hideAuthModal() {
     try {
       var modal = document.getElementById('sn-auth-modal');
-      if (!modal || modal._snHoldPayMo) return;
-      modal._snHoldPayMo = 1;
-      var mo = new MutationObserver(function () {
-        if (G.__snHoldPayWall && !signed()) revealAuthWall();
-      });
-      mo.observe(modal, {
-        attributes: true,
-        attributeFilter: ['style', 'hidden', 'class', 'aria-hidden'],
-      });
+      if (!modal) return;
+      modal.hidden = true;
+      modal.setAttribute('hidden', '');
+      modal.setAttribute('aria-hidden', 'true');
+      modal.classList.remove('open', 'show', 'sn-open');
+      modal.style.setProperty('display', 'none', 'important');
+    } catch (_) {}
+    try {
+      var gsi = document.getElementById('sn-auth-gsi');
+      if (!gsi) return;
+      var iframes = gsi.querySelectorAll('iframe');
+      for (var i = 0; i < iframes.length; i++) {
+        try {
+          iframes[i].remove();
+        } catch (_) {}
+      }
+      gsi.innerHTML = '';
     } catch (_) {}
   }
 
   function dropWall() {
     G.__snHoldPayWall = false;
-    wallUntil = 0;
     try {
       document.documentElement.classList.remove('sn-hold-pay-wall');
     } catch (_) {}
+    try {
+      var el = document.getElementById(CARD_ID);
+      if (el) {
+        el.hidden = true;
+        el.setAttribute('hidden', '');
+        el.setAttribute('aria-hidden', 'true');
+        el.style.setProperty('display', 'none', 'important');
+      }
+    } catch (_) {}
+    hideAuthModal();
   }
 
-  function revealAuthWall() {
+  function nativeGoogleSignIn() {
+    try {
+      if (G.SNAuth && typeof SNAuth.ensureClient === 'function') {
+        void Promise.resolve(SNAuth.ensureClient())
+          .then(function (c) {
+            if (!c || !c.auth || typeof c.auth.signInWithOAuth !== 'function') return null;
+            return c.auth.signInWithOAuth({
+              provider: 'google',
+              options: {
+                redirectTo: String(location.origin || '').replace(/\/$/, '') + '/',
+                queryParams: { access_type: 'offline', prompt: 'select_account' },
+              },
+            });
+          })
+          .catch(function () {});
+        return;
+      }
+    } catch (_) {}
+  }
+
+  function openHoldCard() {
+    killCourier();
+    hideAuthModal();
+    injectCardCss();
+    G.__snHoldPayWall = true;
+    hideChip();
     try {
       document.documentElement.classList.add('sn-hold-pay-wall');
     } catch (_) {}
-    injectWallCss();
-    ensureLegal();
-    var modal = document.getElementById('sn-auth-modal');
-    if (!modal) return null;
+
+    var root = document.getElementById(CARD_ID);
+    if (!root) {
+      root = document.createElement('div');
+      root.id = CARD_ID;
+      root.setAttribute('role', 'dialog');
+      root.setAttribute('aria-modal', 'true');
+      root.setAttribute('aria-label', 'Sign in to ASTRANOV');
+      root.setAttribute('data-sn-build', BUILD);
+      root.innerHTML =
+        '<div class="sn-hold-card" id="sn-hold-card">' +
+        '<div class="sn-auth-mark">ASTRANOV</div>' +
+        '<h2>Sign in</h2>' +
+        '<p class="sn-auth-copy">Sign in with Google to call, order, and keep your place on Earth.</p>' +
+        '<button type="button" class="sn-hold-google" id="sn-hold-google" aria-label="Sign in with Google">' +
+        'Sign in with Google</button>' +
+        '<p class="sn-auth-note"><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></p>' +
+        '<div><button type="button" class="sn-auth-close" id="sn-hold-cancel">Cancel</button></div>' +
+        '</div>';
+      try {
+        (document.body || document.documentElement).appendChild(root);
+      } catch (_) {}
+      root.addEventListener(
+        'click',
+        function (ev) {
+          if (ev.target === root) dropWall();
+        },
+        true
+      );
+      var cancel = root.querySelector('#sn-hold-cancel');
+      if (cancel) {
+        cancel.addEventListener(
+          'click',
+          function (ev) {
+            try {
+              ev.preventDefault();
+              ev.stopPropagation();
+            } catch (_) {}
+            dropWall();
+            if (selected && isGuest()) showChip(selected);
+          },
+          true
+        );
+      }
+      var googleBtn = root.querySelector('#sn-hold-google');
+      if (googleBtn) {
+        googleBtn.addEventListener(
+          'click',
+          function (ev) {
+            try {
+              ev.preventDefault();
+              ev.stopPropagation();
+            } catch (_) {}
+            nativeGoogleSignIn();
+          },
+          true
+        );
+      }
+      if (!document.documentElement._snHoldCardEsc) {
+        document.documentElement._snHoldCardEsc = 1;
+        document.addEventListener(
+          'keydown',
+          function (ev) {
+            if (ev.key === 'Escape' && G.__snHoldPayWall) {
+              dropWall();
+              if (selected && isGuest()) showChip(selected);
+            }
+          },
+          true
+        );
+      }
+    }
+    root.hidden = false;
+    root.removeAttribute('hidden');
+    root.setAttribute('aria-hidden', 'false');
+    root.style.setProperty('display', 'flex', 'important');
+    root.style.setProperty('visibility', 'visible', 'important');
+    root.style.setProperty('opacity', '1', 'important');
+    root.style.setProperty('pointer-events', 'auto', 'important');
     try {
-      modal.hidden = false;
-      modal.removeAttribute('hidden');
-      modal.removeAttribute('aria-hidden');
-      modal.classList.add('open', 'show', 'sn-open');
-      modal.style.removeProperty('display');
-      modal.style.setProperty('display', 'flex', 'important');
-      modal.style.setProperty('visibility', 'visible', 'important');
-      modal.style.setProperty('opacity', '1', 'important');
-      modal.style.setProperty('pointer-events', 'auto', 'important');
-      modal.style.setProperty('z-index', '2147483000', 'important');
+      if (document.body && root.parentNode !== document.body) document.body.appendChild(root);
     } catch (_) {}
+    return root;
+  }
+
+  function reuseCallSignInWall() {
     try {
-      var errEl = document.getElementById('sn-auth-err');
-      if (errEl && /HOLD|pay|Sign in with Google/i.test(String(errEl.textContent || ''))) {
-        errEl.textContent = '';
+      if (G.SNCallArc && typeof SNCallArc.openSignIn === 'function') {
+        SNCallArc.openSignIn();
+        return true;
       }
     } catch (_) {}
-    watchModal();
-    return document.getElementById('sn-auth-gsi') || modal;
+    try {
+      if (G.SNCallArc && typeof SNCallArc.signInCard === 'function') {
+        SNCallArc.signInCard();
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  function promptSignInCard() {
+    killCourier();
+    if (reuseCallSignInWall()) return;
+    openHoldCard();
   }
 
   function hideChip() {
@@ -312,44 +459,6 @@
     el.style.setProperty('display', 'flex', 'important');
   }
 
-  function bindWallClose() {
-    try {
-      var close = document.getElementById('sn-auth-close');
-      if (close && !close._snHoldPay) {
-        close._snHoldPay = 1;
-        close.addEventListener(
-          'click',
-          function () {
-            dropWall();
-          },
-          true
-        );
-      }
-      var modal = document.getElementById('sn-auth-modal');
-      if (modal && !modal._snHoldPayBackdrop) {
-        modal._snHoldPayBackdrop = 1;
-        modal.addEventListener(
-          'click',
-          function (ev) {
-            if (ev.target === modal) dropWall();
-          },
-          true
-        );
-      }
-    } catch (_) {}
-  }
-
-  function keepWall() {
-    if (!G.__snHoldPayWall) return;
-    if (signed()) {
-      dropWall();
-      hideChip();
-      return;
-    }
-    revealAuthWall();
-    bindWallClose();
-  }
-
   function patchOpenModal() {
     try {
       if (!G.SNAuth || typeof SNAuth.openModal !== 'function') return;
@@ -357,84 +466,17 @@
       var prev = SNAuth.openModal.bind(SNAuth);
       SNAuth.openModal = function (msg) {
         var m = String(msg == null ? '' : msg);
-        var wantWall =
+        var wantCard =
           G.__snHoldPayWall ||
-          !m ||
-          /pay|HOLD\s*⭐|hold\s*star|checkout|wallet|balance|sign in/i.test(m);
-        if (wantWall) {
-          if (!m) m = 'Sign in with Google to HOLD ⭐ / pay';
-          G.__snHoldPayWall = true;
-          wallUntil = now() + 120000;
-          var el = prev(m);
-          revealAuthWall();
-          bindWallClose();
-          return el || document.getElementById('sn-auth-gsi');
+          /pay|HOLD\s*⭐|hold\s*star|checkout|wallet|balance/i.test(m);
+        if (wantCard && isGuest()) {
+          promptSignInCard();
+          return document.getElementById(CARD_ID);
         }
         return prev.apply(this, arguments);
       };
       SNAuth.__snHoldPayOpen = BUILD;
     } catch (_) {}
-  }
-
-  function wrapGis() {
-    try {
-      if (!G.SNAuth || typeof SNAuth.signInGoogleGis !== 'function') return;
-      if (SNAuth.__snHoldPayGis === BUILD) return;
-      var prev = SNAuth.signInGoogleGis.bind(SNAuth);
-      SNAuth.signInGoogleGis = function () {
-        G.__snHoldPayWall = true;
-        wallUntil = now() + 120000;
-        patchOpenModal();
-        try {
-          SNAuth.openModal('Sign in with Google to HOLD ⭐ / pay');
-        } catch (_) {}
-        revealAuthWall();
-        bindWallClose();
-        return prev.apply(this, arguments);
-      };
-      SNAuth.__snHoldPayGis = BUILD;
-    } catch (_) {}
-  }
-
-  function promptGis() {
-    killCourier();
-    G.__snHoldPayWall = true;
-    wallUntil = now() + 120000;
-    hideChip();
-    patchOpenModal();
-    wrapGis();
-    try {
-      if (G.SNAuth && typeof SNAuth.signInGoogleGis === 'function') {
-        void SNAuth.signInGoogleGis().then(
-          function () {
-            dropWall();
-            hideChip();
-            paintWallet();
-          },
-          function () {
-            keepWall();
-          }
-        );
-        setTimeout(keepWall, 40);
-        setTimeout(keepWall, 160);
-        setTimeout(keepWall, 480);
-        setTimeout(keepWall, 1200);
-        return;
-      }
-    } catch (_) {}
-    try {
-      if (G.SNAuth && typeof SNAuth.signInGoogle === 'function') {
-        void SNAuth.signInGoogle();
-        setTimeout(keepWall, 50);
-        return;
-      }
-    } catch (_) {}
-    try {
-      if (G.SNAuth && typeof SNAuth.openModal === 'function') {
-        SNAuth.openModal('Sign in with Google to HOLD ⭐ / pay');
-      }
-    } catch (_) {}
-    keepWall();
   }
 
   function onHoldPay(raw) {
@@ -443,7 +485,7 @@
     if (isGuest()) {
       say('HOLD ⭐ · Sign in with Google to pay', 'ok');
       say('Privacy · Terms', 'dim');
-      promptGis();
+      promptSignInCard();
       return true;
     }
     say('HOLD ⭐ · wallet waits for eur_balance', 'dim');
@@ -461,7 +503,7 @@
       id: hit.id,
     };
     lastShopAt = now();
-    showChip(selected);
+    if (!G.__snHoldPayWall) showChip(selected);
   }
 
   function parseShopFromLine(s) {
@@ -517,7 +559,7 @@
             /\/public\.orders\b/i.test(u) ||
             (/\/orders\b/i.test(u) && /supabase|astranov/i.test(u));
           if (isGuest() && isOrders && /POST|PUT|PATCH|DELETE/i.test(method)) {
-            promptGis();
+            promptSignInCard();
             return Promise.resolve(
               new Response(JSON.stringify({ error: 'sign_in_required', hold: true }), {
                 status: 401,
@@ -705,7 +747,6 @@
 
   function tick() {
     patchOpenModal();
-    wrapGis();
     patchCliRun();
     bindInputs();
     bindPins();
@@ -715,25 +756,30 @@
     watchCliLog();
     paintWallet();
     killCourier();
-    if (G.__snHoldPayWall) keepWall();
+    if (signed() && G.__snHoldPayWall) {
+      dropWall();
+      hideChip();
+    }
     if (selected && now() - lastShopAt < 180000 && isGuest() && !G.__snHoldPayWall) showChip(selected);
   }
 
   function init() {
-    injectWallCss();
+    injectCardCss();
     tick();
     setTimeout(tick, 0);
     setTimeout(tick, 200);
     setTimeout(tick, 600);
     setTimeout(tick, 1400);
     setTimeout(tick, 2800);
-    setInterval(tick, 700);
+    setInterval(tick, 2500);
   }
 
   G.SNHoldPay = {
     build: BUILD,
     hold: onHoldPay,
-    promptGis: promptGis,
+    promptGis: promptSignInCard,
+    openCard: openHoldCard,
+    closeCard: dropWall,
     selected: function () {
       return selected;
     },

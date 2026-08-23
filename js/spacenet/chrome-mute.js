@@ -1,4 +1,4 @@
-/* Astranov mute · Build 20260823223000-hold-pay
+/* Astranov mute · Build 20260823230000-hold-card
  * Kill beeps + load ALL locked guest modules in ONE chain (no wipe):
  *   (a) chrome-guest-pizza-hunt LAST-but-one — OSM restaurant/fast_food/cafe around camera,
  *       SNCli.run wrap so `pizza` never reaches research-stay / /api/ai
@@ -7,14 +7,14 @@
  *   (d) chrome-ai-listen (#169) — FULL inline, Talk → Listen · mic denied · #sn-rib-hf-hit
  *   (e) chrome-call-arc (#129) — CALL Sign-in wall, no u-room, no VIDEO CALL
  *   (f) chrome-cli-answer (#126) — twin CLI force-paint only (no chrome restyle)
- *   (g) chrome-hold-pay LAST — guest HOLD ⭐ / pay → Google GIS wall (Privacy · Terms)
+ *   (g) chrome-hold-pay LAST — guest HOLD ⭐ / pay → CALL Sign-in card (Privacy · Terms · Cancel)
  * Currency ⭐. Guest never hits Google until pay/CALL. Origin = live camera.
  * loadChain injects LOCAL /js/spacenet files only. No runtime GitHub or CDN fetch.
- * Cache-bust 20260823223000-hold-pay. Marks prevent double-inject wipe.
+ * Cache-bust 20260823230000-hold-card. Marks prevent double-inject wipe.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823223000-hold-pay';
+  var BUILD = '20260823230000-hold-card';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -100,7 +100,7 @@
     loadScript('/js/spacenet/chrome-ai-listen.js', 'data-sn-ai-listen');
     /* pizza LAST-but-one so SNCli.run wrap intercepts `pizza` BEFORE research-stay / AI */
     loadScript('/js/spacenet/chrome-guest-pizza-hunt.js', 'data-sn-guest-pizza');
-    /* HOLD ⭐ / pay LAST so guest pay wrap is outermost — Google GIS wall, never courier */
+    /* HOLD ⭐ / pay LAST so guest pay wrap is outermost — CALL Sign-in card, never GSI iframe */
     loadScript('/js/spacenet/chrome-hold-pay.js', 'data-sn-hold-pay');
   }
 
