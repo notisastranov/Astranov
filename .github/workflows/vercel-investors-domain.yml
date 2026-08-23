@@ -1,0 +1,59 @@
+name: Add investors.astranov.eu on Vercel
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/vercel-investors-domain.yml']
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Attach domain to the live Vercel project
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TOKEN2: ${{ secrets.VERCEL_ACCESS_TOKEN }}
+        run: |
+          python3 <<'PY'
+          import json, os, urllib.request, urllib.error
+          tok = os.environ.get('VERCEL_TOKEN') or os.environ.get('VERCEL_TOKEN2') or ''
+          if not tok:
+            raise SystemExit('no vercel token')
+          def api(method, url, body=None):
+            data = None if body is None else json.dumps(body).encode()
+            req = urllib.request.Request(url, data=data, headers={
+              'Authorization': 'Bearer ' + tok,
+              'Content-Type': 'application/json'
+            }, method=method)
+            try:
+              with urllib.request.urlopen(req, timeout=60) as r:
+                return r.status, json.loads(r.read().decode() or '{}')
+            except urllib.error.HTTPError as e:
+              raw = e.read().decode(errors='replace')
+              try: j = json.loads(raw)
+              except: j = {'raw': raw[:500]}
+              return e.code, j
+          st, user = api('GET', 'https://api.vercel.com/v2/user')
+          print('user', st, (user.get('user') or {}).get('username'))
+          st, proj = api('GET', 'https://api.vercel.com/v9/projects?limit=20')
+          projects = proj.get('projects') or []
+          print('projects', [p.get('name') for p in projects])
+          hit = None
+          for p in projects:
+            name = p.get('name') or ''
+            if 'astranov' in name.lower():
+              hit = p
+              if name in ('astranov-eu', 'astranov', 'astranov.eu'):
+                break
+          if not hit and projects:
+            hit = projects[0]
+          if not hit:
+            raise SystemExit('no project')
+          pid = hit.get('id') or hit.get('name')
+          print('using', hit.get('name'), pid)
+          st, d = api('POST', f'https://api.vercel.com/v10/projects/{pid}/domains', {'name': 'investors.astranov.eu'})
+          print('add domain', st, d)
+          st, listed = api('GET', f'https://api.vercel.com/v9/projects/{pid}/domains')
+          names = [x.get('name') for x in (listed.get('domains') or [])]
+          print('domains', names)
+          PY
