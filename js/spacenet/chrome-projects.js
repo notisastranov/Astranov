@@ -4,7 +4,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823190000-investors';
+  var BUILD = '20260823192000-click';
   if (global.__SN_PROJECTS === BUILD) return;
   global.__SN_PROJECTS = BUILD;
 
@@ -625,6 +625,18 @@
       setInterval(tick, 80);
     }
     tick();
+    try {
+      var q = new URLSearchParams(location.search).get('project') || (location.hash || '').replace(/^#/, '');
+      if (q) {
+        var id = q;
+        if (!byId(id)) {
+          PROJECTS.forEach(function (p) {
+            if (p.id === q || p.name.toLowerCase().indexOf(q.toLowerCase()) >= 0) id = p.id;
+          });
+        }
+        if (byId(id)) setTimeout(function () { openProject(id, true); }, 1200);
+      }
+    } catch (_) {}
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

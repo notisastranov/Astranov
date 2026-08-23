@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Astranov · Investor budget</title>
-  <meta name="astranov-build" content="20260823190000-investors" />
+  <meta name="astranov-build" content="20260823192000-click" />
   <meta name="description" content="Astranov SpaceNet investor presentation — village restoration, glass motor-houses, solar yacht. Preview envelopes, not quotes." />
   <link rel="icon" href="/icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -44,10 +44,27 @@
     #lightbox { position:fixed; inset:0; background:rgba(0,0,0,.86); display:none; align-items:center; justify-content:center; z-index:20; padding:20px; }
     #lightbox.open { display:flex; }
     #lightbox img { max-width:min(1100px,96vw); max-height:88vh; border-radius:12px; }
-    @media (max-width:720px) {
-      .hero { grid-template-columns:1fr; }
-      .hero img { height:160px; }
-    }
+    tr[data-id] { cursor: pointer; }
+    tr[data-id]:hover { background: rgba(20,50,80,.45); }
+    #sheet { position:fixed; inset:0; z-index:30; display:none; align-items:flex-end; justify-content:center; background:rgba(2,6,14,.78); }
+    #sheet.open { display:flex; }
+    #sheet-card { width:min(100vw,920px); max-height:min(94vh,980px); background:#0b1220; border-radius:18px 18px 0 0; overflow:hidden; display:flex; flex-direction:column; position:relative; }
+    #sheet-hero { position:relative; height:min(48vh,420px); background:#05080f; flex:0 0 auto; }
+    #sheet-hero img { width:100%; height:100%; object-fit:cover; display:block; }
+    #sheet-hero .nav { position:absolute; top:50%; transform:translateY(-50%); width:44px; height:44px; border-radius:50%; border:1px solid rgba(200,230,255,.35); background:rgba(8,14,24,.55); color:#fff; font-size:22px; cursor:pointer; }
+    #sheet-hero .nav.prev { left:10px; } #sheet-hero .nav.next { right:10px; }
+    #sheet-count { position:absolute; right:12px; bottom:12px; font:600 11px/1 Inter,system-ui; color:#d7e6f7; background:rgba(0,0,0,.45); padding:4px 8px; border-radius:999px; }
+    #sheet-body { padding:14px 16px 18px; overflow:auto; }
+    #sheet-body h2 { margin:0 0 4px; font:700 18px/1.2 "Space Grotesk",Inter,sans-serif; }
+    #sheet-status { display:inline-block; font:650 10px/1 Inter,system-ui; letter-spacing:.04em; text-transform:uppercase; color:#f3d48a; border:1px solid rgba(232,195,106,.4); border-radius:999px; padding:4px 8px; margin:0 0 8px; }
+    #sheet-meta { color:var(--muted); font-size:12px; margin:0 0 8px; }
+    #sheet-thumbs { display:flex; gap:6px; overflow-x:auto; padding:4px 0 10px; }
+    #sheet-thumbs img { width:72px; height:48px; object-fit:cover; border-radius:8px; cursor:pointer; border:1px solid transparent; flex:0 0 auto; }
+    #sheet-thumbs img.on { border-color:#7ec8ff; }
+    #sheet-x { position:absolute; top:10px; right:10px; z-index:2; width:40px; height:40px; border-radius:999px; border:1px solid rgba(126,200,255,.4); background:rgba(20,40,70,.6); color:#fff; cursor:pointer; }
+    #sheet-acts { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    #sheet-acts a, #sheet-acts button { height:40px; padding:0 14px; border-radius:999px; border:1px solid rgba(126,200,255,.4); background:rgba(20,40,70,.6); color:#e8f2ff; font:650 12px/1 Inter,system-ui; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; }
+    @media(min-width:720px){ #sheet { align-items:center; padding:24px; } #sheet-card { border-radius:18px; } }
   </style>
 </head>
 <body>
@@ -76,7 +93,30 @@
     <p class="note" style="margin-top:14px">investors.astranov.eu · globe pin at astranov.eu · type <b>budget</b> on SpaceNet</p>
   </div>
   <div id="lightbox"><img alt="" /></div>
+  <div id="sheet">
+    <div id="sheet-card" role="dialog" aria-modal="true">
+      <button type="button" id="sheet-x" aria-label="Close">×</button>
+      <div id="sheet-hero">
+        <img id="sheet-img" alt="" />
+        <button type="button" class="nav prev" id="sheet-prev" aria-label="Previous">‹</button>
+        <button type="button" class="nav next" id="sheet-next" aria-label="Next">›</button>
+        <span id="sheet-count"></span>
+      </div>
+      <div id="sheet-body">
+        <div id="sheet-status"></div>
+        <h2 id="sheet-title"></h2>
+        <div id="sheet-meta"></div>
+        <p id="sheet-blurb"></p>
+        <p id="sheet-state" class="warn"></p>
+        <p id="sheet-money"></p>
+        <div id="sheet-thumbs"></div>
+        <div id="sheet-acts">
+          <a id="sheet-globe" href="https://astranov.eu/" target="_blank" rel="noopener">Open on the globe</a>
+        </div>
+      </div>
+    </div>
+  </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/investors/app.js?v=20260823190000-investors"></script>
+  <script src="/investors/app.js?v=20260823192000-click"></script>
 </body>
 </html>

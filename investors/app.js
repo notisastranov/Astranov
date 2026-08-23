@@ -1,4 +1,4 @@
-/* investors.astranov.eu · 20260823190000-investors */
+/* investors.astranov.eu · 20260823192000-click */
 (function () {
   'use strict';
   var OWNER = 'notisastranov@gmail.com';
@@ -10,6 +10,146 @@
   var owner = false;
   var sb = null;
   var session = null;
+  var slide = 0;
+  var openId = null;
+  var liveImgs = {};
+
+  var META = {
+    motorhouses: {
+      folder: 'kallithea', pin: 'kallithea', lat: 36.387557, lng: 28.222533,
+      status: 'Topo study · investor preview · not built',
+      state: 'Designed. GPS is the real Kallithea HQ. Houses are not on the ground.',
+      blurb: 'Glass motor-houses: low glass pavilions on a motorized chassis, solar roof, stone pads in the olive terraces. Movable — not poured villas.',
+      images: ['00-topo.svg','01.jpg','02.jpg','03.jpg','04.jpg','05.jpg','06.jpg','07.jpg','08.jpg','09.jpg','10.jpg','11.jpg','12.jpg','13.jpg']
+    },
+    'kallithea-commons': {
+      folder: 'kallithea', pin: 'kallithea', lat: 36.387557, lng: 28.222533,
+      status: 'Phase 1 landscape · not built',
+      state: 'Pads, microgrid and a small water garden. The 1.1 km lake is not this package.',
+      blurb: 'First works around the Kallithea HQ pin so the motor-houses have power, water and paths.',
+      images: ['00-topo.svg','01.jpg','09.jpg','13.jpg']
+    },
+    lake: {
+      folder: 'kallithea', pin: 'kallithea', lat: 36.387557, lng: 28.222533,
+      status: 'Optional · EIA required · not in Phase 1',
+      state: 'Design study only. Not permitted. Not funded.',
+      blurb: 'Designed reservoir from the SNVillage topographic study: ~1.1 × 0.75 km, five islets.',
+      images: ['00-topo.svg','01.jpg','09.jpg']
+    },
+    'koskinou-bar': {
+      folder: 'koskinou', pin: 'koskinou', lat: 36.3871, lng: 28.2131,
+      status: 'Investor preview · not built',
+      state: 'Concept tavern on the real Koskinou junction. Not operating.',
+      blurb: 'Open kitchen wood-oven bar on the triangular junction in historic Koskinou.',
+      images: ['00.jpg','01.jpg','02.jpg','03.jpg','04.jpg','05.jpg','06.jpg','07.jpg']
+    },
+    bodega: {
+      folder: 'bodega', pin: 'bodega', lat: 36.3513, lng: 28.0328,
+      status: 'Investor preview · not built',
+      state: 'Concept in Fanes. Not operating.',
+      blurb: 'Ground-floor wood-oven kitchen bar and cellar in Fanes, Village of Colors.',
+      images: ['00.jpg','01.jpg','02.jpg','03.jpg','04.jpg','05.jpg','06.jpg']
+    },
+    'house-art': {
+      folder: 'house-art', pin: 'house-art', lat: 36.3882, lng: 28.2118,
+      status: 'Investor preview · not built',
+      state: 'Koskinou house restore. Not built / not operating.',
+      blurb: 'Three-storey village house: tavern, wood oven, rooftop pergola.',
+      images: ['00.jpg','01.jpg','02.jpg','03.jpg','04.jpg','05.jpg']
+    },
+    'fanes-restore': {
+      folder: 'fanes', pin: 'fanes', lat: 36.3496, lng: 28.0264,
+      status: 'Village restoration · not started',
+      state: 'Fanes is a living village with empty stock. Restoration not begun.',
+      blurb: 'Twelve houses + commons. Owners keep title. 40/30/30 operating split.',
+      images: ['00.jpg','00-model.jpg','01.jpg','02.jpg','03.jpg','04.jpg','05.jpg']
+    },
+    'koskinou-restore': {
+      folder: 'koskinou', pin: 'koskinou', lat: 36.3871, lng: 28.2131,
+      status: 'Village restoration · not started',
+      state: 'Working village. Empty houses not yet restored.',
+      blurb: 'Ten houses + painted lanes. Restore, do not replace Koskinou.',
+      images: ['00.jpg','01.jpg','02.jpg','03.jpg','04.jpg','05.jpg']
+    },
+    'kallithea-restore': {
+      folder: 'kallithea', pin: 'kallithea', lat: 36.387557, lng: 28.222533,
+      status: 'Village restoration · not started',
+      state: 'Existing settlement fabric. Separate from the glass motor-houses.',
+      blurb: 'Ten houses restored as eco-stays. Owners keep title.',
+      images: ['01.jpg','12.jpg','13.jpg','04.jpg']
+    },
+    lofts: {
+      folder: 'lofts', pin: 'lofts', lat: 36.3785, lng: 28.236,
+      status: 'Investor preview · not built',
+      state: 'Kallithea coast live-work. Not built.',
+      blurb: 'Fourteen live-work lofts, commons kitchen and gym. Not a hotel.',
+      images: ['00.jpg','01.jpg','02.jpg','03.jpg','04.jpg','05.jpg','06.jpg']
+    },
+    villa: {
+      folder: 'villa', pin: 'villa', lat: 36.3845, lng: 28.2195,
+      status: 'Investor preview · plot reserved',
+      state: 'Single house concept on a Kallithea plot. Not built.',
+      blurb: 'Three-storey rose-stone villa, loop drive, fountain, wood-fired kitchen.',
+      images: ['00.jpg','01.jpg','02.jpg','03.jpg','04.jpg','05.jpg']
+    },
+    yachtclub: {
+      folder: 'sitia', pin: 'sitia', lat: 35.202, lng: 26.115,
+      status: 'Investor preview · not built',
+      state: 'Petras coastal-road concept. Not operating.',
+      blurb: 'Taverna and yacht club plus seaview lofts. Yacht guests via Sitia Port.',
+      images: ['00.jpg','01.jpg','02.jpg','03.jpg','04.jpg','05.jpg','06.jpg']
+    },
+    'rousa-restore': {
+      folder: 'rousa', pin: 'rousa', lat: 35.17816, lng: 26.14599,
+      status: 'Real village · family ground · restore not started',
+      state: 'Roussa Ekklisia exists. Mano’s village. We restore empty stock; we do not invent a resort.',
+      blurb: 'Twelve houses + square + water. Pin is the real settlement.',
+      images: ['00.jpg','01.jpg']
+    },
+    'lagokefalo-restore': {
+      folder: 'lagokefalo', pin: 'lagokefalo', lat: 35.171, lng: 26.138,
+      status: 'District siting · not a deed',
+      state: 'Kato Lagokefalo next to Rousa. Pin is the district, not a cadastral plot.',
+      blurb: 'Six rural houses on olive terraces.',
+      images: ['00.jpg','01.jpg']
+    },
+    'agia-restore': {
+      folder: 'agia-fotia', pin: 'agia-fotia', lat: 35.192, lng: 26.161,
+      status: 'Plot pin · not on the beach',
+      state: 'Inland eco-stays behind the coves. No beach hotel. Not built.',
+      blurb: 'Four stays east of Sitia on the Vai road.',
+      images: ['00.jpg','01.jpg']
+    },
+    trypitos: {
+      folder: 'trypitos', pin: 'trypitos', lat: 35.1986, lng: 26.1297,
+      status: 'Hellenistic site protected · €0 on the ruins',
+      state: 'Study only. We do not build on the excavation.',
+      blurb: 'Trypitos headland 3 km east of Sitia. Nearby plot only if heritage allows.',
+      images: ['00.jpg','01.jpg']
+    },
+    yacht: {
+      folder: 'yacht', pin: 'yacht', lat: 36.4507, lng: 28.2278,
+      status: 'Hybrid concept · not built',
+      state: 'Mandraki is a real harbour. The yacht is not built. OPEX not in CAPEX.',
+      blurb: 'Classic superyacht look. Flexible PV film on hull and decks. Huge forward sundeck.',
+      images: ['00.jpg','01.jpg','02.jpg','03.jpg','04.jpg','05.jpg','06.jpg','07.jpg','08.jpg','09.jpg','10.jpg','11.jpg','12.jpg']
+    },
+    brothers: {
+      folder: 'brothers', pin: 'brothers', lat: 36.27433, lng: 27.69921,
+      status: 'Concept siting · not built · not permitted',
+      state: 'Not in Phase 1. Requires environmental permit.',
+      blurb: 'Modest 20-berth pontoon in an undeveloped Dodecanese natural harbour (Alimia candidate).',
+      images: ['00.jpg','01.jpg','02.jpg','03.jpg','04.jpg','05.jpg']
+    }
+  };
+
+  function imgsOf(id) {
+    var m = META[id] || {};
+    var folder = m.folder || id;
+    return (m.images || ['00.jpg']).map(function (f) {
+      return '/media/projects/' + folder + '/' + f;
+    });
+  }
 
   function eur(k) {
     k = Number(k) || 0;
@@ -70,6 +210,71 @@
     return c;
   }
 
+  function byId(id) {
+    var list = deck.packages || [];
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return null;
+  }
+
+  function showSlide(urls) {
+    if (!urls || !urls.length) return;
+    if (slide < 0) slide = urls.length - 1;
+    if (slide >= urls.length) slide = 0;
+    document.getElementById('sheet-img').src = urls[slide];
+    document.getElementById('sheet-count').textContent = slide + 1 + ' / ' + urls.length;
+    var thumbs = document.getElementById('sheet-thumbs').querySelectorAll('img');
+    for (var i = 0; i < thumbs.length; i++) thumbs[i].classList.toggle('on', i === slide);
+  }
+
+  function openSheet(id) {
+    var p = byId(id);
+    var m = META[id] || {};
+    if (!p && !m.folder) return;
+    openId = id;
+    slide = 0;
+    var urls = liveImgs[id] || imgsOf(id);
+    liveImgs[id] = urls;
+    document.getElementById('sheet-status').textContent = m.status || p.status || 'Investor preview';
+    document.getElementById('sheet-title').textContent = (p && p.name) || m.name || id;
+    document.getElementById('sheet-meta').textContent =
+      ((p && p.place) || '') +
+      (m.lat ? ' · ' + m.lat.toFixed(5) + ', ' + m.lng.toFixed(5) : '');
+    document.getElementById('sheet-blurb').textContent = m.blurb || (p && p.note) || '';
+    document.getElementById('sheet-state').textContent = 'Current state · ' + (m.state || 'Investor preview · not built');
+    document.getElementById('sheet-money').textContent = p
+      ? 'CAPEX envelope ' + eur(p.capex) + ' net · ' + (p.unit || '') + (p.phase === 2 ? ' · held out of Phase 1' : '')
+      : '';
+    var thumbs = document.getElementById('sheet-thumbs');
+    thumbs.innerHTML = '';
+    urls.forEach(function (u, i) {
+      var im = document.createElement('img');
+      im.src = u;
+      im.alt = ((p && p.name) || id) + ' ' + (i + 1);
+      im.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        slide = i;
+        showSlide(urls);
+      });
+      thumbs.appendChild(im);
+    });
+    var globe = document.getElementById('sheet-globe');
+    var q = m.pin || id;
+    globe.href = 'https://astranov.eu/?project=' + encodeURIComponent(q);
+    document.getElementById('sheet').classList.add('open');
+    try {
+      history.replaceState(null, '', '#' + id);
+    } catch (_) {}
+    showSlide(urls);
+  }
+
+  function closeSheet() {
+    document.getElementById('sheet').classList.remove('open');
+    openId = null;
+    try {
+      if (location.hash) history.replaceState(null, '', location.pathname);
+    } catch (_) {}
+  }
+
   function renderTable() {
     var table = document.getElementById('deck');
     table.classList.toggle('edit', owner);
@@ -89,11 +294,6 @@
       img.className = 'thumb';
       img.src = p.photo || '/icon.png';
       img.alt = p.name;
-      img.onclick = function () {
-        var lb = document.getElementById('lightbox');
-        lb.querySelector('img').src = p.photo;
-        lb.classList.add('open');
-      };
       imgTd.appendChild(img);
       tr.appendChild(imgTd);
       var name = td(p.name);
@@ -120,7 +320,8 @@
         var b = document.createElement('button');
         b.type = 'button';
         b.textContent = '×';
-        b.onclick = function () {
+        b.onclick = function (ev) {
+          ev.stopPropagation();
           deck.packages = deck.packages.filter(function (x) {
             return x.id !== p.id;
           });
@@ -129,6 +330,11 @@
         del.appendChild(b);
         tr.appendChild(del);
       }
+      tr.addEventListener('click', function (e) {
+        if (e.target && e.target.isContentEditable) return;
+        if (e.target && e.target.closest && e.target.closest('button')) return;
+        openSheet(p.id);
+      });
       tb.appendChild(tr);
     });
     var net = sum(list);
@@ -278,6 +484,35 @@
   document.getElementById('lightbox').onclick = function () {
     this.classList.remove('open');
   };
+  document.getElementById('sheet').addEventListener('click', function (e) {
+    if (e.target.id === 'sheet') closeSheet();
+  });
+  document.getElementById('sheet-x').onclick = closeSheet;
+  document.getElementById('sheet-prev').onclick = function () {
+    slide--;
+    showSlide(liveImgs[openId] || imgsOf(openId));
+  };
+  document.getElementById('sheet-next').onclick = function () {
+    slide++;
+    showSlide(liveImgs[openId] || imgsOf(openId));
+  };
+  window.addEventListener('keydown', function (e) {
+    if (!document.getElementById('sheet').classList.contains('open')) return;
+    if (e.key === 'Escape') closeSheet();
+    if (e.key === 'ArrowLeft') {
+      slide--;
+      showSlide(liveImgs[openId] || imgsOf(openId));
+    }
+    if (e.key === 'ArrowRight') {
+      slide++;
+      showSlide(liveImgs[openId] || imgsOf(openId));
+    }
+  });
 
-  bootAuth().then(loadDeck);
+  bootAuth().then(function () {
+    return loadDeck();
+  }).then(function () {
+    var h = (location.hash || '').replace(/^#/, '');
+    if (h && (byId(h) || META[h])) openSheet(h);
+  });
 })();
