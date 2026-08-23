@@ -4,7 +4,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823214000-complete';
+  var BUILD = '20260823223000-invlive';
   if (global.__SN_FINANCE === BUILD) return;
   global.__SN_FINANCE = BUILD;
 
@@ -596,13 +596,11 @@
     var t = String(raw || '').trim();
     var low = t.toLowerCase();
     if (!low) return false;
-    if (/^(budget|finance|presentation|capex|οικονομικ|how much|remaining|to complete|raise)$/.test(low) || /how much|need to complete|remaining to gather|complete spacenet/.test(low)) {
+    if (
+      /^(budget|finance|presentation|capex|οικονομικ|how much|remaining|to complete|raise|investors?)$/.test(low) ||
+      /how much|need to complete|remaining to gather|complete spacenet/.test(low)
+    ) {
       open(null);
-      try {
-        if (/how much|complete|remaining|raise|need/.test(low)) {
-          location.href = 'https://investors.astranov.eu';
-        }
-      } catch (_) {}
       return true;
     }
     if (/oversustain|hyper.?planet|astranov coin|^coin$|^avc$|super currency/.test(low)) {

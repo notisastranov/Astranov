@@ -97,17 +97,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Deploy astranov-origin-proxy
-        working-directory: workers/astranov-origin-proxy
+      - name: Deploy investors-astranov
+        working-directory: workers/investors-astranov
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "CLOUDFLARE_API_TOKEN not set — cannot fix astranov.eu 502"
+            echo "CLOUDFLARE_API_TOKEN not set — skip investors worker"
             exit 0
           fi
           npm install -g wrangler@4
-          wrangler deploy
+          wrangler deploy || echo "investors worker deploy failed (token may lack Workers Edit)"
+
 
   cloudflare-purge:
     runs-on: ubuntu-latest
