@@ -529,7 +529,9 @@
   }
 
   async function loadDeck() {
-    var seed = await fetch(new URL('budget.json', location.href)).then(function (r) { return r.json(); });
+    var seed = await fetch(new URL('budget.json', location.href)).then(function (r) { return r.json(); }).catch(function () {
+      return fetch('https://astranov.eu/investors/budget.json').then(function (r) { return r.json(); });
+    });
     deck = seed;
     try {
       var remote = await fetch(SB_URL + '/functions/v1/investor-budget', {
