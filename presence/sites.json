@@ -1,6 +1,7 @@
 {
   "product": "SpaceNet Presence",
-  "note": "Every client subdomain is a SpaceNet page. Globe behind. Real pins. Profile, picture, preview. Sold as a presence.",
+  "price_eur_year": 330,
+  "note": "Every client subdomain is a SpaceNet page. Globe behind. Real pins. Profile, picture, preview. Price: €330 / year per subdomain.",
   "sites": [
     {
       "id": "investors",

@@ -3,7 +3,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823200000-presence';
+  var BUILD = '20260823201000-price';
   if (global.__SN_PRESENCE === BUILD) return;
   global.__SN_PRESENCE = BUILD;
 
@@ -101,11 +101,58 @@
     if (msg.op === 'open') openProject(msg.id);
   }
 
-  function boot() {
-    if (!isEmbed()) {
-      global.SNPresence = { build: BUILD, planet: planet, fly: fly, glow: glow, open: openProject };
-      return;
+  function logCli(msg, kind) {
+    try {
+      if (global.SNCli && SNCli.log) SNCli.log(msg, kind || 'ok');
+    } catch (_) {}
+  }
+
+  function handleCli(raw) {
+    var low = String(raw || '').trim().toLowerCase();
+    if (!low) return false;
+    if (/^(presence|subdomain|hosting|spacenet page)$/.test(low) || (low.indexOf('presence') >= 0 && /price|sell|subdomain/.test(low))) {
+      logCli('SpaceNet Presence · any client subdomain · €330 / year', 'ok');
+      logCli('Globe behind · real GPS pins · profile, picture, preview', 'ok');
+      logCli('investors.astranov.eu is the first page · /presence', 'ok');
+      return true;
     }
+    return false;
+  }
+
+  function interceptCli() {
+    function bind(form, flag) {
+      if (!form || form[flag]) return;
+      form[flag] = 1;
+      form.addEventListener(
+        'submit',
+        function (e) {
+          var inp = document.getElementById('cli-in') || document.getElementById('stc-cmd-in');
+          var v = inp ? inp.value : '';
+          if (handleCli(v)) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (inp) inp.value = '';
+          }
+        },
+        true
+      );
+    }
+    bind(document.getElementById('cli-form') || document.querySelector('#panel form'), '__snPres');
+    bind(document.getElementById('stc-cmd-form'), '__snPresTop');
+  }
+
+  function boot() {
+    interceptCli();
+    global.SNPresence = {
+      build: BUILD,
+      planet: planet,
+      fly: fly,
+      glow: glow,
+      open: openProject,
+      price: 330,
+      handle: handleCli
+    };
+    if (!isEmbed()) return;
     injectEmbedCss();
     try {
       document.body.classList.add('sn-presence-embed');
@@ -137,7 +184,7 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ready);
     else ready();
     setTimeout(ready, 2000);
-    global.SNPresence = { build: BUILD, planet: planet, fly: fly, glow: glow, open: openProject, embed: true };
+    global.SNPresence.embed = true;
   }
 
   boot();
