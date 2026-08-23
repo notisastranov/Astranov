@@ -225,14 +225,37 @@
     var all = deck.packages || [];
     var p1 = all.filter(function (p) { return p.phase === 1; });
     var p2 = all.filter(function (p) { return p.phase === 2; });
+    var sn = Number((deck.complete && deck.complete.spacenet_keur) || deck.spacenet_keur || 7000);
     var need = sum(p1);
     var got = sumRaised(all) + (Number(deck.gathered_keur) || 0);
-    var left = Math.max(0, need - got);
+    var work = need + sn;
+    var left = Math.max(0, work - got);
+    var vatOnBuild = vat(Math.max(0, need - got));
     el.innerHTML =
-      '<div class="pill"><b>' + eur(need) + '</b>Phase 1 to complete · net</div>' +
+      '<div class="pill"><b>' + eur(sn) + '</b>SpaceNet platform</div>' +
+      '<div class="pill"><b>' + eur(need) + '</b>Phase 1 projects · net</div>' +
       '<div class="pill"><b>' + eur(got) + '</b>Already gathered</div>' +
-      '<div class="pill need"><b>' + eur(left) + '</b>Remaining to gather · Phase 1</div>' +
-      '<div class="pill"><b>' + eur(left + vat(left)) + '</b>Remaining if VAT 24% applies</div>';
+      '<div class="pill need"><b>' + eur(left) + '</b>To complete SpaceNet + Phase 1</div>';
+    var box = document.getElementById('complete-box');
+    if (box) {
+      var note = box.querySelector('p');
+      if (note) {
+        note.innerHTML =
+          '<b>' +
+          eur(left) +
+          ' net</b> is the working cash to finish <b>SpaceNet</b> (' +
+          eur(sn) +
+          ') and <b>Phase 1 projects</b> (' +
+          eur(need) +
+          '). Gathered <b>' +
+          eur(got) +
+          '</b>. Not a contractor quote. Land extra. Yacht running cost (~€350k/year) extra. VAT on construction would add ' +
+          eur(vatOnBuild) +
+          ' → <b>' +
+          eur(left + vatOnBuild) +
+          '</b>.';
+      }
+    }
   }
 
   function renderModel() {
@@ -440,9 +463,11 @@
     var p1left = Math.max(0, p1need - p1got);
     var p2need = sum(p2);
     ft.innerHTML +=
-      '<tr><td colspan="' + span + '">Phase 1 remaining to gather · net</td><td class="n">' + eur(p1left) + '</td></tr>' +
+      '<tr><td colspan="' + span + '">Phase 1 remaining · net</td><td class="n">' + eur(p1left) + '</td></tr>' +
+      '<tr><td colspan="' + span + '">SpaceNet platform</td><td class="n">' + eur(Number(deck.spacenet_keur || 7000)) + '</td></tr>' +
+      '<tr><td colspan="' + span + '">To complete SpaceNet + Phase 1 · remaining</td><td class="n">' + eur(p1left + Number(deck.spacenet_keur || 7000)) + '</td></tr>' +
       '<tr><td colspan="' + span + '">Held out of Phase 1 (lake + pontoon)</td><td class="n">' + eur(p2need) + '</td></tr>' +
-      '<tr><td colspan="' + span + '">All designed remaining · net</td><td class="n">' + eur(p1left + p2need - sumRaised(p2)) + '</td></tr>';
+      '<tr><td colspan="' + span + '">All designed remaining · net</td><td class="n">' + eur(p1left + Number(deck.spacenet_keur || 7000) + p2need - sumRaised(p2)) + '</td></tr>';
   }
 
   function harvest() {

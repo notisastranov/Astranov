@@ -4,7 +4,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823210000-hosts';
+  var BUILD = '20260823214000-complete';
   if (global.__SN_FINANCE === BUILD) return;
   global.__SN_FINANCE = BUILD;
 
@@ -509,9 +509,7 @@
         '</p>' +
         '<p>Phase 1 net CAPEX <b>' +
         eur(sumPhase(1)) +
-        '</b> · VAT if fully applied <b>' +
-        eur(sumPhase(1) + vat(sumPhase(1))) +
-        '</b>.</p>' +
+        '</b> · SpaceNet <b>€7.00M</b> · <b>to complete SpaceNet + Phase 1 = €32.63M</b> remaining (gathered €0). VAT on construction if fully applied → <b>€38.78M</b>.</p>' +
         '<p>Held out of Phase 1: designed lake ' +
         eur(12000) +
         ' · Brothers pontoon ' +
@@ -586,7 +584,7 @@
     else tab = 'model';
     el().classList.add('open');
     render();
-    logCli('Budget · Phase 1 ' + eur(sumPhase(1)) + ' net · VAT extra · not funded', 'ok');
+    logCli('To complete SpaceNet + Phase 1 · €32.63M remaining · gathered €0', 'ok');
   }
 
   function close() {
@@ -598,8 +596,13 @@
     var t = String(raw || '').trim();
     var low = t.toLowerCase();
     if (!low) return false;
-    if (/^(budget|finance|presentation|capex|οικονομικ)$/.test(low)) {
+    if (/^(budget|finance|presentation|capex|οικονομικ|how much|remaining|to complete|raise)$/.test(low) || /how much|need to complete|remaining to gather|complete spacenet/.test(low)) {
       open(null);
+      try {
+        if (/how much|complete|remaining|raise|need/.test(low)) {
+          location.href = 'https://investors.astranov.eu';
+        }
+      } catch (_) {}
       return true;
     }
     if (/oversustain|hyper.?planet|astranov coin|^coin$|^avc$|super currency/.test(low)) {
