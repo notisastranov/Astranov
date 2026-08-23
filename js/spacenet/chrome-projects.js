@@ -4,7 +4,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823192000-click';
+  var BUILD = '20260823194500-oversustain';
   if (global.__SN_PROJECTS === BUILD) return;
   global.__SN_PROJECTS = BUILD;
 
@@ -436,6 +436,7 @@
       '<button type="button" class="nav next" aria-label="Next">›</button><span id="sn-proj-count"></span></div>' +
       '<div id="sn-proj-body"><div class="status" id="sn-proj-status"></div><h2 id="sn-proj-title"></h2>' +
       '<div class="meta" id="sn-proj-meta"></div><p id="sn-proj-blurb"></p>' +
+      '<p id="sn-proj-over" style="color:#9fe7c4;font-size:13px"></p>' +
       '<div id="sn-proj-thumbs"></div><div id="sn-proj-acts">' +
       '<button type="button" id="sn-proj-fly">Fly here</button>' +
       '<button type="button" id="sn-proj-nextp">Next project</button></div></div></div>';
@@ -494,6 +495,10 @@
       p.place + ' · ' + p.lat.toFixed(4) + ', ' + p.lng.toFixed(4);
     document.getElementById('sn-proj-status').textContent = p.status;
     document.getElementById('sn-proj-blurb').textContent = p.blurb;
+    var over = document.getElementById('sn-proj-over');
+    if (over)
+      over.textContent =
+        'Oversustainable · restore this ground and produce goods/services. Settlement: Astranov Coin — metals, stones, SpaceNet mining/use, EUR USD JPY RUB.';
     m.classList.add('open');
     probeImages(p, function (urls) {
       var thumbs = document.getElementById('sn-proj-thumbs');

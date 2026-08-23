@@ -1,6 +1,6 @@
 {
   "title": "Astranov SpaceNet · investor budget",
-  "disclaimer": "2026 island-rate envelopes in EUR. Not quotes. Not funded. Land usually excluded. 15% contingency inside each package. VAT 24% shown at the foot.",
+  "disclaimer": "2026 island-rate envelopes in EUR. Not quotes. Not funded. Land usually excluded. 15% contingency inside each package. VAT 24% shown at the foot. Every project is oversustainable by design: restore the place and produce goods/services. Settlement: Astranov Coin (AVC) — work-mint live at coin.astranov.eu, 1 AVC = 1 EUR; designed reserve of metals, stones, SpaceNet mining/use, EUR, USD, JPY, RUB. Not an exchange listing.",
   "model": { "ops": 40, "owner": 30, "village": 30 },
   "packages": [
     {"id":"motorhouses","name":"Glass motor-houses","place":"Kallithea, Rhodes","phase":1,"capex":3120,"unit":"12 houses · 60 m²","photo":"/media/projects/kallithea/02.jpg","note":"Movable glass pavilions on chassis. Not poured villas."},

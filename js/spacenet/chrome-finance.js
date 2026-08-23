@@ -4,7 +4,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823192000-click';
+  var BUILD = '20260823194500-oversustain';
   if (global.__SN_FINANCE === BUILD) return;
   global.__SN_FINANCE = BUILD;
 
@@ -17,7 +17,7 @@
     ops: 40,
     owner: 30,
     village: 30,
-    note: 'Operating surplus only. Title of each restored house stays with the owner. Astranov does not buy the village.'
+    note: 'Operating surplus only. Title of each restored house stays with the owner. Astranov does not buy the village. Oversustainable: restore + produce, not offset.'
   };
 
   var PACKAGES = [
@@ -398,6 +398,7 @@
     host.innerHTML = '';
     var items = [
       ['model', 'Model'],
+      ['over', 'Oversustain + Coin'],
       ['phase1', 'Phase 1'],
       ['restore', 'Village restore'],
       ['assets', 'Yacht + houses'],
@@ -518,6 +519,17 @@
         ' (not permitted).</p>' +
         '<p>Rates: 2026 island new-build ~€2.2–2.8k/m² · heavy village restore ~€0.9–1.4k/m². 15% contingency inside packages. Land usually extra.</p>' +
         '<p><a href="https://investors.astranov.eu" style="color:#7ec8ff">Open the full table on investors.astranov.eu</a> · also <a href="/investors/" style="color:#7ec8ff">astranov.eu/investors</a></p>';
+    } else if (tab === 'over') {
+      body.innerHTML =
+        '<p><b>Oversustainable</b> is the law on every pin. Top technology is not used to “pollute less.” It is used to <b>not pollute</b>, to <b>restore the planet</b> (land, water, houses, olives), and to <b>produce goods and services</b> — stays, food, energy, work — on top of money.</p>' +
+        '<div class="split">' +
+        '<div class="pill"><b>0</b>Pollution as default</div>' +
+        '<div class="pill"><b>+</b>Restore what was sliding to ruin</div>' +
+        '<div class="pill"><b>×</b>Produce real output</div></div>' +
+        '<p><b>Astranov Coin (AVC)</b> is the settlement layer. Live work-mint at <a href="https://coin.astranov.eu" style="color:#7ec8ff">coin.astranov.eu</a>. Initial peg <b>1 AVC = 1 EUR</b>. No central-bank print. A coin traces to verified SpaceNet work.</p>' +
+        '<p>Designed backing — first hi-tech <b>hyper-planetary super currency</b> we are building:</p>' +
+        '<p>Valuable <b>metals</b> · <b>stones</b> · <b>SpaceNet mining</b> (useful compute) · <b>SpaceNet use</b> · and a cash basket of <b>EUR, USD, JPY, RUB</b>.</p>' +
+        '<p class="warn">Work-mint is live. Metal/stone/FX vaults are the reserve thesis, not a claim they are already full. Not an exchange listing. Not an offer of securities.</p>';
     } else if (tab === 'phase1') {
       body.innerHTML = tableFor(p1) + '<p class="warn">Phase 1 is the permitted-path envelope. Lake and Brothers pontoon are out.</p>';
     } else if (tab === 'restore') {
@@ -568,6 +580,7 @@
   function open(which) {
     focus = which || null;
     if (which === 'restore') tab = 'restore';
+    else if (which === 'over' || which === 'coin' || which === 'oversustain') tab = 'over';
     else if (which === 'later' || which === 'lake' || which === 'brothers') tab = 'later';
     else if (which) tab = 'phase1';
     else tab = 'model';
@@ -586,6 +599,11 @@
     var low = t.toLowerCase();
     if (!low) return false;
     if (/^(budget|finance|presentation|capex|οικονομικ)$/.test(low)) {
+      open(null);
+      return true;
+    }
+    if (/oversustain|hyper.?planet|astranov coin|^coin$|^avc$|super currency/.test(low)) {
+      tab = 'over';
       open(null);
       return true;
     }

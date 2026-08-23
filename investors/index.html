@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Astranov · Investor budget</title>
-  <meta name="astranov-build" content="20260823192000-click" />
-  <meta name="description" content="Astranov SpaceNet investor presentation — village restoration, glass motor-houses, solar yacht. Preview envelopes, not quotes." />
+  <meta name="astranov-build" content="20260823194500-oversustain" />
+  <meta name="description" content="Astranov SpaceNet — oversustainable projects and Astranov Coin, a hyper-planetary currency backed by work, metals, stones, SpaceNet use, and EUR USD JPY RUB." />
   <link rel="icon" href="/icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
@@ -64,7 +64,12 @@
     #sheet-x { position:absolute; top:10px; right:10px; z-index:2; width:40px; height:40px; border-radius:999px; border:1px solid rgba(126,200,255,.4); background:rgba(20,40,70,.6); color:#fff; cursor:pointer; }
     #sheet-acts { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
     #sheet-acts a, #sheet-acts button { height:40px; padding:0 14px; border-radius:999px; border:1px solid rgba(126,200,255,.4); background:rgba(20,40,70,.6); color:#e8f2ff; font:650 12px/1 Inter,system-ui; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; }
-    @media(min-width:720px){ #sheet { align-items:center; padding:24px; } #sheet-card { border-radius:18px; } }
+    .thesis { margin: 0 0 18px; padding: 16px; border: 1px solid rgba(232,195,106,.28); border-radius: 16px; background: linear-gradient(180deg, rgba(24,36,22,.55), var(--card)); }
+    .thesis h2 { margin: 0 0 8px; font: 700 18px/1.2 "Space Grotesk", Inter, sans-serif; }
+    .thesis h3 { margin: 14px 0 6px; font: 700 14px/1.2 "Space Grotesk", Inter, sans-serif; color: var(--gold); }
+    .thesis .fx { display:flex; gap:6px; flex-wrap:wrap; margin:8px 0; }
+    .thesis .fx span { font:650 11px/1 Inter,system-ui; letter-spacing:.04em; padding:6px 10px; border-radius:999px; border:1px solid rgba(126,200,255,.35); color:#d7e6f7; }
+    .over { color:#9fe7c4; font-size:13px; }
   </style>
 </head>
 <body>
@@ -77,12 +82,30 @@
   <div class="wrap">
     <div class="hero">
       <div>
-        <p>Restoration of existing villages in Rhodes (Fanes, Koskinou, Kallithea) and Sitia (Petras, Trypitos, Agia Fotia, Lagokefalo, Rousa Eklisia) into sustainable eco-touristic villages — plus glass motor-houses, the Petras yacht club, and the solar yacht.</p>
+        <p>Restoration of existing villages in Rhodes (Fanes, Koskinou, Kallithea) and Sitia (Petras, Trypitos, Agia Fotia, Lagokefalo, Rousa Eklisia) into <b>oversustainable</b> eco-touristic villages — plus glass motor-houses, the Petras yacht club, and the solar yacht.</p>
+        <p class="over">Oversustainable means the tech does not stop at “do not pollute.” Every project is designed to <b>restore the planet</b> and to <b>produce goods and services</b> — food, stays, work, energy, water — on top of money.</p>
         <p class="warn" id="disclaimer"></p>
         <div class="split" id="model"></div>
       </div>
       <img src="/media/finance/cover.jpg" alt="Rhodes and Sitia villages" />
     </div>
+    <section class="thesis" id="thesis">
+      <h2>Oversustainable · every project</h2>
+      <p>Astranov does not pitch “green stickers.” The law on every pin: <b>top technology</b> so the place leaves the ground cleaner, wetter, and more alive than we found it — and still earns. Restore villages that were sliding toward abandonment. Grow food. Make energy. Host work. Move people without a diesel story. Produce real goods and services, not carbon offsets.</p>
+      <div class="split">
+        <div class="pill"><b>0</b>Pollution target · no dump, no diesel-as-default</div>
+        <div class="pill"><b>+</b>Restore land, water, houses, olives</div>
+        <div class="pill"><b>×</b>Produce stays, food, energy, work</div>
+      </div>
+      <h3>Astranov Coin · hyper-planetary super currency</h3>
+      <p>Settlement for this system is <b>Astranov Coin (AVC)</b>. Live work-mint ledger at <a href="https://coin.astranov.eu" style="color:#7ec8ff">coin.astranov.eu</a> · initial peg <b>1 AVC = 1 EUR</b>. No keyboard print. A coin traces to verified work on SpaceNet.</p>
+      <p>Designed reserve stack — the first hi-tech <b>hyper-planetary</b> money we are building, not a casino ticker:</p>
+      <div class="fx">
+        <span>Metals</span><span>Stones</span><span>SpaceNet mining</span><span>SpaceNet use</span>
+        <span>EUR</span><span>USD</span><span>JPY</span><span>RUB</span>
+      </div>
+      <p class="note">Work-mint is live. Metal / stone / FX reserves are the backing thesis investors are looking at — not a claim that vaults are already full. This page is not an exchange listing and not an offer of securities.</p>
+    </section>
     <div class="tabs" id="tabs"></div>
     <div class="toolbar hidden" id="owner-bar">
       <button type="button" id="add-row">Add row</button>
@@ -108,6 +131,7 @@
         <div id="sheet-meta"></div>
         <p id="sheet-blurb"></p>
         <p id="sheet-state" class="warn"></p>
+        <p id="sheet-over" class="over"></p>
         <p id="sheet-money"></p>
         <div id="sheet-thumbs"></div>
         <div id="sheet-acts">
@@ -117,6 +141,6 @@
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/investors/app.js?v=20260823192000-click"></script>
+  <script src="/investors/app.js?v=20260823194500-oversustain"></script>
 </body>
 </html>
