@@ -290,7 +290,7 @@
     document.getElementById('sheet-blurb').textContent = m.blurb || (p && p.note) || '';
     document.getElementById('sheet-state').textContent = 'Current state · ' + (m.state || 'Investor preview · not built');
     document.getElementById('sheet-over').textContent =
-      'Oversustainable · top tech to restore this place and produce goods/services — not a net-zero sticker. Paid in Astranov Coin (work-mint + designed metal/stone/SpaceNet/FX reserve).';
+      'Oversustainable · top tech to restore this place and produce goods/services. Paid in Astranov Coin — mint 1.00 EUR work, opening preference 3.30 EUR. Value from projects, the map, deposits, and real users.';
     document.getElementById('sheet-money').textContent = p
       ? 'CAPEX envelope ' + eur(p.capex) + ' net · ' + (p.unit || '') + (p.phase === 2 ? ' · held out of Phase 1' : '')
       : '';

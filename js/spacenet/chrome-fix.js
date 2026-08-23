@@ -1,10 +1,10 @@
-/* Astranov chrome-fix loader · 20260823201000-price
+/* Astranov chrome-fix loader · 20260823202000-avc
  * Loads chrome-fix-body. Placeholders: owner law. Never restore coach dump.
  * Loads chrome-earth-levels: national/city/ocean stay on the 3D globe.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823201000-price';
+  var BUILD = '20260823202000-avc';
   var TOP_PH = 'Command the HUD · show, hide, or reshape';
   var BOT_PH = 'Command the HUD · show, hide, or reshape';
   function enforceHud() {

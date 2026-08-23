@@ -3,7 +3,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823201000-price';
+  var BUILD = '20260823202000-avc';
   if (global.__SN_PRESENCE === BUILD) return;
   global.__SN_PRESENCE = BUILD;
 
@@ -111,8 +111,8 @@
     var low = String(raw || '').trim().toLowerCase();
     if (!low) return false;
     if (/^(presence|subdomain|hosting|spacenet page)$/.test(low) || (low.indexOf('presence') >= 0 && /price|sell|subdomain/.test(low))) {
-      logCli('SpaceNet Presence · any client subdomain · €330 / year', 'ok');
-      logCli('Globe behind · real GPS pins · profile, picture, preview', 'ok');
+      logCli('SpaceNet Presence · any client subdomain · €330 / year = 100 Astranov Coin', 'ok');
+      logCli('Astranov Coin · mint floor 1.00 EUR work · opening preference 3.30 EUR', 'ok');
       logCli('investors.astranov.eu is the first page · /presence', 'ok');
       return true;
     }
