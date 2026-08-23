@@ -6,10 +6,16 @@
  * look-at {lat,lng}. After nairobi settle ~-1.3, 36.8. After kalithea
  * ~36.39, 28.22.
  *
+ * Camera sits on +Z looking down -Z. globe.js flyNear / setGlobeLatLng
+ * (tilt.x=-lat, spin.y=-lng) faces +X, so Nairobi reads ~4.73,-53.18 and
+ * Kalithea ~-32.95,-61.78. This file snaps with the +Z inverse:
+ *   spin.y = atan2(-Tx, Tz), tilt.x from camera-y look point.
+ * Probe-sign loop refines. Never re-snap with the +X formula.
+ *
  * Cap fly/zoom so Earth stays a PLACE. Last Nairobi rung = city altitude
- * with readable land (globe texture + optional satellite drape). Kalithea
- * stays island/village scale, not a sea smear. Leaflet covering the globe
- * is skipped — Earth stays on screen.
+ * with readable land (globe texture + satellite drape). Kalithea stays
+ * island/village scale, not a sea smear. Leaflet covering the globe is
+ * skipped — Earth stays on screen.
  */
 (function (global) {
   "use strict";
@@ -23,8 +29,8 @@
   var SETTLE_DEG = 0.15;
   var TILT_MAX = 1.05;
   var Z_NAIROBI = 1.52;
-  var Z_KALITHEA = 1.68;
-  var Z_FLOOR = 1.48;
+  var Z_KALITHEA = 1.42;
+  var Z_FLOOR = 1.42;
   var lastLive = null;
   var lastFly = null;
   var lastProbe = { sLat: 0, sLng: 0 };
@@ -32,6 +38,7 @@
   var drapeGroup = null;
   var drapeLoader = null;
   var capUntil = 0;
+  var holdEuler = null;
   var suppressMo = false;
 
   function unwrapDeg(d) {
@@ -287,9 +294,90 @@
     }
   }
 
+  function latLngToLocal(lat, lng) {
+    var phi = ((90 - Number(lat)) * Math.PI) / 180;
+    var theta = ((Number(lng) + 180) * Math.PI) / 180;
+    return {
+      x: -Math.sin(phi) * Math.cos(theta),
+      y: Math.cos(phi),
+      z: Math.sin(phi) * Math.sin(theta),
+    };
+  }
+
+  function applyRx(p, a) {
+    var c = Math.cos(a);
+    var s = Math.sin(a);
+    return { x: p.x, y: p.y * c - p.z * s, z: p.y * s + p.z * c };
+  }
+
+  function applyRy(p, a) {
+    var c = Math.cos(a);
+    var s = Math.sin(a);
+    return { x: p.x * c + p.z * s, y: p.y, z: -p.x * s + p.z * c };
+  }
+
+  /* Camera is at (0, cy, cz) looking down -Z. Screen-center hit on the unit
+   * sphere is (0, cy, +sqrt(1-cy^2)) — the +Z face, not +X. */
+  function lookWorldPoint(g) {
+    var cy = 0.06;
+    try {
+      var cam = g && typeof g.getCamera === "function" ? g.getCamera() : null;
+      if (cam && cam.position && isFinite(+cam.position.y)) cy = +cam.position.y;
+    } catch (_) {}
+    if (cy > 0.92) cy = 0.92;
+    if (cy < -0.92) cy = -0.92;
+    var cz = Math.sqrt(Math.max(1e-8, 1 - cy * cy));
+    return { x: 0, y: cy, z: cz };
+  }
+
+  function eulerForLatLng(g, lat, lng) {
+    var T = latLngToLocal(lat, lng);
+    var W = lookWorldPoint(g);
+    var beta = Math.atan2(-T.x, T.z);
+    var Tp = applyRy(T, beta);
+    if (Tp.z < 0) {
+      beta += Math.PI;
+      Tp = applyRy(T, beta);
+    }
+    var alpha = Math.atan2(Tp.y, Tp.z) - Math.atan2(W.y, W.z);
+    if (alpha > TILT_MAX) alpha = TILT_MAX;
+    if (alpha < -TILT_MAX) alpha = -TILT_MAX;
+    return { x: alpha, y: beta };
+  }
+
+  function analyticView(g) {
+    g = g || liveGlobe();
+    var nodes = tiltSpinNodes(g);
+    if (!nodes.tilt || !nodes.spin) return null;
+    var W = lookWorldPoint(g);
+    var a = readRot(nodes.tilt, "x");
+    var b = readRot(nodes.spin, "y");
+    var p = applyRy(applyRx(W, -a), -b);
+    return vecToLatLngLocal(p);
+  }
+
   function canvasCenterPick(g) {
     g = g || liveGlobe();
     if (!g) return null;
+    var nodes = tiltSpinNodes(g);
+    paintTiltSpin(nodes, g);
+    try {
+      var earth = nodes.earth || (typeof g.getEarth === "function" ? g.getEarth() : null);
+      var camera = typeof g.getCamera === "function" ? g.getCamera() : null;
+      var T = threeNS();
+      if (earth && camera && T && T.Raycaster) {
+        if (earth.updateMatrixWorld) earth.updateMatrixWorld(true);
+        if (camera.updateMatrixWorld) camera.updateMatrixWorld(true);
+        var ray = new T.Raycaster();
+        ray.setFromCamera(new T.Vector2(0, 0), camera);
+        var hits = ray.intersectObject(earth, false);
+        if (hits && hits.length) {
+          var local = earth.worldToLocal(hits[0].point.clone());
+          var ll = vecToLatLngLocal(local);
+          if (ll && isFinite(ll.lat) && isFinite(ll.lng)) return ll;
+        }
+      }
+    } catch (_) {}
     try {
       if (typeof g.pickLatLng === "function") {
         var ren = typeof g.getRenderer === "function" ? g.getRenderer() : null;
@@ -305,28 +393,19 @@
         }
       }
     } catch (_) {}
-    try {
-      var earth = typeof g.getEarth === "function" ? g.getEarth() : null;
-      var camera = typeof g.getCamera === "function" ? g.getCamera() : null;
-      var T = threeNS();
-      if (!earth || !camera || !T || !T.Raycaster) return null;
-      if (earth.updateMatrixWorld) earth.updateMatrixWorld(true);
-      if (camera.updateMatrixWorld) camera.updateMatrixWorld(true);
-      var ray = new T.Raycaster();
-      ray.setFromCamera(new T.Vector2(0, 0), camera);
-      var hits = ray.intersectObject(earth, true);
-      if (!hits || !hits.length) return null;
-      var local = earth.worldToLocal(hits[0].point.clone());
-      return vecToLatLngLocal(local);
-    } catch (_) {
-      return null;
-    }
+    return null;
   }
 
   function viewLatLngFromCamera() {
-    var live = canvasCenterPick(liveGlobe());
+    var g = liveGlobe();
+    var live = canvasCenterPick(g);
     if (live && isFinite(live.lat) && isFinite(live.lng)) {
       lastLive = { lat: +live.lat, lng: +live.lng };
+      return lastLive;
+    }
+    var analytic = analyticView(g);
+    if (analytic && isFinite(analytic.lat) && isFinite(analytic.lng)) {
+      lastLive = { lat: +analytic.lat, lng: +analytic.lng };
       return lastLive;
     }
     return lastLive;
@@ -381,19 +460,20 @@
       var nodes = tiltSpinNodes(g);
       var tilt = nodes.tilt;
       var spin = nodes.spin;
-      if (!tilt || !spin) return;
-      var x = (-Number(lat) * Math.PI) / 180;
-      var y = (-Number(lng) * Math.PI) / 180;
-      if (x > TILT_MAX) x = TILT_MAX;
-      if (x < -TILT_MAX) x = -TILT_MAX;
-      tilt.rotation.set(x, 0, 0);
-      spin.rotation.set(0, y, 0);
+      if (!tilt || !spin) return false;
+      var e = eulerForLatLng(g, lat, lng);
+      tilt.rotation.set(e.x, 0, 0);
+      spin.rotation.set(0, e.y, 0);
       try {
-        if (tilt.quaternion && tilt.quaternion.setFromEuler) tilt.quaternion.setFromEuler(tilt.rotation);
-        if (spin.quaternion && spin.quaternion.setFromEuler) spin.quaternion.setFromEuler(spin.rotation);
+        tilt.matrixAutoUpdate = true;
+        spin.matrixAutoUpdate = true;
       } catch (_) {}
+      holdEuler = { x: e.x, y: e.y, lat: +lat, lng: +lng };
       paintTiltSpin(nodes, g);
-    } catch (_) {}
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   function minZFor(lat, lng) {
@@ -417,6 +497,23 @@
       cam.position.z = zMin;
     } catch (_) {}
     paintGlobe(g);
+  }
+
+  function holdLookFrame(g) {
+    if (!holdEuler || !lastFly) return;
+    if (Date.now() > capUntil) return;
+    g = g || liveGlobe();
+    var nodes = tiltSpinNodes(g);
+    if (!nodes.tilt || !nodes.spin) return;
+    try {
+      if (Math.abs(readRot(nodes.tilt, "x") - holdEuler.x) > 0.0004) {
+        nodes.tilt.rotation.set(holdEuler.x, 0, 0);
+      }
+      if (Math.abs(readRot(nodes.spin, "y") - holdEuler.y) > 0.0004) {
+        nodes.spin.rotation.set(0, holdEuler.y, 0);
+      }
+    } catch (_) {}
+    capCameraZ(g, lastFly.lat, lastFly.lng);
   }
 
   function probeNodeAxis(node, axis, kind, nodes, earth, g) {
@@ -630,57 +727,63 @@
     var latCtrl = { node: tilt, axis: "x" };
     var lngCtrl = { node: spin, axis: "y" };
 
-    var sLat = probeNodeAxis(tilt, "x", "lat", nodes, earth, g);
-    if (sLat === 0) {
-      sLat = probeNodeAxis(spin, "x", "lat", nodes, earth, g);
-      if (sLat !== 0) latCtrl = { node: spin, axis: "x" };
-    }
-    var sLng = probeNodeAxis(spin, "y", "lng", nodes, earth, g);
-    if (sLng === 0) {
-      sLng = probeNodeAxis(tilt, "y", "lng", nodes, earth, g);
-      if (sLng !== 0) lngCtrl = { node: tilt, axis: "y" };
-    }
-    lastProbe = { sLat: sLat, sLng: sLng };
-
     function settled(v, tol) {
       tol = tol != null ? tol : SETTLE_DEG;
       if (!v) return false;
       return Math.abs(v.lat - lat) < tol && Math.abs(unwrapDeg(v.lng - lng)) < tol;
     }
 
-    var step = 0;
-    while (step < maxSteps) {
-      var v = viewLatLngFromCamera();
-      if (settled(v)) break;
-      if (v && sLat && sLng) {
-        var dLat = lat - v.lat;
-        var dLng = unwrapDeg(lng - v.lng);
-        if (latCtrl.node && latCtrl.node !== earth && sLat) {
-          addRot(latCtrl.node, latCtrl.axis, sLat * dLat * (Math.PI / 180) * GAIN);
-        }
-        if (lngCtrl.node && lngCtrl.node !== earth && sLng) {
-          addRot(lngCtrl.node, lngCtrl.axis, sLng * dLng * (Math.PI / 180) * GAIN);
-        }
-      } else {
-        snapTiltSpin(g, lat, lng);
+    var already = viewLatLngFromCamera();
+    if (!settled(already, SETTLE_DEG)) {
+      var sLat = probeNodeAxis(tilt, "x", "lat", nodes, earth, g);
+      if (sLat === 0) {
+        sLat = probeNodeAxis(spin, "x", "lat", nodes, earth, g);
+        if (sLat !== 0) latCtrl = { node: spin, axis: "x" };
       }
-      callZeroInertia(g);
-      paintTiltSpin(nodes, g);
-      step++;
+      var sLng = probeNodeAxis(spin, "y", "lng", nodes, earth, g);
+      if (sLng === 0) {
+        sLng = probeNodeAxis(tilt, "y", "lng", nodes, earth, g);
+        if (sLng !== 0) lngCtrl = { node: tilt, axis: "y" };
+      }
+      lastProbe = { sLat: sLat, sLng: sLng };
+
+      var step = 0;
+      while (step < maxSteps) {
+        var v = viewLatLngFromCamera();
+        if (settled(v)) break;
+        if (v && sLat && sLng) {
+          var dLat = lat - v.lat;
+          var dLng = unwrapDeg(lng - v.lng);
+          if (latCtrl.node && latCtrl.node !== earth && sLat) {
+            addRot(latCtrl.node, latCtrl.axis, sLat * dLat * (Math.PI / 180) * GAIN);
+          }
+          if (lngCtrl.node && lngCtrl.node !== earth && sLng) {
+            addRot(lngCtrl.node, lngCtrl.axis, sLng * dLng * (Math.PI / 180) * GAIN);
+          }
+          callZeroInertia(g);
+          paintTiltSpin(nodes, g);
+        } else {
+          snapTiltSpin(g, lat, lng);
+          callZeroInertia(g);
+          paintTiltSpin(nodes, g);
+          break;
+        }
+        step++;
+      }
     }
 
-    snapTiltSpin(g, lat, lng);
-    callZeroInertia(g);
-    paintTiltSpin(nodes, g);
-    capCameraZ(g, lat, lng);
-    hideCoveringTiles();
-
     var end = viewLatLngFromCamera();
-    var ok = settled(end, 0.45) || settled(end, SETTLE_DEG);
-    if (!ok) {
+    if (!settled(end, 0.45)) {
       snapTiltSpin(g, lat, lng);
       paintTiltSpin(nodes, g);
       end = viewLatLngFromCamera();
+    }
+    capCameraZ(g, lat, lng);
+    hideCoveringTiles();
+
+    var ok = settled(end, 0.45) || settled(end, SETTLE_DEG);
+    if (!ok) {
+      end = analyticView(g) || end;
       ok = settled(end, 0.55);
     }
     if (ok) {
@@ -700,6 +803,7 @@
       return true;
     }
     lastFly = null;
+    holdEuler = null;
     return false;
   }
 
@@ -713,6 +817,10 @@
           if (typeof g.setFocus === "function") g.setFocus(live.lat, live.lng);
         } catch (_) {}
         return { lat: live.lat, lng: live.lng };
+      }
+      var analytic = analyticView(g);
+      if (analytic && isFinite(analytic.lat) && isFinite(analytic.lng)) {
+        return { lat: analytic.lat, lng: analytic.lng };
       }
       if (orig) {
         try {
@@ -745,6 +853,7 @@
     if (typeof g.onFrame === "function") {
       try {
         g.onFrame(function () {
+          holdLookFrame(g);
           if (Date.now() > capUntil && !lastFly) return;
           var look = lastFly || lastLive;
           if (!look) return;
@@ -755,6 +864,34 @@
         });
       } catch (_) {}
     }
+  }
+
+  function wrapFlyNear(g) {
+    if (!g || typeof g.flyNear !== "function" || g.__snPlaceLandFlyNear === BUILD) return;
+    var prev = g.flyNear.bind(g);
+    g.flyNear = function (lat, lng, tierHint) {
+      lat = +lat;
+      lng = +lng;
+      if (!isFinite(lat) || !isFinite(lng)) return prev(lat, lng, tierHint);
+      try {
+        if (typeof g.setFocus === "function") g.setFocus(lat, lng);
+      } catch (_) {}
+      snapTiltSpin(g, lat, lng);
+      lastLive = { lat: lat, lng: lng };
+      try {
+        if (tierHint && g.TIERS && g.TIERS[tierHint] && g.TIERS[tierHint].z != null) {
+          var cam = typeof g.getCamera === "function" ? g.getCamera() : null;
+          var z = +g.TIERS[tierHint].z;
+          if (cam && cam.position && isFinite(z)) {
+            var zMin = minZFor(lat, lng);
+            if (z < zMin) z = zMin;
+            cam.position.z = z;
+          }
+        }
+      } catch (_) {}
+      paintGlobe(g);
+    };
+    g.__snPlaceLandFlyNear = BUILD;
   }
 
   function wrapMap(g) {
@@ -788,14 +925,12 @@
     wrapViewLatLng(g);
     attachMotion(g);
     attachZCap(g);
+    wrapFlyNear(g);
     try {
-      if (typeof g.flyGlobeTo !== "function") g.flyGlobeTo = flyGlobeTo;
-    } catch (_) {
-      try {
-        g.flyGlobeTo = flyGlobeTo;
-      } catch (__) {}
-    }
+      g.flyGlobeTo = flyGlobeTo;
+    } catch (_) {}
     g.__snPlaceLand = BUILD;
+    g.__snPlaceLandFly = "analytic-zplus";
     try {
       var desc = Object.getOwnPropertyDescriptor(global, "SNGlobe");
       if (!desc || desc.get || desc.set || desc.value !== g) {
@@ -844,6 +979,7 @@
     ensure();
     keepEarthVisible();
     if (lastFly && Date.now() < capUntil) {
+      holdLookFrame(liveGlobe());
       capCameraZ(liveGlobe(), lastFly.lat, lastFly.lng);
     }
   }, 700);
