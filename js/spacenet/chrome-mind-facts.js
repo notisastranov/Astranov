@@ -1,10 +1,10 @@
-/* SpaceNet unit trainer · 20260823221000-keeptrain
+/* SpaceNet unit trainer · 20260823224000-keepon
  * Living mind: live envelopes + taught lessons. Not static programming.
  * Does not restyle CLI placeholders. Not a training sim.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823221000-keeptrain';
+  var BUILD = '20260823224000-keepon';
   if (global.__SN_MIND_FACTS === BUILD) return;
   global.__SN_MIND_FACTS = BUILD;
 
@@ -22,8 +22,9 @@
     'To complete SpaceNet + Phase 1 is the LIVE envelope on investors.astranov.eu. Gathered starts at €0 until a real wire.',
     'Rhodes: Fanes, Koskinou, Kallithea. Sitia Crete: Petras, Trypitos, Agia Fotia, Lagokefalo, Rousa Eklisia. Real GPS. Not invented towns.',
     'Never invent a kitchen, shop, or street. OSM shops. Oversustainable: restore the planet and produce goods, not offset.',
-    'Presence subdomains €330 / year. Globe behind. investors.astranov.eu and exchange.astranov.eu are SpaceNet pages.'
+    'Until the subdomain has its own cert, the live investors table is the HUD command budget on the globe. Never bounce to a dead SSL page.'
   ];
+  var pulses = 0;
 
   function log(m, k) {
     try {
@@ -157,17 +158,22 @@
     var line = String(raw || '').trim();
     var low = line.toLowerCase();
     if (!low) return false;
-    if (/^(train|teach)\s+status$/.test(low) || low === 'train' || low === 'unit') {
+    if (
+      /^(train|teach)\s+status$/.test(low) ||
+      low === 'train' ||
+      low === 'unit' ||
+      /don.?t stop|keep training|continue training|never stop/.test(low)
+    ) {
       log(
-        'Unit · training does not stop · lessons ' +
+        'Unit · training does not stop · pulses ' +
+          pulses +
+          ' · lessons ' +
           lessons().length +
           ' · ' +
           ((envelope && envelope.line) || 'loading live envelope…'),
         'ok'
       );
-      loadEnvelope().then(function (e) {
-        log(e.line, 'ok');
-      });
+      cycle(true);
       return true;
     }
     if (/^(train|teach)\s+cycle$/.test(low)) {
@@ -175,10 +181,10 @@
       cycle(true);
       return true;
     }
-    var m = /^(train|teach)\s+(.+)$/i.exec(line);
+    var m = /^(train|teach|remember|law)\s+(.+)$/i.exec(line);
     if (m) {
       var n = saveLesson(m[2]);
-      log('Trained · lesson ' + n + ' kept. The unit is not a static app.', 'ok');
+      log('Trained · lesson ' + n + ' kept. Training does not stop.', 'ok');
       return true;
     }
     if (/how much|need to complete|remaining to gather|complete spacenet|money we need|raise to finish|to complete the projects/.test(low)) {
@@ -223,14 +229,22 @@
           return null;
         })
     ]).then(function (pair) {
+      pulses += 1;
       var env = pair[0];
       var book = pair[1];
+      var pins = '';
+      try {
+        if (global.SNProjects && SNProjects.list) pins = SNProjects.list().length + ' pins';
+        else if (global.SNProjects && SNProjects.projects) pins = String(SNProjects.projects.length);
+      } catch (_) {}
       var sig =
         (env && env.line) +
         '|' +
         (book && book.share && book.share.nav_eur) +
         '|' +
-        (book && book.share && book.share.designed_keur);
+        (book && book.share && book.share.designed_keur) +
+        '|' +
+        pins;
       var prev = '';
       try {
         prev = localStorage.getItem(HASH) || '';
@@ -310,12 +324,17 @@
   };
   seedIfNeeded();
   loadEnvelope();
-  setTimeout(function () {
+  function pulse() {
+    if (typeof document !== 'undefined' && document.hidden) return;
     cycle(false);
-  }, 4000);
-  setInterval(function () {
-    cycle(false);
-  }, 90000);
+  }
+  setTimeout(pulse, 3000);
+  setInterval(pulse, 45000);
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) pulse();
+    });
+  }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wrapCli);
   else wrapCli();
 })(window);
