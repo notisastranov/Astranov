@@ -1,40 +1,44 @@
 /**
- * Guest laptop hunt — Build 20260823024000-laptop-spread
+ * Guest laptop hunt — Build 20260823032000-laptop-tap
  * PATCH #132 only. Never edit chrome-guest-pizza-hunt.js (#127).
  * Do not touch #127 (pizza), #129 (CALL), #130 (nairobi), #131 (kalithea).
  *
- * KEEP (locked PASS of 20260823022000-laptop-osm):
- *   OSM hunt = 24 real Rhodes electronics (Public, Germanos, Κωτσόβολος…).
- *   No synthetic/db/fake shops. Camera: SA stays put. `rhodes` renders
- *   ~36.33, 28.08 via probe-sign flyGlobeTo. No Google. No DRIVER EN ROUTE.
+ * KEEP (locked PASS of 20260823024000-laptop-spread):
+ *   OSM hunt = 24 real Rhodes electronics. Unique CSS overlay (~22 pins,
+ *   spiral if <20px). CITY altitude before pins. Camera: SA stays put.
+ *   rhodes via probe-sign flyGlobeTo. No Google. No DRIVER EN ROUTE.
  *
- * QA FAIL of 20260823022000-laptop-osm:
- *   (a) #sn-laptop-pins has 24 children piled at left 625-628 / top 311-315
- *       because the island is one pixel at continent zoom.
- *   (b) Tap GNet / Rodos Digital announces nothing (no "Shop · name · km ⭐").
- *   (c) SA laptop CLI is silent instead of printing "Hunt failed".
+ * QA FAIL of 20260823024000-laptop-spread:
+ *   (a) Tapping pins (screen 817,422 and 655,569) shows no Shop card
+ *       and no CLI output. Overlay is 0×0; button z-index trapped in
+ *       overlay stacking; suppressPoiUntil swallows onClick; canvas
+ *       pointerup consumes without announceVendor.
+ *   (b) SNGlobe.consumeClick is missing after tap.
+ *   (c) SA/Pacific Hunt failed prints ZERO: #stc-cmd-in is 0×0 and only
+ *       #cli-in is visible. #cli-log:empty is hidden; #panel.collapsed
+ *       grid-row 3 is 0; #cli-log:not(:has(.cli-feed-item)) hides raw
+ *       divs. Do NOT restyle #stc-cmd-in or placeholders.
  *
- * FIX 20260823024000-laptop-spread:
- *   (1) After a successful Rhodes/electronics hunt, flyGlobeTo the island
- *       (same settle as #127 pizza after "show rhodes", view ~36.41, 28.10)
- *       AND drop to CITY altitude BEFORE painting pins — do not stay at
- *       continent zoom. Empty hunt (SA) never flies.
- *   (2) projectPin like #127 pin-spread: unique CSS left/top per shop
- *       lat/lng, skip pins behind the globe, and if two project <20px
- *       apart offset the overlay in a small spiral (world positions stay
- *       honest).
- *   (3) Overlay z-index above the CLI, pointer-events auto, consumeClick,
- *       stopImmediatePropagation; tap → Shop · name · km · ⭐. No dive/fling.
- *   (4) Empty results: a visible CLI line "Hunt failed".
+ * FIX 20260823032000-laptop-tap:
+ *   (1) Every #sn-laptop-pins child is a real <button> with
+ *       pointer-events:auto and z-index above #panel. Overlay is
+ *       full-screen inset:0 pointer-events:none; buttons position:fixed.
+ *       click AND pointerup: preventDefault + stopImmediatePropagation,
+ *       SNGlobe.consumeClick=true, live CLI say() with exact
+ *       `Shop · <name> · <km>km · ⭐`.
+ *   (2) Canvas pointerup: pickLatLng nearest shop within 12km and
+ *       announce the same line when overlay click is missed.
+ *   (3) Empty hunt: visible `Hunt failed` on the live guest CLI
+ *       (#cli-log .cli-feed-item, panel open). Not console.log.
  *
  * Product law: if it is not on the globe it is not shipped.
  */
 (function (G) {
   'use strict';
-  if (G.__snGuestLaptopHunt20260823024000) return;
-  G.__snGuestLaptopHunt20260823024000 = 1;
+  if (G.__snGuestLaptopHunt20260823032000) return;
+  G.__snGuestLaptopHunt20260823032000 = 1;
 
-  var BUILD = '20260823024000-laptop-spread';
+  var BUILD = '20260823032000-laptop-tap';
   var hunting = false;
   var huntSession = false;
   var lastPins = [];
@@ -45,6 +49,7 @@
   var suppressPoiUntil = 0;
   var canvasTapBound = false;
   var overlayTapBound = false;
+  var overlayLockUntil = 0;
   var lastFly = null;
   var lastProbe = { sLat: 0, sLng: 0 };
   var overlayRaf = 0;
@@ -113,11 +118,116 @@
     });
   }
 
+  function openLiveCli() {
+    try {
+      var panel = document.getElementById('panel');
+      if (panel) {
+        panel.classList.add('sn-open', 'open');
+        panel.classList.remove('collapsed', 'sn-quiet');
+        panel.style.setProperty('grid-template-rows', '10px 44px auto auto', 'important');
+      }
+    } catch (_) {}
+    try {
+      var el = document.getElementById('cli-log');
+      if (el) {
+        el.style.setProperty('display', 'block', 'important');
+        el.style.setProperty('height', 'auto', 'important');
+        el.style.setProperty('max-height', '26vh', 'important');
+        el.style.setProperty('min-height', '0', 'important');
+        el.style.setProperty('padding', '4px 10px 8px', 'important');
+      }
+    } catch (_) {}
+  }
+
+  /**
+   * Live guest CLI echo — same path pizza-hunt uses (SNCli.log force)
+   * plus an exact-text .cli-feed-item on #cli-log (SNCli.userFace strips
+   * middots). Never restyle #stc-cmd-in or placeholders. #stc-cmd-in is
+   * 0×0 on guest; only #cli-in / #cli-log are live.
+   */
+  function say(m, c) {
+    var s = String(m == null ? '' : m).slice(0, 420);
+    if (!s) return;
+    try {
+      if (G.SNCli && typeof SNCli.beginTurn === 'function' && typeof SNCli.inTurn === 'function') {
+        if (!SNCli.inTurn()) SNCli.beginTurn();
+      }
+    } catch (_) {}
+    try {
+      if (G.SNCli && SNCli.log) SNCli.log(s, c || 'ok', true);
+    } catch (_) {}
+    paintLiveCli(s, c);
+    try {
+      if (G.SNCli && SNCli.preview) SNCli.preview(s.slice(0, 90));
+    } catch (_) {}
+    try {
+      if (G.SNGlobe && typeof SNGlobe.setHud === 'function') SNGlobe.setHud(s.slice(0, 72));
+    } catch (_) {}
+    try {
+      var out = document.getElementById('cli-out');
+      if (out) out.textContent = s;
+    } catch (_) {}
+    try {
+      var hud = document.getElementById('hud-line');
+      if (hud) hud.textContent = s;
+    } catch (_) {}
+    try {
+      if (G.SNHud && typeof SNHud.line === 'function') SNHud.line(s);
+      else if (G.SNHud && typeof SNHud.set === 'function') SNHud.set(s);
+    } catch (_) {}
+    try {
+      if (G.SNChromeCliAnswer && SNChromeCliAnswer.forcePaint) SNChromeCliAnswer.forcePaint();
+    } catch (_) {}
+  }
+
+  function paintLiveCli(s, c) {
+    s = String(s == null ? '' : s).slice(0, 420);
+    if (!s) return;
+    openLiveCli();
+    try {
+      var el = document.getElementById('cli-log');
+      if (!el) return;
+      var lastExact = null;
+      try {
+        var nodes = el.querySelectorAll('[data-sn-laptop-cli="1"]');
+        lastExact = nodes.length ? nodes[nodes.length - 1] : null;
+      } catch (__) {}
+      if (lastExact && String(lastExact.textContent || '') === s) {
+        try {
+          el.scrollTop = el.scrollHeight;
+        } catch (__) {}
+        return;
+      }
+      var wrap = document.createElement('div');
+      wrap.className = 'cli-feed-item is-latest';
+      wrap.setAttribute('data-sn-laptop-cli', '1');
+      wrap.setAttribute('data-search', s);
+      var line = document.createElement('div');
+      var kind = c || 'ok';
+      if (kind === 'dim') kind = 'progress';
+      line.className = 'cli-line ' + kind;
+      var body = document.createElement('div');
+      body.className = 'cli-body';
+      body.textContent = s;
+      line.appendChild(body);
+      wrap.appendChild(line);
+      try {
+        el.querySelectorAll('.cli-feed-item.is-latest').forEach(function (n) {
+          n.classList.remove('is-latest');
+        });
+      } catch (__) {}
+      el.appendChild(wrap);
+      try {
+        el.scrollTop = el.scrollHeight;
+      } catch (__) {}
+    } catch (_) {}
+  }
+
   function log(m, c) {
     try {
       var s = String(m == null ? '' : m).slice(0, 420);
-      if (/^Hunt failed/i.test(s)) {
-        paintCliLine(s, c || 'ok');
+      if (/^Hunt failed/i.test(s) || /^Shop ·/.test(s)) {
+        say(s, c || 'ok');
         return;
       }
       if (FAKE_OPS_RE.test(s)) return;
@@ -128,43 +238,17 @@
   }
 
   function paintCliLine(s, c) {
-    s = String(s == null ? '' : s).slice(0, 420);
-    try {
-      if (G.SNCli && SNCli.log) SNCli.log(s, c || 'ok', true);
-    } catch (_) {}
-    try {
-      var el = document.getElementById('cli-log');
-      if (el) {
-        var has = false;
-        try {
-          has = el.textContent && el.textContent.indexOf(s) >= 0;
-        } catch (__) {}
-        if (!has) {
-          var d = document.createElement('div');
-          d.setAttribute('data-sn-laptop-cli', '1');
-          d.textContent = s;
-          el.appendChild(d);
-          try {
-            el.scrollTop = el.scrollHeight;
-          } catch (__) {}
-        }
-      }
-    } catch (_) {}
-    try {
-      var panel = document.getElementById('panel');
-      if (panel) {
-        panel.classList.add('sn-open', 'open');
-        panel.classList.remove('collapsed', 'sn-quiet');
-      }
-    } catch (_) {}
-    try {
-      if (G.SNChromeCliAnswer && SNChromeCliAnswer.forcePaint) SNChromeCliAnswer.forcePaint();
-    } catch (_) {}
+    say(s, c || 'ok');
   }
 
   function preview(m) {
     try {
       if (G.SNCli && SNCli.preview) SNCli.preview(String(m).slice(0, 90));
+    } catch (_) {}
+    try {
+      if (G.SNGlobe && typeof SNGlobe.setHud === 'function') {
+        SNGlobe.setHud(String(m || '').slice(0, 72));
+      }
     } catch (_) {}
   }
 
@@ -1438,11 +1522,11 @@
     el.setAttribute('data-sn-build', BUILD);
     var z = overlayZ();
     el.style.cssText =
-      'position:fixed;left:0;top:0;width:0;height:0;overflow:visible;' +
-      'pointer-events:auto;z-index:' +
+      'position:fixed;inset:0;left:0;top:0;right:0;bottom:0;width:100%;height:100%;' +
+      'overflow:visible;pointer-events:none;z-index:' +
       z +
-      ';margin:0;padding:0;border:0;';
-    el.style.setProperty('pointer-events', 'auto', 'important');
+      ';margin:0;padding:0;border:0;background:transparent;';
+    el.style.setProperty('pointer-events', 'none', 'important');
     el.style.setProperty('z-index', String(z), 'important');
     return el;
   }
@@ -1497,17 +1581,21 @@
     if (!root) return;
     var z = overlayZ();
     root.style.display = points.length ? 'block' : 'none';
-    root.style.setProperty('pointer-events', 'auto', 'important');
+    root.style.setProperty('pointer-events', 'none', 'important');
     root.style.setProperty('z-index', String(z), 'important');
 
     var existing = root.querySelectorAll('button[data-sn-laptop-pin]');
-    if (existing.length === points.length && points.length > 0) {
-      for (i = 0; i < points.length; i++) {
+    var lockRebuild = Date.now() < overlayLockUntil && existing.length > 0;
+    if ((existing.length === points.length && points.length > 0) || lockRebuild) {
+      var n = Math.min(existing.length, points.length);
+      for (i = 0; i < n; i++) {
+        var zBtn = z + 10 + i;
+        existing[i].style.position = 'fixed';
         existing[i].style.left = (points[i].left - 14).toFixed(1) + 'px';
         existing[i].style.top = (points[i].top - 14).toFixed(1) + 'px';
         existing[i].style.display = 'block';
         existing[i].style.setProperty('pointer-events', 'auto', 'important');
-        existing[i].style.setProperty('z-index', String(2 + i), 'important');
+        existing[i].style.setProperty('z-index', String(zBtn), 'important');
       }
       return;
     }
@@ -1521,8 +1609,9 @@
         var name = String(pt.pin.name || 'shop').slice(0, 36);
         btn.title = name;
         btn.setAttribute('aria-label', name);
+        var zBtn = z + 10 + pt.idx;
         btn.style.cssText =
-          'position:absolute;left:' +
+          'position:fixed;left:' +
           (pt.left - 14).toFixed(1) +
           'px;top:' +
           (pt.top - 14).toFixed(1) +
@@ -1530,10 +1619,12 @@
           hexColor(pt.color, pt.idx === 0 ? '#7ee9ff' : '#b48eff') +
           ';pointer-events:auto;cursor:pointer;padding:0;margin:0;' +
           'box-shadow:0 0 12px rgba(126,233,255,.95);z-index:' +
-          (2 + pt.idx) +
+          zBtn +
           ';';
         btn.style.setProperty('pointer-events', 'auto', 'important');
+        btn.style.setProperty('z-index', String(zBtn), 'important');
         function onPinTap(ev) {
+          overlayLockUntil = Date.now() + 800;
           consumePointer(ev);
           var row = lastPins[pt.idx] || pt.pin;
           announceVendor(row);
@@ -1576,7 +1667,14 @@
       if (G.SNGlobe) G.SNGlobe.consumeClick = true;
     } catch (_) {}
     try {
+      if (typeof SNGlobe !== 'undefined' && SNGlobe) SNGlobe.consumeClick = true;
+    } catch (_) {}
+    try {
       if (G.SNGlobe && G.SNGlobe._g) G.SNGlobe._g.consumeClick = true;
+    } catch (_) {}
+    try {
+      var r = G.SNGlobe && typeof SNGlobe.getRenderer === 'function' && SNGlobe.getRenderer();
+      if (r && r.domElement) r.domElement.__snConsumeClick = true;
     } catch (_) {}
   }
 
@@ -1771,16 +1869,31 @@
     return hit;
   }
 
+  function shopLine(hit) {
+    var name = String((hit && hit.name) || 'vendor').slice(0, 36);
+    var km = null;
+    if (hit && hit.km != null && isFinite(+hit.km)) km = Number(hit.km);
+    if (km == null) {
+      try {
+        var cam = liveViewLatLng();
+        if (cam && hit && hit.lat != null) km = haversineKm(cam, hit);
+      } catch (_) {}
+    }
+    if (km == null || !isFinite(km)) km = 0;
+    return 'Shop · ' + name + ' · ' + km.toFixed(1) + 'km · ⭐';
+  }
+
   function announceVendor(hit) {
     if (!hit) return;
-    if (Date.now() - announcedAt < 250) return;
+    if (Date.now() - announcedAt < 250) {
+      markConsume();
+      return;
+    }
     announcedAt = Date.now();
+    overlayLockUntil = Date.now() + 800;
     markConsume();
     hideLeaflet();
-    var kmBit =
-      hit.km != null && isFinite(hit.km) ? ' · ' + Number(hit.km).toFixed(1) + 'km' : '';
-    log('Shop · ' + String(hit.name || 'vendor').slice(0, 36) + kmBit + ' · ⭐', 'ok');
-    preview(String(hit.name || 'shop').slice(0, 40) + ' · ⭐');
+    say(shopLine(hit), 'ok');
   }
 
   function installOverlayTap() {
@@ -1825,15 +1938,17 @@
       if (G.SNGlobe && typeof SNGlobe.onClick === 'function') {
         clickUnsub = SNGlobe.onClick(function (cx, cy) {
           if (!lastPins.length) return false;
+          var hit = hitVendorAt(cx, cy);
+          if (hit) {
+            markConsume();
+            announceVendor(hit);
+            return true;
+          }
           if (Date.now() < suppressPoiUntil) {
             markConsume();
             return true;
           }
-          var hit = hitVendorAt(cx, cy);
-          if (!hit) return false;
-          markConsume();
-          announceVendor(hit);
-          return true;
+          return false;
         });
       }
     } catch (_) {}
@@ -1855,8 +1970,7 @@
           if (!lastPins.length) return;
           var hit = hitVendorAt(e.clientX, e.clientY);
           if (!hit) return;
-          consumePointer(e);
-          announceVendor(hit);
+          markConsume();
         },
         true
       );
@@ -1869,6 +1983,18 @@
           var hit = hitVendorAt(e.clientX, e.clientY);
           if (!hit) return;
           consumePointer(e);
+          announceVendor(hit);
+        },
+        true
+      );
+      canvas.addEventListener(
+        'click',
+        function (e) {
+          if (!lastPins.length) return;
+          var hit = hitVendorAt(e.clientX, e.clientY);
+          if (!hit) return;
+          consumePointer(e);
+          announceVendor(hit);
         },
         true
       );
@@ -2153,11 +2279,7 @@
   function failHunt(msg) {
     huntFailed = true;
     clearLaptopPins();
-    paintCliLine('Hunt failed', 'ok');
-    preview('Hunt failed');
-    try {
-      if (G.SNChromeCliAnswer && SNChromeCliAnswer.forcePaint) SNChromeCliAnswer.forcePaint();
-    } catch (_) {}
+    say('Hunt failed', 'ok');
     if (msg && String(msg) !== 'Hunt failed' && !/map search failed/i.test(String(msg))) {
       try {
         if (G.SNCli && SNCli.preview) SNCli.preview(String(msg).slice(0, 90));

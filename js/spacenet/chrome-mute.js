@@ -1,14 +1,15 @@
-/* Astranov mute · Build 20260823024000-laptop-spread
+/* Astranov mute · Build 20260823032000-laptop-tap
  * Kill beeps + load chrome-guest-laptop-hunt (real OSM electronics ·
- * CITY altitude before pins · #127 pin-spread spiral · tap Shop · name · km · ⭐).
- * Does NOT load chrome-guest-pizza-hunt (#127), chrome-call-arc (#129),
- * chrome-nairobi-ladder (#130), or chrome-kalithea-village (#131).
- * Does NOT overwrite SNGlobe.flyGlobeTo when #127 already defined it.
- * Does NOT edit chrome-guest-pizza-hunt.js.
+ * CITY altitude before pins · unique overlay pins · tap Shop · name · km · ⭐
+ * on the live guest CLI). Does NOT load chrome-guest-pizza-hunt (#127),
+ * chrome-call-arc (#129), chrome-nairobi-ladder (#130), or
+ * chrome-kalithea-village (#131). Does NOT overwrite SNGlobe.flyGlobeTo
+ * when #127 already defined it. Does NOT edit chrome-guest-pizza-hunt.js.
+ * Does NOT restyle #stc-cmd-in or placeholders.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823024000-laptop-spread';
+  var BUILD = '20260823032000-laptop-tap';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
