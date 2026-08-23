@@ -1,7 +1,8 @@
-/* Astranov mute · Build 20260823032000-laptop-tap
+/* Astranov mute · Build 20260823034000-laptop-flylie
  * Kill beeps + load chrome-guest-laptop-hunt (real OSM electronics ·
  * CITY altitude before pins · unique overlay pins · tap Shop · name · km · ⭐
- * on the live guest CLI). Does NOT load chrome-guest-pizza-hunt (#127),
+ * on the live guest CLI). Fly failed only when camera missed (~50 km) or
+ * probe-sign checks fail. Does NOT load chrome-guest-pizza-hunt (#127),
  * chrome-call-arc (#129), chrome-nairobi-ladder (#130), or
  * chrome-kalithea-village (#131). Does NOT overwrite SNGlobe.flyGlobeTo
  * when #127 already defined it. Does NOT edit chrome-guest-pizza-hunt.js.
@@ -9,7 +10,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823032000-laptop-tap';
+  var BUILD = '20260823034000-laptop-flylie';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 

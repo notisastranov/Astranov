@@ -1,44 +1,31 @@
 /**
- * Guest laptop hunt — Build 20260823032000-laptop-tap
+ * Guest laptop hunt — Build 20260823034000-laptop-flylie
  * PATCH #132 only. Never edit chrome-guest-pizza-hunt.js (#127).
  * Do not touch #127 (pizza), #129 (CALL), #130 (nairobi), #131 (kalithea).
  *
- * KEEP (locked PASS of 20260823024000-laptop-spread):
+ * KEEP (locked PASS of 20260823032000-laptop-tap):
  *   OSM hunt = 24 real Rhodes electronics. Unique CSS overlay (~22 pins,
  *   spiral if <20px). CITY altitude before pins. Camera: SA stays put.
- *   rhodes via probe-sign flyGlobeTo. No Google. No DRIVER EN ROUTE.
+ *   rhodes via probe-sign flyGlobeTo. Tap: Shop · name · km · ⭐ + consumeClick.
+ *   Empty SA/Pacific hunt → Hunt failed. No Google. No DRIVER EN ROUTE.
+ *   Do not restyle twin CLI chrome / #stc-cmd-in.
  *
- * QA FAIL of 20260823024000-laptop-spread:
- *   (a) Tapping pins (screen 817,422 and 655,569) shows no Shop card
- *       and no CLI output. Overlay is 0×0; button z-index trapped in
- *       overlay stacking; suppressPoiUntil swallows onClick; canvas
- *       pointerup consumes without announceVendor.
- *   (b) SNGlobe.consumeClick is missing after tap.
- *   (c) SA/Pacific Hunt failed prints ZERO: #stc-cmd-in is 0×0 and only
- *       #cli-in is visible. #cli-log:empty is hidden; #panel.collapsed
- *       grid-row 3 is 0; #cli-log:not(:has(.cli-feed-item)) hides raw
- *       divs. Do NOT restyle #stc-cmd-in or placeholders.
- *
- * FIX 20260823032000-laptop-tap:
- *   (1) Every #sn-laptop-pins child is a real <button> with
- *       pointer-events:auto and z-index above #panel. Overlay is
- *       full-screen inset:0 pointer-events:none; buttons position:fixed.
- *       click AND pointerup: preventDefault + stopImmediatePropagation,
- *       SNGlobe.consumeClick=true, live CLI say() with exact
- *       `Shop · <name> · <km>km · ⭐`.
- *   (2) Canvas pointerup: pickLatLng nearest shop within 12km and
- *       announce the same line when overlay click is missed.
- *   (3) Empty hunt: visible `Hunt failed` on the live guest CLI
- *       (#cli-log .cli-feed-item, panel open). Not console.log.
+ * NIT 20260823034000-laptop-flylie:
+ *   After a successful fly the CLI still printed "Fly failed" when
+ *   viewLatLng was 36.440, 28.037 (Rhodes, ~16 km from 36.44, 28.22).
+ *   Print "Fly failed" ONLY when the rendered camera did not reach the
+ *   target: haversine > ~50 km, or probe-sign checks fail. If the view
+ *   is already near Rhodes (~36.4, 28.1), treat the fly as success and
+ *   print the success line.
  *
  * Product law: if it is not on the globe it is not shipped.
  */
 (function (G) {
   'use strict';
-  if (G.__snGuestLaptopHunt20260823032000) return;
-  G.__snGuestLaptopHunt20260823032000 = 1;
+  if (G.__snGuestLaptopHunt20260823034000) return;
+  G.__snGuestLaptopHunt20260823034000 = 1;
 
-  var BUILD = '20260823032000-laptop-tap';
+  var BUILD = '20260823034000-laptop-flylie';
   var hunting = false;
   var huntSession = false;
   var lastPins = [];
@@ -62,6 +49,7 @@
   var announcedAt = 0;
 
   var SETTLE_DEG = 0.15;
+  var FLY_OK_KM = 50;
   var HUNT_KM = 16.5;
   var PIN_MS = 180000;
   var PIN_COLOR_A = 0x7ee9ff;
@@ -69,6 +57,7 @@
   var PIN_HIT_PX = 22;
   var KALITHEA = { lat: 36.387557, lng: 28.222533 };
   var RHODES = { lat: 36.44, lng: 28.22, name: 'Rhodes' };
+  var RHODES_NEAR = { lat: 36.4, lng: 28.1 };
   var RHODES_VIEW_BOX = { latMin: 36.0, latMax: 36.5, lngMin: 27.7, lngMax: 28.4 };
   var RHODES_BOX = { latMin: 35.82, latMax: 36.52, lngMin: 27.62, lngMax: 28.42 };
   var OSM_SHOP_TAGS = ['electronics', 'computer', 'mobile_phone', 'hifi', 'appliance', 'telecommunication'];
@@ -565,6 +554,44 @@
     return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
   }
 
+  function viewKmFrom(lat, lng) {
+    var v = liveViewLatLng();
+    if (!v) return 9999;
+    return haversineKm(v, { lat: +lat, lng: +lng });
+  }
+
+  function viewReached(lat, lng) {
+    return viewKmFrom(lat, lng) <= FLY_OK_KM;
+  }
+
+  function nearRhodesView() {
+    var v = liveViewLatLng();
+    if (!v) return false;
+    if (inRhodes(v.lat, v.lng)) return true;
+    if (haversineKm(v, RHODES_NEAR) <= FLY_OK_KM) return true;
+    if (haversineKm(v, RHODES) <= FLY_OK_KM) return true;
+    return Math.abs(v.lat - 36.4) <= 0.5 && lngDelta(v.lng, 28.1) <= 0.5;
+  }
+
+  function probeSignsFailed() {
+    var sLat = lastProbe && lastProbe.sLat != null ? lastProbe.sLat : 0;
+    var sLng = lastProbe && lastProbe.sLng != null ? lastProbe.sLng : 0;
+    return sLat === 0 || sLng === 0;
+  }
+
+  /**
+   * Fly failed ONLY when the rendered camera did not reach the target:
+   * haversine > ~50 km, or probe-sign checks fail. Already-near Rhodes
+   * (~36.4, 28.1) is success even if fly() / 0.15° settle lied.
+   */
+  function flyDidFail(targetLat, targetLng, label) {
+    if (label === 'Rhodes' || inRhodes(+targetLat, +targetLng)) {
+      if (nearRhodesView()) return false;
+    }
+    if (viewReached(targetLat, targetLng)) return false;
+    return viewKmFrom(targetLat, targetLng) > FLY_OK_KM || probeSignsFailed();
+  }
+
   function isBannedName(name) {
     var n = String(name || '');
     if (/Astranov\s*Kitchen/i.test(n)) return true;
@@ -868,11 +895,13 @@
    *     NEVER Mesh.rotation
    * (3) PROBE SIGNS once per fly (0.04 rad, revert). If a probe returns 0, try the other node.
    * (4) LOOP gain=0.35, max 16. LIVE viewLatLng each step.
-   *     success |Δlat|<0.15 AND unwrap|Δlng|<0.15
+   *     success haversine ≤ ~50 km (or |Δlat|<0.15 AND unwrap|Δlng|<0.15)
    *     else tilt.x += sLat*dLat*PI/180*gain; spin.y += sLng*dLng*PI/180*gain
    * (5) Do NOT use x += -dLat blindly. Do NOT apply delta to Mesh or both parents.
    * (6) Success: zeroInertia, setFocus ONLY after LIVE settle (so the label matches the camera).
-   * (7) Fail: lastFly=null, no hunt, no pins.
+   *     Already-near Rhodes (~36.4, 28.1) is success. 36.440, 28.037 is success.
+   * (7) Fail: lastFly=null, no hunt, no pins. Print Fly failed ONLY if
+   *     haversine > ~50 km or probe-sign checks fail.
    */
   async function flyGlobeToLocal(lat, lng, label) {
     lat = +lat;
@@ -901,6 +930,23 @@
 
     lastProbe = { sLat: 0, sLng: 0 };
 
+    function markSuccessLocal() {
+      callZeroInertia();
+      lastFly = { lat: lat, lng: lng, ts: Date.now(), label: label || '' };
+      try {
+        if (!(isKalitheaCoord(lat, lng) && !gpsAtKalithea())) {
+          G._snGlobeFocus = { lat: lat, lng: lng, label: label || '', t: Date.now() };
+          if (G.SNGlobe && typeof SNGlobe.setFocus === 'function') SNGlobe.setFocus(lat, lng);
+        }
+      } catch (_) {}
+      return true;
+    }
+
+    if (viewReached(lat, lng) || (label === 'Rhodes' && nearRhodesView())) {
+      lastProbe = { sLat: 1, sLng: 1 };
+      return markSuccessLocal();
+    }
+
     var nodes = tiltSpinNodes();
     var tilt = nodes.tilt;
     var spin = nodes.spin;
@@ -925,18 +971,12 @@
 
     function settled(v) {
       if (!v) return false;
+      if (haversineKm(v, { lat: lat, lng: lng }) <= FLY_OK_KM) return true;
+      if (label === 'Rhodes' && nearRhodesView()) return true;
       return Math.abs(v.lat - lat) < SETTLE_DEG && Math.abs(unwrapDeg(v.lng - lng)) < SETTLE_DEG;
     }
     function markSuccess() {
-      callZeroInertia();
-      lastFly = { lat: lat, lng: lng, ts: Date.now(), label: label || '' };
-      try {
-        if (!(isKalitheaCoord(lat, lng) && !gpsAtKalithea())) {
-          G._snGlobeFocus = { lat: lat, lng: lng, label: label || '', t: Date.now() };
-          if (G.SNGlobe && typeof SNGlobe.setFocus === 'function') SNGlobe.setFocus(lat, lng);
-        }
-      } catch (_) {}
-      return true;
+      return markSuccessLocal();
     }
     function nudgeSigned(dLat, dLng) {
       if (latCtrl.node && latCtrl.node !== earth && sLat) {
@@ -967,7 +1007,9 @@
     callZeroInertia();
     paintTiltSpin(nodes);
     var vEnd = liveViewLatLng();
-    if (settled(vEnd)) return markSuccess();
+    if (settled(vEnd) || viewReached(lat, lng) || (label === 'Rhodes' && nearRhodesView())) {
+      return markSuccess();
+    }
     lastFly = null;
     return false;
   }
@@ -2420,22 +2462,25 @@
         return true;
       }
       attachFlyHelper();
-      var fly = getFly();
-      var ok = false;
-      try {
-        ok = await fly(RHODES.lat, RHODES.lng, 'Rhodes');
-      } catch (_) {
-        ok = false;
+      var already = nearRhodesView();
+      if (!already) {
+        var fly = getFly();
+        try {
+          await fly(RHODES.lat, RHODES.lng, 'Rhodes');
+        } catch (_) {}
       }
-      if (ok && !viewNear(RHODES.lat, RHODES.lng, SETTLE_DEG, SETTLE_DEG)) ok = false;
-
-      if (!ok) {
+      try {
+        callZeroInertia();
+        paintGlobe();
+      } catch (_) {}
+      if (flyDidFail(RHODES.lat, RHODES.lng, 'Rhodes')) {
         log(flyFailDiag(), 'dim');
         preview('Fly failed');
         lastFly = null;
         return true;
       }
 
+      lastFly = { lat: RHODES.lat, lng: RHODES.lng, ts: Date.now(), label: 'Rhodes' };
       preferCameraUntil = Date.now() + 180000;
       log('Rhodes. globe camera. 36.44, 28.22', 'ok');
       preview('Rhodes · globe');
@@ -2485,14 +2530,14 @@
         var youLng = +G._snPhysPos.lng;
         if (isFinite(youLat) && isFinite(youLng) && !nearFake(youLat, youLng) && !isIpOrSoftSource(G._snPhysPos)) {
           var fly = getFly();
-          var ok = false;
           try {
-            ok = await fly(youLat, youLng, 'You');
-          } catch (_) {
-            ok = false;
-          }
-          if (ok && !viewNear(youLat, youLng, SETTLE_DEG, SETTLE_DEG)) ok = false;
-          if (!ok) {
+            await fly(youLat, youLng, 'You');
+          } catch (_) {}
+          try {
+            callZeroInertia();
+            paintGlobe();
+          } catch (_) {}
+          if (flyDidFail(youLat, youLng, 'You')) {
             log('Fly failed', 'err');
             log(flyFailDiag(), 'dim');
             preview('Fly failed');
@@ -2611,13 +2656,14 @@
       });
       log('Located · ' + lat.toFixed(3) + ', ' + lng.toFixed(3) + ' · type laptop again', 'ok');
       var fly = getFly();
-      var ok = false;
       try {
-        ok = await fly(lat, lng, 'You');
-      } catch (_) {
-        ok = false;
-      }
-      if (!ok) {
+        await fly(lat, lng, 'You');
+      } catch (_) {}
+      try {
+        callZeroInertia();
+        paintGlobe();
+      } catch (_) {}
+      if (flyDidFail(lat, lng, 'You')) {
         log('Fly failed', 'err');
         log(flyFailDiag(), 'dim');
       }
