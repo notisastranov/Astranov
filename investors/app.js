@@ -1,11 +1,11 @@
-/* investors.astranov.eu · 20260823200000-presence */
+/* investors.astranov.eu · 20260823211000-raise */
 (function () {
   'use strict';
   var OWNER = 'notisastranov@gmail.com';
   var SB_URL = 'https://lkoatrkhuigdolnjsbie.supabase.co';
   var SB_KEY =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb2F0cmtodWlnZG9sbmpzYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODIwOTIsImV4cCI6MjA5NDQ1ODA5Mn0.qf6Kg93YLJ0coTdVQa4baU0ppOdFY5WkmVzMvEV6ejI';
-  var deck = { packages: [], model: { ops: 40, owner: 30, village: 30 }, disclaimer: '' };
+  var deck = { packages: [], model: { ops: 40, owner: 30, village: 30 }, disclaimer: '', gathered_keur: 0 };
   var tab = 'phase1';
   var owner = false;
   var sb = null;
@@ -213,6 +213,28 @@
     }, 0);
   }
 
+  function sumRaised(list) {
+    return list.reduce(function (a, p) {
+      return a + (Number(p.raised) || 0);
+    }, 0);
+  }
+
+  function renderRaise() {
+    var el = document.getElementById('raise');
+    if (!el) return;
+    var all = deck.packages || [];
+    var p1 = all.filter(function (p) { return p.phase === 1; });
+    var p2 = all.filter(function (p) { return p.phase === 2; });
+    var need = sum(p1);
+    var got = sumRaised(all) + (Number(deck.gathered_keur) || 0);
+    var left = Math.max(0, need - got);
+    el.innerHTML =
+      '<div class="pill"><b>' + eur(need) + '</b>Phase 1 to complete · net</div>' +
+      '<div class="pill"><b>' + eur(got) + '</b>Already gathered</div>' +
+      '<div class="pill need"><b>' + eur(left) + '</b>Remaining to gather · Phase 1</div>' +
+      '<div class="pill"><b>' + eur(left + vat(left)) + '</b>Remaining if VAT 24% applies</div>';
+  }
+
   function renderModel() {
     document.getElementById('disclaimer').textContent = deck.disclaimer || '';
     var m = deck.model || {};
@@ -334,7 +356,7 @@
     var table = document.getElementById('deck');
     table.classList.toggle('edit', owner);
     table.querySelector('thead').innerHTML =
-      '<tr><th></th><th>Project</th><th>Place</th><th>What</th><th>CAPEX</th><th>Note</th>' +
+      '<tr><th></th><th>Project</th><th>Place</th><th>What</th><th>CAPEX</th><th>Gathered</th><th>Still to raise</th><th>Note</th>' +
       (owner ? '<th></th>' : '') +
       '</tr>';
     var tb = table.querySelector('tbody');
@@ -356,6 +378,10 @@
       var unit = td(p.unit);
       var cap = td(eur(p.capex), 'n');
       cap.dataset.raw = String(p.capex);
+      var raised = Number(p.raised) || 0;
+      var got = td(eur(raised), 'n');
+      got.dataset.raw = String(raised);
+      var left = td(eur(Math.max(0, (Number(p.capex) || 0) - raised)), 'n');
       var note = td(p.note || '');
       note.className = 'note';
       if (owner) {
@@ -364,11 +390,15 @@
         });
         cap.contentEditable = 'true';
         cap.textContent = String(p.capex);
+        got.contentEditable = 'true';
+        got.textContent = String(raised);
       }
       tr.appendChild(name);
       tr.appendChild(place);
       tr.appendChild(unit);
       tr.appendChild(cap);
+      tr.appendChild(got);
+      tr.appendChild(left);
       tr.appendChild(note);
       if (owner) {
         var del = document.createElement('td');
@@ -393,20 +423,26 @@
       tb.appendChild(tr);
     });
     var net = sum(list);
+    var got = sumRaised(list);
+    var left = Math.max(0, net - got);
     var ft = table.querySelector('tfoot');
-    var span = owner ? 6 : 5;
+    var span = owner ? 8 : 7;
     ft.innerHTML =
-      '<tr><td colspan="' + span + '">Subtotal net</td><td class="n">' + eur(net) + '</td></tr>' +
-      '<tr><td colspan="' + span + '">VAT 24%</td><td class="n">' + eur(vat(net)) + '</td></tr>' +
-      '<tr><td colspan="' + span + '">Total if VAT applies in full</td><td class="n">' + eur(net + vat(net)) + '</td></tr>';
-    if (tab === 'all' || tab === 'phase1') {
-      var p1 = sum((deck.packages || []).filter(function (p) { return p.phase === 1; }));
-      var p2 = sum((deck.packages || []).filter(function (p) { return p.phase === 2; }));
-      ft.innerHTML +=
-        '<tr><td colspan="' + span + '">Phase 1 grand net</td><td class="n">' + eur(p1) + '</td></tr>' +
-        '<tr><td colspan="' + span + '">Held out (lake + pontoon)</td><td class="n">' + eur(p2) + '</td></tr>' +
-        '<tr><td colspan="' + span + '">All lines net</td><td class="n">' + eur(p1 + p2) + '</td></tr>';
-    }
+      '<tr><td colspan="' + span + '">CAPEX this tab · net</td><td class="n">' + eur(net) + '</td></tr>' +
+      '<tr><td colspan="' + span + '">Already gathered</td><td class="n">' + eur(got) + '</td></tr>' +
+      '<tr><td colspan="' + span + '">Remaining to gather · net</td><td class="n">' + eur(left) + '</td></tr>' +
+      '<tr><td colspan="' + span + '">VAT 24% on remaining</td><td class="n">' + eur(vat(left)) + '</td></tr>' +
+      '<tr><td colspan="' + span + '">Remaining if VAT applies in full</td><td class="n">' + eur(left + vat(left)) + '</td></tr>';
+    var p1 = (deck.packages || []).filter(function (p) { return p.phase === 1; });
+    var p2 = (deck.packages || []).filter(function (p) { return p.phase === 2; });
+    var p1need = sum(p1);
+    var p1got = sumRaised(p1);
+    var p1left = Math.max(0, p1need - p1got);
+    var p2need = sum(p2);
+    ft.innerHTML +=
+      '<tr><td colspan="' + span + '">Phase 1 remaining to gather · net</td><td class="n">' + eur(p1left) + '</td></tr>' +
+      '<tr><td colspan="' + span + '">Held out of Phase 1 (lake + pontoon)</td><td class="n">' + eur(p2need) + '</td></tr>' +
+      '<tr><td colspan="' + span + '">All designed remaining · net</td><td class="n">' + eur(p1left + p2need - sumRaised(p2)) + '</td></tr>';
   }
 
   function harvest() {
@@ -421,12 +457,15 @@
       p.unit = cells[3].textContent.trim();
       var cap = parseFloat(String(cells[4].textContent).replace(/[^\d.]/g, ''));
       if (!isNaN(cap)) p.capex = cap;
-      p.note = cells[5].textContent.trim();
+      var raised = parseFloat(String(cells[5].textContent).replace(/[^\d.]/g, ''));
+      if (!isNaN(raised)) p.raised = raised;
+      p.note = cells[7].textContent.trim();
     });
   }
 
   function render() {
     renderModel();
+    renderRaise();
     renderTabs();
     renderTable();
     renderCards();
@@ -531,6 +570,7 @@
       place: '',
       phase: tab === 'later' ? 2 : 1,
       capex: 0,
+      raised: 0,
       unit: '',
       photo: '/icon.png',
       note: ''
