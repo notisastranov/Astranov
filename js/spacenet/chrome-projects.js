@@ -1,10 +1,10 @@
-/* Astranov investor projects · 20260823181000-plots
+/* Astranov investor projects · 20260823183000-finance
  * Real-location pills on SNGlobe. Type "projects". Carousel is preview, not built.
  * Does NOT restyle CLI placeholders. Does NOT open Leaflet.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823181000-plots';
+  var BUILD = '20260823183000-finance';
   if (global.__SN_PROJECTS === BUILD) return;
   global.__SN_PROJECTS = BUILD;
 
@@ -636,6 +636,9 @@
     build: BUILD,
     all: PROJECTS,
     open: openProject,
+    openId: function () {
+      return openId;
+    },
     handle: handle,
     tick: tick
   };
