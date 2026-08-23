@@ -218,6 +218,98 @@ def main():
     )
     print("pages project", st, j.get("success"), j.get("errors") or j.get("raw", "")[:240])
 
+    # 5) SSL flexible on these hosts (525 fix) + origin host header + path prefix
+    for phase, payload in [
+        (
+            "http_config_settings",
+            {
+                "rules": [
+                    {
+                        "expression": '(http.host eq "exchange.astranov.eu") or (http.host eq "investors.astranov.eu")',
+                        "description": "SpaceNet subdomain SSL flexible",
+                        "action": "set_config",
+                        "action_parameters": {"ssl": "flexible"},
+                    }
+                ]
+            },
+        ),
+        (
+            "http_request_origin",
+            {
+                "rules": [
+                    {
+                        "expression": '(http.host eq "exchange.astranov.eu") or (http.host eq "investors.astranov.eu")',
+                        "description": "SpaceNet origin host astranov.eu",
+                        "action": "route",
+                        "action_parameters": {"host_header": "astranov.eu"},
+                    }
+                ]
+            },
+        ),
+        (
+            "http_request_transform",
+            {
+                "rules": [
+                    {
+                        "expression": '(http.host eq "exchange.astranov.eu")',
+                        "description": "exchange.astranov.eu → /exchange",
+                        "action": "rewrite",
+                        "action_parameters": {"uri": {"path": {"expression": 'concat("/exchange", http.request.uri.path)'}}},
+                    },
+                    {
+                        "expression": '(http.host eq "investors.astranov.eu")',
+                        "description": "investors.astranov.eu → /investors",
+                        "action": "rewrite",
+                        "action_parameters": {"uri": {"path": {"expression": 'concat("/investors", http.request.uri.path)'}}},
+                    },
+                ]
+            },
+        ),
+    ]:
+        url = f"https://api.cloudflare.com/client/v4/zones/{zid}/rulesets/phases/{phase}/entrypoint"
+        st, cur = http("GET", url, headers=ch)
+        print("ruleset get", phase, st, cur.get("success"), cur.get("errors"))
+        rules = payload["rules"]
+        if cur.get("success") and (cur.get("result") or {}).get("id"):
+            rid = cur["result"]["id"]
+            existing = list(cur["result"].get("rules") or [])
+            existing = [r for r in existing if "astranov.eu" not in (r.get("description") or "") and "SpaceNet" not in (r.get("description") or "")]
+            st, j = http("PUT", url, {"rules": existing + rules}, ch)
+        else:
+            st, j = http("PUT", url, payload, ch)
+        print("ruleset put", phase, st, j.get("success"), j.get("errors") or str(j)[:240])
+
+    st, j = http(
+        "POST",
+        f"https://api.cloudflare.com/client/v4/zones/{zid}/pagerules",
+        {
+            "targets": [{"target": "url", "constraint": {"operator": "matches", "value": "exchange.astranov.eu/*"}}],
+            "actions": [
+                {"id": "host_header_override", "value": "astranov.eu"},
+                {"id": "ssl", "value": "flexible"},
+            ],
+            "status": "active",
+            "priority": 1,
+        },
+        ch,
+    )
+    print("pagerule exchange", st, j.get("success"), j.get("errors") or str(j)[:240])
+    st, j = http(
+        "POST",
+        f"https://api.cloudflare.com/client/v4/zones/{zid}/pagerules",
+        {
+            "targets": [{"target": "url", "constraint": {"operator": "matches", "value": "investors.astranov.eu/*"}}],
+            "actions": [
+                {"id": "host_header_override", "value": "astranov.eu"},
+                {"id": "ssl", "value": "flexible"},
+            ],
+            "status": "active",
+            "priority": 2,
+        },
+        ch,
+    )
+    print("pagerule investors", st, j.get("success"), j.get("errors") or str(j)[:240])
+
 
 if __name__ == "__main__":
     main()
