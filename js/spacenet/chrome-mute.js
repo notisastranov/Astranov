@@ -1,16 +1,14 @@
-/* Astranov mute · Build 20260824004500-place-names
+/* Astranov mute · Build 20260824010000-place-live
  * PR #174 only. Do not merge. Does not edit #130/#131.
- * CDN HIT poisoned the old place filenames (24-byte PLACEHOLDER on some edges).
- * Load NEVER-SERVED filenames only for Nairobi / Kalithea:
- *   /js/spacenet/sn-nairobi-rungs-202608240045.js   (>30KB, #130 bytes)
- *   /js/spacenet/sn-kalithea-geo-202608240045.js    (>40KB, #131 bytes)
- * Same bytes at js/spacenet/ AND public/js/spacenet/.
- * loadChain does NOT request the old 24-byte poisoned URLs.
- * Cache-bust 20260824004500-place-names. pizza/laptop/HOLD/twin/listen/research unchanged.
+ * Guest / must serve the ASTRANOV globe (public/index.html is Vercel output).
+ * loadChain requests LOCAL /js/spacenet/chrome-nairobi-ladder.js (37083)
+ * and /js/spacenet/chrome-kalithea-village.js (43964) only.
+ * No runtime GitHub fetch. Cache-bust 20260824010000-place-live.
+ * pizza/laptop/HOLD/twin/listen/research unchanged.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260824004500-place-names';
+  var BUILD = '20260824010000-place-live';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -88,8 +86,8 @@
     loadScript('/js/spacenet/chrome-research-stay.js', 'data-sn-research-stay');
     loadScript('/js/spacenet/chrome-call-arc.js', 'data-sn-call-arc');
     loadScript('/js/spacenet/chrome-ai-listen.js', 'data-sn-ai-listen');
-    loadScript('/js/spacenet/sn-nairobi-rungs-202608240045.js', 'data-sn-nairobi-rungs');
-    loadScript('/js/spacenet/sn-kalithea-geo-202608240045.js', 'data-sn-kalithea-geo');
+    loadScript('/js/spacenet/chrome-nairobi-ladder.js', 'data-sn-nairobi-ladder');
+    loadScript('/js/spacenet/chrome-kalithea-village.js', 'data-sn-kalithea-village');
     loadScript('/js/spacenet/chrome-guest-pizza-hunt.js', 'data-sn-guest-pizza');
     loadScript('/js/spacenet/chrome-hold-pay.js', 'data-sn-hold-pay');
   }
