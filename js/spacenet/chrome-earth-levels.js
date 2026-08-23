@@ -1,16 +1,53 @@
-/* Astranov Earth levels · 20260823151000-earth-levels
+/* Astranov Earth levels · 20260823152500-gtiles
  * Earth is the desktop. GLOBAL → NATIONAL → REGIONAL → CITY stay on SNGlobe.
- * Oceans are first-class: fly water, never snap to a city, never open Leaflet.
- * Satellite imagery (Esri / NASA GIBS) drapes on the sphere so close zoom is real.
- * Leaflet streets ONLY when the guest types "streets" or a live order is running.
+ * Official Google Map Tiles API (satellite) drapes on the sphere when GOOGLE_MAPS_KEY is set.
+ * Fallback: NASA GIBS / Esri. Never open Leaflet unless "streets".
+ * Photorealistic 3D Tiles = city mesh only — not oceans. Planet uses 2D satellite on the globe.
  * Does NOT restyle #stc-cmd-in / #cli-in placeholders.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823151000-earth-levels';
+  var BUILD = '20260823152500-gtiles';
   if (global.__SN_EARTH_LEVELS) return;
   global.__SN_EARTH_LEVELS = BUILD;
 
+  var gTiles = { ok: false, proxy: '', needsKey: true, error: '' };
+
+  function showGoogleCredit(on) {
+    var el = document.getElementById('sn-gattr');
+    if (on) {
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'sn-gattr';
+        el.textContent = '© Google';
+        el.style.cssText =
+          'position:fixed;right:8px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:90;pointer-events:none;font:500 10px/1.2 Inter,system-ui,sans-serif;color:rgba(220,230,240,0.7);text-shadow:0 1px 2px #000';
+        document.body.appendChild(el);
+      }
+      el.style.display = 'block';
+    } else if (el) el.style.display = 'none';
+  }
+
+  function bootGoogle() {
+    return fetch('/api/gtiles', { cache: 'no-store' })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (j) {
+        gTiles = j && typeof j === 'object' ? j : { ok: false };
+        if (gTiles.ok && gTiles.proxy) {
+          showGoogleCredit(true);
+          drapeLast = '';
+        } else {
+          showGoogleCredit(false);
+        }
+        return gTiles;
+      })
+      .catch(function () {
+        gTiles = { ok: false, needsKey: true };
+        return gTiles;
+      });
+  }
   var STREETS_RE = /^(streets?|street map|city map)$/i;
   var OCEANS = {
     ocean: { lat: 0, lng: -160, tier: 'national', name: 'Pacific' },
@@ -222,6 +259,16 @@
   }
 
   function tileUrl(z, x, y) {
+    if (gTiles && gTiles.ok && gTiles.proxy) {
+      return (
+        '/api/gtiles?z=' +
+        z +
+        '&x=' +
+        x +
+        '&y=' +
+        y
+      );
+    }
     if (z <= 8) {
       return (
         'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/' +
@@ -462,6 +509,20 @@
       logCli('GLOBAL · full Earth', 'ok');
       return true;
     }
+    if (low === 'google' || low === 'google earth' || low === 'gsat' || low === 'g-sat' || low === 'satellite') {
+      bootGoogle().then(function (g) {
+        if (g && g.ok) {
+          var p = look();
+          flyGlobe(p.lat, p.lng, 'city', 'GOOGLE SAT');
+          logCli('Google Earth tiles · satellite on the 3D globe · © Google', 'ok');
+        } else if (g && g.needsKey) {
+          logCli('Google Earth API needs Vercel env GOOGLE_MAPS_KEY (Map Tiles API + billing). NASA/Esri on the globe until then.', 'warn');
+        } else {
+          logCli('Google Earth tiles · ' + ((g && g.error) || 'session failed') + ' · NASA/Esri still on the globe', 'warn');
+        }
+      });
+      return true;
+    }
     if (OCEANS[low]) {
       var o = OCEANS[low];
       try {
@@ -493,12 +554,35 @@
     );
   }
 
+  function wrapGoogleEarth() {
+    var E = global.SNGoogleEarth;
+    if (!E || E.__earthHome) return !!E;
+    E.__earthHome = true;
+    if (typeof E.show === 'function') {
+      var orig = E.show.bind(E);
+      E.show = function (type, center) {
+        if (allowStreets(center)) return orig(type, center);
+        hideLeaflet();
+        try {
+          if (E.hide) E.hide();
+        } catch (_) {}
+        bootGoogle();
+        var c = center || look();
+        if (c && c.lat != null) flyGlobe(c.lat, c.lng, 'city', 'GOOGLE SAT');
+        return Promise.resolve({ ok: true, engine: 'globe-drape', overlay: false });
+      };
+    }
+    return true;
+  }
+
   function boot() {
     injectCss();
     bindCli();
     wrapMap();
     wrapGlobe();
+    wrapGoogleEarth();
     hideLeaflet();
+    bootGoogle();
   }
 
   boot();
@@ -507,6 +591,7 @@
     injectCss();
     wrapMap();
     wrapGlobe();
+    wrapGoogleEarth();
     if (!streetsWanted()) hideLeaflet();
   }, 1200);
 
@@ -515,5 +600,8 @@
     flyGlobe: flyGlobe,
     hideLeaflet: hideLeaflet,
     handleCmd: handleCmd,
+    google: function () {
+      return gTiles;
+    },
   };
 })(typeof window !== 'undefined' ? window : globalThis);
