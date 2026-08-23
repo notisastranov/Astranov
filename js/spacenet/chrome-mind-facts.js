@@ -183,10 +183,10 @@
     }
     if (/how much|need to complete|remaining to gather|complete spacenet|money we need|raise to finish|to complete the projects/.test(low)) {
       loadEnvelope().then(function (e) {
-        log(e.line + ' · investors.astranov.eu', 'ok');
+        log(e.line + ' · type budget on SpaceNet', 'ok');
       });
       try {
-        location.href = 'https://investors.astranov.eu';
+        if (global.SNFinance && SNFinance.open) SNFinance.open(null);
       } catch (_) {}
       return true;
     }

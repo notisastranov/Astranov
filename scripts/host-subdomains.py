@@ -144,12 +144,15 @@ def main():
         fqdn = name + ".astranov.eu"
         st, dns = http("GET", f"https://api.cloudflare.com/client/v4/zones/{zid}/dns_records?name={fqdn}", headers=ch)
         recs = dns.get("result") or []
+        print("records", fqdn, [(r.get("type"), r.get("content"), r.get("proxied"), r.get("id")) for r in recs])
+        for r in recs:
+            st, j = http("DELETE", f"https://api.cloudflare.com/client/v4/zones/{zid}/dns_records/{r['id']}", headers=ch)
+            print("delete", fqdn, r.get("type"), r.get("id"), st, j.get("success"))
         payload = {"type": "CNAME", "name": name, "content": content, "proxied": proxied, "ttl": 1 if proxied else 120}
-        if recs:
-            st, j = http("PUT", f"https://api.cloudflare.com/client/v4/zones/{zid}/dns_records/{recs[0]['id']}", payload, ch)
-        else:
-            st, j = http("POST", f"https://api.cloudflare.com/client/v4/zones/{zid}/dns_records", payload, ch)
+        st, j = http("POST", f"https://api.cloudflare.com/client/v4/zones/{zid}/dns_records", payload, ch)
         print("dns", name, "->", content, "proxied", proxied, st, j.get("success"), j.get("errors"))
+        st, dns2 = http("GET", f"https://api.cloudflare.com/client/v4/zones/{zid}/dns_records?name={fqdn}", headers=ch)
+        print("after", fqdn, [(r.get("type"), r.get("content"), r.get("proxied")) for r in (dns2.get("result") or [])])
 
     # investors.astranov.eu is GitHub Pages (grey → notisastranov.github.io) so it can have its own TLS.
     # Do not orange it — that 525s. exchange still tries Pages-less Vercel until a host exists.
