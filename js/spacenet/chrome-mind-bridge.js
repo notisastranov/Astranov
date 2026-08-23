@@ -146,7 +146,7 @@
     if (/^(hi|hello|hey|γεια|ela)\b/.test(low))
       return 'I am here inside SpaceNet. Listening.';
     if (/who are you|what are you/.test(low))
-      return 'Astranov mind · free cycle · deeper path on server when you are signed in.';
+      return 'Astranov mind · trained living OS, not a static app. I learn from live envelopes and what you teach.';
     return 'Heard you. “' + String(msg).slice(0, 120) + '” · try once more if backend was slow.';
   }
 
@@ -166,10 +166,13 @@
         },
         body: JSON.stringify({
           text: msg,
+          message: msg,
           preferred_provider: 'astranov',
           level: 'personal',
           source: 'sn-mind-bridge',
           build: BUILD,
+          lessons: (global.SNMindTrain && SNMindTrain.lessons && SNMindTrain.lessons()) || [],
+          system: (global.SNMindTrain && SNMindTrain.context && SNMindTrain.context()) || ''
         }),
         mode: 'cors',
       });
