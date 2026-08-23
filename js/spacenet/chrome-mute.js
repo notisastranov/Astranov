@@ -1,6 +1,7 @@
 /* Astranov mute · Build 20260823220000-combine-pizza
  * Kill beeps + load ALL locked guest modules in ONE chain (no wipe):
- *   (a) chrome-guest-pizza-hunt — OSM restaurant/fast_food/cafe around camera, intercept BEFORE research-stay
+ *   (a) chrome-guest-pizza-hunt LAST — OSM restaurant/fast_food/cafe around camera,
+ *       SNCli.run wrap outermost so `pizza` never reaches research-stay / /api/ai
  *   (b) chrome-research-stay (#164) — FULL inline, Grok /api/ai allow_paid:true, camera stay
  *   (c) chrome-guest-laptop-hunt (#132 f58b8a7) — EXACT 20260823034000-laptop-flylie bytes
  *   (d) chrome-ai-listen (#169) — FULL inline, Talk → Listen · mic denied · #sn-rib-hf-hit
@@ -92,11 +93,12 @@
 
   function loadChain() {
     loadScript('/js/spacenet/chrome-cli-answer.js', 'data-sn-cli-answer');
-    loadScript('/js/spacenet/chrome-guest-pizza-hunt.js', 'data-sn-guest-pizza');
     loadScript('/js/spacenet/chrome-guest-laptop-hunt.js', 'data-sn-guest-laptop');
     loadScript('/js/spacenet/chrome-research-stay.js', 'data-sn-research-stay');
     loadScript('/js/spacenet/chrome-call-arc.js', 'data-sn-call-arc');
     loadScript('/js/spacenet/chrome-ai-listen.js', 'data-sn-ai-listen');
+    /* pizza LAST so SNCli.run wrap is outermost — intercepts `pizza` BEFORE research-stay / AI */
+    loadScript('/js/spacenet/chrome-guest-pizza-hunt.js', 'data-sn-guest-pizza');
   }
 
   function boot() {

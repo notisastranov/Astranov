@@ -583,7 +583,15 @@
   function handleLine(raw) {
     var s = String(raw || '').trim();
     if (!s) return false;
-    if (isPizzaCmd(s)) return false;
+    if (isPizzaCmd(s)) {
+      try {
+        if (G.SNChromeGuestPizzaHunt && typeof SNChromeGuestPizzaHunt.hunt === 'function') {
+          void SNChromeGuestPizzaHunt.hunt(s);
+          return true;
+        }
+      } catch (_) {}
+      return false;
+    }
     if (!isResearchish(s)) return false;
     void answerResearch(s);
     return true;
@@ -608,7 +616,21 @@
   function bindInputs() {
     function capture(ev, el) {
       var v = String((el && el.value) || '').trim();
-      if (!v || isPizzaCmd(v) || !isResearchish(v)) return false;
+      if (!v) return false;
+      if (isPizzaCmd(v)) {
+        if (!(G.SNChromeGuestPizzaHunt && typeof SNChromeGuestPizzaHunt.hunt === 'function')) return false;
+        try {
+          ev.preventDefault();
+          ev.stopPropagation();
+          if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+        } catch (_) {}
+        if (el) el.value = '';
+        try {
+          void SNChromeGuestPizzaHunt.hunt(v);
+        } catch (_) {}
+        return true;
+      }
+      if (!isResearchish(v)) return false;
       try {
         ev.preventDefault();
         ev.stopPropagation();

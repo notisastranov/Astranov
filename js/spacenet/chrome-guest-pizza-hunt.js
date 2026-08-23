@@ -131,7 +131,11 @@
 
   function log(m, c) {
     try {
-      var s = String(m).slice(0, 420);
+      var s = String(m == null ? '' : m).slice(0, 420);
+      if (/^Hunt failed/i.test(s) || /^Shop ·/.test(s)) {
+        say(s, c || 'ok');
+        return;
+      }
       if (isCityRhodesLine(s) && !viewNear(RHODES.lat, RHODES.lng, SETTLE_DEG, SETTLE_DEG)) return;
       if (G.SNCli && SNCli.log) SNCli.log(s, c || 'ok', true);
     } catch (_) {}
@@ -139,6 +143,94 @@
   function preview(m) {
     try {
       if (G.SNCli && SNCli.preview) SNCli.preview(String(m).slice(0, 90));
+    } catch (_) {}
+  }
+
+  function openLiveCli() {
+    try {
+      var panel = document.getElementById('panel');
+      if (panel) {
+        panel.classList.add('sn-open', 'open');
+        panel.classList.remove('collapsed', 'sn-quiet');
+        panel.style.setProperty('grid-template-rows', '10px 44px auto auto', 'important');
+      }
+    } catch (_) {}
+    try {
+      var el = document.getElementById('cli-log');
+      if (el) {
+        el.style.setProperty('display', 'block', 'important');
+        el.style.setProperty('height', 'auto', 'important');
+        el.style.setProperty('max-height', '26vh', 'important');
+        el.style.setProperty('min-height', '0', 'important');
+        el.style.setProperty('padding', '4px 10px 8px', 'important');
+      }
+    } catch (_) {}
+  }
+
+  /**
+   * Live guest CLI echo — same path as the working laptop hunt:
+   * SNCli.log force + exact-text .cli-feed-item on #cli-log (userFace strips middots).
+   */
+  function say(m, c) {
+    var s = String(m == null ? '' : m).slice(0, 420);
+    if (!s) return;
+    try {
+      if (G.SNCli && typeof SNCli.beginTurn === 'function' && typeof SNCli.inTurn === 'function') {
+        if (!SNCli.inTurn()) SNCli.beginTurn();
+      }
+    } catch (_) {}
+    try {
+      if (G.SNCli && SNCli.log) SNCli.log(s, c || 'ok', true);
+    } catch (_) {}
+    paintLiveCli(s, c);
+    try {
+      if (G.SNCli && SNCli.preview) SNCli.preview(s.slice(0, 90));
+    } catch (_) {}
+    try {
+      if (G.SNChromeCliAnswer && SNChromeCliAnswer.forcePaint) SNChromeCliAnswer.forcePaint();
+    } catch (_) {}
+  }
+
+  function paintLiveCli(s, c) {
+    s = String(s == null ? '' : s).slice(0, 420);
+    if (!s) return;
+    openLiveCli();
+    try {
+      var el = document.getElementById('cli-log');
+      if (!el) return;
+      var lastExact = null;
+      try {
+        var nodes = el.querySelectorAll('[data-sn-pizza-cli="1"]');
+        lastExact = nodes.length ? nodes[nodes.length - 1] : null;
+      } catch (__) {}
+      if (lastExact && String(lastExact.textContent || '') === s) {
+        try {
+          el.scrollTop = el.scrollHeight;
+        } catch (__) {}
+        return;
+      }
+      var wrap = document.createElement('div');
+      wrap.className = 'cli-feed-item is-latest';
+      wrap.setAttribute('data-sn-pizza-cli', '1');
+      wrap.setAttribute('data-search', s);
+      var line = document.createElement('div');
+      var kind = c || 'ok';
+      if (kind === 'dim') kind = 'progress';
+      line.className = 'cli-line ' + kind;
+      var body = document.createElement('div');
+      body.className = 'cli-body';
+      body.textContent = s;
+      line.appendChild(body);
+      wrap.appendChild(line);
+      try {
+        el.querySelectorAll('.cli-feed-item.is-latest').forEach(function (n) {
+          n.classList.remove('is-latest');
+        });
+      } catch (__) {}
+      el.appendChild(wrap);
+      try {
+        el.scrollTop = el.scrollHeight;
+      } catch (__) {}
     } catch (_) {}
   }
   function isGuest() {
@@ -1042,6 +1134,53 @@
     } catch (_) {}
   }
 
+  function cameraZ() {
+    try {
+      var cam = G.SNGlobe && typeof SNGlobe.getCamera === 'function' ? SNGlobe.getCamera() : null;
+      if (cam && cam.position && isFinite(+cam.position.z)) return +cam.position.z;
+    } catch (_) {}
+    return 99;
+  }
+
+  function cityAltitudeZ() {
+    try {
+      if (G.SNGlobe && SNGlobe.TIERS && SNGlobe.TIERS.city && isFinite(+SNGlobe.TIERS.city.z)) {
+        return +SNGlobe.TIERS.city.z;
+      }
+    } catch (_) {}
+    return 1.16;
+  }
+
+  function dropToCityAltitude() {
+    var cityZ = cityAltitudeZ();
+    try {
+      var phys = G.SNGlobe && typeof SNGlobe.getPhysics === 'function' ? SNGlobe.getPhysics() : null;
+      if (phys) {
+        phys.tZ = cityZ;
+        phys.vZ = 0;
+      }
+    } catch (_) {}
+    try {
+      var cam = G.SNGlobe && typeof SNGlobe.getCamera === 'function' ? SNGlobe.getCamera() : null;
+      if (cam && cam.position && +cam.position.z > cityZ + 0.04) {
+        if (typeof SNGlobe.goToTier === 'function') SNGlobe.goToTier('city');
+      }
+    } catch (_) {}
+    hideLeaflet();
+    markConsume();
+  }
+
+  async function waitCityAltitude(ms) {
+    var limit = typeof ms === 'number' && ms > 0 ? ms : 1100;
+    var t0 = Date.now();
+    var cityZ = cityAltitudeZ();
+    while (Date.now() - t0 < limit) {
+      if (cameraZ() <= cityZ + 0.14) return true;
+      await sleep(50);
+    }
+    return cameraZ() <= 2.2;
+  }
+
   function liveEarthChain() {
     var chain = [];
     try {
@@ -1726,6 +1865,17 @@
         (document.body || document.documentElement).appendChild(el);
       } catch (_) {}
     }
+    if (!el.parentNode) {
+      try {
+        var lap = document.getElementById('sn-laptop-pins');
+        if (lap && lap.parentNode) {
+          el = lap;
+          el.id = 'sn-pizza-pins';
+        } else {
+          (document.body || document.documentElement).appendChild(el);
+        }
+      } catch (_) {}
+    }
     el.setAttribute('data-sn-build', BUILD);
     var z = overlayZ();
     el.style.cssText =
@@ -1806,6 +1956,8 @@
         var btn = document.createElement('button');
         btn.type = 'button';
         btn.setAttribute('data-sn-pin', String(pt.idx));
+        btn.setAttribute('data-sn-pizza-pin', String(pt.idx));
+        btn.setAttribute('data-sn-laptop-pin', String(pt.idx));
         var name = String(pt.pin.name || 'shop').slice(0, 36);
         btn.title = name;
         btn.setAttribute('aria-label', name);
@@ -1973,6 +2125,8 @@
 
   function hitVendorAt(cx, cy) {
     if (!lastPins.length) return null;
+    var cssHit = hitPinAtCss(cx, cy);
+    if (cssHit) return cssHit;
     var hit = null;
     var best = 1e9;
     try {
@@ -2003,36 +2157,123 @@
     return hit;
   }
 
-  function announceVendor(hit) {
-    if (!hit) return;
-    if (Date.now() - announcedAt < 250) {
-      suppressPoiUntil = Date.now() + 2500;
-      try { if (G.SNGlobe) G.SNGlobe.consumeClick = true; } catch (_) {}
-      return;
-    }
-    announcedAt = Date.now();
-    overlayLockUntil = Date.now() + 800;
+  function markConsume() {
     suppressPoiUntil = Date.now() + 2500;
     try {
       if (G.SNGlobe) G.SNGlobe.consumeClick = true;
     } catch (_) {}
-    hideLeaflet();
-    var name = String(hit.name || 'vendor').slice(0, 36);
+    try {
+      if (typeof SNGlobe !== 'undefined' && SNGlobe) SNGlobe.consumeClick = true;
+    } catch (_) {}
+  }
+
+  function consumePointer(ev) {
+    try {
+      if (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+      }
+    } catch (_) {}
+    markConsume();
+  }
+
+  function hitPinAtCss(cx, cy) {
+    if (!lastPins.length) return null;
+    var best = null;
+    var bestD = 22;
+    var i;
+    var pts = lastOverlayPoints && lastOverlayPoints.length ? lastOverlayPoints : null;
+    if (pts) {
+      for (i = 0; i < pts.length; i++) {
+        var p = pts[i];
+        if (!p || !isFinite(p.left)) continue;
+        var d = Math.hypot(cx - p.left, cy - p.top);
+        if (d <= bestD) {
+          bestD = d;
+          best = p.pin || (isFinite(p.idx) ? lastPins[p.idx] : null);
+        }
+      }
+      return best;
+    }
+    for (i = 0; i < lastPins.length; i++) {
+      var pin = lastPins[i];
+      if (!pin || pin.lat == null) continue;
+      var proj = projectPin(pin.lat, pin.lng);
+      if (!proj) continue;
+      var d2 = Math.hypot(cx - proj.left, cy - proj.top);
+      if (d2 <= bestD) {
+        bestD = d2;
+        best = pin;
+      }
+    }
+    return best;
+  }
+
+  function shopLine(hit) {
+    var name = String((hit && hit.name) || 'vendor').slice(0, 36);
     var km = null;
-    if (hit.km != null && isFinite(+hit.km)) km = Number(hit.km);
+    if (hit && hit.km != null && isFinite(+hit.km)) km = Number(hit.km);
     if (km == null) {
       try {
         var cam = liveViewLatLng();
-        if (cam && hit.lat != null) km = haversineKm(cam, hit);
+        if (cam && hit && hit.lat != null) km = haversineKm(cam, hit);
       } catch (_) {}
     }
     if (km == null || !isFinite(km)) km = 0;
-    log('Shop · ' + name + ' · ' + km.toFixed(1) + 'km · ⭐', 'ok');
-    preview(name + ' · ' + km.toFixed(1) + 'km · ⭐');
+    return 'Shop · ' + name + ' · ' + km.toFixed(1) + 'km · ⭐';
+  }
+
+  function announceVendor(hit) {
+    if (!hit) return;
+    if (Date.now() - announcedAt < 250) {
+      markConsume();
+      return;
+    }
+    announcedAt = Date.now();
+    overlayLockUntil = Date.now() + 800;
+    markConsume();
+    hideLeaflet();
+    say(shopLine(hit), 'ok');
+  }
+
+  function installOverlayTap() {
+    if (overlayTapBound) return;
+    overlayTapBound = true;
+    function onDocPtr(ev) {
+      if (!lastPins.length) return;
+      var t = ev.target;
+      try {
+        if (
+          t &&
+          t.closest &&
+          t.closest('#cli-in, #stc-cmd-in, input, textarea') &&
+          !(t.closest && t.closest('[data-sn-pin], [data-sn-pizza-pin], [data-sn-laptop-pin]'))
+        ) {
+          return;
+        }
+      } catch (_) {}
+      var hit = null;
+      try {
+        var btn = t && t.closest ? t.closest('[data-sn-pin], [data-sn-pizza-pin], [data-sn-laptop-pin]') : null;
+        if (btn) {
+          var idx = +(btn.getAttribute('data-sn-pin') || btn.getAttribute('data-sn-pizza-pin') || btn.getAttribute('data-sn-laptop-pin'));
+          if (isFinite(idx) && lastPins[idx]) hit = lastPins[idx];
+        }
+      } catch (_) {}
+      if (!hit) hit = hitPinAtCss(ev.clientX, ev.clientY);
+      if (!hit) return;
+      consumePointer(ev);
+      announceVendor(hit);
+    }
+    document.addEventListener('pointerdown', onDocPtr, true);
+    document.addEventListener('pointerup', onDocPtr, true);
+    document.addEventListener('click', onDocPtr, true);
   }
 
   function installPinTap() {
     installDiveGuard();
+    installOverlayTap();
     try {
       if (clickUnsub) {
         try {
@@ -2456,6 +2697,8 @@
 
     // Wait for globe ready so pulses land (soft). NEVER stub the file.
     await waitGlobeReady(1800);
+    dropToCityAltitude();
+    await waitCityAltitude(1100);
     var nPainted = paintPins(use, origin);
     listInCli(use, origin);
 
@@ -2782,6 +3025,8 @@
     installMapGuard();
     scrubFakeYou();
     bindDocumentCapture();
+    installOverlayTap();
+    installDiveGuard();
     try {
       if (!G.SNCli || typeof SNCli.run !== 'function') return;
       if (SNCli.run === cliWrap && SNCli.__snGuestPizzaHuntBuild === BUILD) return;
@@ -2894,6 +3139,21 @@
         }
       }
     } catch (_) {}
+
+    try {
+      if (G.SNAi && typeof SNAi.ask === 'function' && !SNAi.__snPizzaHuntAsk) {
+        var prevAsk = SNAi.ask.bind(SNAi);
+        SNAi.ask = function (line, opts) {
+          var s = String(line || '');
+          if (isPizzaLine(s)) {
+            void huntPizza(s);
+            return Promise.resolve('Shops on globe · Google only at pay / HOLD ⭐');
+          }
+          return prevAsk(line, opts);
+        };
+        SNAi.__snPizzaHuntAsk = 1;
+      }
+    } catch (_) {}
   }
 
   function boot() {
@@ -2908,14 +3168,17 @@
   boot();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   setTimeout(boot, 0);
+  setTimeout(boot, 200);
   setTimeout(boot, 600);
+  setTimeout(boot, 1200);
   setTimeout(boot, 1800);
   setTimeout(boot, 4000);
   setInterval(function () {
     install();
     blockAuthModalOnPizza();
+    installOverlayTap();
     if (globeOnly()) hideLeaflet();
-  }, 8000);
+  }, 2000);
 
   G.SNChromeGuestPizzaHunt = {
     build: BUILD,
