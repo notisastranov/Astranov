@@ -1,21 +1,14 @@
-/* Astranov mute · Build 20260823234000-twin-cli
- * Kill beeps + load ALL locked guest modules in ONE chain (no wipe):
- *   (a) chrome-guest-pizza-hunt LAST-but-one — OSM restaurant/fast_food/cafe around camera,
- *       SNCli.run wrap so `pizza` never reaches research-stay / /api/ai
- *   (b) chrome-research-stay (#164) — FULL inline, Grok /api/ai allow_paid:true, camera stay
- *   (c) chrome-guest-laptop-hunt (#132 f58b8a7) — EXACT 20260823034000-laptop-flylie bytes
- *   (d) chrome-ai-listen (#169) — FULL inline, Talk → Listen · mic denied · #sn-rib-hf-hit
- *   (e) chrome-call-arc (#129) — CALL Sign-in wall, no u-room, no VIDEO CALL
- *   (f) chrome-cli-answer (#126 twin CLI) LAST-WINS paint: HUD + bottom, neon star,
- *       exact placeholders, both POST /api/ai allow_paid:true, camera keeps running
- *   (g) chrome-hold-pay LAST — guest HOLD ⭐ / pay → CALL Sign-in card (Privacy · Terms · Cancel)
- * Currency ⭐. Guest never hits Google until pay/CALL. Origin = live camera.
+/* Astranov mute · Build 20260824001000-place-fly
+ * Copy of #173 twin-cli loadChain + ADD locked place-fly modules:
+ *   chrome-nairobi-ladder.js  (#130 exact bytes) — NATIONAL → CITY → STREETS
+ *   chrome-kalithea-village.js (#131 exact bytes) — village pin + lake/islets/olives
  * loadChain injects LOCAL /js/spacenet files only. No runtime GitHub or CDN fetch.
- * Cache-bust 20260823234000-twin-cli. Marks prevent double-inject wipe.
+ * Cache-bust 20260824001000-place-fly. Marks prevent double-inject wipe.
+ * pizza/laptop/HOLD/twin/listen/research unchanged.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823234000-twin-cli';
+  var BUILD = '20260824001000-place-fly';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -99,6 +92,9 @@
     loadScript('/js/spacenet/chrome-research-stay.js', 'data-sn-research-stay');
     loadScript('/js/spacenet/chrome-call-arc.js', 'data-sn-call-arc');
     loadScript('/js/spacenet/chrome-ai-listen.js', 'data-sn-ai-listen');
+    /* place-fly: locked #130 Nairobi rungs + locked #131 Kalithea village */
+    loadScript('/js/spacenet/chrome-nairobi-ladder.js', 'data-sn-nairobi-ladder');
+    loadScript('/js/spacenet/chrome-kalithea-village.js', 'data-sn-kalithea-village');
     /* pizza LAST-but-one so SNCli.run wrap intercepts `pizza` BEFORE research-stay / AI */
     loadScript('/js/spacenet/chrome-guest-pizza-hunt.js', 'data-sn-guest-pizza');
     /* HOLD ⭐ / pay LAST so guest pay wrap is outermost — CALL Sign-in card, never GSI iframe */
