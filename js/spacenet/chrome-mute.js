@@ -1,18 +1,18 @@
-/* Astranov mute · Build 20260823210000-combine
+/* Astranov mute · Build 20260823212000-combine-vend
  * Kill beeps + load ALL locked guest modules in ONE chain (no wipe):
- *   (a) chrome-research-stay (#164) — Grok /api/ai allow_paid:true, camera stay
- *   (b) chrome-guest-pizza-hunt (#127) — real shops, unique pins, Shop · name · km · ⭐
- *   (c) chrome-guest-laptop-hunt (#132) — rhodes then electronics pins + tap
- *   (d) chrome-ai-listen (#169) — Talk → Listen · mic denied · #sn-rib-hf-hit
+ *   (a) chrome-research-stay (#164) — FULL inline, Grok /api/ai allow_paid:true, camera stay
+ *   (b) chrome-guest-pizza-hunt (#127) — FULL inline, real shops, unique pins, Shop · name · km · ⭐
+ *   (c) chrome-guest-laptop-hunt (#132) — FULL inline, rhodes then electronics pins + tap
+ *   (d) chrome-ai-listen (#169) — FULL inline, Talk → Listen · mic denied · #sn-rib-hf-hit
  *   (e) chrome-call-arc (#129) — CALL Sign-in wall, no u-room, no VIDEO CALL
  *   (f) chrome-cli-answer (#126) — twin CLI force-paint only (no chrome restyle)
  * Currency ⭐. Guest never hits Google until pay/CALL. Origin = live camera.
- * Scripts load together with cache-bust; marks prevent double-inject wipe.
- * Redeploy tag: 20260823210000-combine-loaders-v2
+ * loadChain injects LOCAL /js/spacenet files only. No runtime GitHub or CDN fetch.
+ * Cache-bust 20260823212000-combine-vend. Marks prevent double-inject wipe.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823210000-combine';
+  var BUILD = '20260823212000-combine-vend';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
