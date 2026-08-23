@@ -4,7 +4,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823202000-avc';
+  var BUILD = '20260823204000-asx';
   if (global.__SN_FINANCE === BUILD) return;
   global.__SN_FINANCE = BUILD;
 
@@ -527,9 +527,9 @@
         '<div class="pill"><b>0</b>Pollution as default</div>' +
         '<div class="pill"><b>+</b>Restore what was sliding to ruin</div>' +
         '<div class="pill"><b>×</b>Produce real output</div></div>' +
-        '<p><b>Astranov Coin</b> — that is the name. Multi-hyper money. Not legal tender. Not a bank print. Value from (1) our projects (2) the space map (3) assets deposited everywhere (4) real users and the value they create by using it.</p>' +
-        '<p>Mint floor <b>1.00 EUR</b> of verified SpaceNet work · live at <a href="https://coin.astranov.eu" style="color:#7ec8ff">coin.astranov.eu</a>. Opening preference price <b>3.30 EUR</b> per Astranov Coin (~3.60 USD · ~530 JPY · ~300 RUB). One Presence year (€330) = 100 Coins.</p>' +
-        '<p>Designed deposits: metals, stones, SpaceNet mining/use, EUR USD JPY RUB. Vaults are the reserve thesis, not a claim they are already full. Not an exchange listing. Not an offer of securities.</p>';
+        '<p><b>Astranov Coin</b> is everyday money: <b>1 AVC = 1 EUR</b>. Live work-mint at <a href="https://coin.astranov.eu" style="color:#7ec8ff">coin.astranov.eu</a>. Not legal tender. Not a bank print.</p>' +
+        '<p>The <b>Astranov Share (ASH)</b> lives on the <a href="/exchange" style="color:#7ec8ff">Astranov SpaceNet Stock Exchange</a>. Negotiated on real value created. Opening NAV <b>25.63 AVC</b> · 1,000,000 shares · Phase 1 envelope €25.63M.</p>' +
+        '<p>Value of the Share: projects, the space map, deposits (metals, stones, assets), and real users. Coin stays 1=1 so buying bread stays simple. Not a licensed national exchange. Not an offer of securities.</p>';
     } else if (tab === 'phase1') {
       body.innerHTML = tableFor(p1) + '<p class="warn">Phase 1 is the permitted-path envelope. Lake and Brothers pontoon are out.</p>';
     } else if (tab === 'restore') {
@@ -605,6 +605,12 @@
     if (/oversustain|hyper.?planet|astranov coin|^coin$|^avc$|super currency/.test(low)) {
       tab = 'over';
       open(null);
+      return true;
+    }
+    if (/^(exchange|shares?|stock|ash)$/.test(low) || (low.indexOf('share') >= 0 && /astranov|stock/.test(low))) {
+      try {
+        location.href = '/exchange';
+      } catch (_) {}
       return true;
     }
     if (/budget|finance|capex/.test(low) && /phase\s*1|phase1/.test(low)) {

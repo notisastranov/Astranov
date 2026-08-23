@@ -1,6 +1,6 @@
 {
   "title": "Astranov SpaceNet · investor budget",
-  "disclaimer": "2026 island-rate envelopes in EUR. Not quotes. Not funded. Land usually excluded. 15% contingency inside each package. VAT 24% shown at the foot. Every project is oversustainable by design. Settlement: Astranov Coin — mint floor 1.00 EUR of verified work, opening preference 3.30 EUR. Value from projects, the space map, deposited assets, and real users. Not legal tender. Not an exchange listing.",
+  "disclaimer": "2026 island-rate envelopes in EUR. Not quotes. Not funded. Land usually excluded. 15% contingency inside each package. VAT 24% shown at the foot. Every project is oversustainable by design. Astranov Coin 1 = 1 EUR for everyday life. Astranov Share (ASH) trades on the SpaceNet Stock Exchange on real value created. Not legal tender. Not a licensed national exchange.",
   "model": { "ops": 40, "owner": 30, "village": 30 },
   "packages": [
     {"id":"motorhouses","name":"Glass motor-houses","place":"Kallithea, Rhodes","phase":1,"capex":3120,"unit":"12 houses · 60 m²","photo":"/media/projects/kallithea/02.jpg","note":"Movable glass pavilions on chassis. Not poured villas."},
