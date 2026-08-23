@@ -1,1 +1,68 @@
-LOADING
+<!DOCTYPE html>
+<html lang="en" class="skin-spacex theme-dark" data-theme-mode="auto">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>Astranov SpaceNet Operating System</title>
+<meta name="theme-color" content="#000105" id="meta-theme-color" />
+<meta name="astranov-build" content="20260823195000-ai-listen-dock" />
+<meta name="astranov-continuity" content="20260823195000-ai-listen-dock" />
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta name="description" content="Astranov SpaceNet — the OS of the SpaceX phone. Earth is the desktop. Starlink is the radio. Grok is the mind." />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="SpaceNet" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/icon.png" />
+<link rel="icon" href="/icon.png" type="image/png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<style>
+/* P0 chrome law — twin CLIs; do not restyle in this PR beyond cache-bust */
+#panel, #sn-topchrome-panel { min-height: 0 !important; height: auto !important; }
+#panel { grid-template-rows: 10px 44px auto auto !important; overflow: visible !important; }
+</style>
+<link rel="stylesheet" href="/css/spacenet.css" />
+</head>
+<body>
+<div id="globe-root" aria-hidden="true"></div>
+<div id="sn-topchrome">
+  <div id="sn-topchrome-drag" class="sn-drag-handle" title="Drag"></div>
+  <div id="sn-topchrome-panel" class="collapsed" role="region" aria-label="Top scroll">
+    <div id="sn-brand-row">
+      <div id="sn-brand">ASTRANOV</div>
+      <button type="button" id="sn-power-btn" class="sn-power" title="Power">⏻</button>
+    </div>
+    <form id="stc-cmd" autocomplete="off" aria-label="Flight command">
+      <div class="sn-cmd-row">
+        <input id="stc-cmd-in" type="text" autocomplete="off" spellcheck="false"
+          placeholder="Command the HUD · show, hide, or reshape" />
+      </div>
+    </form>
+  </div>
+</div>
+<div id="panel" class="collapsed">
+  <div id="cli-drag" class="sn-drag-handle" title="Drag"></div>
+  <div id="sn-task-ribbon" aria-label="Quick actions"></div>
+  <div id="cli-log" class="cli-feed" aria-live="polite"></div>
+  <form id="cli-form" autocomplete="off">
+    <div class="sn-cmd-row">
+      <button type="button" class="sn-rib-btn" data-act="handsfree" id="sn-rib-hf" title="AI">🎤</button>
+      <input id="cli-in" type="text" autocomplete="off" spellcheck="false"
+        placeholder="Command the HUD · show, hide, or reshape" />
+      <button type="submit" id="btn-send" title="Send">↵</button>
+    </div>
+  </form>
+</div>
+<script src="/js/spacenet/mobile-life.js?v=20260823195000-ai-listen-dock"></script>
+<script src="/js/spacenet/phone-os.js?v=20260823195000-ai-listen-dock"></script>
+<script src="/js/spacenet/chrome-mute.js?v=20260823195000-ai-listen-dock"></script>
+<script src="/js/spacenet/chrome-fix.js?v=20260823224000-keepon"></script>
+<script src="/js/spacenet/chrome-rib-face.js?v=20260823195000-ai-listen-dock"></script>
+<script src="/js/spacenet/chrome-radar.js?v=20260823195000-ai-listen-dock"></script>
+<script src="/js/spacenet/os-bootloader.js?v=20260823195000-ai-listen-dock"></script>
+<script src="/js/spacenet/guardian.js?v=20260823195000-ai-listen-dock"></script>
+</body>
+</html>
