@@ -1,10 +1,10 @@
-/* Astranov investor projects · 20260823180000-kallithea
+/* Astranov investor projects · 20260823181000-plots
  * Real-location pills on SNGlobe. Type "projects". Carousel is preview, not built.
  * Does NOT restyle CLI placeholders. Does NOT open Leaflet.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823180000-kallithea';
+  var BUILD = '20260823181000-plots';
   if (global.__SN_PROJECTS === BUILD) return;
   global.__SN_PROJECTS = BUILD;
 
@@ -69,12 +69,12 @@
     {
       id: 'house-art',
       name: 'House of Art Wood Oven Bar',
-      place: 'Archangelos, Rhodes',
-      lat: 36.2147,
-      lng: 28.1175,
+      place: 'Koskinou village, Rhodes',
+      lat: 36.3882,
+      lng: 28.2118,
       color: '#d48cff',
       status: 'Investor preview · not built',
-      blurb: 'Three-storey village house: tavern, wood oven, rooftop pergola and jacuzzi. Plot in a colorful Rhodes village.',
+      blurb: 'Three-storey village house in Koskinou: tavern, wood oven, rooftop pergola and jacuzzi. Plot in the same village as the junction bar.',
       images: [
         '00.jpg', '01.jpg', '02.jpg', '03.jpg', '04.jpg',
         '05.jpg', '06.jpg', '07.jpg', '08.jpg', '09.jpg',
@@ -99,12 +99,12 @@
     {
       id: 'lofts',
       name: 'DigiNomads Lofts',
-      place: 'Rhodes city · Elli / 5 min Old Town',
-      lat: 36.4498,
-      lng: 28.2242,
+      place: 'Kallithea coast, Rhodes',
+      lat: 36.3785,
+      lng: 28.236,
       color: '#6ab6ff',
       status: 'Investor preview · not built',
-      blurb: 'Live-work lofts: rooftop, shared kitchen, gym, work commons. Steps from the beach, five minutes to Old Town.',
+      blurb: 'Live-work lofts on the Kallithea coast, Rhodes. Rooftop, shared kitchen, gym, work commons. Investor preview — not the Old Town pin from the marketing board.',
       images: [
         '00.jpg', '01.jpg', '02.jpg', '03.jpg', '04.jpg',
         '05.jpg', '06.jpg', '07.jpg', '08.jpg', '09.jpg',
@@ -114,12 +114,12 @@
     {
       id: 'villa',
       name: 'Rose Stone Villa',
-      place: 'Rhodes inland · plot on request',
-      lat: 36.3788,
-      lng: 28.135,
+      place: 'Kallithea, Rhodes',
+      lat: 36.3845,
+      lng: 28.2195,
       color: '#c9a27a',
       status: 'Investor preview · plot reserved',
-      blurb: 'Three-storey rose-stone villa, loop drive, fountain, wood-fired kitchen. Exact cadastral plot confirmed on request.',
+      blurb: 'Three-storey rose-stone villa on a Kallithea plot: loop drive, fountain, wood-fired kitchen. Investor preview.',
       images: [
         '00.jpg', '01.jpg', '02.jpg', '03.jpg', '04.jpg',
         '05.jpg', '06.jpg', '07.jpg', '08.jpg', '09.jpg',
@@ -130,8 +130,8 @@
       id: 'sitia',
       name: 'Astranov Yacht Club',
       place: 'Petras, Sitia, Crete',
-      lat: 35.2055,
-      lng: 26.114,
+      lat: 35.202,
+      lng: 26.115,
       color: '#4cc4ff',
       status: 'Investor preview · not built',
       blurb: 'Coastal-road taverna and yacht club plus rear seaview jacuzzi lofts. Yacht guests via Sitia Port. Landscape kept.',
@@ -140,6 +140,50 @@
         '05.jpg', '06.jpg', '07.jpg', '08.jpg', '09.jpg',
         '10.jpg', '11.jpg', '12.jpg', '13.jpg'
       ]
+    },
+    {
+      id: 'trypitos',
+      name: 'Trypitos plot',
+      place: 'Trypitos headland, Sitia, Crete',
+      lat: 35.1986,
+      lng: 26.1297,
+      color: '#8fd4c4',
+      status: 'Plot pin · Hellenistic site is protected',
+      blurb: 'Sitia east coast, 3 km from town. Trypitos promontory is an excavated Hellenistic city — we do not build on the ruins. Pin marks the real headland for a nearby coastal plot. Investor siting, not a permit.',
+      images: ['00.jpg', '01.jpg']
+    },
+    {
+      id: 'agia-fotia',
+      name: 'Agia Fotia plot',
+      place: 'Agia Fotia, Sitia, Crete',
+      lat: 35.192,
+      lng: 26.161,
+      color: '#7ec8ff',
+      status: 'Plot pin · investor siting',
+      blurb: 'Coastal coves 7 km east of Sitia on the Vai road. Real shore. No hotel invented on the beach.',
+      images: ['00.jpg', '01.jpg']
+    },
+    {
+      id: 'lagokefalo',
+      name: 'Lagokefalo plot',
+      place: 'Kato Lagokefalo · Roussa Eklisia district, Sitia',
+      lat: 35.171,
+      lng: 26.138,
+      color: '#c4b07a',
+      status: 'Plot pin · district siting',
+      blurb: 'Kato Lagokefalo, archaic-settlement district next to Roussa Eklisia. Olive terraces, limestone. Pin is the district, not a cadastral deed.',
+      images: ['00.jpg', '01.jpg']
+    },
+    {
+      id: 'rousa',
+      name: 'Rousa Eklisia',
+      place: 'Roussa Ekklisia, Sitia, Crete',
+      lat: 35.17816,
+      lng: 26.14599,
+      color: '#e8c36a',
+      status: 'Real village · family ground',
+      blurb: 'Existing mountain village 9 km from Sitia: plane-tree square, church, water, gulf view. Mano’s village. Not a new resort. Pin is the real settlement 35.17816°N 26.14599°E.',
+      images: ['00.jpg', '01.jpg']
     },
     {
       id: 'yacht',
@@ -480,7 +524,8 @@
     PROJECTS.forEach(function (p) {
       logCli(p.name + ' · ' + p.place, 'ok');
     });
-    logCli('Tap a pill or type a name · kallithea · koskinou · fanes · lofts · yacht · brothers · sitia · villa', 'ok');
+    logCli('Rhodes · Fanes · Koskinou · Kallithea', 'ok');
+    logCli('Sitia · Petras · Trypitos · Agia Fotia · Lagokefalo · Rousa Eklisia', 'ok');
   }
 
   function handle(raw) {
@@ -517,8 +562,12 @@
         (p.id === 'fanes' && /fanes|villages of colors|village of colors/.test(low)) ||
         (p.id === 'lofts' && /loft|diginomad|nomad/.test(low)) ||
         (p.id === 'sitia' && /sitia|petras|yacht club/.test(low)) ||
+        (p.id === 'trypitos' && /trypitos|tripitos/.test(low)) ||
+        (p.id === 'agia-fotia' && /agia fotia|agia-fotia|ag\.? fotia|fotini/.test(low)) ||
+        (p.id === 'lagokefalo' && /lagokefalo|lagocefalo|kato lago/.test(low)) ||
+        (p.id === 'rousa' && /rousa|roussa|eklis|ekklis/.test(low)) ||
         (p.id === 'villa' && /villa|rose stone/.test(low)) ||
-        (p.id === 'house-art' && /house of art|archangelos/.test(low)) ||
+        (p.id === 'house-art' && /house of art/.test(low)) ||
         (p.id === 'kallithea' &&
           /kalithea|kallithea|καλλιθ|ecological village|^village$|glass motor|motor house|motorhouse/.test(low))
       ) {
