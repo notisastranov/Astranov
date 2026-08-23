@@ -1,13 +1,9 @@
-/* Astranov Earth levels · 20260823152500-gtiles
- * Earth is the desktop. GLOBAL → NATIONAL → REGIONAL → CITY stay on SNGlobe.
- * Official Google Map Tiles API (satellite) drapes on the sphere when GOOGLE_MAPS_KEY is set.
- * Fallback: NASA GIBS / Esri. Never open Leaflet unless "streets".
- * Photorealistic 3D Tiles = city mesh only — not oceans. Planet uses 2D satellite on the globe.
- * Does NOT restyle #stc-cmd-in / #cli-in placeholders.
+/* Astranov Earth levels · 20260823155000-gtiles-sb
+ * Earth is the desktop. Google Map Tiles from Supabase secret GOOGLE_MAPS_API_KEY.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823152500-gtiles';
+  var BUILD = '20260823155000-gtiles-sb';
   if (global.__SN_EARTH_LEVELS) return;
   global.__SN_EARTH_LEVELS = BUILD;
 
@@ -516,7 +512,7 @@
           flyGlobe(p.lat, p.lng, 'city', 'GOOGLE SAT');
           logCli('Google Earth tiles · satellite on the 3D globe · © Google', 'ok');
         } else if (g && g.needsKey) {
-          logCli('Google Earth API needs Vercel env GOOGLE_MAPS_KEY (Map Tiles API + billing). NASA/Esri on the globe until then.', 'warn');
+          logCli('Google Earth API: no GOOGLE_MAPS_API_KEY in Supabase Edge secrets. NASA/Esri stays on the globe.', 'warn');
         } else {
           logCli('Google Earth tiles · ' + ((g && g.error) || 'session failed') + ' · NASA/Esri still on the globe', 'warn');
         }
