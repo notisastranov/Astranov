@@ -1,14 +1,41 @@
-/* Astranov investor projects · 20260823174000-projects
+/* Astranov investor projects · 20260823180000-kallithea
  * Real-location pills on SNGlobe. Type "projects". Carousel is preview, not built.
  * Does NOT restyle CLI placeholders. Does NOT open Leaflet.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823174000-projects';
+  var BUILD = '20260823180000-kallithea';
   if (global.__SN_PROJECTS === BUILD) return;
   global.__SN_PROJECTS = BUILD;
 
   var PROJECTS = [
+    {
+      id: 'kallithea',
+      name: 'Kallithea Ecological Village',
+      place: 'Kallithea, Rhodes · 36.387557°N 28.222533°E',
+      lat: 36.387557,
+      lng: 28.222533,
+      color: '#14c3f3',
+      status: 'Topo study · investor preview · not built',
+      blurb:
+        'Real HQ pin from the OS topographic study (SNVillage). Designed artificial lake ~1.1 km × 0.75 km, five islets (Olive, Reed, Stone, Cypress, Heron), olive ring and north terrace grove. Glass motor-houses: low glass pavilions on motorized chassis, parked on stone pads in the olives — movable, not poured villas. Lake and houses are design. GPS is real.',
+      images: [
+        '00-topo.svg',
+        '01.jpg',
+        '02.jpg',
+        '03.jpg',
+        '04.jpg',
+        '05.jpg',
+        '06.jpg',
+        '07.jpg',
+        '08.jpg',
+        '09.jpg',
+        '10.jpg',
+        '11.jpg',
+        '12.jpg',
+        '13.jpg'
+      ]
+    },
     {
       id: 'koskinou',
       name: 'Koskinou Wood Oven Bar',
@@ -453,7 +480,7 @@
     PROJECTS.forEach(function (p) {
       logCli(p.name + ' · ' + p.place, 'ok');
     });
-    logCli('Tap a pill or type a name · koskinou · fanes · lofts · yacht · brothers · sitia · villa', 'ok');
+    logCli('Tap a pill or type a name · kallithea · koskinou · fanes · lofts · yacht · brothers · sitia · villa', 'ok');
   }
 
   function handle(raw) {
@@ -491,7 +518,9 @@
         (p.id === 'lofts' && /loft|diginomad|nomad/.test(low)) ||
         (p.id === 'sitia' && /sitia|petras|yacht club/.test(low)) ||
         (p.id === 'villa' && /villa|rose stone/.test(low)) ||
-        (p.id === 'house-art' && /house of art|archangelos/.test(low))
+        (p.id === 'house-art' && /house of art|archangelos/.test(low)) ||
+        (p.id === 'kallithea' &&
+          /kalithea|kallithea|καλλιθ|ecological village|^village$|glass motor|motor house|motorhouse/.test(low))
       ) {
         openProject(p.id, true);
         return true;
