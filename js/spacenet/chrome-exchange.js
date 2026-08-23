@@ -3,7 +3,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823204000-asx';
+  var BUILD = '20260823205000-ash50';
   if (global.__SN_EXCHANGE === BUILD) return;
   global.__SN_EXCHANGE = BUILD;
 
@@ -22,7 +22,8 @@
     ) {
       logCli('Astranov SpaceNet Stock Exchange · home of the Astranov Share (ASH)', 'ok');
       logCli('Astranov Coin 1 = 1 EUR · everyday life', 'ok');
-      logCli('ASH last / NAV 25.63 AVC · 1,000,000 shares · Phase 1 envelope €25.63M', 'ok');
+      logCli('ASH 50.00 AVC · 1,000,000 shares · designed value €50M', 'ok');
+      logCli('Phase 1 €25.63M · Phase 2 €13.60M · SpaceNet €7M · brand €3.77M', 'ok');
       logCli('Negotiated on real value created · not thin air', 'ok');
       logCli('Open https://astranov.eu/exchange', 'ok');
       try {
