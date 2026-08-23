@@ -8,75 +8,41 @@ on:
       - 'investors/**'
       - '.github/workflows/investors-pages.yml'
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: investors-pages
+  cancel-in-progress: true
+
 jobs:
-  publish:
+  deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pages: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Stage investors site
+        run: |
+          mkdir -p _site
+          cp -a investors/. _site/
+          printf 'investors.astranov.eu\n' > _site/CNAME
+      - uses: actions/configure-pages@v5
         with:
-          fetch-depth: 0
-      - name: Publish investors/ as Pages + CNAME
+          enablement: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Set custom domain
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
-          set -e
-          rm -rf /tmp/inv-pages
-          mkdir -p /tmp/inv-pages
-          cp -a investors/. /tmp/inv-pages/
-          printf 'investors.astranov.eu\n' > /tmp/inv-pages/CNAME
-          git checkout --orphan investors-pages
-          git rm -rfq --ignore-unmatch . || true
-          mkdir -p .keep
-          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
-          cp -a /tmp/inv-pages/. .
-          git add -A
-          git -c user.email='notisastranov@gmail.com' -c user.name='notisastranov' \
-            commit -m "investors.astranov.eu pages" || true
-          git push -f origin investors-pages
-
-          gh api -X POST repos/notisastranov/astranov.eu/pages \
-            -f build_type=legacy \
-            -f 'source[branch]=investors-pages' \
-            -f 'source[path]=/' || true
           gh api -X PUT repos/notisastranov/astranov.eu/pages \
             -f cname='investors.astranov.eu' \
-            -f 'source[branch]=investors-pages' \
-            -f 'source[path]=/' || true
-
-          # Grey CNAME so GitHub can issue the cert. Orange caused 525.
-          python3 - <<'PY'
-          import json, os, urllib.request, urllib.error
-          cf = (os.environ.get('CLOUDFLARE_API_TOKEN') or '').strip()
-          if not cf:
-            print('no cf token'); raise SystemExit(0)
-          def http(method, url, body=None):
-            data = None if body is None else json.dumps(body).encode()
-            req = urllib.request.Request(url, data=data, headers={
-              'Authorization': 'Bearer ' + cf, 'Content-Type': 'application/json'
-            }, method=method)
-            try:
-              with urllib.request.urlopen(req, timeout=60) as r:
-                return r.status, json.loads(r.read().decode() or '{}')
-            except urllib.error.HTTPError as e:
-              raw = e.read().decode(errors='replace')
-              try: j = json.loads(raw)
-              except: j = {'raw': raw[:400]}
-              return e.code, j
-          st, zones = http('GET', 'https://api.cloudflare.com/client/v4/zones?name=astranov.eu')
-          zid = (zones.get('result') or [{}])[0].get('id')
-          print('zone', zid)
-          if not zid: raise SystemExit(0)
-          name, fqdn, content = 'investors', 'investors.astranov.eu', 'notisastranov.github.io'
-          st, dns = http('GET', f'https://api.cloudflare.com/client/v4/zones/{zid}/dns_records?name={fqdn}')
-          recs = dns.get('result') or []
-          payload = {'type':'CNAME','name':name,'content':content,'proxied':False,'ttl':120}
-          if recs:
-            st, j = http('PUT', f'https://api.cloudflare.com/client/v4/zones/{zid}/dns_records/{recs[0]["id"]}', payload)
-          else:
-            st, j = http('POST', f'https://api.cloudflare.com/client/v4/zones/{zid}/dns_records', payload)
-          print('dns investors ->', content, 'proxied False', st, j.get('success'), j.get('errors'))
-          PY
+            -F https_enforced=false || true
+          gh api repos/notisastranov/astranov.eu/pages || true
