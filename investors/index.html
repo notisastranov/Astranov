@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Astranov · Investor budget</title>
-  <meta name="astranov-build" content="20260823194500-oversustain" />
+  <meta name="astranov-build" content="20260823200000-presence" />
   <meta name="description" content="Astranov SpaceNet — oversustainable projects and Astranov Coin, a hyper-planetary currency backed by work, metals, stones, SpaceNet use, and EUR USD JPY RUB." />
   <link rel="icon" href="https://astranov.eu/icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -12,7 +12,19 @@
   <style>
     :root { --bg:#070b14; --card:#0d1524; --line:rgba(180,220,255,.14); --gold:#e8c36a; --text:#eaf2ff; --muted:#9ec4ee; --dim:#7a92ad; }
     * { box-sizing: border-box; }
-    html, body { margin:0; background:var(--bg); color:var(--text); font:400 14px/1.45 Inter,system-ui,sans-serif; }
+    html, body { margin:0; height:100%; background:#05080f; color:var(--text); font:400 14px/1.45 Inter,system-ui,sans-serif; overflow:hidden; }
+    #sn-back { position:fixed; inset:0; width:100%; height:100%; border:0; z-index:0; }
+    .ui { position:relative; z-index:2; height:100%; display:flex; flex-direction:column; pointer-events:none; }
+    .ui > * { pointer-events:auto; }
+    header { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:12px; padding:12px 18px; background:rgba(7,11,20,.78); border-bottom:1px solid var(--line); backdrop-filter:blur(10px); }
+    .cards { display:flex; gap:10px; overflow-x:auto; padding:10px 14px; pointer-events:auto; }
+    .pcard { flex:0 0 200px; border-radius:14px; overflow:hidden; border:1px solid rgba(180,220,255,.2); background:rgba(8,14,24,.82); cursor:pointer; backdrop-filter:blur(8px); text-align:left; color:inherit; padding:0; }
+    .pcard.on { border-color:#7ec8ff; box-shadow:0 0 16px rgba(80,200,255,.4); }
+    .pcard img { width:100%; height:96px; object-fit:cover; display:block; }
+    .pcard .p { padding:8px 10px 10px; }
+    .pcard b { display:block; font:650 12px/1.2 Inter,system-ui; }
+    .pcard span { color:#9ec4ee; font-size:11px; }
+    .dock { flex:1; overflow:auto; background:linear-gradient(180deg, transparent, rgba(7,11,20,.88) 48px); padding:0 0 20px; }
     header { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:12px; padding:12px 18px; background:rgba(7,11,20,.92); border-bottom:1px solid var(--line); backdrop-filter:blur(10px); }
     header img.logo { width:36px; height:36px; border-radius:8px; }
     header h1 { margin:0; font:700 16px/1.2 "Space Grotesk",Inter,sans-serif; flex:1; }
@@ -73,12 +85,16 @@
   </style>
 </head>
 <body>
+  <iframe id="sn-back" title="SpaceNet globe" src="https://astranov.eu/?embed=presence&site=investors" allow="autoplay"></iframe>
+  <div class="ui">
   <header>
     <img class="logo" src="https://astranov.eu/icon.png" alt="Astranov" />
     <h1>investors.astranov.eu</h1>
     <span class="who" id="who">Public view</span>
     <button type="button" id="auth-btn">Owner login</button>
   </header>
+  <div class="cards" id="pcards"></div>
+  <div class="dock">
   <div class="wrap">
     <div class="hero">
       <div>
@@ -113,7 +129,9 @@
       <span class="who" id="save-status"></span>
     </div>
     <div class="scroller"><table id="deck"><thead></thead><tbody></tbody><tfoot></tfoot></table></div>
-    <p class="note" style="margin-top:14px">Canonical host <b>investors.astranov.eu</b> · globe pins at astranov.eu · type <b>budget</b> on SpaceNet</p>
+    <p class="note" style="margin-top:14px">This is a <b>SpaceNet Presence</b> page — the globe is the site. Client subdomains are sold the same way: planet behind, real pins, profile + picture + preview.</p>
+  </div>
+  </div>
   </div>
   <div id="lightbox"><img alt="" /></div>
   <div id="sheet">
@@ -141,6 +159,6 @@
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20260823194500-oversustain"></script>
+  <script src="app.js?v=20260823200000-presence"></script>
 </body>
 </html>
