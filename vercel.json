@@ -46,8 +46,11 @@
     { "source": "/app.js", "has": [{ "type": "host", "value": "exchange.astranov.eu" }], "destination": "/exchange/app.js" },
     { "source": "/book.json", "has": [{ "type": "host", "value": "exchange.astranov.eu" }], "destination": "/exchange/book.json" },
     { "source": "/presence", "destination": "/presence/index.html" },
+    { "source": "/presence/", "destination": "/presence/index.html" },
     { "source": "/exchange", "destination": "/exchange/index.html" },
+    { "source": "/exchange/", "destination": "/exchange/index.html" },
     { "source": "/investors", "destination": "/investors/index.html" },
+    { "source": "/investors/", "destination": "/investors/index.html" },
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" },
     { "source": "/((?!api/|js/|icon|manifest|assets/|media/|investors|presence|exchange|sw\\.js|briefings/|privacy|terms|robots|favicon).*)", "destination": "/index.html" }

@@ -151,10 +151,11 @@ def main():
             st, j = http("POST", f"https://api.cloudflare.com/client/v4/zones/{zid}/dns_records", payload, ch)
         print("dns", name, "->", content, "proxied", proxied, st, j.get("success"), j.get("errors"))
 
-    # Grey-cloud to Vercel so adding the domains on the live project issues TLS.
-    # Orange + 525 is worse. Slash paths are origin only — never the public URL.
-    upsert_cname("exchange", "cname.vercel-dns.com", False)
-    upsert_cname("investors", "cname.vercel-dns.com", False)
+    # Orange-cloud so Cloudflare Universal SSL covers *.astranov.eu.
+    # Grey CNAME to vercel-dns with no Vercel domain = dead TLS (handshake abort).
+    # Worker fetches https://astranov.eu/investors|exchange so origin Host is the live apex.
+    upsert_cname("exchange", "www.astranov.eu", True)
+    upsert_cname("investors", "www.astranov.eu", True)
 
     # 1) Zone-level worker (legacy, zone permission)
     st, j = http(
