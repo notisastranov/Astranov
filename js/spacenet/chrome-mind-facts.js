@@ -1,15 +1,29 @@
-/* SpaceNet unit trainer · 20260823220000-train
+/* SpaceNet unit trainer · 20260823221000-keeptrain
  * Living mind: live envelopes + taught lessons. Not static programming.
  * Does not restyle CLI placeholders. Not a training sim.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823220000-train';
+  var BUILD = '20260823221000-keeptrain';
   if (global.__SN_MIND_FACTS === BUILD) return;
   global.__SN_MIND_FACTS = BUILD;
 
   var KEY = 'sn:unit-lessons-v1';
+  var HASH = 'sn:unit-env-hash-v1';
+  var SEED_MARK = 'sn:unit-seed-v1';
   var envelope = null;
+  var SB = 'https://lkoatrkhuigdolnjsbie.supabase.co';
+  var SB_KEY =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb2F0cmtodWlnZG9sbmpzYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODIwOTIsImV4cCI6MjA5NDQ1ODA5Mn0.qf6Kg93YLJ0coTdVQa4baU0ppOdFY5WkmVzMvEV6ejI';
+
+  var SEED = [
+    'SpaceNet is a trained living OS, not a static traditional app.',
+    'Astranov Coin 1 AVC = 1 EUR. The Astranov Share ASH lives on exchange.astranov.eu and is negotiated on real value created.',
+    'To complete SpaceNet + Phase 1 is the LIVE envelope on investors.astranov.eu. Gathered starts at €0 until a real wire.',
+    'Rhodes: Fanes, Koskinou, Kallithea. Sitia Crete: Petras, Trypitos, Agia Fotia, Lagokefalo, Rousa Eklisia. Real GPS. Not invented towns.',
+    'Never invent a kitchen, shop, or street. OSM shops. Oversustainable: restore the planet and produce goods, not offset.',
+    'Presence subdomains €330 / year. Globe behind. investors.astranov.eu and exchange.astranov.eu are SpaceNet pages.'
+  ];
 
   function log(m, k) {
     try {
@@ -35,9 +49,27 @@
       localStorage.setItem(KEY, JSON.stringify(list));
     } catch (_) {}
     try {
-      if (global.ACI && typeof ACI.teach === 'function') ACI.teach(text);
+      fetch(SB + '/functions/v1/aci', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: SB_KEY,
+          Authorization: 'Bearer ' + SB_KEY
+        },
+        body: JSON.stringify({ mode: 'teach', content: String(text).slice(0, 800) })
+      }).catch(function () {});
     } catch (_) {}
     return list.length;
+  }
+
+  function seedIfNeeded() {
+    try {
+      if (localStorage.getItem(SEED_MARK) === '1' && lessons().length) return;
+      SEED.forEach(function (s) {
+        saveLesson(s);
+      });
+      localStorage.setItem(SEED_MARK, '1');
+    } catch (_) {}
   }
 
   function eur(k) {
@@ -127,7 +159,7 @@
     if (!low) return false;
     if (/^(train|teach)\s+status$/.test(low) || low === 'train' || low === 'unit') {
       log(
-        'Unit · trained living OS · lessons ' +
+        'Unit · training does not stop · lessons ' +
           lessons().length +
           ' · ' +
           ((envelope && envelope.line) || 'loading live envelope…'),
@@ -136,6 +168,11 @@
       loadEnvelope().then(function (e) {
         log(e.line, 'ok');
       });
+      return true;
+    }
+    if (/^(train|teach)\s+cycle$/.test(low)) {
+      log('Training cycle…', 'ok');
+      cycle(true);
       return true;
     }
     var m = /^(train|teach)\s+(.+)$/i.exec(line);
@@ -175,26 +212,92 @@
     } catch (_) {}
   }
 
+  function cycle(noisy) {
+    return Promise.all([
+      loadEnvelope(),
+      fetch('https://astranov.eu/exchange/book.json?v=' + BUILD, { cache: 'no-store' })
+        .then(function (r) {
+          return r.json();
+        })
+        .catch(function () {
+          return null;
+        })
+    ]).then(function (pair) {
+      var env = pair[0];
+      var book = pair[1];
+      var sig =
+        (env && env.line) +
+        '|' +
+        (book && book.share && book.share.nav_eur) +
+        '|' +
+        (book && book.share && book.share.designed_keur);
+      var prev = '';
+      try {
+        prev = localStorage.getItem(HASH) || '';
+      } catch (_) {}
+      if (sig && sig !== prev) {
+        try {
+          localStorage.setItem(HASH, sig);
+        } catch (_) {}
+        saveLesson(env.line);
+        if (book && book.share) {
+          saveLesson(
+            'Live ASH NAV ' +
+              book.share.nav_eur +
+              ' AVC · ' +
+              book.share.authorized +
+              ' shares · designed €' +
+              (Number(book.share.designed_keur || 0) / 1000).toFixed(0) +
+              'M. Coin 1=1 EUR.'
+          );
+        }
+        if (noisy) log('Cycle trained on live envelope.', 'ok');
+      } else if (noisy) {
+        log('Cycle · envelope unchanged · still training.', 'ok');
+      }
+    });
+  }
+
   function wrapCli() {
-    if (global.__SN_MIND_FACTS_WRAP) return;
-    global.__SN_MIND_FACTS_WRAP = 1;
     function attach() {
       if (!global.SNCli || typeof SNCli.run !== 'function') return false;
-      if (SNCli._snTrainOuter) return true;
       var prev = SNCli.run.bind(SNCli);
-      SNCli.run = function (raw) {
+      if (SNCli.run._snKeepTrain) return true;
+      function wrapped(raw) {
         try {
           if (handle(raw)) return Promise.resolve(true);
         } catch (_) {}
         return prev(raw);
-      };
-      SNCli._snTrainOuter = 1;
+      }
+      wrapped._snKeepTrain = 1;
+      SNCli.run = wrapped;
       return true;
     }
-    if (!attach()) setTimeout(attach, 400);
-    setTimeout(attach, 1200);
+    attach();
+    setInterval(attach, 5000);
     injectTalk();
-    setTimeout(injectTalk, 800);
+    setInterval(injectTalk, 8000);
+    try {
+      var form = document.getElementById('cli-form');
+      var input = document.getElementById('cli-in');
+      if (form && input && !form._snKeepTrain) {
+        form._snKeepTrain = 1;
+        form.addEventListener(
+          'submit',
+          function (ev) {
+            var v = String(input.value || '').trim();
+            if (!handle(v)) return;
+            try {
+              ev.preventDefault();
+              ev.stopPropagation();
+              if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+            } catch (_) {}
+            input.value = '';
+          },
+          true
+        );
+      }
+    } catch (_) {}
   }
 
   global.SNMindTrain = {
@@ -202,9 +305,17 @@
     lessons: lessons,
     context: contextBlock,
     load: loadEnvelope,
+    cycle: cycle,
     BUILD: BUILD
   };
+  seedIfNeeded();
   loadEnvelope();
+  setTimeout(function () {
+    cycle(false);
+  }, 4000);
+  setInterval(function () {
+    cycle(false);
+  }, 90000);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wrapCli);
   else wrapCli();
 })(window);
