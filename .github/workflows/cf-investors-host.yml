@@ -1,138 +1,77 @@
-name: Host investors.astranov.eu
+name: Host SpaceNet subdomains
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - 'workers/investors-astranov/**'
-      - '.github/workflows/cf-investors-host.yml'
       - 'investors/**'
+      - 'exchange/**'
+      - '.github/workflows/cf-investors-host.yml'
+      - '.github/workflows/vercel-investors-domain.yml'
 
 jobs:
   host:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      contents: write
-      pages: write
-      id-token: write
     steps:
       - uses: actions/checkout@v4
-      - name: Publish investors site to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - uses: actions/setup-node@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./investors
-          cname: investors.astranov.eu
-          force_orphan: true
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-        continue-on-error: true
-        with:
-          enablement: true
-          html_url: https://investors.astranov.eu
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: investors
-      - name: Deploy Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-      - name: Enable Pages custom domain
-        continue-on-error: true
-        run: |
-          gh api -X POST repos/${{ github.repository }}/pages -f build_type=workflow || true
-          gh api -X PUT repos/${{ github.repository }}/pages -f cname=investors.astranov.eu -F https_enforced=false || true
+          node-version: '20'
+      - name: Deploy investors + exchange and point DNS at Vercel
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Grey-cloud DNS investors → github.io
-        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TOKEN2: ${{ secrets.VERCEL_ACCESS_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          ACCOUNT_ID: 04faced90ecdb9aae7c15537751180da
         run: |
+          set -e
+          TOK="${VERCEL_TOKEN:-$VERCEL_TOKEN2}"
+          if [ -z "$TOK" ]; then echo "no vercel token"; exit 1; fi
+          npm i -g vercel@41
+          deploy_site () {
+            local dir="$1" name="$2" domain="$3"
+            echo "=== deploy $name ($dir) → $domain ==="
+            vercel deploy "$dir" --prod --yes --token "$TOK" --name "$name" --public
+            vercel domains add "$domain" --token "$TOK" --scope notisastranov-8109 --yes || \
+            vercel domains add "$domain" --token "$TOK" --yes || true
+            vercel alias set "$domain" --token "$TOK" --scope notisastranov-8109 || true
+          }
+          deploy_site investors astranov-investors investors.astranov.eu
+          deploy_site exchange astranov-exchange exchange.astranov.eu
           python3 <<'PY'
           import json, os, urllib.request, urllib.error
-          from pathlib import Path
-
-          TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
-          ACCOUNT = os.environ["ACCOUNT_ID"]
+          TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN") or ""
+          if not TOKEN:
+            print("no cloudflare token — skip DNS")
+            raise SystemExit(0)
           H = {"Authorization": f"Bearer {TOKEN}", "Content-Type": "application/json"}
-
-          def api(method, url, body=None, headers=None, data=None):
-            hdrs = dict(headers or H)
-            payload = data if data is not None else (None if body is None else json.dumps(body).encode())
-            req = urllib.request.Request(url, data=payload, headers=hdrs, method=method)
+          def api(method, url, body=None):
+            data = None if body is None else json.dumps(body).encode()
+            req = urllib.request.Request(url, data=data, headers=H, method=method)
             try:
-              with urllib.request.urlopen(req, timeout=90) as r:
+              with urllib.request.urlopen(req, timeout=60) as r:
                 return r.status, json.loads(r.read().decode() or "{}")
             except urllib.error.HTTPError as e:
               raw = e.read().decode(errors="replace")
               try: j = json.loads(raw)
-              except: j = {"raw": raw[:800]}
+              except: j = {"raw": raw[:500]}
               return e.code, j
-
           st, zones = api("GET", "https://api.cloudflare.com/client/v4/zones?name=astranov.eu")
           zone = (zones.get("result") or [{}])[0]
-          zone_id = zone.get("id")
-          print("zone", zone_id, zones.get("success"), zones.get("errors"))
-          if not zone_id:
-            raise SystemExit("no zone")
-
-          st, dns = api("GET", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?name=investors.astranov.eu")
-          recs = dns.get("result") or []
-          print("dns investors", [(r.get("type"), r.get("content"), r.get("proxied"), r.get("id")) for r in recs])
-
-          payload = {
-            "type": "CNAME",
-            "name": "investors",
-            "content": "notisastranov.github.io",
-            "proxied": False,
-            "ttl": 120,
-          }
-          if recs:
-            st, j = api("PUT", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{recs[0]['id']}", payload)
-            print("update dns", st, j.get("success"), j.get("errors"))
-          else:
-            st, j = api("POST", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records", payload)
-            print("create dns", st, j.get("success"), j.get("errors"))
-
-          script = Path("workers/investors-astranov/src/index.js").read_text()
-          metadata = {"main_module": "index.js", "compatibility_date": "2026-07-01"}
-          boundary = "----astranovInvestors7"
-          parts = []
-          def part(name, filename, content, ctype):
-            parts.append(f"--{boundary}\r\n".encode())
-            disp = f'Content-Disposition: form-data; name="{name}"'
-            if filename:
-              disp += f'; filename="{filename}"'
-            parts.append((disp + "\r\n").encode())
-            parts.append(f"Content-Type: {ctype}\r\n\r\n".encode())
-            parts.append(content if isinstance(content, bytes) else content.encode())
-            parts.append(b"\r\n")
-          part("metadata", None, json.dumps(metadata), "application/json")
-          part("index.js", "index.js", script, "application/javascript+module")
-          parts.append(f"--{boundary}--\r\n".encode())
-          data = b"".join(parts)
-          st, j = api(
-            "PUT",
-            f"https://api.cloudflare.com/client/v4/accounts/{ACCOUNT}/workers/scripts/investors-astranov",
-            data=data,
-            headers={"Authorization": f"Bearer {TOKEN}", "Content-Type": f"multipart/form-data; boundary={boundary}"},
-          )
-          print("upload worker", st, j.get("success"), j.get("errors") or j.get("raw", "")[:400])
-          if not j.get("success"):
-            print("worker upload not permitted — DNS + GitHub Pages is the host")
-          else:
-            wanted = "investors.astranov.eu/*"
-            st, routes = api("GET", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/workers/routes")
-            hit = next((r for r in (routes.get("result") or []) if r.get("pattern") == wanted), None)
-            body = {"pattern": wanted, "script": "investors-astranov"}
-            if hit:
-              st, j = api("PUT", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/workers/routes/{hit['id']}", body)
+          zid = zone.get("id")
+          print("zone", zid, zones.get("success"), zones.get("errors"))
+          if not zid:
+            raise SystemExit(0)
+          def upsert(name, content):
+            fqdn = name + ".astranov.eu"
+            st, dns = api("GET", f"https://api.cloudflare.com/client/v4/zones/{zid}/dns_records?name={fqdn}")
+            recs = dns.get("result") or []
+            payload = {"type": "CNAME", "name": name, "content": content, "proxied": False, "ttl": 120}
+            if recs:
+              st, j = api("PUT", f"https://api.cloudflare.com/client/v4/zones/{zid}/dns_records/{recs[0]['id']}", payload)
             else:
-              st, j = api("POST", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/workers/routes", body)
-            print("route", st, j.get("success"), j.get("errors"))
+              st, j = api("POST", f"https://api.cloudflare.com/client/v4/zones/{zid}/dns_records", payload)
+            print("dns", name, st, j.get("success"), j.get("errors"), (j.get("result") or {}).get("content"))
+          upsert("investors", "cname.vercel-dns.com")
+          upsert("exchange", "cname.vercel-dns.com")
           PY

@@ -3,7 +3,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823205000-ash50';
+  var BUILD = '20260823210000-hosts';
   if (global.__SN_EXCHANGE === BUILD) return;
   global.__SN_EXCHANGE = BUILD;
 
@@ -25,9 +25,9 @@
       logCli('ASH 50.00 AVC · 1,000,000 shares · designed value €50M', 'ok');
       logCli('Phase 1 €25.63M · Phase 2 €13.60M · SpaceNet €7M · brand €3.77M', 'ok');
       logCli('Negotiated on real value created · not thin air', 'ok');
-      logCli('Open https://astranov.eu/exchange', 'ok');
+      logCli('Open https://exchange.astranov.eu', 'ok');
       try {
-        location.href = '/exchange';
+        location.href = 'https://exchange.astranov.eu';
       } catch (_) {}
       return true;
     }

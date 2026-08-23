@@ -4,7 +4,7 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823205000-ash50';
+  var BUILD = '20260823210000-hosts';
   if (global.__SN_FINANCE === BUILD) return;
   global.__SN_FINANCE = BUILD;
 
@@ -518,7 +518,7 @@
         eur(1600) +
         ' (not permitted).</p>' +
         '<p>Rates: 2026 island new-build ~€2.2–2.8k/m² · heavy village restore ~€0.9–1.4k/m². 15% contingency inside packages. Land usually extra.</p>' +
-        '<p><a href="https://investors.astranov.eu" style="color:#7ec8ff">Open the full table on investors.astranov.eu</a> · also <a href="/investors/" style="color:#7ec8ff">astranov.eu/investors</a></p>' +
+        '<p><a href="https://investors.astranov.eu" style="color:#7ec8ff">investors.astranov.eu</a> · <a href="https://exchange.astranov.eu" style="color:#7ec8ff">exchange.astranov.eu</a></p>' +
         '<p>SpaceNet Presence · any client subdomain <b>€330 / year</b> · globe behind, real pins, profile + picture + preview.</p>';
     } else if (tab === 'over') {
       body.innerHTML =
@@ -528,7 +528,7 @@
         '<div class="pill"><b>+</b>Restore what was sliding to ruin</div>' +
         '<div class="pill"><b>×</b>Produce real output</div></div>' +
         '<p><b>Astranov Coin</b> is everyday money: <b>1 AVC = 1 EUR</b>. Live work-mint at <a href="https://coin.astranov.eu" style="color:#7ec8ff">coin.astranov.eu</a>. Not legal tender. Not a bank print.</p>' +
-        '<p>The <b>Astranov Share (ASH)</b> lives on the <a href="/exchange" style="color:#7ec8ff">Astranov SpaceNet Stock Exchange</a>. Indicative designed NAV <b>50.00 AVC</b> · <b>1,000,000 shares</b> · designed value <b>€50M</b>.</p>' +
+        '<p>The <b>Astranov Share (ASH)</b> lives on the <a href="https://exchange.astranov.eu" style="color:#7ec8ff">Astranov SpaceNet Stock Exchange</a>. Indicative designed NAV <b>50.00 AVC</b> · <b>1,000,000 shares</b> · designed value <b>€50M</b>.</p>' +
         '<p>Stack: Phase 1 projects €25.63M · Phase 2 designed €13.60M · SpaceNet €7M · Astranov brand €3.77M. Estimate, not an appraisal. Coin stays 1=1 EUR.</p>';
     } else if (tab === 'phase1') {
       body.innerHTML = tableFor(p1) + '<p class="warn">Phase 1 is the permitted-path envelope. Lake and Brothers pontoon are out.</p>';
@@ -609,7 +609,7 @@
     }
     if (/^(exchange|shares?|stock|ash)$/.test(low) || (low.indexOf('share') >= 0 && /astranov|stock/.test(low))) {
       try {
-        location.href = '/exchange';
+        location.href = 'https://exchange.astranov.eu';
       } catch (_) {}
       return true;
     }
