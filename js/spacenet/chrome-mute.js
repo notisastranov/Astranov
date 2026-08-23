@@ -1,4 +1,4 @@
-/* Astranov mute · Build 20260823230000-hold-card
+/* Astranov mute · Build 20260823234000-twin-cli
  * Kill beeps + load ALL locked guest modules in ONE chain (no wipe):
  *   (a) chrome-guest-pizza-hunt LAST-but-one — OSM restaurant/fast_food/cafe around camera,
  *       SNCli.run wrap so `pizza` never reaches research-stay / /api/ai
@@ -6,15 +6,16 @@
  *   (c) chrome-guest-laptop-hunt (#132 f58b8a7) — EXACT 20260823034000-laptop-flylie bytes
  *   (d) chrome-ai-listen (#169) — FULL inline, Talk → Listen · mic denied · #sn-rib-hf-hit
  *   (e) chrome-call-arc (#129) — CALL Sign-in wall, no u-room, no VIDEO CALL
- *   (f) chrome-cli-answer (#126) — twin CLI force-paint only (no chrome restyle)
+ *   (f) chrome-cli-answer (#126 twin CLI) LAST-WINS paint: HUD + bottom, neon star,
+ *       exact placeholders, both POST /api/ai allow_paid:true, camera keeps running
  *   (g) chrome-hold-pay LAST — guest HOLD ⭐ / pay → CALL Sign-in card (Privacy · Terms · Cancel)
  * Currency ⭐. Guest never hits Google until pay/CALL. Origin = live camera.
  * loadChain injects LOCAL /js/spacenet files only. No runtime GitHub or CDN fetch.
- * Cache-bust 20260823230000-hold-card. Marks prevent double-inject wipe.
+ * Cache-bust 20260823234000-twin-cli. Marks prevent double-inject wipe.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823230000-hold-card';
+  var BUILD = '20260823234000-twin-cli';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
