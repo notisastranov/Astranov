@@ -32,6 +32,7 @@
   var drapeGroup = null;
   var drapeLoader = null;
   var capUntil = 0;
+  var suppressMo = false;
 
   function unwrapDeg(d) {
     d = Number(d);
@@ -119,31 +120,36 @@
 
   function keepEarthVisible() {
     injectCss();
+    if (suppressMo) return;
+    suppressMo = true;
     try {
       var globe = document.getElementById("globe");
       if (globe) {
-        globe.classList.remove("city-hidden");
-        globe.style.visibility = "visible";
-        globe.style.opacity = "1";
-        globe.style.pointerEvents = "auto";
-        globe.style.zIndex = "1";
+        if (globe.classList.contains("city-hidden")) globe.classList.remove("city-hidden");
+        if (globe.style.visibility !== "visible") globe.style.visibility = "visible";
+        if (globe.style.opacity !== "1") globe.style.opacity = "1";
+        if (globe.style.pointerEvents !== "auto") globe.style.pointerEvents = "auto";
+        if (globe.style.zIndex !== "1") globe.style.zIndex = "1";
       }
     } catch (_) {}
     try {
       document.body.classList.remove("city-map-on");
     } catch (_) {}
+    suppressMo = false;
   }
 
   function hideCoveringTiles() {
+    if (suppressMo) return;
+    suppressMo = true;
     try {
       var map = document.getElementById("city-map");
       if (map) {
-        map.classList.remove("active");
+        if (map.classList.contains("active")) map.classList.remove("active");
         map.setAttribute("aria-hidden", "true");
-        map.style.opacity = "0";
-        map.style.pointerEvents = "none";
-        map.style.zIndex = "0";
-        map.style.visibility = "hidden";
+        if (map.style.opacity !== "0") map.style.opacity = "0";
+        if (map.style.pointerEvents !== "none") map.style.pointerEvents = "none";
+        if (map.style.zIndex !== "0") map.style.zIndex = "0";
+        if (map.style.visibility !== "hidden") map.style.visibility = "hidden";
       }
     } catch (_) {}
     try {
@@ -153,6 +159,7 @@
         } catch (_) {}
       }
     } catch (_) {}
+    suppressMo = false;
     keepEarthVisible();
   }
 
@@ -161,10 +168,11 @@
       var globe = document.getElementById("globe");
       if (globe && !globe.__snPlaceLandMo) {
         var mo = new MutationObserver(function () {
+          if (suppressMo) return;
           keepEarthVisible();
           hideCoveringTiles();
         });
-        mo.observe(globe, { attributes: true, attributeFilter: ["class", "style"] });
+        mo.observe(globe, { attributes: true, attributeFilter: ["class"] });
         globe.__snPlaceLandMo = mo;
       }
     } catch (_) {}
@@ -172,9 +180,10 @@
       var map = document.getElementById("city-map");
       if (map && !map.__snPlaceLandMo) {
         var mo2 = new MutationObserver(function () {
+          if (suppressMo) return;
           hideCoveringTiles();
         });
-        mo2.observe(map, { attributes: true, attributeFilter: ["class", "style"] });
+        mo2.observe(map, { attributes: true, attributeFilter: ["class"] });
         map.__snPlaceLandMo = mo2;
       }
     } catch (_) {}
