@@ -1,4 +1,4 @@
-/* investors.astranov.eu · 20260823192000-click */
+/* investors.astranov.eu · 20260823194500-oversustain */
 (function () {
   'use strict';
   var OWNER = 'notisastranov@gmail.com';
@@ -189,13 +189,21 @@
       ['phase1', 'Phase 1'],
       ['restore', 'Village restore'],
       ['all', 'All lines'],
-      ['later', 'Not in Phase 1']
+      ['later', 'Not in Phase 1'],
+      ['thesis', 'Oversustain + Coin']
     ].forEach(function (it) {
       var b = document.createElement('button');
       b.type = 'button';
       b.textContent = it[1];
       if (tab === it[0]) b.className = 'on';
       b.onclick = function () {
+        if (it[0] === 'thesis') {
+          tab = 'all';
+          render();
+          var el = document.getElementById('thesis');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return;
+        }
         tab = it[0];
         render();
       };
@@ -241,6 +249,8 @@
       (m.lat ? ' · ' + m.lat.toFixed(5) + ', ' + m.lng.toFixed(5) : '');
     document.getElementById('sheet-blurb').textContent = m.blurb || (p && p.note) || '';
     document.getElementById('sheet-state').textContent = 'Current state · ' + (m.state || 'Investor preview · not built');
+    document.getElementById('sheet-over').textContent =
+      'Oversustainable · top tech to restore this place and produce goods/services — not a net-zero sticker. Paid in Astranov Coin (work-mint + designed metal/stone/SpaceNet/FX reserve).';
     document.getElementById('sheet-money').textContent = p
       ? 'CAPEX envelope ' + eur(p.capex) + ' net · ' + (p.unit || '') + (p.phase === 2 ? ' · held out of Phase 1' : '')
       : '';
