@@ -1,19 +1,20 @@
-/* Astranov mute · Build 20260823220000-combine-pizza
+/* Astranov mute · Build 20260823223000-hold-pay
  * Kill beeps + load ALL locked guest modules in ONE chain (no wipe):
- *   (a) chrome-guest-pizza-hunt LAST — OSM restaurant/fast_food/cafe around camera,
- *       SNCli.run wrap outermost so `pizza` never reaches research-stay / /api/ai
+ *   (a) chrome-guest-pizza-hunt LAST-but-one — OSM restaurant/fast_food/cafe around camera,
+ *       SNCli.run wrap so `pizza` never reaches research-stay / /api/ai
  *   (b) chrome-research-stay (#164) — FULL inline, Grok /api/ai allow_paid:true, camera stay
  *   (c) chrome-guest-laptop-hunt (#132 f58b8a7) — EXACT 20260823034000-laptop-flylie bytes
  *   (d) chrome-ai-listen (#169) — FULL inline, Talk → Listen · mic denied · #sn-rib-hf-hit
  *   (e) chrome-call-arc (#129) — CALL Sign-in wall, no u-room, no VIDEO CALL
  *   (f) chrome-cli-answer (#126) — twin CLI force-paint only (no chrome restyle)
+ *   (g) chrome-hold-pay LAST — guest HOLD ⭐ / pay → Google GIS wall (Privacy · Terms)
  * Currency ⭐. Guest never hits Google until pay/CALL. Origin = live camera.
  * loadChain injects LOCAL /js/spacenet files only. No runtime GitHub or CDN fetch.
- * Cache-bust 20260823220000-combine-pizza. Marks prevent double-inject wipe.
+ * Cache-bust 20260823223000-hold-pay. Marks prevent double-inject wipe.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823220000-combine-pizza';
+  var BUILD = '20260823223000-hold-pay';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -97,8 +98,10 @@
     loadScript('/js/spacenet/chrome-research-stay.js', 'data-sn-research-stay');
     loadScript('/js/spacenet/chrome-call-arc.js', 'data-sn-call-arc');
     loadScript('/js/spacenet/chrome-ai-listen.js', 'data-sn-ai-listen');
-    /* pizza LAST so SNCli.run wrap is outermost — intercepts `pizza` BEFORE research-stay / AI */
+    /* pizza LAST-but-one so SNCli.run wrap intercepts `pizza` BEFORE research-stay / AI */
     loadScript('/js/spacenet/chrome-guest-pizza-hunt.js', 'data-sn-guest-pizza');
+    /* HOLD ⭐ / pay LAST so guest pay wrap is outermost — Google GIS wall, never courier */
+    loadScript('/js/spacenet/chrome-hold-pay.js', 'data-sn-hold-pay');
   }
 
   function boot() {
