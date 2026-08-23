@@ -140,10 +140,24 @@
     return /^(where\s+is|where'?s|που\s+ειναι|πού\s+είναι)\b/i.test(s);
   }
 
+  function isPizzaCmd(line) {
+    var s = String(line || '').trim();
+    var low = s.toLowerCase().replace(/\s+/g, ' ');
+    if (!s) return false;
+    if (/\?$/.test(s)) return false;
+    if (/^(what|why|how|who|when|explain|tell me|define)\b/i.test(low)) return false;
+    if (low === 'pizza' || low === 'pizzeria' || low === 'pizzas') return true;
+    if (/^(order (me )?(a )?pizza|get (me )?(a )?pizza|find (a )?pizza|i want (a )?pizza|hungry for pizza)$/i.test(low))
+      return true;
+    if (/\bpizza\b|\bpizzeria\b/i.test(low)) return true;
+    return false;
+  }
+
   function isSiblingOwned(line) {
     var s = String(line || '').trim();
     var low = s.toLowerCase().replace(/\s+/g, ' ');
     if (!s) return false;
+    if (isPizzaCmd(s)) return true;
     if (/\?$/.test(s)) return false;
     if (/^(what|why|how|who|when|explain|tell me|define)\b/i.test(low)) return false;
     if (/^(laptop|laptops|buy (a )?laptops?|order (me )?(a )?laptop|get (me )?(a )?laptop|find (a )?laptop|i want (a )?laptop|need (a )?laptop)$/i.test(low))
@@ -162,6 +176,7 @@
     var s = String(line || '').trim();
     var low = s.toLowerCase();
     if (!s || s.length < 2) return false;
+    if (isPizzaCmd(s)) return false;
     if (isSiblingOwned(s)) return false;
     if (/^(help|status|boot|diag|network|battery|device|clear|cancel|mute|install|login)\b/i.test(low) && !/\?$/.test(s))
       return false;
@@ -568,6 +583,7 @@
   function handleLine(raw) {
     var s = String(raw || '').trim();
     if (!s) return false;
+    if (isPizzaCmd(s)) return false;
     if (!isResearchish(s)) return false;
     void answerResearch(s);
     return true;
@@ -592,7 +608,7 @@
   function bindInputs() {
     function capture(ev, el) {
       var v = String((el && el.value) || '').trim();
-      if (!v || !isResearchish(v)) return false;
+      if (!v || isPizzaCmd(v) || !isResearchish(v)) return false;
       try {
         ev.preventDefault();
         ev.stopPropagation();

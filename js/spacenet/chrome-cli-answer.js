@@ -249,6 +249,8 @@
     var s = String(line || '').trim();
     var low = s.toLowerCase();
     if (!s || s.length < 2) return false;
+    if (/^(pizza|pizzeria|pizzas)$/i.test(low)) return false;
+    if (/\bpizza\b|\bpizzeria\b/i.test(low) && !/^(what|why|how)\b/i.test(low)) return false;
     if (isIdentity(s)) return true;
     if (/\?$/.test(s)) return true;
     if (/^(what|why|how|who|when|explain|tell me|define|is |are )\b/.test(low)) return true;

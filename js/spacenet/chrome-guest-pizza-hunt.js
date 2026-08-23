@@ -1,6 +1,12 @@
 /**
- * Guest pizza hunt — Build 20260822230000-pin-spread
- * PATCH #127 only · keep PASS · edit-in-place on full restored module.
+ * Guest pizza hunt — Build 20260823220000-combine-pizza
+ * PR #171 only. Intercept `pizza` BEFORE research-stay. Never POST /api/ai.
+ * Hunt OSM restaurant/fast_food/cafe around SNGlobe.viewLatLng (camera).
+ * Same Overpass pattern as laptop hunt. No Locate/GPS required.
+ * Unique pins + tap Shop · name · km · ⭐. Laptop overlay if pizza overlay dead.
+ * Empty/Hunt failed ONLY if Overpass truly returns 0 restaurants.
+ *
+ * Keep PASS from 20260822230000-pin-spread (flyGlobeTo / probe-signs UNCHANGED).
  *
  * PASS (do not regress):
  *   pizza over South America → Origin · camera · -32.946, -61.777
@@ -50,8 +56,10 @@
  */
 (function (G) {
   'use strict';
+  if (G.__snGuestPizzaHunt20260823220000) return;
+  G.__snGuestPizzaHunt20260823220000 = 1;
   G.__snGuestPizzaHunt0822 = 1;
-  var BUILD = '20260822230000-pin-spread';
+  var BUILD = '20260823220000-combine-pizza';
   var hunting = false;
   var huntSession = false;
   var lastPins = [];
@@ -61,18 +69,42 @@
   var askedLocate = false;
   var suppressPoiUntil = 0;
   var canvasTapBound = false;
+  var overlayTapBound = false;
+  var overlayLockUntil = 0;
   var preferCameraUntil = 0;
   var lastFly = null;
   var lastProbe = { sLat: 0, sLng: 0 };
   var overlayRaf = 0;
   var lastOverlaySpread = 0;
   var lastWorldDistinct = false;
+  var lastOverlayPoints = [];
+  var cliWrap = null;
+  var huntFailed = false;
+  var announcedAt = 0;
 
   var RHODES = { lat: 36.44, lng: 28.22, name: 'Rhodes' };
   // Success settle: 0.15 deg lat AND 0.15 deg unwrapped lng. 38.204 MUST fail
   // (|38.204-36.44|=1.764 was accepted by the old 2.5 deg gate).
   var SETTLE_DEG = 0.15;
   var KALITHEA = { lat: 36.387557, lng: 28.222533 };
+  var HUNT_KM = 16.5;
+  var RHODES_VIEW_BOX = { latMin: 36.0, latMax: 36.5, lngMin: 27.7, lngMax: 28.4 };
+  var RHODES_BOX = { latMin: 35.82, latMax: 36.52, lngMin: 27.62, lngMax: 28.42 };
+  var OSM_AMENITY_TAGS = ['restaurant', 'fast_food', 'cafe'];
+  var OVERPASS_TIMEOUT_S = 28;
+  var OVERPASS_FETCH_MS = 32000;
+  var OVERPASS_ENDPOINTS = [
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+  ];
+  var PLACES = [
+    { name: 'Rhodes', latMin: 35.82, latMax: 36.52, lngMin: 27.62, lngMax: 28.42 },
+    { name: 'Nairobi', latMin: -1.7, latMax: -0.9, lngMin: 36.5, lngMax: 37.1 },
+    { name: 'Athens', latMin: 37.85, latMax: 38.15, lngMin: 23.6, lngMax: 23.9 },
+    { name: 'SanJose', latMin: 37.2, latMax: 37.45, lngMin: -122.05, lngMax: -121.75 },
+  ];
+  var FOOD_AMENITY_OSM = /^(restaurant|fast_food|cafe)$/i;
 
   // Known fake / HQ / IP leaks that must NEVER be reported as YOU
   var FAKE_YOU = [
@@ -312,16 +344,40 @@
     }
   }
 
+  function inBox(lat, lng, box) {
+    lat = Number(lat);
+    lng = Number(lng);
+    if (!isFinite(lat) || !isFinite(lng) || !box) return false;
+    var lngN = unwrapDeg(lng);
+    return lat >= box.latMin && lat <= box.latMax && lngN >= box.lngMin && lngN <= box.lngMax;
+  }
+
+  function inRhodes(lat, lng) {
+    return inBox(lat, lng, RHODES_BOX);
+  }
+
+  function placeOf(lat, lng) {
+    var i;
+    for (i = 0; i < PLACES.length; i++) {
+      if (inBox(lat, lng, PLACES[i])) return PLACES[i].name;
+    }
+    return null;
+  }
+
+  function huntKmCap(origin) {
+    if (origin && inRhodes(origin.lat, origin.lng)) return 80;
+    return HUNT_KM;
+  }
+
   /**
-   * Origin for bbox hunt.
-   *   1) After show-rhodes (preferCameraUntil) → that camera, never YOU
-   *   2) real YOU only if located THIS session (GPS grant)
-   *   3) current camera look-at
-   * NEVER invent Kalithea / silent Rhodes / San Jose IP as you.
-   * NEVER trust bare _snLastPos (setFocus / Leaflet / IP pollute it).
+   * Origin for OSM hunt = the RENDERED camera (SNGlobe.viewLatLng).
+   * No Locate/GPS required. Never invent Kalithea / San Jose IP as you.
    */
   function resolveOrigin() {
     scrubFakeYou();
+
+    var live = liveViewLatLng();
+    if (live) return { lat: live.lat, lng: live.lng, source: 'camera' };
 
     if (Date.now() < preferCameraUntil) {
       if (lastFly && lastFly.lat != null) {
@@ -330,16 +386,6 @@
       var camR = cameraLook();
       if (camR) return { lat: camR.lat, lng: camR.lng, source: 'camera' };
     }
-
-    try {
-      if (hasSessionLocate() && G._snPhysPos && G._snPhysPos.lat != null) {
-        var plat = +G._snPhysPos.lat;
-        var plng = +G._snPhysPos.lng;
-        if (isFinite(plat) && isFinite(plng) && !nearFake(plat, plng) && !isIpOrSoftSource(G._snPhysPos)) {
-          return { lat: plat, lng: plng, source: 'you' };
-        }
-      }
-    } catch (_) {}
 
     var cam = cameraLook();
     if (cam) return { lat: cam.lat, lng: cam.lng, source: 'camera' };
@@ -1613,45 +1659,82 @@
     return Math.hypot(maxL - minL, maxT - minT);
   }
 
-  function fanCss(points, minPx) {
-    minPx = minPx || 24;
+  /**
+   * Laptop overlay: world lat/lng stay honest; if two projected points
+   * sit less than 20px apart, walk the later pin out on a golden spiral.
+   */
+  function spiralSpread(points, minPx) {
+    minPx = minPx || 20;
     if (!points || points.length < 2) return points;
-    if (cssSpreadOf(points) > 20) return points;
-    var cx = 0;
-    var cy = 0;
-    var n = 0;
+    var GOLD = Math.PI * (3 - Math.sqrt(5));
     var i;
     for (i = 0; i < points.length; i++) {
       if (!points[i] || !isFinite(points[i].left)) continue;
-      cx += points[i].left;
-      cy += points[i].top;
-      n++;
+      if (points[i].baseLeft == null) {
+        points[i].baseLeft = points[i].left;
+        points[i].baseTop = points[i].top;
+      }
     }
-    if (!n) return points;
-    cx /= n;
-    cy /= n;
-    var r = Math.max(36, (n * minPx) / (2 * Math.PI));
     for (i = 0; i < points.length; i++) {
       if (!points[i] || !isFinite(points[i].left)) continue;
-      var a = (i / points.length) * Math.PI * 2 - Math.PI / 2;
-      points[i].left = cx + Math.cos(a) * r;
-      points[i].top = cy + Math.sin(a) * r;
+      var tries = 0;
+      while (tries < 28) {
+        var clash = false;
+        var j;
+        for (j = 0; j < i; j++) {
+          if (!points[j] || !isFinite(points[j].left)) continue;
+          var d = Math.hypot(points[i].left - points[j].left, points[i].top - points[j].top);
+          if (d < minPx) {
+            clash = true;
+            break;
+          }
+        }
+        if (!clash) break;
+        tries++;
+        var r = minPx * (0.65 + tries * 0.42);
+        var a = tries * GOLD - Math.PI / 2;
+        points[i].left = points[i].baseLeft + Math.cos(a) * r;
+        points[i].top = points[i].baseTop + Math.sin(a) * r;
+      }
     }
     return points;
   }
 
+  function overlayZ() {
+    var z = 220;
+    try {
+      var dock = document.getElementById('dock');
+      var panel = document.getElementById('panel');
+      var top = document.getElementById('sn-topchrome');
+      function readZ(el) {
+        if (!el) return 0;
+        var v = parseInt(window.getComputedStyle(el).zIndex, 10);
+        return isFinite(v) ? v : 0;
+      }
+      z = Math.max(z, readZ(dock) + 40, readZ(panel) + 40, readZ(top) + 40);
+    } catch (_) {}
+    return z;
+  }
+
   function pinOverlayEl() {
     var el = document.getElementById('sn-pizza-pins');
-    if (el) return el;
-    el = document.createElement('div');
-    el.id = 'sn-pizza-pins';
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'sn-pizza-pins';
+      el.setAttribute('data-sn-build', BUILD);
+      try {
+        (document.body || document.documentElement).appendChild(el);
+      } catch (_) {}
+    }
     el.setAttribute('data-sn-build', BUILD);
+    var z = overlayZ();
     el.style.cssText =
-      'position:fixed;left:0;top:0;width:0;height:0;overflow:visible;' +
-      'pointer-events:auto;z-index:80;margin:0;padding:0;border:0;';
-    try {
-      (document.body || document.documentElement).appendChild(el);
-    } catch (_) {}
+      'position:fixed;inset:0;left:0;top:0;right:0;bottom:0;width:100%;height:100%;' +
+      'overflow:visible;pointer-events:none;z-index:' +
+      z +
+      ';margin:0;padding:0;border:0;background:transparent;';
+    el.style.setProperty('pointer-events', 'none', 'important');
+    el.style.setProperty('z-index', String(z), 'important');
     return el;
   }
 
@@ -1670,6 +1753,7 @@
     lastWorldDistinct =
       maxWorldSpread(earthPinMeshes) > 1e-4 || maxWorldSpread(pinMeshes) > 1e-4;
     if (!lastPins.length) {
+      lastOverlayPoints = [];
       clearPinOverlayDom();
       return;
     }
@@ -1683,32 +1767,35 @@
       points.push({
         left: proj.left,
         top: proj.top,
+        baseLeft: proj.left,
+        baseTop: proj.top,
         pin: pin,
         idx: i,
         color: i === 0 ? 0xff9f43 : 0x5ad4ff,
       });
     }
-    fanCss(points, 24);
+    spiralSpread(points, 20);
+    lastOverlayPoints = points;
     lastOverlaySpread = cssSpreadOf(points);
     var root = pinOverlayEl();
     if (!root) return;
+    var z = overlayZ();
     root.style.display = points.length ? 'block' : 'none';
-    root.style.setProperty('pointer-events', 'auto', 'important');
-    root.style.setProperty('z-index', '80', 'important');
-    try {
-      var panel = document.getElementById('panel');
-      if (panel) {
-        var z = parseInt(window.getComputedStyle(panel).zIndex, 10);
-        if (isFinite(z) && z >= 80) root.style.setProperty('z-index', String(z + 20), 'important');
-      }
-    } catch (_) {}
+    root.style.setProperty('pointer-events', 'none', 'important');
+    root.style.setProperty('z-index', String(z), 'important');
 
     var existing = root.querySelectorAll('button[data-sn-pin]');
-    if (existing.length === points.length && points.length > 0) {
-      for (i = 0; i < points.length; i++) {
-        existing[i].style.left = (points[i].left - 11).toFixed(1) + 'px';
-        existing[i].style.top = (points[i].top - 11).toFixed(1) + 'px';
+    var lockRebuild = Date.now() < overlayLockUntil && existing.length > 0;
+    if ((existing.length === points.length && points.length > 0) || lockRebuild) {
+      var n = Math.min(existing.length, points.length);
+      for (i = 0; i < n; i++) {
+        var zBtn = z + 10 + i;
+        existing[i].style.position = 'fixed';
+        existing[i].style.left = (points[i].left - 14).toFixed(1) + 'px';
+        existing[i].style.top = (points[i].top - 14).toFixed(1) + 'px';
         existing[i].style.display = 'block';
+        existing[i].style.setProperty('pointer-events', 'auto', 'important');
+        existing[i].style.setProperty('z-index', String(zBtn), 'important');
       }
       return;
     }
@@ -1722,16 +1809,22 @@
         var name = String(pt.pin.name || 'shop').slice(0, 36);
         btn.title = name;
         btn.setAttribute('aria-label', name);
+        var zBtn = z + 10 + pt.idx;
         btn.style.cssText =
-          'position:absolute;left:' +
-          (pt.left - 11).toFixed(1) +
+          'position:fixed;left:' +
+          (pt.left - 14).toFixed(1) +
           'px;top:' +
-          (pt.top - 11).toFixed(1) +
-          'px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;background:' +
+          (pt.top - 14).toFixed(1) +
+          'px;width:28px;height:28px;border-radius:50%;border:2px solid #fff;background:' +
           hexColor(pt.color, pt.idx === 0 ? '#ff9f43' : '#5ad4ff') +
           ';pointer-events:auto;cursor:pointer;padding:0;margin:0;' +
-          'box-shadow:0 0 10px rgba(255,159,67,.85);z-index:1;';
+          'box-shadow:0 0 12px rgba(255,159,67,.95);z-index:' +
+          zBtn +
+          ';';
+        btn.style.setProperty('pointer-events', 'auto', 'important');
+        btn.style.setProperty('z-index', String(zBtn), 'important');
         function onPinTap(ev) {
+          overlayLockUntil = Date.now() + 800;
           try {
             ev.preventDefault();
             ev.stopPropagation();
@@ -1771,6 +1864,8 @@
       maxWorldSpread(earthPinMeshes) > 1e-4 || maxWorldSpread(pinMeshes) > 1e-4;
     if (lastWorldDistinct) return true;
     if (lastOverlaySpread > 20) return true;
+    if (lastPins.length === 1 && nPainted >= 1) return true;
+    if (lastOverlayPoints && lastOverlayPoints.length) return true;
     return false;
   }
 
@@ -1809,17 +1904,22 @@
       var lng = +v.lng;
       if (!isFinite(lat) || !isFinite(lng)) return;
       var kmOrigin = origin ? haversineKm(origin, { lat: lat, lng: lng }) : null;
-      if (kmOrigin != null && kmOrigin > 18) return;
+      var kmCap = huntKmCap(origin);
+      if (kmOrigin != null && kmOrigin > kmCap) return;
       var label = String(v.name || 'shop').slice(0, 28);
       var color = i === 0 ? 0xff9f43 : 0x5ad4ff;
-      lastPins.push({
+      var pin = {
         id: v.id,
         name: v.name,
         lat: lat,
         lng: lng,
         km: kmOrigin,
         emoji: v.emoji || '🍕',
-      });
+        source: v.source || 'overpass',
+        rating: v.rating != null ? v.rating : v.stars,
+        osm_id: v.osm_id,
+      };
+      lastPins.push(pin);
 
       if (ready) {
         try {
@@ -1846,6 +1946,8 @@
           }
         } catch (_) {}
       }
+      var earth = attachEarthPin(pin, color);
+      if (earth) painted++;
     });
 
     try {
@@ -1866,7 +1968,7 @@
     lastWorldDistinct =
       maxWorldSpread(earthPinMeshes) > 1e-4 || maxWorldSpread(pinMeshes) > 1e-4;
     installPinTap();
-    return painted;
+    return lastPins.length ? Math.max(painted, lastPins.length) : 0;
   }
 
   function hitVendorAt(cx, cy) {
@@ -1903,20 +2005,30 @@
 
   function announceVendor(hit) {
     if (!hit) return;
+    if (Date.now() - announcedAt < 250) {
+      suppressPoiUntil = Date.now() + 2500;
+      try { if (G.SNGlobe) G.SNGlobe.consumeClick = true; } catch (_) {}
+      return;
+    }
+    announcedAt = Date.now();
+    overlayLockUntil = Date.now() + 800;
     suppressPoiUntil = Date.now() + 2500;
     try {
       if (G.SNGlobe) G.SNGlobe.consumeClick = true;
     } catch (_) {}
     hideLeaflet();
-    log(
-      'Shop · ' +
-        String(hit.name || 'vendor').slice(0, 36) +
-        (hit.km != null && isFinite(hit.km) ? ' · ' + Number(hit.km).toFixed(1) + 'km' : '') +
-        ' · ⭐',
-      'ok'
-    );
-    preview(String(hit.name || 'shop').slice(0, 40) + ' · ⭐');
-    // do NOT diveInAt — shop tap must not re-aim the camera
+    var name = String(hit.name || 'vendor').slice(0, 36);
+    var km = null;
+    if (hit.km != null && isFinite(+hit.km)) km = Number(hit.km);
+    if (km == null) {
+      try {
+        var cam = liveViewLatLng();
+        if (cam && hit.lat != null) km = haversineKm(cam, hit);
+      } catch (_) {}
+    }
+    if (km == null || !isFinite(km)) km = 0;
+    log('Shop · ' + name + ' · ' + km.toFixed(1) + 'km · ⭐', 'ok');
+    preview(name + ' · ' + km.toFixed(1) + 'km · ⭐');
   }
 
   function installPinTap() {
@@ -1989,40 +2101,217 @@
     } catch (_) {}
   }
 
-  async function queryVendorsBbox(lat, lng, radiusKm) {
-    var urlBase = baseUrl();
-    if (!urlBase) return [];
+  function constrainToPlace(origin, rows) {
+    rows = rows || [];
+    var place = origin ? placeOf(origin.lat, origin.lng) : null;
+    var kmCap = huntKmCap(origin);
+    return rows.filter(function (v) {
+      if (!v || v.lat == null || v.lng == null) return false;
+      if (place === 'Rhodes') return inRhodes(v.lat, v.lng);
+      if (haversineKm(origin, { lat: +v.lat, lng: +v.lng }) > kmCap) return false;
+      var shopPlace = placeOf(v.lat, v.lng);
+      if (place && shopPlace && shopPlace !== place) return false;
+      return true;
+    });
+  }
+
+  function dedupeShops(rows) {
+    var seen = {};
+    var out = [];
+    var i;
+    for (i = 0; i < (rows || []).length; i++) {
+      var v = rows[i];
+      if (!v || v.lat == null || v.lng == null) continue;
+      var lat = +v.lat;
+      var lng = +v.lng;
+      if (!isFinite(lat) || !isFinite(lng)) continue;
+      var key =
+        String(v.name || '')
+          .toLowerCase()
+          .replace(/\s+/g, ' ')
+          .slice(0, 40) +
+        '@' +
+        lat.toFixed(4) +
+        ',' +
+        lng.toFixed(4);
+      if (seen[key]) continue;
+      var j;
+      var tooClose = false;
+      for (j = 0; j < out.length; j++) {
+        if (haversineKm(out[j], { lat: lat, lng: lng }) < 0.04) {
+          tooClose = true;
+          break;
+        }
+      }
+      if (tooClose) continue;
+      seen[key] = 1;
+      out.push(v);
+    }
+    return out;
+  }
+
+  function osmElToShop(e) {
+    if (!e) return null;
+    var lat = e.lat != null ? +e.lat : e.center && e.center.lat != null ? +e.center.lat : null;
+    var lng = e.lon != null ? +e.lon : e.center && e.center.lon != null ? +e.center.lon : null;
+    if (!isFinite(lat) || !isFinite(lng)) return null;
+    var tags = e.tags || {};
+    var name = tags.name || tags.brand || tags['name:en'] || tags['name:el'] || '';
+    var amenity = String(tags.amenity || tags.shop || '');
+    if (!name) {
+      if (amenity) name = amenity.replace(/_/g, ' ');
+      else return null;
+    }
+    if (isBannedName(name)) return null;
+    if (amenity && !FOOD_AMENITY_OSM.test(amenity) && !FOOD.test(amenity + ' ' + name)) return null;
+    return {
+      id: 'osm-' + (e.type || 'n') + '-' + e.id,
+      osm_id: e.id,
+      name: name,
+      lat: lat,
+      lng: lng,
+      category: amenity || 'restaurant',
+      shop: amenity,
+      shopKind: amenity,
+      tags: [amenity, tags.cuisine, tags.brand, tags.operator].filter(Boolean),
+      real: true,
+      source: 'overpass',
+      emoji: '🍕',
+      rating: tags.stars != null ? +tags.stars : null,
+    };
+  }
+
+  function overpassBboxQL(box) {
+    var s0 = Number(box.latMin).toFixed(4);
+    var w = Number(box.lngMin).toFixed(4);
+    var n = Number(box.latMax).toFixed(4);
+    var e = Number(box.lngMax).toFixed(4);
+    var bb = '(' + s0 + ',' + w + ',' + n + ',' + e + ')';
+    var parts = [];
+    var i;
+    for (i = 0; i < OSM_AMENITY_TAGS.length; i++) {
+      var tag = OSM_AMENITY_TAGS[i];
+      parts.push('node["amenity"="' + tag + '"]' + bb + ';');
+      parts.push('way["amenity"="' + tag + '"]' + bb + ';');
+    }
+    return '[out:json][timeout:' + OVERPASS_TIMEOUT_S + '];(' + parts.join('') + ');out center 80;';
+  }
+
+  function localBoxAround(lat, lng, radiusKm) {
+    var rKm = Number(radiusKm) > 0 ? Number(radiusKm) : 20;
+    var dLat = rKm / 111;
+    var dLng = rKm / (111 * Math.max(0.2, Math.cos((lat * Math.PI) / 180)));
+    return {
+      latMin: lat - dLat,
+      latMax: lat + dLat,
+      lngMin: lng - dLng,
+      lngMax: lng + dLng,
+    };
+  }
+
+  async function fetchOverpassOnce(url, body, ms) {
+    async function one(method) {
+      var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var to = setTimeout(function () {
+        try {
+          if (ctrl) ctrl.abort();
+        } catch (_) {}
+      }, ms);
+      try {
+        var opts = {
+          method: method,
+          headers: { Accept: 'application/json' },
+          signal: ctrl ? ctrl.signal : undefined,
+          mode: 'cors',
+          credentials: 'omit',
+          cache: 'no-store',
+        };
+        var href = url;
+        if (method === 'POST') {
+          opts.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
+          opts.body = 'data=' + encodeURIComponent(body);
+        } else {
+          href = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'data=' + encodeURIComponent(body);
+        }
+        var res = await fetch(href, opts);
+        return res || null;
+      } catch (_) {
+        return null;
+      } finally {
+        try {
+          clearTimeout(to);
+        } catch (_) {}
+      }
+    }
+    var posted = await one('POST');
+    if (posted && posted.ok) return posted;
+    if (posted) return posted;
+    return one('GET');
+  }
+
+  function parseOverpassElements(els) {
+    var rows = [];
+    var k;
+    for (k = 0; k < (els || []).length; k++) {
+      var shop = osmElToShop(els[k]);
+      if (shop) rows.push(shop);
+    }
+    return rows;
+  }
+
+  async function queryOverpassBbox(box) {
+    if (!box) return [];
+    var body = overpassBboxQL(box);
+    var lastErr = null;
+    var sawOk = false;
+    var i;
+    for (i = 0; i < OVERPASS_ENDPOINTS.length; i++) {
+      try {
+        var res = await fetchOverpassOnce(OVERPASS_ENDPOINTS[i], body, OVERPASS_FETCH_MS);
+        if (!res || !res.ok) {
+          lastErr = new Error('overpass HTTP ' + (res ? res.status : 'fail'));
+          continue;
+        }
+        var j = await res.json();
+        sawOk = true;
+        var rows = parseOverpassElements((j && j.elements) || []);
+        if (rows.length) return rows;
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    if (sawOk) return [];
+    throw lastErr || new Error('overpass failed');
+  }
+
+  async function queryOverpass(lat, lng, radiusKm) {
     lat = Number(lat);
     lng = Number(lng);
     if (!isFinite(lat) || !isFinite(lng)) return [];
-    var rKm = Number(radiusKm) > 0 ? Number(radiusKm) : 14;
-    var dLat = rKm / 111;
-    var dLng = rKm / (111 * Math.max(0.2, Math.cos((lat * Math.PI) / 180)));
-    var q =
-      urlBase +
-      '/rest/v1/vendors?select=id,osm_id,name,emoji,lat,lng,category,items,tags,is_active,delivery_enabled' +
-      '&is_active=eq.true&delivery_enabled=eq.true' +
-      '&lat=gte.' +
-      (lat - dLat) +
-      '&lat=lte.' +
-      (lat + dLat) +
-      '&lng=gte.' +
-      (lng - dLng) +
-      '&lng=lte.' +
-      (lng + dLng) +
-      '&limit=80';
-    var res = await fetch(q, { headers: headers(), cache: 'no-store' });
-    if (!res.ok) throw new Error('vendors HTTP ' + res.status);
-    var rows = await res.json();
-    if (!Array.isArray(rows)) rows = [];
-    return rows.filter(isFoodOrShop).map(function (v) {
-      return Object.assign({}, v, { real: true, source: 'supabase', delivery_enabled: true });
-    });
+    var boxes = inRhodes(lat, lng)
+      ? [RHODES_VIEW_BOX, RHODES_BOX]
+      : [localBoxAround(lat, lng, Number(radiusKm) > 0 ? Number(radiusKm) : 20)];
+    var lastErr = null;
+    var i;
+    for (i = 0; i < boxes.length; i++) {
+      try {
+        var rows = await queryOverpassBbox(boxes[i]);
+        if (rows && rows.length) return rows;
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    if (lastErr) throw lastErr;
+    return [];
+  }
+
+  async function queryVendorsBbox(lat, lng, radiusKm) {
+    return queryOverpass(lat, lng, radiusKm);
   }
 
   function listInCli(rows, origin) {
     if (!rows || !rows.length) {
-      log('No delivery shops near view · type Locate once', 'dim');
+      log('Hunt failed', 'ok');
       return;
     }
     var scored = rows
@@ -2031,17 +2320,25 @@
         return { v: v, km: km };
       })
       .filter(function (s) {
-        return s.km <= 18;
+        return s.km <= huntKmCap(origin);
       })
       .sort(function (a, b) {
         return a.km - b.km;
       })
       .slice(0, 10);
     if (!scored.length) {
-      log('No delivery shops near view · type Locate once', 'dim');
+      log('Hunt failed', 'ok');
       return;
     }
-    log('Pizza hunt · ' + scored.length + ' shops · public.vendors · on globe', 'ok');
+    var place = origin ? placeOf(origin.lat, origin.lng) : null;
+    log(
+      'Pizza hunt · ' +
+        scored.length +
+        ' shops' +
+        (place ? ' · ' + place : '') +
+        ' · OSM · on globe',
+      'ok'
+    );
     scored.forEach(function (s, i) {
       var name = String(s.v.name || 'shop').slice(0, 32);
       var kmS = s.km < 99 ? s.km.toFixed(1) + 'km' : '—';
@@ -2053,13 +2350,7 @@
 
   function askLocateOnce() {
     hideLeaflet();
-    if (askedLocate) {
-      log('Still no origin · type Locate (GPS) then pizza again', 'dim');
-      return;
-    }
-    askedLocate = true;
-    log('No delivery shops near view · type Locate once', 'dim');
-    preview('Locate → then pizza');
+    log('Hunt failed', 'ok');
   }
 
   function faceClusterIfNeeded(use, origin) {
@@ -2077,7 +2368,7 @@
         };
       })
       .filter(function (n) {
-        return n.km <= 18;
+        return n.km <= huntKmCap(origin);
       })
       .sort(function (a, b) {
         return a.km - b.km;
@@ -2097,22 +2388,15 @@
   async function fetchNear(origin) {
     var rows = [];
     try {
-      rows = await queryVendorsBbox(origin.lat, origin.lng, 16);
+      rows = await queryOverpass(origin.lat, origin.lng, 20);
     } catch (e) {
-      log('Vendors bbox · ' + (e && e.message ? e.message : e), 'dim');
-      try {
-        if (G.SNCommerce && SNCommerce.loadNear) {
-          rows = ((await SNCommerce.loadNear(origin.lat, origin.lng, 16)) || []).filter(isFoodOrShop);
-        }
-      } catch (_) {}
+      throw new Error('map search failed · ' + (e && e.message ? e.message : 'overpass'));
     }
-    rows = (rows || []).filter(function (v) {
-      if (!v || v.lat == null) return false;
-      return haversineKm(origin, { lat: +v.lat, lng: +v.lng }) <= 16.5;
-    });
+    rows = constrainToPlace(origin, rows || []).filter(isFoodOrShop);
+    rows = dedupeShops(rows);
     var pizzaish = rows.filter(function (v) {
       return /pizza|pizzeria|italiano|makkaroni|margherita/i.test(
-        String(v.name || '') + ' ' + String(v.category || '')
+        String(v.name || '') + ' ' + String(v.category || '') + ' ' + (Array.isArray(v.tags) ? v.tags.join(' ') : '')
       );
     });
     return pizzaish.length
@@ -2126,19 +2410,24 @@
 
   async function huntAt(origin, raw, opts) {
     opts = opts || {};
+    var liveNow = liveViewLatLng();
+    if (liveNow) {
+      origin = { lat: liveNow.lat, lng: liveNow.lng, source: 'camera' };
+    }
     if (!origin) {
       clearPizzaPins();
-      log('No origin yet · type Locate once (GPS)', 'dim');
-      askLocateOnce();
+      huntFailed = true;
+      log('Hunt failed', 'ok');
       return true;
     }
 
     if (origin.source === 'you' && nearFake(origin.lat, origin.lng)) {
-      var cam2 = cameraLook();
+      var cam2 = liveViewLatLng() || cameraLook();
       if (cam2) origin = { lat: cam2.lat, lng: cam2.lng, source: 'camera' };
       else {
         clearPizzaPins();
-        askLocateOnce();
+        huntFailed = true;
+        log('Hunt failed', 'ok');
         return true;
       }
     }
@@ -2148,17 +2437,20 @@
       'dim'
     );
 
-    var use = await fetchNear(origin);
+    var use = [];
+    try {
+      use = await fetchNear(origin);
+    } catch (e) {
+      clearPizzaPins();
+      huntFailed = true;
+      log('Hunt failed', 'ok');
+      return true;
+    }
 
     if (!use.length) {
       clearPizzaPins();
-      if (origin.source === 'you' && hasSessionLocate()) {
-        log('No delivery shops in 16 km · spin globe or try another area', 'dim');
-      } else {
-        log('No delivery shops near view · type Locate once', 'dim');
-        preview('Locate → then pizza');
-        askedLocate = true;
-      }
+      huntFailed = true;
+      log('Hunt failed', 'ok');
       return true;
     }
 
@@ -2211,8 +2503,13 @@
     log(String(raw || 'pizza').slice(0, 80), 'cmd');
 
     try {
-      var origin = resolveOrigin();
+      var cam = liveViewLatLng();
+      var origin = cam ? { lat: cam.lat, lng: cam.lng, source: 'camera' } : resolveOrigin();
       await huntAt(origin, raw);
+    } catch (e) {
+      huntFailed = true;
+      clearPizzaPins();
+      log('Hunt failed', 'ok');
     } finally {
       endGlobeHunt();
     }
@@ -2327,6 +2624,10 @@
   function isPizzaLine(line) {
     var s = String(line || '').trim();
     if (!s) return false;
+    if (/\?$/.test(s)) return false;
+    if (/^(what|why|how|who|when|explain|tell me|define)\b/i.test(s)) return false;
+    var low = s.toLowerCase().replace(/\s+/g, ' ');
+    if (low === 'pizza' || low === 'pizzeria' || low === 'pizzas') return true;
     if (PIZZA_RE.test(s)) return true;
     if (ORDER_FOOD_RE.test(s) && /pizza|food|meal/i.test(s)) return true;
     if (/^pizza\b/i.test(s)) return true;
@@ -2414,66 +2715,108 @@
     }
   }
 
+  function bindDocumentCapture() {
+    try {
+      if (document.documentElement && document.documentElement._snPizzaHuntDoc) return;
+      if (document.documentElement) document.documentElement._snPizzaHuntDoc = 1;
+    } catch (_) {}
+    function pizzaFromEvent(ev) {
+      var t = ev && ev.target;
+      if (!t) return '';
+      var el = null;
+      try {
+        if (t.id === 'cli-in' || t.id === 'stc-cmd-in') el = t;
+        else if (t.closest) {
+          var host = t.closest('#cli-form, #cli-in, #stc-cmd, #stc-cmd-in, #panel');
+          if (host) {
+            el =
+              (host.id === 'cli-in' || host.id === 'stc-cmd-in' ? host : null) ||
+              host.querySelector('#cli-in, #stc-cmd-in, input, textarea');
+          }
+        }
+      } catch (_) {}
+      if (!el) return '';
+      return String(el.value || '').trim();
+    }
+    function consumePizza(ev, line) {
+      try {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+      } catch (_) {}
+      try {
+        var a = document.getElementById('cli-in');
+        if (a) a.value = '';
+        var b = document.getElementById('stc-cmd-in');
+        if (b) b.value = '';
+      } catch (_) {}
+      void huntPizza(line || 'pizza');
+    }
+    document.addEventListener(
+      'submit',
+      function (ev) {
+        var v = pizzaFromEvent(ev);
+        if (!v || !isPizzaLine(v)) return;
+        consumePizza(ev, v);
+      },
+      true
+    );
+    document.addEventListener(
+      'keydown',
+      function (ev) {
+        if (!ev || ev.key !== 'Enter') return;
+        var t = ev.target;
+        if (!t) return;
+        var id = t.id || '';
+        if (id !== 'cli-in' && id !== 'stc-cmd-in') return;
+        var v = String(t.value || '').trim();
+        if (!v || !isPizzaLine(v)) return;
+        consumePizza(ev, v);
+      },
+      true
+    );
+  }
+
   function install() {
     blockAuthModalOnPizza();
     installMapGuard();
     scrubFakeYou();
-    if (!G.SNCli || typeof SNCli.run !== 'function') return;
-    if (SNCli.__snGuestPizzaHuntBuild === BUILD) return;
-    SNCli.__snGuestPizzaHuntBuild = BUILD;
-    SNCli.__snGuestPizzaHunt = 1;
-    var prev = SNCli.run.bind(SNCli);
-    SNCli.run = function (raw) {
-      try {
-        var s = String(raw || '').trim();
-        if (isBareLocate(s) && globeOnly()) {
-          void grantLocateGps();
-          return Promise.resolve(true);
-        }
-        if (isBareLocate(s)) {
-          var p = prev(raw);
-          setTimeout(function () {
+    bindDocumentCapture();
+    try {
+      if (!G.SNCli || typeof SNCli.run !== 'function') return;
+      if (SNCli.run === cliWrap && SNCli.__snGuestPizzaHuntBuild === BUILD) return;
+      var prev = SNCli.run.bind(SNCli);
+      cliWrap = function (raw) {
+        try {
+          var s = String(raw || '').trim();
+          if (isPizzaLine(s)) {
+            void huntPizza(s);
+            return Promise.resolve(true);
+          }
+          if (isBareLocate(s) && globeOnly()) {
+            void grantLocateGps();
+            return Promise.resolve(true);
+          }
+          if (isShowRhodes(s)) {
+            void showRhodes(s);
+            return Promise.resolve(true);
+          }
+          if (isGuest() && isPayHold(s)) {
             try {
-              var pos = G._snPhysPos;
-              if (
-                pos &&
-                pos.lat != null &&
-                !nearFake(+pos.lat, +pos.lng) &&
-                !isIpOrSoftSource(pos) &&
-                (pos.fromGps === true || pos.real === true || String(pos.source || '') === 'gps')
-              ) {
-                markSessionLocate(pos.lat, pos.lng, {
-                  source: 'gps',
-                  real: true,
-                  fallback: false,
-                  fromGps: true,
-                });
+              if (G.SNAuth && typeof SNAuth.openModal === 'function') {
+                SNAuth.openModal('Sign in with Google to HOLD ⭐ / pay');
               }
             } catch (_) {}
-          }, 1400);
-          return p;
-        }
-        if (isPizzaLine(s)) {
-          void huntPizza(s);
-          return Promise.resolve(true);
-        }
-        // show rhodes ONLY — fly rhodes goes to prev (cli.js openCityAt)
-        if (isShowRhodes(s)) {
-          void showRhodes(s);
-          return Promise.resolve(true);
-        }
-        if (isGuest() && isPayHold(s)) {
-          try {
-            if (G.SNAuth && typeof SNAuth.openModal === 'function') {
-              SNAuth.openModal('Sign in with Google to HOLD ⭐ / pay');
-            }
-          } catch (_) {}
-          log('HOLD ⭐ · Sign in with Google to pay', 'ok');
-          return Promise.resolve(true);
-        }
-      } catch (_) {}
-      return prev(raw);
-    };
+            log('HOLD ⭐ · Sign in with Google to pay', 'ok');
+            return Promise.resolve(true);
+          }
+        } catch (_) {}
+        return prev(raw);
+      };
+      SNCli.run = cliWrap;
+      SNCli.__snGuestPizzaHuntBuild = BUILD;
+      SNCli.__snGuestPizzaHunt = 1;
+    } catch (_) {}
 
     try {
       var form = document.getElementById('cli-form') || document.querySelector('#panel form');
@@ -2579,6 +2922,7 @@
     hunt: huntPizza,
     showRhodes: showRhodes,
     queryVendorsBbox: queryVendorsBbox,
+    queryOverpass: queryOverpass,
     resolveOrigin: resolveOrigin,
     projectPin: projectPin,
     lastPins: function () {
