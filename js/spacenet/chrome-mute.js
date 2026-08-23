@@ -8,6 +8,7 @@
  *   (f) chrome-cli-answer (#126) — twin CLI force-paint only (no chrome restyle)
  * Currency ⭐. Guest never hits Google until pay/CALL. Origin = live camera.
  * Scripts load together with cache-bust; marks prevent double-inject wipe.
+ * Redeploy tag: 20260823210000-combine-loaders-v2
  */
 (function (global) {
   'use strict';
