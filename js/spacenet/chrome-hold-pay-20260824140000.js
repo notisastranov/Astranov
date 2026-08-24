@@ -864,6 +864,11 @@
   function patchCliRun() {
     try {
       if (!G.SNCli || typeof SNCli.run !== 'function') return;
+      var desc = Object.getOwnPropertyDescriptor(G.SNCli, 'run');
+      if (desc && desc.get && desc.get.__snMuteCombine) {
+        SNCli.__snHoldPayRun = BUILD;
+        return;
+      }
       if (holdRunWrap && SNCli.run === holdRunWrap) return;
       var prev = SNCli.run.bind(SNCli);
       holdRunWrap = function (raw) {
@@ -1068,7 +1073,9 @@
       var idx;
       var active = '';
       try { active = String(G.__snActiveHuntPins || ''); } catch (_) {}
-      if (lapBtn && (!pizBtn || active === 'laptop')) {
+      if (active === 'laptop' && !lapBtn) return;
+      if (active === 'pizza' && !pizBtn) return;
+      if (active === 'laptop' || (lapBtn && !pizBtn)) {
         idx = +lapBtn.getAttribute('data-sn-laptop-pin');
         try {
           if (G.SNChromeGuestLaptopHunt && typeof SNChromeGuestLaptopHunt.lastPins === 'function') {

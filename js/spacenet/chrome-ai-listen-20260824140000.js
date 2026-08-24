@@ -770,6 +770,12 @@
   function patchCliRun() {
     try {
       if (!G.SNCli || typeof SNCli.run !== 'function') return;
+      var desc = Object.getOwnPropertyDescriptor(G.SNCli, 'run');
+      if (desc && desc.get && desc.get.__snMuteCombine) {
+        SNCli.__snAiListenRun = 1;
+        SNCli.__snAiListenBuild = BUILD;
+        return;
+      }
       if (SNCli.__snAiListenRun) return;
       SNCli.__snAiListenRun = 1;
       var prev = SNCli.run.bind(SNCli);

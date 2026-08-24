@@ -230,8 +230,17 @@
     function go() {
       tries++;
       try {
-        if (global.SNAiListen && typeof SNAiListen.toggle === 'function') {
-          SNAiListen.toggle();
+        var L = global.SNAiListen;
+        if (L && typeof L.toggle === 'function') {
+          L.toggle();
+          return;
+        }
+        if (L && typeof L.listen === 'function') {
+          L.listen();
+          return;
+        }
+        if (L && typeof L.start === 'function') {
+          L.start();
           return;
         }
       } catch (_) {}
@@ -314,6 +323,54 @@
     document.addEventListener('submit', onSubmit, true);
     document.addEventListener('keydown', onKey, true);
     try { window.addEventListener('keydown', onKey, true); } catch (_) {}
+    try { window.addEventListener('submit', onSubmit, true); } catch (_) {}
+    function bindForm(id, inputId) {
+      try {
+        var form = document.getElementById(id);
+        var input = document.getElementById(inputId);
+        if (!form || form._snMuteCombineHuntTap) return;
+        form._snMuteCombineHuntTap = 1;
+        form.addEventListener(
+          'submit',
+          function (ev) {
+            var v = String((input && input.value) || lineFromEvent(ev) || '').trim();
+            if (!v) return;
+            var kind = kindOfLine(v);
+            if (kind) return consumeHunt(ev, kind, v);
+          },
+          true
+        );
+        if (input && !input._snMuteCombineHuntTap) {
+          input._snMuteCombineHuntTap = 1;
+          input.addEventListener(
+            'keydown',
+            function (ev) {
+              if (!ev || ev.key !== 'Enter') return;
+              var v = String(input.value || '').trim();
+              if (!v) return;
+              var kind = kindOfLine(v);
+              if (kind) return consumeHunt(ev, kind, v);
+            },
+            true
+          );
+        }
+      } catch (_) {}
+    }
+    bindForm('cli-form', 'cli-in');
+    bindForm('stc-cmd', 'stc-cmd-in');
+    try {
+      if (!document.documentElement._snMuteCombineHuntTapRetry) {
+        document.documentElement._snMuteCombineHuntTapRetry = 1;
+        var n = 0;
+        var t = setInterval(function () {
+          n++;
+          bindForm('cli-form', 'cli-in');
+          bindForm('stc-cmd', 'stc-cmd-in');
+          wrapCliRun();
+          if (n > 40) clearInterval(t);
+        }, 250);
+      }
+    } catch (_) {}
   }
 
   function applyRunWrap(fn) {
@@ -587,6 +644,9 @@
   setTimeout(loadChain, 500);
   setTimeout(loadChain, 800);
   setTimeout(loadChain, 2500);
+  setInterval(function () {
+    wrapCliRun();
+  }, 400);
   setInterval(function () {
     patchAudio();
     patchFieldAlerts();

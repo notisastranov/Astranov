@@ -1376,7 +1376,15 @@
         el.style.display = 'none';
       }
     } catch (_) {}
+    try {
+      var stray = document.querySelectorAll('[data-sn-laptop-pin]');
+      for (var si = 0; si < stray.length; si++) {
+        var n = stray[si];
+        if (n && n.parentNode) n.parentNode.removeChild(n);
+      }
+    } catch (_) {}
     lastOverlaySpread = 0;
+    lastOverlayPoints = [];
   }
 
   function clearSiblingPizza() {
@@ -1396,6 +1404,22 @@
       G.__snPizzaConsumeClick = 0;
       if (G.SNGlobe) SNGlobe.consumeClickPizza = false;
     } catch (_) {}
+  }
+
+  function huntNsActive() {
+    try {
+      return String(G.__snActiveHuntPins || '');
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function laptopTapAllowed(t) {
+    if (huntNsActive() === 'pizza') return false;
+    try {
+      if (t && t.closest && t.closest('[data-sn-pizza-pin]')) return false;
+    } catch (_) {}
+    return true;
   }
 
   function clearLaptopPins() {
@@ -1977,6 +2001,7 @@
 
   function hitPinAtCss(cx, cy) {
     if (!lastPins.length) return null;
+    if (huntNsActive() === 'pizza') return null;
     var best = null;
     var bestD = PIN_HIT_PX;
     var i;
@@ -2009,6 +2034,7 @@
 
   function hitVendorAt(cx, cy) {
     if (!lastPins.length) return null;
+    if (huntNsActive() === 'pizza') return null;
     var cssHit = hitPinAtCss(cx, cy);
     if (cssHit) return cssHit;
     var hit = null;
@@ -2073,6 +2099,7 @@
     function onDocPtr(ev) {
       if (!lastPins.length) return;
       var t = ev.target;
+      if (!laptopTapAllowed(t)) return;
       try {
         if (t && t.closest && t.closest('#cli-in, #stc-cmd-in, input, textarea') && !(t.closest && t.closest('[data-sn-laptop-pin]'))) {
           return;
@@ -2109,6 +2136,7 @@
       if (G.SNGlobe && typeof SNGlobe.onClick === 'function') {
         clickUnsub = SNGlobe.onClick(function (cx, cy) {
           if (!lastPins.length) return false;
+          if (huntNsActive() === 'pizza') return false;
           var hit = hitVendorAt(cx, cy);
           if (hit) {
             markConsume();
@@ -3118,11 +3146,29 @@
   function patchCliRun() {
     try {
       if (!G.SNCli || typeof SNCli.run !== 'function') return;
+      var desc = Object.getOwnPropertyDescriptor(G.SNCli, 'run');
+      if (desc && desc.get && desc.get.__snMuteCombine) {
+        SNCli.__snGuestLaptopHuntBuild = BUILD;
+        return;
+      }
       if (SNCli.run === cliWrap && SNCli.__snGuestLaptopHuntBuild === BUILD) return;
       var prev = SNCli.run.bind(SNCli);
       cliWrap = function (raw) {
         try {
           var s = String(raw || '').trim();
+          var low = s.toLowerCase().replace(/\s+/g, ' ');
+          if (low === 'hold' || /^hold\s*⭐/.test(s) || /^(pay|hold\s*\/\s*pay|hold\s+pay)\b/.test(low)) {
+            if (!/^(hold\s+camera|camera\s+hold)\b/i.test(s) && G.SNHoldPay && typeof SNHoldPay.hold === 'function') {
+              SNHoldPay.hold(s);
+              return Promise.resolve(true);
+            }
+          }
+          if (/^(listen|talk|speak|mic|handsfree|ai listen|listen ai)$/i.test(low)) {
+            if (G.SNAiListen && typeof SNAiListen.toggle === 'function') {
+              SNAiListen.toggle();
+              return Promise.resolve(true);
+            }
+          }
           if (isBareLocate(s) && globeOnly()) {
             void grantLocateGps();
             return Promise.resolve(true);
