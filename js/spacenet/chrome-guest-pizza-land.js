@@ -2608,11 +2608,26 @@
         } catch (_) {}
       }
     }
-    var got = await one('GET');
-    if (got && got.ok) return got;
-    var posted = await one('POST');
-    if (posted && posted.ok) return posted;
-    return got || posted;
+    var gotP = one('GET');
+    var postP = one('POST');
+    return await new Promise(function (resolve) {
+      var left = 2;
+      var leftover = null;
+      function slot(p) {
+        Promise.resolve(p).then(function (res) {
+          if (res && res.ok) {
+            resolve(res);
+            left = -9;
+            return;
+          }
+          if (res) leftover = leftover || res;
+          left--;
+          if (left === 0) resolve(leftover);
+        });
+      }
+      slot(gotP);
+      slot(postP);
+    });
   }
 
   function parseOverpassElements(els) {
@@ -2631,18 +2646,9 @@
     return await new Promise(function (resolve, reject) {
       var pending = OVERPASS_ENDPOINTS.length;
       var done = false;
-      var emptyTimer = 0;
       if (!pending) {
         reject(new Error('overpass failed'));
         return;
-      }
-      function finishEmpty() {
-        if (done) return;
-        done = true;
-        try {
-          if (emptyTimer) clearTimeout(emptyTimer);
-        } catch (_) {}
-        resolve([]);
       }
       OVERPASS_ENDPOINTS.forEach(function (url) {
         fetchOverpassOnce(url, body, OVERPASS_FETCH_MS)
@@ -2658,13 +2664,7 @@
               var rows = parseOverpassElements((j && j.elements) || []);
               if (rows.length) {
                 done = true;
-                try {
-                  if (emptyTimer) clearTimeout(emptyTimer);
-                } catch (_) {}
                 resolve(rows);
-              } else if (!emptyTimer) {
-                // Wait for a slow 200-with-rows (mail.ru) before honest empty.
-                emptyTimer = setTimeout(finishEmpty, 6500);
               }
             });
           })
@@ -2675,9 +2675,6 @@
             if (done) return;
             pending--;
             if (pending > 0) return;
-            try {
-              if (emptyTimer) clearTimeout(emptyTimer);
-            } catch (_) {}
             if (sawOk) resolve([]);
             else reject(lastErr || new Error('overpass failed'));
           });
@@ -3050,7 +3047,7 @@
     var origin = { lat: lat, lng: lng, source: 'land', land: true };
     var rows = [];
     try {
-      rows = await raceMs(queryOverpassQL(overpassAroundQL(lat, lng, 20000, true)), 11000);
+      rows = await raceMs(queryOverpassQL(overpassAroundQL(lat, lng, 20000, true)), 13000);
     } catch (_) {
       rows = [];
     }
