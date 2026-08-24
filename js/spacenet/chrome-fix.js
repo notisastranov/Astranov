@@ -1,10 +1,10 @@
-/* Astranov chrome-fix loader · 20260823203000-keeppulse
+/* Astranov chrome-fix loader · 20260824174000-chrome-alive
  * Loads chrome-fix-body. Placeholders: owner law. Never restore coach dump.
  * Loads chrome-earth-levels: national/city/ocean stay on the 3D globe.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260823203000-keeppulse';
+  var BUILD = '20260824174000-chrome-alive';
   var TOP_PH = 'Command the HUD · show, hide, or reshape';
   var BOT_PH = 'Command the HUD · show, hide, or reshape';
   function enforceHud() {
@@ -167,17 +167,17 @@
   setTimeout(loadMindFacts, 750);
   setTimeout(earthHome, 1800);
   setTimeout(earthHome, 4000);
-  setInterval(enforceHud, 3500);
+  setInterval(enforceHud, 2000);
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
       enforceHud();
       earthHome();
       loadEarth();
-    loadProjects();
-    loadFinance();
-    loadPresence();
-    loadExchange();
-    loadMindFacts();
+      loadProjects();
+      loadFinance();
+      loadPresence();
+      loadExchange();
+      loadMindFacts();
     });
   } else {
     enforceHud();
