@@ -1,10 +1,17 @@
-/* Astranov mute · Build 20260811223000
- * Kill alert beeps, oscillator spam, auto speechSynthesis noise.
- * SpeechRecognition on Android often triggers keyboard/system beeps — we soft-gate restarts.
+/* Astranov mute · Build 20260824122000-ai-listen
+ * Kill beeps + load chrome-ai-listen-20260824122000.js (guest SpeechRecognition → CLI → paid mind).
+ * Primary load is the <script> tag in index.html. loadChain is a backup if
+ * that tag is missing (cached HTML). Skip if the listen script is already
+ * in the document so inject-order cannot drop the hit layer.
+ * Does NOT load chrome-guest-pizza-hunt, chrome-call-arc,
+ * chrome-nairobi-ladder, chrome-kalithea-village,
+ * chrome-guest-laptop-hunt, or chrome-research-stay.
+ * Does NOT overwrite SNGlobe.flyGlobeTo when a sibling already defined it.
+ * Does NOT restyle twin CLI chrome. Leaves github.io untouched.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260811223000-mute';
+  var BUILD = '20260824122000-ai-listen';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -67,6 +74,32 @@
     } catch (_) {}
   }
 
+  function hasListenScript() {
+    try {
+      if (document.querySelector('script[data-sn-ai-listen]')) return true;
+      if (document.querySelector('script[src*="chrome-ai-listen-20260824122000.js"]')) return true;
+      if (document.querySelector('script[src*="chrome-ai-listen"]')) return true;
+    } catch (_) {}
+    return false;
+  }
+
+  function loadScript(src, mark) {
+    try {
+      if (hasListenScript()) return;
+      if (document.querySelector('script[' + mark + ']')) return;
+      var s = document.createElement('script');
+      s.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(BUILD);
+      s.async = false;
+      s.setAttribute(mark, '1');
+      (document.head || document.documentElement).appendChild(s);
+    } catch (_) {}
+  }
+
+  function loadChain() {
+    if (hasListenScript()) return;
+    loadScript('/js/spacenet/chrome-ai-listen-20260824122000.js', 'data-sn-ai-listen');
+  }
+
   function boot() {
     patchAudio();
     silenceSpeech();
@@ -75,7 +108,16 @@
   }
 
   boot();
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      boot();
+      loadChain();
+    });
+  } else {
+    loadChain();
+  }
+  setTimeout(loadChain, 800);
+  setTimeout(loadChain, 2500);
   setInterval(function () {
     patchAudio();
     patchFieldAlerts();
@@ -87,5 +129,5 @@
       silenceSpeech();
   }, 4000);
 
-  global.SNChromeMute = { build: BUILD, silence: silenceSpeech };
+  global.SNChromeMute = { build: BUILD, silence: silenceSpeech, loadChain: loadChain };
 })(typeof window !== 'undefined' ? window : globalThis);
