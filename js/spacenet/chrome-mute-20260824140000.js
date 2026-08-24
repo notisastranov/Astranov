@@ -1,18 +1,11 @@
-/* Astranov mute · Build 20260824144000-combine-stay
+/* Astranov mute · Build 20260824140000-combine-tap
  * PATCH PR #182 only. Same branch, same Vercel alias. Does NOT merge, land,
  * restyle chrome, or edit locked PRs #175–#181 in place.
  *
- * KEEP: pizza leftover tap gone; Nairobi pizza chip Shop · Pizza Inn Ridgeways;
- * laptop electronics tap Shop · GNet (not YWCA); CLI hold → #sn-hold-signin;
- * CLI listen → Listen · mic denied.
+ * FAIL 1: laptop overlay taps returned leftover pizza lastPins (Cedars / YWCA).
+ * FAIL 2: CLI hold/listen printed "I'm online" (research-stay / twin-cli Grok).
  *
- * FAIL: laptop tap over Nairobi live camera teleported to Rhodes
- * (Vodafone / Κωτσόβολος / Syncom / GNet). Origin was starved/hardcoded.
- *
- * FIX: laptop hunt origin = LIVE camera (SNGlobe.viewLatLng). Overpass
- * electronics around that camera first; shops found → pin + stay put
- * (no flyGlobeTo Rhodes). Rhodes land fallback ONLY on zero shops.
- * Intercept hold / listen / pizza / laptop BEFORE research-stay and
+ * FIX: intercept hold / listen / pizza / laptop BEFORE research-stay and
  * twin-cli. Pizza + laptop each own lastPins / overlay / consumeClick.
  *
  * ONE mute loadChain vendors ALL of:
@@ -20,20 +13,19 @@
  *   (nairobi) chrome-nairobi-ladder-20260824133000.js  #176 / #130  after live SNGlobe
  *   (research) chrome-research-stay-20260824133000.js  #175 ace568e
  *   (pizza)  chrome-guest-pizza-land-20260824140000.js  own ns, clears laptop
- *   (laptop) chrome-guest-laptop-hunt-20260824144000.js live camera, stay put
+ *   (laptop) chrome-guest-laptop-hunt-20260824140000.js own ns, clears pizza
  *   (listen) chrome-ai-listen-20260824140000.js        CLI listen · mic denied
  *   (hold)   chrome-hold-pay-20260824140000.js         CLI hold → #sn-hold-signin
  *   (twin)   chrome-cli-answer-20260824133000.js       #181 e56cc85
  *
  * Load order: adapter/earth FIRST, wait live SNGlobe, THEN nairobi,
  * research-stay, pizza, laptop, listen, hold, twin-cli LAST.
- * Cache-bust 20260824144000-combine-stay.
+ * Cache-bust 20260824140000-combine-tap.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260824144000-combine-stay';
-  if (global.__snMuteCombineStay20260824144000) return;
-  global.__snMuteCombineStay20260824144000 = 1;
+  var BUILD = '20260824140000-combine-tap';
+  if (global.__snMuteCombineTap20260824140000) return;
   global.__snMuteCombineTap20260824140000 = 1;
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
@@ -608,7 +600,7 @@
     /* pizza then laptop AFTER research-stay so hunt wraps outer; mute capture
        already intercepts pizza/laptop before research-stay / /api/ai */
     loadScript('/js/spacenet/chrome-guest-pizza-land-20260824140000.js', 'data-sn-guest-pizza-land');
-    loadScript('/js/spacenet/chrome-guest-laptop-hunt-20260824144000.js', 'data-sn-guest-laptop-hunt');
+    loadScript('/js/spacenet/chrome-guest-laptop-hunt-20260824140000.js', 'data-sn-guest-laptop-hunt');
     loadScript('/js/spacenet/chrome-ai-listen-20260824140000.js', 'data-sn-ai-listen');
     loadScript('/js/spacenet/chrome-hold-pay-20260824140000.js', 'data-sn-hold-pay');
     /* twin-cli LAST — force-paint HUD + bottom placeholders, isSiblingOwned passes hunts */
