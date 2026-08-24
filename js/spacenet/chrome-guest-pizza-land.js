@@ -3042,18 +3042,39 @@
     } catch (_) {}
   }
 
-  /** One around query. Wait long enough for flaky mail.ru 200. */
+  function overpassLandQL(lat, lng) {
+    var around =
+      '(around:20000,' + Number(lat).toFixed(5) + ',' + Number(lng).toFixed(5) + ')';
+    return (
+      '[out:json][timeout:18];(' +
+      'node["amenity"="restaurant"]["cuisine"~"pizza",i]' +
+      around +
+      ';' +
+      'node["amenity"="fast_food"]["cuisine"~"pizza",i]' +
+      around +
+      ';' +
+      'node["amenity"="restaurant"]["name"~"[Pp]izza"]' +
+      around +
+      ';' +
+      'node["amenity"="fast_food"]["name"~"[Pp]izza"]' +
+      around +
+      ';' +
+      ');out center 80;'
+    );
+  }
+
+  /** Fast node-only pizza around. Guest mail.ru returns Archipelagos in <2s on this QL. */
   async function fetchLandShops(lat, lng) {
     var origin = { lat: lat, lng: lng, source: 'land', land: true };
     var rows = [];
     try {
-      rows = await raceMs(queryOverpassQL(overpassAroundQL(lat, lng, 20000, true)), 13000);
+      rows = await queryOverpassQL(overpassLandQL(lat, lng));
     } catch (_) {
       rows = [];
     }
     if (!rows || !rows.length) {
       try {
-        rows = await raceMs(queryOverpassQL(overpassAroundQL(lat, lng, 20000, false)), 8000);
+        rows = await raceMs(queryOverpassQL(overpassAroundQL(lat, lng, 20000, true)), 16000);
       } catch (_) {
         rows = [];
       }
