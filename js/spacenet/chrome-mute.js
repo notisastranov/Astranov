@@ -1,9 +1,10 @@
-/* Astranov mute · Build 20260824123000-hold-card
- * Kill beeps + load chrome-hold-pay-20260824123000.js (guest HOLD ⭐ / pay
- * → CALL-style Google Sign-in card: Sign in with Google · Privacy · Terms · Cancel).
+/* Astranov mute · Build 20260824125000-hold-gsi
+ * Kill beeps + load chrome-hold-pay-20260824125000.js (guest HOLD ⭐ / pay
+ * → CALL-style native Google Sign-in card: Sign in with Google · Privacy · Terms · Cancel).
  * Primary load is the <script> tag in index.html. loadChain is a backup if
- * that tag is missing (cached HTML). Skip if the hold script is already
- * in the document. No GSI iframe. No DRIVER EN ROUTE. Wallet stays ⭐ 0.00.
+ * that tag is missing (cached HTML). Skip only if the NEW hold-gsi script is
+ * already in the document. Native OAuth button — never a GIS iframe.
+ * No DRIVER EN ROUTE. Wallet stays ⭐ 0.00.
  * Does NOT load chrome-guest-pizza-hunt, chrome-call-arc,
  * chrome-nairobi-ladder, chrome-kalithea-village,
  * chrome-guest-laptop-hunt, chrome-research-stay, or chrome-ai-listen.
@@ -12,7 +13,8 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260824123000-hold-card';
+  var BUILD = '20260824125000-hold-gsi';
+  var HOLD_SRC = '/js/spacenet/chrome-hold-pay-20260824125000.js';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -37,7 +39,7 @@
                 try {
                   osc.frequency.value = 0;
                 } catch (_) {}
-                return; // swallow beep
+                return;
               }
               return start.apply(osc, arguments);
             };
@@ -57,14 +59,10 @@
     } catch (_) {}
   }
 
-  /** Soft-gate aggressive handsfree restarts that beep on Android */
   function softGateHandsfree() {
     try {
       if (!global.SNCli || SNCli.__snBeepGate) return;
       SNCli.__snBeepGate = true;
-      // Prefer text when silver is active unless user forced voice
-      var desc = Object.getOwnPropertyDescriptor(SNCli, 'toggleHandsfree');
-      // wrap if function exists
       if (typeof SNCli.toggleHandsfree === 'function') {
         var prev = SNCli.toggleHandsfree.bind(SNCli);
         SNCli.toggleHandsfree = function () {
@@ -77,9 +75,8 @@
 
   function hasHoldScript() {
     try {
-      if (document.querySelector('script[data-sn-hold-pay]')) return true;
-      if (document.querySelector('script[src*="chrome-hold-pay-20260824123000.js"]')) return true;
-      if (document.querySelector('script[src*="chrome-hold-pay"]')) return true;
+      if (document.querySelector('script[src*="chrome-hold-pay-20260824125000.js"]')) return true;
+      if (global.SNHoldPay && SNHoldPay.build === BUILD) return true;
     } catch (_) {}
     return false;
   }
@@ -87,18 +84,19 @@
   function loadScript(src, mark) {
     try {
       if (hasHoldScript()) return;
-      if (document.querySelector('script[' + mark + ']')) return;
+      if (document.querySelector('script[' + mark + '="gsi"]')) return;
       var s = document.createElement('script');
       s.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(BUILD);
       s.async = false;
-      s.setAttribute(mark, '1');
+      s.setAttribute(mark, 'gsi');
+      s.setAttribute('data-sn-hold-gsi', '1');
       (document.head || document.documentElement).appendChild(s);
     } catch (_) {}
   }
 
   function loadChain() {
     if (hasHoldScript()) return;
-    loadScript('/js/spacenet/chrome-hold-pay-20260824123000.js', 'data-sn-hold-pay');
+    loadScript(HOLD_SRC, 'data-sn-hold-pay');
   }
 
   function boot() {
