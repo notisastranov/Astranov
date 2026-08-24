@@ -1,7 +1,5 @@
-/* Astranov chrome-shell · Build 20260824181000
- * NUKE dual-CLI. Phone shell from scratch.
- * Top = status island (balance). Bottom = one dock (tasks + one CLI).
- * Globe is the product. Must work on Opera/Chrome Android today.
+/* Astranov chrome-shell · Build 20260824181000 + access gate
+ * Phone shell: status island + single dock. Access law: real tasks need funded account.
  */
 (function (G) {
   'use strict';
@@ -28,11 +26,8 @@
     var s = document.createElement('style');
     s.id = 'sn-shell-css';
     s.textContent = [
-      '/* —— shell: hide legacy dual chrome on phone —— */',
       'body.sn-shell #sn-topchrome,body.sn-shell #dock{display:none!important}',
       'body.sn-shell #sn-os-island,body.sn-shell #sn-os-home{display:none!important}',
-      '',
-      '/* status island */',
       '#sn-shell-status{position:fixed;top:max(10px,env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);',
       'z-index:120;display:flex;align-items:center;gap:12px;height:36px;padding:0 14px;border-radius:999px;',
       'background:rgba(2,8,22,0.82);border:1px solid rgba(90,180,255,0.45);',
@@ -42,8 +37,6 @@
       '#sn-shell-bal{font:700 13px/1 JetBrains Mono,ui-monospace,monospace;color:#ffe566;',
       'text-shadow:0 0 12px rgba(255,200,40,0.5);white-space:nowrap;padding:3px 8px;border-radius:8px;',
       'background:rgba(0,0,0,0.35);border:1px solid rgba(255,200,40,0.35)}',
-      '',
-      '/* bottom dock */',
       '#sn-shell-dock{position:fixed;left:0;right:0;bottom:0;z-index:120;display:flex;justify-content:center;',
       'padding:0 10px max(10px,env(safe-area-inset-bottom,0px));pointer-events:none;',
       'bottom:var(--sn-kb,0px);transition:bottom 0.12s ease-out}',
@@ -64,11 +57,7 @@
       'min-height:32px}',
       '#sn-shell-go{width:36px;height:36px;border-radius:50%;border:0;background:rgba(30,120,255,0.35);',
       'color:#fff;font-size:16px;touch-action:manipulation}',
-      '',
-      '/* keyboard: dim status */',
       'body.sn-os-kb #sn-shell-status{opacity:0;pointer-events:none}',
-      '',
-      '/* desktop: keep legacy chrome if not phone */',
       'body:not(.sn-shell) #sn-shell-status,body:not(.sn-shell) #sn-shell-dock{display:none!important}',
     ].join('\n');
     (document.head || document.documentElement).appendChild(s);
@@ -85,14 +74,10 @@
         var raw = localStorage.getItem('sn:avc-ledger-v1');
         if (raw) {
           var j = JSON.parse(raw);
-          if (j && j.accounts && j.accounts.notis != null) n = j.accounts.notis;
-          else if (j && j.notis != null) n = j.notis;
+          if (j && j.accounts && j.accounts.notis != null) {
+            n = typeof j.accounts.notis === 'object' ? j.accounts.notis.balance : j.accounts.notis;
+          }
         }
-      } catch (_) {}
-    }
-    if (n == null) {
-      try {
-        if (G.SNCurrency && typeof SNCurrency.balance === 'function') n = SNCurrency.balance();
       } catch (_) {}
     }
     if (n == null) n = 0;
@@ -121,6 +106,10 @@
   }
 
   function task(name) {
+    /* ACCESS LAW: real tasks need register + deposit */
+    try {
+      if (G.SNAccess && SNAccess.gateTask && !SNAccess.gateTask(name)) return;
+    } catch (_) {}
     var map = {
       delivery: 'order me a pizza',
       call: 'call',
@@ -189,7 +178,6 @@
     }
 
     paintBal();
-    /* no autofocus */
     try {
       var inp = document.getElementById('sn-shell-in');
       if (inp && document.activeElement === inp) inp.blur();
@@ -208,5 +196,5 @@
   else boot();
   setTimeout(boot, 0);
 
-  G.SNShell = { build: BUILD, paintBal: paintBal, run: run };
+  G.SNShell = { build: BUILD, paintBal: paintBal, run: run, task: task };
 })(typeof window !== 'undefined' ? window : globalThis);

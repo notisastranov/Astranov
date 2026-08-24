@@ -4,8 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet</title>
-<meta name="astranov-build" content="20260824181000-shell" />
-<meta name="astranov-continuity" content="20260824181000-shell" />
+<meta name="astranov-build" content="20260824182000-access" />
+<meta name="astranov-continuity" content="20260824182000-access" />
 <meta name="theme-color" content="#000105" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <style>
@@ -13,7 +13,6 @@ html,body{margin:0;background:#000105;color:#eaf4ff;height:100%;overflow:hidden;
 #globe{position:fixed;inset:0;z-index:1}
 #boot{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;background:#000105}
 #boot.hide{display:none!important}
-/* legacy chrome kept in DOM for desktop / modules; phone shell hides them */
 #sn-topchrome,#dock{position:fixed;left:0;right:0;display:flex;justify-content:center;pointer-events:none;z-index:90}
 #sn-topchrome{top:0;padding:8px 12px 0}
 #dock{bottom:0;padding:0 10px 10px}
@@ -30,19 +29,19 @@ html,body{margin:0;background:#000105;color:#eaf4ff;height:100%;overflow:hidden;
 <div id="boot"><span style="font:800 20px Space Grotesk,system-ui,sans-serif;letter-spacing:0.36em;color:#14c3f3">ASTRANOV</span></div>
 <div id="globe"></div>
 <div id="city-map"></div>
-<!-- legacy chrome (desktop / module hooks) -->
 <div id="sn-topchrome"><div id="sn-topchrome-panel" class="collapsed"><div id="stc-body"><div id="stc-compact" style="display:grid;grid-template-columns:auto 1fr auto;padding:4px 10px;align-items:center"><div id="field-radar" style="width:40px;height:40px;border-radius:50%;background:#020617"></div><button id="btn-home" type="button" style="font:800 14px Space Grotesk,system-ui,sans-serif;letter-spacing:0.24em;color:#7ec8ff;background:0;border:0">ASTRANOV</button><div id="field-balance-hud"><span id="fbh-s">⭐ 0.00</span></div></div></div><form id="stc-cmd" action="javascript:void(0)"><label class="sn-cli-field"><span>★</span><input id="stc-cmd-in" type="text" placeholder="Command the HUD" /></label></form><div id="sn-topchrome-drag"></div></div></div>
 <div id="dock"><div id="panel" class="collapsed"><div id="cli-drag"></div><div id="sn-task-ribbon"><button class="sn-rib-btn" id="sn-rib-locate" type="button">📍</button><button class="sn-rib-btn" id="sn-rib-poly" type="button">🔶</button><button class="sn-rib-btn" id="sn-rib-user" type="button">👤</button><button class="sn-rib-btn" id="sn-rib-call" type="button">📞</button><button class="sn-rib-btn" id="sn-rib-add" type="button">➕</button><button class="sn-rib-btn" id="sn-rib-layers" type="button">🗺️</button><button class="sn-rib-btn" id="sn-rib-hf" type="button">🎤</button><button class="sn-rib-btn" id="sn-rib-send" type="button">📤</button></div><div id="cli-log"></div><form id="cli-form" action="javascript:void(0)"><label class="sn-cli-field"><span>★</span><input id="cli-in" type="text" placeholder="Command the HUD" /></label></form></div></div>
-<script src="/js/spacenet/mobile-life.js?v=20260824181000-shell"></script>
-<script src="/js/spacenet/phone-os.js?v=20260824181000-shell"></script>
-<script src="/js/spacenet/chrome-shell-20260824181000.js?v=20260824181000-shell"></script>
-<script src="/js/spacenet/chrome-place-earth-20260824133000.js?v=20260824181000-shell"></script>
-<script src="/js/spacenet/chrome-avc-ledger-20260824150000.js?v=20260824181000-shell"></script>
-<script src="/js/spacenet/chrome-mute.js?v=20260824181000-shell"></script>
-<script src="/js/spacenet/chrome-fix.js?v=20260824181000-shell"></script>
-<script src="/js/spacenet/chrome-rib-face.js?v=20260824181000-shell"></script>
-<script src="/js/spacenet/chrome-radar.js?v=20260824181000-shell"></script>
-<script src="/js/spacenet/os-bootloader.js?v=20260824181000-shell"></script>
-<script src="/js/spacenet/guardian.js?v=20260824181000-shell"></script>
+<script src="/js/spacenet/mobile-life.js?v=20260824182000-access"></script>
+<script src="/js/spacenet/phone-os.js?v=20260824182000-access"></script>
+<script src="/js/spacenet/chrome-access-gate-20260824182000.js?v=20260824182000-access"></script>
+<script src="/js/spacenet/chrome-shell-20260824181000.js?v=20260824182000-access"></script>
+<script src="/js/spacenet/chrome-place-earth-20260824133000.js?v=20260824182000-access"></script>
+<script src="/js/spacenet/chrome-avc-ledger-20260824150000.js?v=20260824182000-access"></script>
+<script src="/js/spacenet/chrome-mute.js?v=20260824182000-access"></script>
+<script src="/js/spacenet/chrome-fix.js?v=20260824182000-access"></script>
+<script src="/js/spacenet/chrome-rib-face.js?v=20260824182000-access"></script>
+<script src="/js/spacenet/chrome-radar.js?v=20260824182000-access"></script>
+<script src="/js/spacenet/os-bootloader.js?v=20260824182000-access"></script>
+<script src="/js/spacenet/guardian.js?v=20260824182000-access"></script>
 </body>
 </html>
