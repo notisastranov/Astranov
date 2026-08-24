@@ -1,5 +1,5 @@
 /* Astranov service worker — network-only OS kernel. Never serve a stale build. */
-const CACHE = 'astranov-v60-pizza-osm2';
+const CACHE = 'astranov-v61-pizza-land';
 
 self.addEventListener('install', function (e) {
   self.skipWaiting();

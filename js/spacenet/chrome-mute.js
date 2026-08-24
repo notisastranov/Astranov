@@ -1,5 +1,5 @@
-/* Astranov mute · Build 20260824093000-pizza-osm2
- * Kill beeps + load chrome-guest-pizza-osm2.js only (new filename, no cached pizza-hunt bytes):
+/* Astranov mute · Build 20260824100000-pizza-land
+ * Kill beeps + load chrome-guest-pizza-land.js only (new filename, no cached osm2 mute trap):
  *   OSM Overpass around LIVE camera (amenity=fast_food|restaurant pizza)
  *   unique overlay pins · tap Shop · name · km · ⭐
  *   locked #127 flyGlobeTo / probe-signs · no Locate wall · Google only at HOLD/pay
@@ -8,14 +8,15 @@
  * chrome-ai-listen, chrome-call-arc, chrome-nairobi-ladder, chrome-place-earth,
  * or chrome-cli-answer. Does NOT restyle #stc-cmd-in or placeholders.
  * loadChain injects LOCAL /js/spacenet files only. No runtime GitHub or CDN fetch.
- * Cache-bust 20260824093000-pizza-osm2. Marks prevent double-inject wipe.
+ * Cache-bust 20260824100000-pizza-land. Marks prevent double-inject wipe.
  *
  * THIS FILE RUNS BEFORE os-bootloader / cli.js / market.js.
- * It must swallow `pizza` and wrap fetch so /rest/v1/orders never 400s a hunt.
+ * Swallow pizza + wrap fetch so /rest/v1/orders never 400s a hunt.
+ * Neutralize __snMutePizzaCliTrap / __snPizzaHuntQuiet so hunt CLI always prints.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260824093000-pizza-osm2';
+  var BUILD = '20260824100000-pizza-land';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -37,13 +38,41 @@
 
   function markQuiet() {
     var until = Date.now() + 25000;
-    global.__snPizzaHuntQuiet = until;
-    global.__SN_PIZZA_HUNT_QUIET = until;
+    global.__snPizzaOrdersQuiet = until;
+    // NEVER mute the pizza CLI. osm2 set __snPizzaHuntQuiet and hunt lines vanished.
+    global.__snPizzaHuntQuiet = 0;
+    global.__SN_PIZZA_HUNT_QUIET = 0;
   }
 
   function isQuiet() {
-    var t = Number(global.__snPizzaHuntQuiet || global.__SN_PIZZA_HUNT_QUIET || 0);
+    var t = Number(global.__snPizzaOrdersQuiet || 0);
     return t > Date.now();
+  }
+
+  function neutralizeMuteTraps() {
+    try { global.__snPizzaHuntQuiet = 0; } catch (_) {}
+    try { global.__SN_PIZZA_HUNT_QUIET = 0; } catch (_) {}
+    try { delete global.__snMutePizzaCliTrap; } catch (_) {
+      try { global.__snMutePizzaCliTrap = 0; } catch (__) {}
+    }
+    try { delete global.__snPizzaOsmCliTrap; } catch (_) {}
+    try {
+      var d = Object.getOwnPropertyDescriptor(global, 'SNCli');
+      if (d && d.get && !d.writable) {
+        var cur = d.get();
+        try { delete global.SNCli; } catch (_) {}
+        try {
+          Object.defineProperty(global, 'SNCli', {
+            configurable: true,
+            enumerable: true,
+            writable: true,
+            value: cur,
+          });
+        } catch (_) {
+          global.SNCli = cur;
+        }
+      }
+    } catch (_) {}
   }
 
   function ordersUrl(url) {
@@ -270,30 +299,13 @@
           obj.run = held;
         } catch (__) {}
       }
-      obj.__snMutePizzaTrap = BUILD;
+      obj.__snGuestPizzaLand = BUILD;
     } catch (_) {}
   }
 
   function trapSNCli() {
+    neutralizeMuteTraps();
     wrapCliRun();
-    try {
-      if (global.__snMutePizzaCliTrap === BUILD) return;
-      var current = global.SNCli;
-      Object.defineProperty(global, 'SNCli', {
-        configurable: true,
-        enumerable: true,
-        get: function () {
-          return current;
-        },
-        set: function (v) {
-          current = v;
-          try {
-            wrapCliRun();
-          } catch (_) {}
-        },
-      });
-      global.__snMutePizzaCliTrap = BUILD;
-    } catch (_) {}
   }
 
   function wrapMarket() {
@@ -417,16 +429,16 @@
   function loadChain() {
     try {
       var nodes = document.querySelectorAll(
-        'script[src*="chrome-guest-pizza-hunt.js"], script[src*="chrome-guest-pizza-osm"], script[data-sn-guest-pizza]'
+        'script[src*="chrome-guest-pizza-hunt.js"], script[src*="chrome-guest-pizza-osm"], script[src*="chrome-guest-pizza-land"], script[data-sn-guest-pizza]'
       );
       var i, keep = false;
       for (i = 0; i < nodes.length; i++) {
         var src = String(nodes[i].getAttribute('src') || nodes[i].src || '');
-        var isOsm2 =
-          src.indexOf('chrome-guest-pizza-osm2.js') >= 0 &&
+        var isLand =
+          src.indexOf('chrome-guest-pizza-land.js') >= 0 &&
           src.indexOf(BUILD) >= 0 &&
-          nodes[i].getAttribute('data-sn-guest-pizza-osm2') === '1';
-        if (isOsm2 && !keep) {
+          nodes[i].getAttribute('data-sn-guest-pizza-land') === '1';
+        if (isLand && !keep) {
           keep = true;
           continue;
         }
@@ -436,7 +448,7 @@
       }
       if (keep) return;
     } catch (_) {}
-    loadScript('/js/spacenet/chrome-guest-pizza-osm2.js', 'data-sn-guest-pizza-osm2');
+    loadScript('/js/spacenet/chrome-guest-pizza-land.js', 'data-sn-guest-pizza-land');
   }
 
   function stampMeta() {
@@ -467,6 +479,7 @@
   }
 
   function boot() {
+    neutralizeMuteTraps();
     stampMeta();
     purgeStale();
     installFetchGuard();
@@ -497,6 +510,7 @@
   setTimeout(boot, 800);
   setTimeout(boot, 2500);
   setInterval(function () {
+    neutralizeMuteTraps();
     stampMeta();
     installFetchGuard();
     trapSNCli();
