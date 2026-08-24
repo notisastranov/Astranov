@@ -110,8 +110,8 @@
   var OVERPASS_TIMEOUT_S = 18;
   var OVERPASS_FETCH_MS = 9000;
   var OVERPASS_ENDPOINTS = [
-    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
     'https://overpass.openstreetmap.fr/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
     'https://overpass.osm.jp/api/interpreter',
     'https://overpass-api.de/api/interpreter',
@@ -2934,6 +2934,167 @@
     });
   }
 
+  function nextFrame() {
+    return new Promise(function (r) {
+      try {
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(function () {
+            r();
+          });
+        } else {
+          setTimeout(r, 16);
+        }
+      } catch (_) {
+        setTimeout(r, 16);
+      }
+    });
+  }
+
+  function raceMs(p, ms) {
+    var t = Math.max(400, Number(ms) || 4000);
+    return Promise.race([
+      Promise.resolve(p).catch(function () {
+        return [];
+      }),
+      new Promise(function (resolve) {
+        setTimeout(function () {
+          resolve([]);
+        }, t);
+      }),
+    ]);
+  }
+
+  /** Center-screen Earth hit only. Never focusPos (flyNear setFocus would lie). */
+  function raycastLook() {
+    try {
+      if (!G.SNGlobe || typeof SNGlobe.pickLatLng !== 'function') return null;
+      var canvas =
+        (typeof SNGlobe.getRenderer === 'function' &&
+          SNGlobe.getRenderer() &&
+          SNGlobe.getRenderer().domElement) ||
+        document.querySelector('#globe canvas') ||
+        document.querySelector('canvas');
+      if (!canvas || !canvas.getBoundingClientRect) return null;
+      var r = canvas.getBoundingClientRect();
+      if (!r.width || !r.height) return null;
+      var ll = SNGlobe.pickLatLng(r.left + r.width * 0.5, r.top + r.height * 0.5);
+      if (ll && ll.lat != null && isFinite(ll.lat) && isFinite(ll.lng)) {
+        return { lat: +ll.lat, lng: +ll.lng };
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function preferPizzaRows(rows) {
+    rows = rows || [];
+    var pizzaish = rows.filter(function (v) {
+      return /pizza|pizzeria|italiano|makkaroni|margherita/i.test(
+        String(v.name || '') +
+          ' ' +
+          String(v.category || '') +
+          ' ' +
+          (Array.isArray(v.tags) ? v.tags.join(' ') : '')
+      );
+    });
+    return pizzaish.length
+      ? pizzaish.concat(
+          rows.filter(function (v) {
+            return pizzaish.indexOf(v) < 0;
+          })
+        )
+      : rows;
+  }
+
+  /** One around query, 4s cap. No 4-phase marathon that blocked Rhodes. */
+  async function fetchLandShops(lat, lng) {
+    var origin = { lat: lat, lng: lng, source: 'land', land: true };
+    var rows = [];
+    try {
+      rows = await raceMs(queryOverpassQL(overpassAroundQL(lat, lng, 20000, true)), 5500);
+    } catch (_) {
+      rows = [];
+    }
+    if (!rows || !rows.length) {
+      try {
+        rows = await raceMs(queryOverpassQL(overpassAroundQL(lat, lng, 20000, false)), 3200);
+      } catch (_) {
+        rows = [];
+      }
+    }
+    rows = constrainToPlace(origin, rows || []).filter(isFoodOrShop);
+    rows = dedupeShops(rows);
+    return preferPizzaRows(rows);
+  }
+
+  /**
+   * Put the rendered Earth over a land city so overlay pins are on-screen.
+   * Does NOT edit flyGlobeTo / probe-signs. Uses exported SNGlobe.flyNear
+   * (globe.js phys.tTilt/tSpin) then the locked flyGlobeTo as a 0.15 fine-tune.
+   */
+  async function aimLandFrustum(lat, lng, label) {
+    unlockListeningPan();
+    unfreezeGlobe();
+    callZeroInertia();
+    dropToCityAltitude();
+    try {
+      if (G.SNGlobe && typeof SNGlobe.goToTier === 'function') SNGlobe.goToTier('city');
+    } catch (_) {}
+    try {
+      if (G.SNGlobe) {
+        G.SNGlobe.locked = false;
+        G.SNGlobe.dragLocked = false;
+        G.SNGlobe.panLock = false;
+        G.SNGlobe.listeningLock = false;
+      }
+    } catch (_) {}
+    try {
+      if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') {
+        SNGlobe.flyNear(lat, lng, 'city');
+      }
+    } catch (_) {}
+    var i;
+    var near = false;
+    for (i = 0; i < 22; i++) {
+      await nextFrame();
+      await sleep(80);
+      dropToCityAltitude();
+      var hit = raycastLook();
+      if (hit && haversineKm(hit, { lat: lat, lng: lng }) < 80) {
+        near = true;
+        break;
+      }
+    }
+    // Locked probe-sign settle. flyGlobeTo body UNCHANGED.
+    var ok = false;
+    try {
+      ok = await flyGlobeTo(lat, lng, label);
+    } catch (_) {
+      ok = false;
+    }
+    if (ok) return true;
+    var hit2 = raycastLook() || liveViewLatLng();
+    if (hit2 && haversineKm(hit2, { lat: lat, lng: lng }) < 180) return true;
+    if (!near) {
+      try {
+        snapLiveChain(lat, lng);
+        faceEarthAtCamera(lat, lng);
+        paintTiltSpin();
+      } catch (_) {}
+      try {
+        if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') SNGlobe.flyNear(lat, lng, 'city');
+      } catch (_) {}
+      await nextFrame();
+      await sleep(220);
+      try {
+        ok = await flyGlobeTo(lat, lng, label);
+      } catch (_) {
+        ok = false;
+      }
+    }
+    var hit3 = raycastLook() || liveViewLatLng();
+    return !!(ok || (hit3 && haversineKm(hit3, { lat: lat, lng: lng }) < 180));
+  }
+
   async function fetchNear(origin) {
     var rows = [];
     try {
@@ -3069,15 +3230,27 @@
   async function expandLandHunt(from) {
     var seed = from && from.lat != null ? from : liveViewLatLng() || { lat: RHODES.lat, lng: RHODES.lng };
     var city = nearestLandCity(seed.lat, seed.lng);
-    var tries = [city];
-    if (city.name !== 'Rhodes') tries.push({ name: 'Rhodes', lat: RHODES.lat, lng: RHODES.lng });
-    if (city.name !== 'Nairobi') tries.push({ name: 'Nairobi', lat: -1.286, lng: 36.817 });
+    var dist = haversineKm(seed, city);
+    // Mid-ocean / desert (boot 3.440,-90 is ~1000km of water): Rhodes first
+    // (locked fly PASS + known OSM pizza). Do not stall 4-phase Overpass on
+    // SanJoseCR while the camera stays over the Pacific.
+    var tries;
+    if (dist > 400) {
+      tries = [
+        { name: 'Rhodes', lat: RHODES.lat, lng: RHODES.lng },
+        { name: 'Nairobi', lat: -1.286, lng: 36.817 },
+      ];
+    } else {
+      tries = [city];
+      if (city.name !== 'Rhodes') tries.push({ name: 'Rhodes', lat: RHODES.lat, lng: RHODES.lng });
+      if (city.name !== 'Nairobi') tries.push({ name: 'Nairobi', lat: -1.286, lng: 36.817 });
+    }
     var overpassError = false;
     var t;
     for (t = 0; t < tries.length; t++) {
       var c = tries[t];
       log('Land hunt · ' + c.name + ' · OSM restaurants', 'dim');
-      await waitGlobeReady(1800);
+      await waitGlobeReady(1600);
       unlockListeningPan();
       var landOrigin = {
         lat: c.lat,
@@ -3085,21 +3258,13 @@
         source: 'land',
         land: c.name,
       };
-      var shopsP = fetchNear(landOrigin);
+      var shopsP = fetchLandShops(c.lat, c.lng);
       var flew = false;
       try {
-        flew = await flyGlobeTo(c.lat, c.lng, c.name);
+        flew = await aimLandFrustum(c.lat, c.lng, c.name);
       } catch (_) {
         flew = false;
       }
-      var live = liveViewLatLng();
-      if (live && haversineKm(live, c) < 80) {
-        landOrigin.lat = live.lat;
-        landOrigin.lng = live.lng;
-      }
-      lastFly = { lat: landOrigin.lat, lng: landOrigin.lng, ts: Date.now(), label: c.name };
-      preferCameraUntil = Date.now() + 22000;
-      dropToCityAltitude();
       var shops = [];
       try {
         shops = await shopsP;
@@ -3107,12 +3272,16 @@
         overpassError = true;
         continue;
       }
-      if (shops && shops.length) {
-        var here = liveViewLatLng();
-        var camKm = here ? haversineKm(here, c) : 9999;
-        if (!flew && camKm > 180) {
-          continue;
+      var here = raycastLook() || liveViewLatLng();
+      var camKm = here ? haversineKm(here, c) : 9999;
+      if (shops && shops.length && (flew || camKm < 180)) {
+        if (here && haversineKm(here, c) < 80) {
+          landOrigin.lat = here.lat;
+          landOrigin.lng = here.lng;
         }
+        lastFly = { lat: landOrigin.lat, lng: landOrigin.lng, ts: Date.now(), label: c.name };
+        preferCameraUntil = Date.now() + 22000;
+        dropToCityAltitude();
         log(
           'Origin · land · ' +
             c.name +
