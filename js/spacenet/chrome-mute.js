@@ -1,10 +1,22 @@
-/* Astranov mute · Build 20260811223000
- * Kill alert beeps, oscillator spam, auto speechSynthesis noise.
- * SpeechRecognition on Android often triggers keyboard/system beeps — we soft-gate restarts.
+/* Astranov mute · Build 20260824110000-laptop-hunt
+ * Kill beeps + load chrome-guest-laptop-hunt-20260824110000.js
+ * (vend of locked #132 TAP/CLI · real OSM electronics · CITY altitude
+ * before pins · unique overlay pins · tap Shop · name · km · ⭐ on the
+ * live guest CLI). Fly failed only when camera missed (~50 km) or
+ * probe-sign checks fail. Hunt failed only when Overpass returns empty.
+ * No Locate wall. No Google until HOLD/pay. No supabase orders hunt.
+ * loadChain injects LOCAL /js/spacenet files only. No runtime GitHub.
+ * Does NOT load chrome-guest-pizza-hunt, chrome-call-arc,
+ * chrome-nairobi-ladder, chrome-kalithea-village, chrome-research-stay.
+ * Does NOT overwrite SNGlobe.flyGlobeTo when already defined.
+ * Does NOT restyle #stc-cmd-in or placeholders.
+ * NEW PR against main. Do not reuse #175/#176/#177.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260811223000-mute';
+  var BUILD = '20260824110000-laptop-hunt';
+  var HUNT_SRC = '/js/spacenet/chrome-guest-laptop-hunt-20260824110000.js';
+  var HUNT_MARK = 'data-sn-guest-laptop-hunt-20260824110000';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -29,7 +41,7 @@
                 try {
                   osc.frequency.value = 0;
                 } catch (_) {}
-                return; // swallow beep
+                return;
               }
               return start.apply(osc, arguments);
             };
@@ -49,14 +61,10 @@
     } catch (_) {}
   }
 
-  /** Soft-gate aggressive handsfree restarts that beep on Android */
   function softGateHandsfree() {
     try {
       if (!global.SNCli || SNCli.__snBeepGate) return;
       SNCli.__snBeepGate = true;
-      // Prefer text when silver is active unless user forced voice
-      var desc = Object.getOwnPropertyDescriptor(SNCli, 'toggleHandsfree');
-      // wrap if function exists
       if (typeof SNCli.toggleHandsfree === 'function') {
         var prev = SNCli.toggleHandsfree.bind(SNCli);
         SNCli.toggleHandsfree = function () {
@@ -67,15 +75,35 @@
     } catch (_) {}
   }
 
+  function loadScript(src, mark) {
+    try {
+      if (document.querySelector('script[' + mark + ']')) return;
+      var s = document.createElement('script');
+      s.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(BUILD);
+      s.async = false;
+      s.setAttribute(mark, '1');
+      (document.head || document.documentElement).appendChild(s);
+    } catch (_) {}
+  }
+
+  function loadChain() {
+    loadScript(HUNT_SRC, HUNT_MARK);
+  }
+
   function boot() {
     patchAudio();
     silenceSpeech();
     patchFieldAlerts();
     softGateHandsfree();
+    loadChain();
   }
 
   boot();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  setTimeout(loadChain, 0);
+  setTimeout(loadChain, 500);
+  setTimeout(loadChain, 800);
+  setTimeout(loadChain, 2500);
   setInterval(function () {
     patchAudio();
     patchFieldAlerts();
@@ -87,5 +115,5 @@
       silenceSpeech();
   }, 4000);
 
-  global.SNChromeMute = { build: BUILD, silence: silenceSpeech };
+  global.SNChromeMute = { build: BUILD, silence: silenceSpeech, loadChain: loadChain };
 })(typeof window !== 'undefined' ? window : globalThis);
