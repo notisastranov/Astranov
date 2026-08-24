@@ -3081,7 +3081,13 @@
     }
     rows = constrainToPlace(origin, rows || []).filter(isFoodOrShop);
     rows = dedupeShops(rows);
-    return preferPizzaRows(rows);
+    rows = preferPizzaRows(rows).filter(function (v) {
+      var n = String((v && v.name) || '').trim();
+      if (!n) return false;
+      if (/^(fast food|restaurant|cafe|bar|pub)$/i.test(n)) return false;
+      return true;
+    });
+    return rows;
   }
 
   /**
