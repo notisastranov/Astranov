@@ -230,9 +230,14 @@
     log(m, c);
   }
 
+  var lastPainted = '';
+  var lastPaintAt = 0;
   function paintLiveCli(s, c) {
     s = String(s == null ? '' : s).slice(0, 420);
     if (!s) return;
+    if (s === lastPainted && Date.now() - lastPaintAt < 1200) return;
+    lastPainted = s;
+    lastPaintAt = Date.now();
     openLiveCli();
     try {
       var el = document.getElementById('cli-log');
@@ -3103,6 +3108,11 @@
         continue;
       }
       if (shops && shops.length) {
+        var here = liveViewLatLng();
+        var camKm = here ? haversineKm(here, c) : 9999;
+        if (!flew && camKm > 180) {
+          continue;
+        }
         log(
           'Origin · land · ' +
             c.name +
@@ -3147,36 +3157,52 @@
     log('OSM hunt · Overpass around camera · no orders table', 'dim');
 
     var use = [];
-    try {
-      use = await fetchNear(origin);
-    } catch (e) {
-      clearPizzaPins();
-      logHuntFailedOnce();
-      return true;
-    }
-
-    if (!use.length) {
-      if (isOceanView(origin, 0) && !(opts && opts.landTried)) {
-        log('No pizza shops near view · camera stays', 'ok');
-        preview('No pizza shops near view');
-        var landed = await expandLandHunt(origin);
-        if (landed && landed.overpassError) {
-          clearPizzaPins();
-          logHuntFailedOnce();
-          return true;
-        }
-        if (landed && landed.shops && landed.shops.length) {
-          origin = landed.origin;
-          use = landed.shops;
+    var ocean = isOceanView(origin, 0);
+    if (ocean) {
+      log('No pizza shops near view · camera stays', 'ok');
+      preview('No pizza shops near view');
+      var landed0 = await expandLandHunt(origin);
+      if (landed0 && landed0.shops && landed0.shops.length) {
+        origin = landed0.origin;
+        use = landed0.shops;
+      } else if (landed0 && landed0.overpassError) {
+        clearPizzaPins();
+        logHuntFailedOnce();
+        return true;
+      } else {
+        clearPizzaPins();
+        logHonestEmpty(origin);
+        return true;
+      }
+    } else {
+      try {
+        use = await fetchNear(origin);
+      } catch (e) {
+        clearPizzaPins();
+        logHuntFailedOnce();
+        return true;
+      }
+      if (!use.length) {
+        if (!(opts && opts.landTried)) {
+          log('No pizza shops near view · camera stays', 'ok');
+          var landed = await expandLandHunt(origin);
+          if (landed && landed.shops && landed.shops.length) {
+            origin = landed.origin;
+            use = landed.shops;
+          } else if (landed && landed.overpassError) {
+            clearPizzaPins();
+            logHuntFailedOnce();
+            return true;
+          } else {
+            clearPizzaPins();
+            logHonestEmpty(origin);
+            return true;
+          }
         } else {
           clearPizzaPins();
           logHonestEmpty(origin);
           return true;
         }
-      } else {
-        clearPizzaPins();
-        logHonestEmpty(origin);
-        return true;
       }
     }
 
