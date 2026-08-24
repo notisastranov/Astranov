@@ -108,13 +108,13 @@
   var OSM_AMENITY_TAGS = ['fast_food', 'restaurant'];
   var HUNT_AROUND_M = 20000;
   var OVERPASS_TIMEOUT_S = 18;
-  var OVERPASS_FETCH_MS = 9000;
+  var OVERPASS_FETCH_MS = 12000;
   var OVERPASS_ENDPOINTS = [
-    'https://overpass.openstreetmap.fr/api/interpreter',
     'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+    'https://overpass.osm.ch/api/interpreter',
+    'https://overpass.openstreetmap.fr/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
     'https://overpass.osm.jp/api/interpreter',
-    'https://overpass-api.de/api/interpreter',
   ];
   var PLACES = [
     { name: 'Rhodes', latMin: 35.82, latMax: 36.52, lngMin: 27.62, lngMax: 28.42 },
@@ -2663,8 +2663,8 @@
                 } catch (_) {}
                 resolve(rows);
               } else if (!emptyTimer) {
-                // Honest empty: don't wait hung mirrors for 9s × N.
-                emptyTimer = setTimeout(finishEmpty, 900);
+                // Wait for a slow 200-with-rows (mail.ru) before honest empty.
+                emptyTimer = setTimeout(finishEmpty, 6500);
               }
             });
           })
@@ -3005,18 +3005,58 @@
       : rows;
   }
 
-  /** One around query, 4s cap. No 4-phase marathon that blocked Rhodes. */
+  /**
+   * Instant polar aim using the same mapping as globe.js flyNear:
+   * tilt.x = -lat, spin.y = -lng. Does not edit flyGlobeTo.
+   */
+  function snapPolarLook(lat, lng) {
+    lat = +lat;
+    lng = +lng;
+    if (!isFinite(lat) || !isFinite(lng)) return;
+    var TILT_MAX = 1.05;
+    var x = (-lat * Math.PI) / 180;
+    var y = (-lng * Math.PI) / 180;
+    if (x > TILT_MAX) x = TILT_MAX;
+    if (x < -TILT_MAX) x = -TILT_MAX;
+    function polar(node, xx, yy) {
+      if (!node || !node.rotation) return;
+      try {
+        node.rotation.x = xx;
+        node.rotation.y = yy;
+        node.rotation.z = 0;
+        if (node.quaternion && node.quaternion.setFromEuler) node.quaternion.setFromEuler(node.rotation);
+        node.matrixAutoUpdate = true;
+        if (node.updateMatrix) node.updateMatrix();
+        if (node.updateMatrixWorld) node.updateMatrixWorld(true);
+      } catch (_) {}
+    }
+    try {
+      polar(typeof SNGlobe.getTilt === 'function' ? SNGlobe.getTilt() : null, x, 0);
+      polar(typeof SNGlobe.getSpin === 'function' ? SNGlobe.getSpin() : null, 0, y);
+      var pivot = typeof SNGlobe.getPivot === 'function' ? SNGlobe.getPivot() : null;
+      var spin = typeof SNGlobe.getSpin === 'function' ? SNGlobe.getSpin() : null;
+      if (pivot && pivot !== spin) polar(pivot, 0, y);
+    } catch (_) {}
+    try {
+      if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') SNGlobe.flyNear(lat, lng, 'city');
+    } catch (_) {}
+    try {
+      paintTiltSpin();
+    } catch (_) {}
+  }
+
+  /** One around query. Wait long enough for flaky mail.ru 200. */
   async function fetchLandShops(lat, lng) {
     var origin = { lat: lat, lng: lng, source: 'land', land: true };
     var rows = [];
     try {
-      rows = await raceMs(queryOverpassQL(overpassAroundQL(lat, lng, 20000, true)), 5500);
+      rows = await raceMs(queryOverpassQL(overpassAroundQL(lat, lng, 20000, true)), 11000);
     } catch (_) {
       rows = [];
     }
     if (!rows || !rows.length) {
       try {
-        rows = await raceMs(queryOverpassQL(overpassAroundQL(lat, lng, 20000, false)), 3200);
+        rows = await raceMs(queryOverpassQL(overpassAroundQL(lat, lng, 20000, false)), 8000);
       } catch (_) {
         rows = [];
       }
@@ -3028,12 +3068,11 @@
 
   /**
    * Put the rendered Earth over a land city so overlay pins are on-screen.
-   * Does NOT edit flyGlobeTo / probe-signs. Uses exported SNGlobe.flyNear
-   * (globe.js phys.tTilt/tSpin) then the locked flyGlobeTo as a 0.15 fine-tune.
+   * Does NOT edit flyGlobeTo / probe-signs. Snap polar + flyNear, then the
+   * locked flyGlobeTo as a 0.15 fine-tune only after raycast is close.
    */
   async function aimLandFrustum(lat, lng, label) {
     unlockListeningPan();
-    unfreezeGlobe();
     callZeroInertia();
     dropToCityAltitude();
     try {
@@ -3047,52 +3086,39 @@
         G.SNGlobe.listeningLock = false;
       }
     } catch (_) {}
-    try {
-      if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') {
-        SNGlobe.flyNear(lat, lng, 'city');
-      }
-    } catch (_) {}
+    snapPolarLook(lat, lng);
     var i;
-    var near = false;
-    for (i = 0; i < 22; i++) {
+    for (i = 0; i < 18; i++) {
       await nextFrame();
-      await sleep(80);
-      dropToCityAltitude();
+      await sleep(60);
       var hit = raycastLook();
       if (hit && haversineKm(hit, { lat: lat, lng: lng }) < 80) {
-        near = true;
-        break;
+        try {
+          await flyGlobeTo(lat, lng, label);
+        } catch (_) {}
+        return true;
       }
+      if (i === 4 || i === 10) snapPolarLook(lat, lng);
     }
-    // Locked probe-sign settle. flyGlobeTo body UNCHANGED.
+    snapPolarLook(lat, lng);
+    await nextFrame();
+    await sleep(120);
+    var hit2 = raycastLook();
+    if (hit2 && haversineKm(hit2, { lat: lat, lng: lng }) < 180) {
+      try {
+        await flyGlobeTo(lat, lng, label);
+      } catch (_) {}
+      return true;
+    }
     var ok = false;
     try {
       ok = await flyGlobeTo(lat, lng, label);
     } catch (_) {
       ok = false;
     }
-    if (ok) return true;
-    var hit2 = raycastLook() || liveViewLatLng();
-    if (hit2 && haversineKm(hit2, { lat: lat, lng: lng }) < 180) return true;
-    if (!near) {
-      try {
-        snapLiveChain(lat, lng);
-        faceEarthAtCamera(lat, lng);
-        paintTiltSpin();
-      } catch (_) {}
-      try {
-        if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') SNGlobe.flyNear(lat, lng, 'city');
-      } catch (_) {}
-      await nextFrame();
-      await sleep(220);
-      try {
-        ok = await flyGlobeTo(lat, lng, label);
-      } catch (_) {
-        ok = false;
-      }
-    }
-    var hit3 = raycastLook() || liveViewLatLng();
-    return !!(ok || (hit3 && haversineKm(hit3, { lat: lat, lng: lng }) < 180));
+    var hit3 = raycastLook();
+    if (hit3 && haversineKm(hit3, { lat: lat, lng: lng }) < 180) return true;
+    return !!ok && !!(hit3 && haversineKm(hit3, { lat: lat, lng: lng }) < 400);
   }
 
   async function fetchNear(origin) {
