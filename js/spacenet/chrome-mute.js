@@ -1,17 +1,17 @@
-/* Astranov mute · Build 20260824025000-place-tiles
+/* Astranov mute · Build 20260824032000-place-kenya
  * PR #174 only. Do not merge. Does not edit #130/#131.
  * Guest / must serve the ASTRANOV globe (public/index.html is Vercel output).
  *
- * Load chrome-place-earth FIRST (place-tiles: wait for sat tiles + Kalithea CLI rungs). Wait until window.SNGlobe is the LIVE
+ * Load chrome-place-earth FIRST (place-kenya: always drape z8 Kenya land, do not hide sn-earth-drape). Wait until window.SNGlobe is the LIVE
  * globe.js object (pulse + getEarth + viewLatLng + flyGlobeTo) BEFORE
  * chrome-nairobi-ladder.js (37083) and chrome-kalithea-village.js (43964).
  * No stub. No getter. No runtime GitHub fetch.
- * Cache-bust 20260824025000-place-tiles.
+ * Cache-bust 20260824032000-place-kenya.
  * pizza/laptop/HOLD/twin/listen/research unchanged.
  */
 (function (global) {
   "use strict";
-  var BUILD = "20260824025000-place-tiles";
+  var BUILD = "20260824032000-place-kenya";
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
   var placesQueued = false;
