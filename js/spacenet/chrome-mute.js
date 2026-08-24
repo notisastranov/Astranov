@@ -1,17 +1,18 @@
-/* Astranov mute · Build 20260824083000-pizza-hunt
+/* Astranov mute · Build 20260824085000-pizza-osm
  * Kill beeps + load chrome-guest-pizza-hunt only:
- *   OSM restaurant/fast_food/cafe around the LIVE camera (SNGlobe.viewLatLng)
+ *   OSM Overpass around LIVE camera (amenity=fast_food|restaurant pizza)
  *   unique overlay pins · tap Shop · name · km · ⭐
  *   locked #127 flyGlobeTo / probe-signs · no Locate wall · Google only at HOLD/pay
+ *   NEVER hunt via supabase /rest/v1/orders
  * Does NOT load chrome-guest-laptop-hunt, chrome-research-stay, chrome-research-stay2,
  * chrome-ai-listen, chrome-call-arc, chrome-nairobi-ladder, chrome-place-earth,
  * or chrome-cli-answer. Does NOT restyle #stc-cmd-in or placeholders.
  * loadChain injects LOCAL /js/spacenet files only. No runtime GitHub or CDN fetch.
- * Cache-bust 20260824083000-pizza-hunt. Marks prevent double-inject wipe.
+ * Cache-bust 20260824085000-pizza-osm. Marks prevent double-inject wipe.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260824083000-pizza-hunt';
+  var BUILD = '20260824085000-pizza-osm';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -80,7 +81,6 @@
   function loadScript(src, mark) {
     try {
       if (hasMark(mark)) return;
-      if (document.querySelector('script[src*="' + src.replace(/^\/js\/spacenet\//, '') + '"]')) return;
       var s = document.createElement('script');
       s.src = src + (src.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(BUILD);
       s.async = false;
@@ -90,7 +90,22 @@
   }
 
   function loadChain() {
-    loadScript('/js/spacenet/chrome-guest-pizza-hunt.js', 'data-sn-guest-pizza');
+    try {
+      var nodes = document.querySelectorAll(
+        'script[src*="chrome-guest-pizza-hunt.js"], script[data-sn-guest-pizza]'
+      );
+      var i;
+      for (i = 0; i < nodes.length; i++) {
+        var src = String(nodes[i].getAttribute('src') || nodes[i].src || '');
+        if (src.indexOf(BUILD) >= 0 || nodes[i].getAttribute('data-sn-guest-pizza-osm') === '1') {
+          return;
+        }
+        try {
+          if (nodes[i].parentNode) nodes[i].parentNode.removeChild(nodes[i]);
+        } catch (_) {}
+      }
+    } catch (_) {}
+    loadScript('/js/spacenet/chrome-guest-pizza-hunt.js', 'data-sn-guest-pizza-osm');
   }
 
   function boot() {
@@ -118,6 +133,7 @@
     patchAudio();
     patchFieldAlerts();
     softGateHandsfree();
+    loadChain();
     if (
       global.__SN_MUTE_ALERTS &&
       !(global.SNCli && (SNCli.handsfreeOn || SNCli.hfTtsActive))
