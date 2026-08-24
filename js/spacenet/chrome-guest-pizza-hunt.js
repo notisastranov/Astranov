@@ -98,14 +98,16 @@
   var HUNT_KM = 16.5;
   var RHODES_VIEW_BOX = { latMin: 36.0, latMax: 36.5, lngMin: 27.7, lngMax: 28.4 };
   var RHODES_BOX = { latMin: 35.82, latMax: 36.52, lngMin: 27.62, lngMax: 28.42 };
-  var OSM_AMENITY_TAGS = ['fast_food', 'restaurant', 'cafe'];
+  var OSM_AMENITY_TAGS = ['fast_food', 'restaurant'];
   var HUNT_AROUND_M = 20000;
-  var OVERPASS_TIMEOUT_S = 28;
-  var OVERPASS_FETCH_MS = 32000;
+  var OVERPASS_TIMEOUT_S = 18;
+  var OVERPASS_FETCH_MS = 9000;
   var OVERPASS_ENDPOINTS = [
+    'https://overpass.osm.jp/api/interpreter',
+    'https://overpass.openstreetmap.fr/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
     'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
     'https://overpass-api.de/api/interpreter',
-    'https://overpass.kumi.systems/api/interpreter',
   ];
   var PLACES = [
     { name: 'Rhodes', latMin: 35.82, latMax: 36.52, lngMin: 27.62, lngMax: 28.42 },
@@ -141,7 +143,13 @@
   function log(m, c) {
     try {
       var s = String(m == null ? '' : m).slice(0, 420);
-      if (/^Hunt failed/i.test(s) || /^Shop ·/.test(s)) {
+      // Hunt failed once — paintLiveCli only. say() would also SNCli.log → duplicate line.
+      if (/^Hunt failed/i.test(s)) {
+        paintLiveCli(s, c || 'ok');
+        preview('Hunt failed');
+        return;
+      }
+      if (/^Shop ·/.test(s)) {
         say(s, c || 'ok');
         return;
       }
@@ -2448,38 +2456,40 @@
     return Math.round((3.6 + (id % 13) / 10) * 10) / 10;
   }
 
-  function amenityParts(filter) {
+  function amenityParts(filter, pizzaOnly) {
     var parts = [];
-    var i;
-    for (i = 0; i < OSM_AMENITY_TAGS.length; i++) {
-      var tag = OSM_AMENITY_TAGS[i];
-      parts.push('node["amenity"="' + tag + '"]' + filter + ';');
-      parts.push('way["amenity"="' + tag + '"]' + filter + ';');
-    }
-    parts.push('node["amenity"="fast_food"]["cuisine"~"pizza"]' + filter + ';');
-    parts.push('way["amenity"="fast_food"]["cuisine"~"pizza"]' + filter + ';');
-    parts.push('node["amenity"="restaurant"]["cuisine"~"pizza"]' + filter + ';');
-    parts.push('way["amenity"="restaurant"]["cuisine"~"pizza"]' + filter + ';');
+    parts.push('node["amenity"="fast_food"]["cuisine"~"pizza",i]' + filter + ';');
+    parts.push('way["amenity"="fast_food"]["cuisine"~"pizza",i]' + filter + ';');
+    parts.push('node["amenity"="restaurant"]["cuisine"~"pizza",i]' + filter + ';');
+    parts.push('way["amenity"="restaurant"]["cuisine"~"pizza",i]' + filter + ';');
     parts.push('node["amenity"="fast_food"]["name"~"[Pp]izza"]' + filter + ';');
     parts.push('way["amenity"="fast_food"]["name"~"[Pp]izza"]' + filter + ';');
     parts.push('node["amenity"="restaurant"]["name"~"[Pp]izza"]' + filter + ';');
     parts.push('way["amenity"="restaurant"]["name"~"[Pp]izza"]' + filter + ';');
+    if (!pizzaOnly) {
+      var i;
+      for (i = 0; i < OSM_AMENITY_TAGS.length; i++) {
+        var tag = OSM_AMENITY_TAGS[i];
+        parts.push('node["amenity"="' + tag + '"]' + filter + ';');
+        parts.push('way["amenity"="' + tag + '"]' + filter + ';');
+      }
+    }
     return parts;
   }
 
-  function overpassBboxQL(box) {
+  function overpassBboxQL(box, pizzaOnly) {
     var s0 = Number(box.latMin).toFixed(4);
     var w = Number(box.lngMin).toFixed(4);
     var n = Number(box.latMax).toFixed(4);
     var e = Number(box.lngMax).toFixed(4);
     var bb = '(' + s0 + ',' + w + ',' + n + ',' + e + ')';
-    return '[out:json][timeout:' + OVERPASS_TIMEOUT_S + '];(' + amenityParts(bb).join('') + ');out center 80;';
+    return '[out:json][timeout:' + OVERPASS_TIMEOUT_S + '];(' + amenityParts(bb, pizzaOnly).join('') + ');out center 80;';
   }
 
-  function overpassAroundQL(lat, lng, radiusM) {
+  function overpassAroundQL(lat, lng, radiusM, pizzaOnly) {
     var r = Math.round(Number(radiusM) > 0 ? Number(radiusM) : HUNT_AROUND_M);
     var around = '(around:' + r + ',' + Number(lat).toFixed(5) + ',' + Number(lng).toFixed(5) + ')';
-    return '[out:json][timeout:' + OVERPASS_TIMEOUT_S + '];(' + amenityParts(around).join('') + ');out center 80;';
+    return '[out:json][timeout:' + OVERPASS_TIMEOUT_S + '];(' + amenityParts(around, pizzaOnly).join('') + ');out center 80;';
   }
 
   function localBoxAround(lat, lng, radiusKm) {
@@ -2503,19 +2513,19 @@
         } catch (_) {}
       }, ms);
       try {
+        var href = url;
         var opts = {
           method: method,
-          headers: { Accept: 'application/json' },
           signal: ctrl ? ctrl.signal : undefined,
           mode: 'cors',
           credentials: 'omit',
           cache: 'no-store',
         };
-        var href = url;
         if (method === 'POST') {
-          opts.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
+          opts.headers = { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' };
           opts.body = 'data=' + encodeURIComponent(body);
         } else {
+          // GET with NO custom headers = simple CORS request (Accept: json would preflight).
           href = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'data=' + encodeURIComponent(body);
         }
         var res = await fetch(href, opts);
@@ -2528,10 +2538,11 @@
         } catch (_) {}
       }
     }
+    var got = await one('GET');
+    if (got && got.ok) return got;
     var posted = await one('POST');
     if (posted && posted.ok) return posted;
-    if (posted) return posted;
-    return one('GET');
+    return got || posted;
   }
 
   function parseOverpassElements(els) {
@@ -2544,52 +2555,51 @@
     return rows;
   }
 
-  async function queryOverpassBbox(box) {
-    if (!box) return [];
-    var body = overpassBboxQL(box);
-    var lastErr = null;
-    var sawOk = false;
-    var i;
-    for (i = 0; i < OVERPASS_ENDPOINTS.length; i++) {
-      try {
-        var res = await fetchOverpassOnce(OVERPASS_ENDPOINTS[i], body, OVERPASS_FETCH_MS);
-        if (!res || !res.ok) {
-          lastErr = new Error('overpass HTTP ' + (res ? res.status : 'fail'));
-          continue;
-        }
-        var j = await res.json();
-        sawOk = true;
-        var rows = parseOverpassElements((j && j.elements) || []);
-        if (rows.length) return rows;
-      } catch (e) {
-        lastErr = e;
-      }
-    }
-    if (sawOk) return [];
-    throw lastErr || new Error('overpass failed');
-  }
-
   async function queryOverpassQL(body) {
     var lastErr = null;
     var sawOk = false;
-    var i;
-    for (i = 0; i < OVERPASS_ENDPOINTS.length; i++) {
-      try {
-        var res = await fetchOverpassOnce(OVERPASS_ENDPOINTS[i], body, OVERPASS_FETCH_MS);
-        if (!res || !res.ok) {
-          lastErr = new Error('overpass HTTP ' + (res ? res.status : 'fail'));
-          continue;
-        }
-        var j = await res.json();
-        sawOk = true;
-        var rows = parseOverpassElements((j && j.elements) || []);
-        if (rows.length) return rows;
-      } catch (e) {
-        lastErr = e;
+    return await new Promise(function (resolve, reject) {
+      var pending = OVERPASS_ENDPOINTS.length;
+      var done = false;
+      if (!pending) {
+        reject(new Error('overpass failed'));
+        return;
       }
-    }
-    if (sawOk) return [];
-    throw lastErr || new Error('overpass failed');
+      OVERPASS_ENDPOINTS.forEach(function (url) {
+        fetchOverpassOnce(url, body, OVERPASS_FETCH_MS)
+          .then(function (res) {
+            if (done) return null;
+            if (!res || !res.ok) {
+              lastErr = new Error('overpass HTTP ' + (res ? res.status : 'fail'));
+              return null;
+            }
+            return res.json().then(function (j) {
+              if (done) return;
+              sawOk = true;
+              var rows = parseOverpassElements((j && j.elements) || []);
+              if (rows.length) {
+                done = true;
+                resolve(rows);
+              }
+            });
+          })
+          .catch(function (e) {
+            lastErr = e;
+          })
+          .then(function () {
+            if (done) return;
+            pending--;
+            if (pending > 0) return;
+            if (sawOk) resolve([]);
+            else reject(lastErr || new Error('overpass failed'));
+          });
+      });
+    });
+  }
+
+  async function queryOverpassBbox(box, pizzaOnly) {
+    if (!box) return [];
+    return queryOverpassQL(overpassBboxQL(box, pizzaOnly));
   }
 
   async function queryOverpass(lat, lng, radiusKm) {
@@ -2598,24 +2608,43 @@
     if (!isFinite(lat) || !isFinite(lng)) return [];
     var rKm = Number(radiusKm) > 0 ? Number(radiusKm) : 20;
     var lastErr = null;
+    var sawEmpty = false;
+    function note(rows, e) {
+      if (e) lastErr = e;
+      else if (rows && rows.length) return rows;
+      else sawEmpty = true;
+      return null;
+    }
     try {
-      var aroundRows = await queryOverpassQL(overpassAroundQL(lat, lng, rKm * 1000));
-      if (aroundRows && aroundRows.length) return aroundRows;
+      var aroundPizza = await queryOverpassQL(overpassAroundQL(lat, lng, rKm * 1000, true));
+      var hit = note(aroundPizza, null);
+      if (hit) return hit;
     } catch (e) {
       lastErr = e;
     }
-    var boxes = inRhodes(lat, lng)
-      ? [RHODES_VIEW_BOX, RHODES_BOX]
-      : [localBoxAround(lat, lng, rKm)];
-    var i;
-    for (i = 0; i < boxes.length; i++) {
-      try {
-        var rows = await queryOverpassBbox(boxes[i]);
-        if (rows && rows.length) return rows;
-      } catch (e) {
-        lastErr = e;
-      }
+    var box = inRhodes(lat, lng) ? RHODES_VIEW_BOX : localBoxAround(lat, lng, rKm);
+    try {
+      var bboxPizza = await queryOverpassBbox(box, true);
+      var hit2 = note(bboxPizza, null);
+      if (hit2) return hit2;
+    } catch (e) {
+      lastErr = e;
     }
+    try {
+      var aroundAll = await queryOverpassQL(overpassAroundQL(lat, lng, rKm * 1000, false));
+      var hit3 = note(aroundAll, null);
+      if (hit3) return hit3;
+    } catch (e) {
+      lastErr = e;
+    }
+    try {
+      var bboxAll = await queryOverpassBbox(inRhodes(lat, lng) ? RHODES_BOX : box, false);
+      var hit4 = note(bboxAll, null);
+      if (hit4) return hit4;
+    } catch (e) {
+      lastErr = e;
+    }
+    if (sawEmpty) return [];
     if (lastErr) throw lastErr;
     return [];
   }
@@ -2692,28 +2721,94 @@
   }
 
   function pizzaFetchQuiet() {
-    return hunting || huntLock || Date.now() < pizzaQuietUntil;
+    var until = pizzaQuietUntil;
+    try {
+      var gUntil = Number(G.__snPizzaHuntQuiet || G.__SN_PIZZA_HUNT_QUIET || 0);
+      if (gUntil > until) until = gUntil;
+    } catch (_) {}
+    return hunting || huntLock || Date.now() < until;
+  }
+
+  function markQuiet() {
+    pizzaQuietUntil = Date.now() + 25000;
+    try {
+      G.__snPizzaHuntQuiet = pizzaQuietUntil;
+      G.__SN_PIZZA_HUNT_QUIET = pizzaQuietUntil;
+    } catch (_) {}
+    installFetchGuard();
   }
 
   function installFetchGuard() {
     try {
-      if (!G.fetch || G.fetch.__snPizzaOsm === BUILD) return;
-      var orig = G.fetch.bind(G);
-      function wrappedFetch(input, init) {
-        var url = '';
-        try {
-          if (typeof input === 'string') url = input;
-          else if (input && input.url) url = String(input.url);
-        } catch (_) {}
-        if (/\/rest\/v1\/orders/i.test(url) && pizzaFetchQuiet()) {
-          return Promise.resolve(
-            new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } })
-          );
+      if (G.fetch && G.fetch.__snPizzaOsm === BUILD) {
+        /* already ours */
+      } else if (G.fetch) {
+        var orig = G.fetch.bind(G);
+        function wrappedFetch(input, init) {
+          var url = '';
+          try {
+            if (typeof input === 'string') url = input;
+            else if (input && input.url) url = String(input.url);
+          } catch (_) {}
+          if (/\/rest\/v1\/orders/i.test(url) && pizzaFetchQuiet()) {
+            return Promise.resolve(
+              new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } })
+            );
+          }
+          return orig(input, init);
         }
-        return orig(input, init);
+        wrappedFetch.__snPizzaOsm = BUILD;
+        G.fetch = wrappedFetch;
+        try {
+          if (typeof window !== 'undefined') window.fetch = wrappedFetch;
+        } catch (_) {}
       }
-      wrappedFetch.__snPizzaOsm = BUILD;
-      G.fetch = wrappedFetch;
+    } catch (_) {}
+    try {
+      var XHR = G.XMLHttpRequest;
+      if (XHR && XHR.__snPizzaOsm !== BUILD && XHR.prototype) {
+        var open = XHR.prototype.open;
+        var send = XHR.prototype.send;
+        XHR.prototype.open = function (method, url) {
+          try {
+            this.__snPizzaOrders = /\/rest\/v1\/orders/i.test(String(url || ''));
+          } catch (_) {
+            this.__snPizzaOrders = false;
+          }
+          return open.apply(this, arguments);
+        };
+        XHR.prototype.send = function () {
+          try {
+            if (this.__snPizzaOrders && pizzaFetchQuiet()) {
+              var self = this;
+              setTimeout(function () {
+                try {
+                  Object.defineProperty(self, 'status', { configurable: true, get: function () { return 200; } });
+                  Object.defineProperty(self, 'responseText', { configurable: true, get: function () { return '[]'; } });
+                  self.readyState = 4;
+                  if (typeof self.onreadystatechange === 'function') self.onreadystatechange();
+                  if (typeof self.onload === 'function') self.onload();
+                } catch (_) {}
+              }, 0);
+              return;
+            }
+          } catch (_) {}
+          return send.apply(this, arguments);
+        };
+        XHR.__snPizzaOsm = BUILD;
+      }
+    } catch (_) {}
+    try {
+      if (G.SNProfiles && typeof SNProfiles.placeOrder === 'function' && SNProfiles.placeOrder.__snPizzaOsm !== BUILD) {
+        var prevPlace = SNProfiles.placeOrder.bind(SNProfiles);
+        SNProfiles.placeOrder = function (opts) {
+          if (pizzaFetchQuiet()) {
+            return { ok: false, error: 'guest pizza hunt · no orders table' };
+          }
+          return prevPlace(opts);
+        };
+        SNProfiles.placeOrder.__snPizzaOsm = BUILD;
+      }
     } catch (_) {}
   }
 
@@ -2852,8 +2947,7 @@
   async function huntPizza(raw) {
     if (huntLock || hunting) return true;
     huntLock = true;
-    pizzaQuietUntil = Date.now() + 20000;
-    installFetchGuard();
+    markQuiet();
     beginGlobeHunt();
     blockAuthModalOnPizza();
     try {
@@ -3110,8 +3204,7 @@
         ev.stopPropagation();
         if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
       } catch (_) {}
-      pizzaQuietUntil = Date.now() + 20000;
-      installFetchGuard();
+      markQuiet();
       try {
         var a = document.getElementById('cli-in');
         if (a) a.value = '';
@@ -3163,76 +3256,119 @@
 
   function wrapCliRun() {
     try {
-      if (!G.SNCli || typeof SNCli.run !== 'function') return;
-      if (SNCli.run && SNCli.run.__snPizzaOsm === BUILD) return;
-      var prev = SNCli.run.bind(SNCli);
-      function wrapped(raw) {
-        try {
-          var s = String(raw || '').trim();
-          if (isPizzaLine(s)) {
-            pizzaQuietUntil = Date.now() + 20000;
-            installFetchGuard();
-            void huntPizza(s);
-            return Promise.resolve(true);
-          }
-          if (isBareLocate(s) && globeOnly()) {
-            void grantLocateGps();
-            return Promise.resolve(true);
-          }
-          if (isShowRhodes(s)) {
-            void showRhodes(s);
-            return Promise.resolve(true);
-          }
-          if (isGuest() && isPayHold(s)) {
-            pizzaQuietUntil = 0;
-            try {
-              if (G.SNAuth && typeof SNAuth.openModal === 'function') {
-                SNAuth.openModal('Sign in with Google to HOLD ⭐ / pay');
-              }
-            } catch (_) {}
-            log('HOLD ⭐ · Sign in with Google to pay', 'ok');
-            return Promise.resolve(true);
-          }
-        } catch (_) {}
-        return prev(raw);
+      if (!G.SNCli) return;
+      var obj = G.SNCli;
+      var desc = Object.getOwnPropertyDescriptor(obj, 'run');
+      if (desc && desc.get && desc.get.__snPizzaOsm === BUILD) return;
+      var inner = typeof obj.run === 'function' ? obj.run : null;
+      if (inner && inner.__snPizzaOsm === BUILD) return;
+      function applyWrap(fn) {
+        if (!fn || typeof fn !== 'function') return fn;
+        if (fn.__snPizzaOsm === BUILD) return fn;
+        function wrapped(raw) {
+          try {
+            var s = String(raw || '').trim();
+            if (isPizzaLine(s)) {
+              markQuiet();
+              void huntPizza(s);
+              return Promise.resolve(true);
+            }
+            if (isBareLocate(s) && globeOnly()) {
+              void grantLocateGps();
+              return Promise.resolve(true);
+            }
+            if (isShowRhodes(s)) {
+              void showRhodes(s);
+              return Promise.resolve(true);
+            }
+            if (isGuest() && isPayHold(s)) {
+              pizzaQuietUntil = 0;
+              try {
+                G.__snPizzaHuntQuiet = 0;
+              } catch (_) {}
+              try {
+                if (G.SNAuth && typeof SNAuth.openModal === 'function') {
+                  SNAuth.openModal('Sign in with Google to HOLD ⭐ / pay');
+                }
+              } catch (_) {}
+              log('HOLD ⭐ · Sign in with Google to pay', 'ok');
+              return Promise.resolve(true);
+            }
+          } catch (_) {}
+          return fn.apply(this, arguments);
+        }
+        wrapped.__snPizzaOsm = BUILD;
+        wrapped.__snPizzaPrev = fn;
+        return wrapped;
       }
-      wrapped.__snPizzaOsm = BUILD;
-      cliWrap = wrapped;
+      var held = applyWrap(inner);
+      cliWrap = held;
       try {
-        Object.defineProperty(SNCli, 'run', {
+        var getter = function () {
+          return held;
+        };
+        getter.__snPizzaOsm = BUILD;
+        Object.defineProperty(obj, 'run', {
           configurable: true,
           enumerable: true,
-          writable: true,
-          value: wrapped,
+          get: getter,
+          set: function (v) {
+            held = applyWrap(v);
+            cliWrap = held;
+          },
         });
       } catch (_) {
-        SNCli.run = wrapped;
+        try {
+          obj.run = held;
+        } catch (__) {}
       }
-      SNCli.__snGuestPizzaHuntBuild = BUILD;
-      SNCli.__snGuestPizzaHunt = 1;
+      obj.__snGuestPizzaHuntBuild = BUILD;
+      obj.__snGuestPizzaHunt = 1;
+    } catch (_) {}
+  }
+
+  function trapGlobalSNCli() {
+    wrapCliRun();
+    try {
+      if (G.__snPizzaOsmCliTrap === BUILD) return;
+      var current = G.SNCli;
+      Object.defineProperty(G, 'SNCli', {
+        configurable: true,
+        enumerable: true,
+        get: function () {
+          return current;
+        },
+        set: function (v) {
+          current = v;
+          try {
+            wrapCliRun();
+          } catch (_) {}
+        },
+      });
+      G.__snPizzaOsmCliTrap = BUILD;
     } catch (_) {}
   }
 
   function wrapMarketFood() {
     try {
       if (!G.SNMarket) return;
-      if (typeof SNMarket.parseFoodIntent === 'function' && SNMarket.parseFoodIntent.__snPizzaOsm !== BUILD) {
-        var prevParse = SNMarket.parseFoodIntent.bind(SNMarket);
-        SNMarket.parseFoodIntent = function (line) {
+      var M = G.SNMarket;
+      if (typeof M.parseFoodIntent === 'function' && M.parseFoodIntent.__snPizzaOsm !== BUILD) {
+        var prevParse = M.parseFoodIntent.bind(M);
+        M.parseFoodIntent = function (line) {
           var s = String(line || '').trim();
           if (isPizzaLine(s)) {
-            pizzaQuietUntil = Date.now() + 20000;
-            installFetchGuard();
+            markQuiet();
             void huntPizza(s);
             return null;
           }
           return prevParse(line);
         };
-        SNMarket.parseFoodIntent.__snPizzaOsm = BUILD;
+        M.parseFoodIntent.__snPizzaOsm = BUILD;
       }
-      if (typeof SNMarket.fulfillFoodIntent === 'function' && SNMarket.fulfillFoodIntent.__snPizzaOsm !== BUILD) {
-        var ful = SNMarket.fulfillFoodIntent.bind(SNMarket);
-        SNMarket.fulfillFoodIntent = async function (q, opts) {
+      if (typeof M.fulfillFoodIntent === 'function' && M.fulfillFoodIntent.__snPizzaOsm !== BUILD) {
+        var ful = M.fulfillFoodIntent.bind(M);
+        M.fulfillFoodIntent = async function (q, opts) {
           var line = '';
           try {
             if (typeof q === 'string') line = q;
@@ -3244,8 +3380,7 @@
             if (q && typeof q === 'object') food = String(q.food || '');
           } catch (_) {}
           if (food === 'pizza' || isPizzaLine(line) || /\bpizza\b/i.test(line)) {
-            pizzaQuietUntil = Date.now() + 20000;
-            installFetchGuard();
+            markQuiet();
             await huntPizza(line || 'pizza');
             return {
               ok: true,
@@ -3255,7 +3390,7 @@
           }
           return ful(q, opts);
         };
-        SNMarket.fulfillFoodIntent.__snPizzaOsm = BUILD;
+        M.fulfillFoodIntent.__snPizzaOsm = BUILD;
       }
     } catch (_) {}
   }
@@ -3268,6 +3403,7 @@
     bindDocumentCapture();
     installOverlayTap();
     installDiveGuard();
+    trapGlobalSNCli();
     wrapCliRun();
     wrapMarketFood();
 
@@ -3281,6 +3417,7 @@
         var handled = false;
         if (isPizzaLine(v)) {
           handled = true;
+          markQuiet();
           void huntPizza(v);
         } else if (isShowRhodes(v)) {
           handled = true;
@@ -3334,6 +3471,7 @@
         SNAi.ask = function (line, opts) {
           var s = String(line || '');
           if (isPizzaLine(s)) {
+            markQuiet();
             void huntPizza(s);
             return Promise.resolve('Shops on globe · Google only at pay / HOLD ⭐');
           }
@@ -3364,6 +3502,7 @@
   setTimeout(boot, 4000);
   setInterval(function () {
     install();
+    trapGlobalSNCli();
     wrapCliRun();
     wrapMarketFood();
     installFetchGuard();
