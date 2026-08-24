@@ -110,10 +110,10 @@
   var OVERPASS_TIMEOUT_S = 18;
   var OVERPASS_FETCH_MS = 9000;
   var OVERPASS_ENDPOINTS = [
-    'https://overpass.osm.jp/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
     'https://overpass.openstreetmap.fr/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
-    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+    'https://overpass.osm.jp/api/interpreter',
     'https://overpass-api.de/api/interpreter',
   ];
   var PLACES = [
@@ -2626,9 +2626,18 @@
     return await new Promise(function (resolve, reject) {
       var pending = OVERPASS_ENDPOINTS.length;
       var done = false;
+      var emptyTimer = 0;
       if (!pending) {
         reject(new Error('overpass failed'));
         return;
+      }
+      function finishEmpty() {
+        if (done) return;
+        done = true;
+        try {
+          if (emptyTimer) clearTimeout(emptyTimer);
+        } catch (_) {}
+        resolve([]);
       }
       OVERPASS_ENDPOINTS.forEach(function (url) {
         fetchOverpassOnce(url, body, OVERPASS_FETCH_MS)
@@ -2644,7 +2653,13 @@
               var rows = parseOverpassElements((j && j.elements) || []);
               if (rows.length) {
                 done = true;
+                try {
+                  if (emptyTimer) clearTimeout(emptyTimer);
+                } catch (_) {}
                 resolve(rows);
+              } else if (!emptyTimer) {
+                // Honest empty: don't wait hung mirrors for 9s × N.
+                emptyTimer = setTimeout(finishEmpty, 900);
               }
             });
           })
@@ -2655,6 +2670,9 @@
             if (done) return;
             pending--;
             if (pending > 0) return;
+            try {
+              if (emptyTimer) clearTimeout(emptyTimer);
+            } catch (_) {}
             if (sawOk) resolve([]);
             else reject(lastErr || new Error('overpass failed'));
           });
@@ -2914,7 +2932,18 @@
   async function fetchNear(origin) {
     var rows = [];
     try {
-      rows = await queryOverpass(origin.lat, origin.lng, 20);
+      if (origin && isOceanView(origin, 0)) {
+        rows = await queryOverpassQL(overpassAroundQL(origin.lat, origin.lng, 20000, true));
+        if (!rows || !rows.length) {
+          try {
+            rows = await queryOverpassQL(overpassAroundQL(origin.lat, origin.lng, 20000, false));
+          } catch (_) {
+            rows = [];
+          }
+        }
+      } else {
+        rows = await queryOverpass(origin.lat, origin.lng, origin && origin.land ? 16 : 20);
+      }
     } catch (e) {
       throw new Error('map search failed · ' + (e && e.message ? e.message : 'overpass'));
     }
@@ -3045,6 +3074,13 @@
       log('Land hunt · ' + c.name + ' · OSM restaurants', 'dim');
       await waitGlobeReady(1800);
       unlockListeningPan();
+      var landOrigin = {
+        lat: c.lat,
+        lng: c.lng,
+        source: 'land',
+        land: c.name,
+      };
+      var shopsP = fetchNear(landOrigin);
       var flew = false;
       try {
         flew = await flyGlobeTo(c.lat, c.lng, c.name);
@@ -3052,12 +3088,6 @@
         flew = false;
       }
       var live = liveViewLatLng();
-      var landOrigin = {
-        lat: c.lat,
-        lng: c.lng,
-        source: 'land',
-        land: c.name,
-      };
       if (live && haversineKm(live, c) < 80) {
         landOrigin.lat = live.lat;
         landOrigin.lng = live.lng;
@@ -3067,7 +3097,7 @@
       dropToCityAltitude();
       var shops = [];
       try {
-        shops = await fetchNear(landOrigin);
+        shops = await shopsP;
       } catch (e) {
         overpassError = true;
         continue;
@@ -3185,7 +3215,9 @@
   }
 
   async function huntPizza(raw) {
+    if (G.__snPizzaLandBusy) return true;
     if (huntLock || hunting) return true;
+    G.__snPizzaLandBusy = 1;
     huntLock = true;
     neutralizeMuteTraps();
     unlockListeningPan();
@@ -3214,6 +3246,7 @@
     } finally {
       endGlobeHunt();
       huntLock = false;
+      G.__snPizzaLandBusy = 0;
     }
     return true;
   }
