@@ -1,6 +1,5 @@
 /**
  * Guest pizza hunt — Build 20260824093000-pizza-osm2
- * FILENAME twin of chrome-guest-pizza-osm2.js so a re-fetch of the old path is Overpass, not 083000.
  * PATCH PR #177 only. Real OSM/Overpass view-hunt (#171 c27e3a9) + #127 pin-spread.
  * Intercept `pizza` BEFORE cli.js food path / SNMarket.fulfillFoodIntent.
  * NEVER query supabase /rest/v1/orders for a hunt. NEVER POST /api/ai.

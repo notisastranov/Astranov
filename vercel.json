@@ -6,32 +6,38 @@
     {
       "source": "/",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" },
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" },
         { "key": "Pragma", "value": "no-cache" },
+        { "key": "Expires", "value": "0" },
         { "key": "Clear-Site-Data", "value": "\"cache\"" },
+        { "key": "CDN-Cache-Control", "value": "no-store" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "no-store" },
         { "key": "Content-Security-Policy", "value": "frame-ancestors 'self' https://astranov.eu https://*.astranov.eu https://investors.astranov.eu https://exchange.astranov.eu" }
       ]
     },
     {
       "source": "/index.html",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" },
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" },
         { "key": "Pragma", "value": "no-cache" },
+        { "key": "Expires", "value": "0" },
         { "key": "Clear-Site-Data", "value": "\"cache\"" },
+        { "key": "CDN-Cache-Control", "value": "no-store" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "no-store" },
         { "key": "Content-Security-Policy", "value": "frame-ancestors 'self' https://astranov.eu https://*.astranov.eu https://investors.astranov.eu https://exchange.astranov.eu" }
       ]
     },
     {
       "source": "/sw.js",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" },
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" },
         { "key": "Service-Worker-Allowed", "value": "/" }
       ]
     },
     {
       "source": "/js/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate" },
+        { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" },
         { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
     }

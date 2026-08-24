@@ -1,5 +1,5 @@
-/* Astranov mute · Build 20260824085000-pizza-osm
- * Kill beeps + load chrome-guest-pizza-hunt only:
+/* Astranov mute · Build 20260824093000-pizza-osm2
+ * Kill beeps + load chrome-guest-pizza-osm2.js only (new filename, no cached pizza-hunt bytes):
  *   OSM Overpass around LIVE camera (amenity=fast_food|restaurant pizza)
  *   unique overlay pins · tap Shop · name · km · ⭐
  *   locked #127 flyGlobeTo / probe-signs · no Locate wall · Google only at HOLD/pay
@@ -8,14 +8,14 @@
  * chrome-ai-listen, chrome-call-arc, chrome-nairobi-ladder, chrome-place-earth,
  * or chrome-cli-answer. Does NOT restyle #stc-cmd-in or placeholders.
  * loadChain injects LOCAL /js/spacenet files only. No runtime GitHub or CDN fetch.
- * Cache-bust 20260824085000-pizza-osm. Marks prevent double-inject wipe.
+ * Cache-bust 20260824093000-pizza-osm2. Marks prevent double-inject wipe.
  *
  * THIS FILE RUNS BEFORE os-bootloader / cli.js / market.js.
  * It must swallow `pizza` and wrap fetch so /rest/v1/orders never 400s a hunt.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260824085000-pizza-osm';
+  var BUILD = '20260824093000-pizza-osm2';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
@@ -417,23 +417,58 @@
   function loadChain() {
     try {
       var nodes = document.querySelectorAll(
-        'script[src*="chrome-guest-pizza-hunt.js"], script[data-sn-guest-pizza]'
+        'script[src*="chrome-guest-pizza-hunt.js"], script[src*="chrome-guest-pizza-osm"], script[data-sn-guest-pizza]'
       );
-      var i;
+      var i, keep = false;
       for (i = 0; i < nodes.length; i++) {
         var src = String(nodes[i].getAttribute('src') || nodes[i].src || '');
-        if (src.indexOf(BUILD) >= 0 || nodes[i].getAttribute('data-sn-guest-pizza-osm') === '1') {
-          return;
+        var isOsm2 =
+          src.indexOf('chrome-guest-pizza-osm2.js') >= 0 &&
+          src.indexOf(BUILD) >= 0 &&
+          nodes[i].getAttribute('data-sn-guest-pizza-osm2') === '1';
+        if (isOsm2 && !keep) {
+          keep = true;
+          continue;
         }
         try {
           if (nodes[i].parentNode) nodes[i].parentNode.removeChild(nodes[i]);
         } catch (_) {}
       }
+      if (keep) return;
     } catch (_) {}
-    loadScript('/js/spacenet/chrome-guest-pizza-hunt.js', 'data-sn-guest-pizza-osm');
+    loadScript('/js/spacenet/chrome-guest-pizza-osm2.js', 'data-sn-guest-pizza-osm2');
+  }
+
+  function stampMeta() {
+    try {
+      var m = document.querySelector('meta[name="astranov-build"]');
+      if (m) m.setAttribute('content', BUILD);
+      var c = document.querySelector('meta[name="astranov-continuity"]');
+      if (c) c.setAttribute('content', BUILD);
+    } catch (_) {}
+  }
+
+  function purgeStale() {
+    try {
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.getRegistrations().then(function (rs) {
+          for (var i = 0; i < rs.length; i++) rs[i].unregister();
+        });
+        if (navigator.serviceWorker.controller) {
+          try { navigator.serviceWorker.controller.postMessage({ type: 'SN_PURGE' }); } catch (_) {}
+        }
+      }
+    } catch (_) {}
+    try {
+      if (window.caches) caches.keys().then(function (ks) {
+        for (var i = 0; i < ks.length; i++) caches.delete(ks[i]);
+      });
+    } catch (_) {}
   }
 
   function boot() {
+    stampMeta();
+    purgeStale();
     installFetchGuard();
     installXhrGuard();
     bindDocumentCapture();
@@ -462,6 +497,7 @@
   setTimeout(boot, 800);
   setTimeout(boot, 2500);
   setInterval(function () {
+    stampMeta();
     installFetchGuard();
     trapSNCli();
     wrapCliRun();

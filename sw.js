@@ -1,5 +1,5 @@
 /* Astranov service worker — network-only OS kernel. Never serve a stale build. */
-const CACHE = 'astranov-v59-phoneos';
+const CACHE = 'astranov-v60-pizza-osm2';
 
 self.addEventListener('install', function (e) {
   self.skipWaiting();
@@ -49,8 +49,8 @@ self.addEventListener('fetch', function (e) {
 
   if (isKernel(url)) {
     e.respondWith(
-      fetch(e.request, { cache: 'no-store' }).catch(function () {
-        return fetch(e.request);
+      fetch(e.request, { cache: 'reload' }).catch(function () {
+        return fetch(e.request, { cache: 'no-store' });
       })
     );
     return;
