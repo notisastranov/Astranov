@@ -1059,7 +1059,7 @@
   function snapshotSize(box) {
     var dLat = Math.max(0.02, Math.abs(box.north - box.south));
     var dLng = Math.max(0.02, Math.abs(box.east - box.west));
-    var maxPx = 4096;
+    var maxPx = 2048;
     var w;
     var h;
     if (dLng >= dLat) {
@@ -1107,31 +1107,36 @@
   }
 
   async function blitSnapshot(box, source) {
-    var sz = snapshotSize(box);
-    var img = await loadTileImage(snapshotUrl(box, sz.w, sz.h, source), 14000);
-    if (!img) return null;
-    var canvas = document.createElement("canvas");
-    canvas.width = img.naturalWidth || sz.w;
-    canvas.height = img.naturalHeight || sz.h;
-    if (canvas.width < 8 || canvas.height < 8) return null;
-    var ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-    try {
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    } catch (_) {
-      return null;
+    var tries = [snapshotSize(box), { w: 1024, h: 512 }];
+    var t;
+    for (t = 0; t < tries.length; t++) {
+      var sz = tries[t];
+      var img = await loadTileImage(snapshotUrl(box, sz.w, sz.h, source), 12000);
+      if (!img) continue;
+      var canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth || sz.w;
+      canvas.height = img.naturalHeight || sz.h;
+      if (canvas.width < 8 || canvas.height < 8) continue;
+      var ctx = canvas.getContext("2d");
+      if (!ctx) continue;
+      try {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      } catch (_) {
+        continue;
+      }
+      return {
+        canvas: canvas,
+        loaded: 1,
+        wanted: 1,
+        z: source === "esri" ? 12 : 8,
+        source: source,
+        west: box.west,
+        east: box.east,
+        north: box.north,
+        south: box.south,
+      };
     }
-    return {
-      canvas: canvas,
-      loaded: 1,
-      wanted: 1,
-      z: source === "esri" ? 12 : 8,
-      source: source,
-      west: box.west,
-      east: box.east,
-      north: box.north,
-      south: box.south,
-    };
+    return null;
   }
 
   function mosaicRangeAround(lat, lng, z, maxN) {
