@@ -1,22 +1,24 @@
-/* Astranov mute · Build 20260824112000-laptop-land
- * Kill beeps + load chrome-guest-laptop-hunt-20260824112000.js
+/* Astranov mute · Build 20260824114000-laptop-run
+ * Kill beeps + load chrome-guest-laptop-hunt-20260824114000.js
  * (vend of locked #132 TAP/CLI · real OSM electronics · CITY altitude
  * before pins · unique overlay pins · tap Shop · name · km · ⭐ on the
  * live guest CLI). Fly failed only when camera missed (~50 km) or
- * probe-sign checks fail. Hunt failed only when Overpass itself errors. Empty view → honest empty + Rhodes land-hunt.
+ * probe-sign checks fail. Hunt failed only when Overpass itself errors.
+ * After Origin ALWAYS Overpass (timeout + de/kumi/jp/fr retry). Empty view
+ * → honest empty + Rhodes land-hunt at 36.43,28.22 city scale.
  * No Locate wall. No Google until HOLD/pay. No supabase orders hunt.
  * loadChain injects LOCAL /js/spacenet files only. No runtime GitHub.
  * Does NOT load chrome-guest-pizza-hunt, chrome-call-arc,
  * chrome-nairobi-ladder, chrome-kalithea-village, chrome-research-stay.
  * Does NOT overwrite SNGlobe.flyGlobeTo when already defined.
  * Does NOT restyle #stc-cmd-in or placeholders.
- * NEW PR against main. Do not reuse #175/#176/#177.
+ * PATCH #178 only. Same branch. Do not reuse #175/#176/#177.
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260824112000-laptop-land';
-  var HUNT_SRC = '/js/spacenet/chrome-guest-laptop-hunt-20260824112000.js';
-  var HUNT_MARK = 'data-sn-guest-laptop-hunt-20260824112000';
+  var BUILD = '20260824114000-laptop-run';
+  var HUNT_SRC = '/js/spacenet/chrome-guest-laptop-hunt-20260824114000.js';
+  var HUNT_MARK = 'data-sn-guest-laptop-hunt-20260824114000';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
