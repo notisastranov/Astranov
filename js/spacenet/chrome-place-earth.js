@@ -1,4 +1,4 @@
-/* Astranov place-kenya · Build 20260824032000-place-kenya
+/* Astranov place-fill · Build 20260824053000-place-fill
  * PR #174 only. Do not merge. Does not edit #130 / #131.
  *
  * window.SNGlobe is the LIVE globe.js object (plain assign, never a stub,
@@ -7,24 +7,27 @@
  *   after nairobi settle ~-1.286, 36.817
  *   after kalithea settle ~36.389, 28.223
  *
- * After the fly settles, WAIT until satellite tiles for THAT look-at
- * actually have textures (not white placeholders). Hold one zoom
- * coarser until they do. Prefer the pizza/Rhodes SNEarthLevels drape
- * (/api/gtiles else NASA GIBS z<=8 else Esri). Do NOT hide sn-earth-drape.
- * Cap at z10. Leaflet stays hidden. Nairobi must READ as Kenya land:
- * always drape NASA/Esri z8 (Lake Victoria / highlands), never treat a
- * z10 postage-stamp as enough, and hold camera in the z8 band so
- * earth-levels does not swap to z10/z12.
+ * VERIFY (20260824053000): NOT a single-tile bind. Live probe after nairobi
+ * bound 49 unique NASA textures on 49 meshes. The fail is frustum coverage:
+ * camera FOV at land zoom (42°, z=1.58, 16:9) spans ~88°×38° ≈ 1800 z8
+ * tiles; code only requested a 7×7 (~10°) window. NASA GIBS z8 / Esri cover
+ * the whole world — those tiles exist — they were never fetched. Result:
+ * one sharp NASA rectangle on the 2048 blue-marble smear. Kalithea same
+ * plus earth-levels white placeholders.
+ *
+ * FIX: pull camera in to land z; raycast the frustum; blit a z8 (or the
+ * finest zoom that fits) mosaic covering the FULL tile range of that
+ * frustum onto one canvas / one mesh (correct UV). z8 inset around the
+ * look-at. Leaflet hidden. Do NOT hide sn-earth-drape.
  *
  * Guest kalithea prints CLI rungs:
  *   Kalithea · village · Rhodes / lake / islands / olives
- * matching how nairobi prints national/city/streets.
  */
 (function (global) {
   "use strict";
-  var BUILD = "20260824032000-place-kenya";
-  if (global.__snPlaceKenya20260824032000) return;
-  global.__snPlaceKenya20260824032000 = 1;
+  var BUILD = "20260824053000-place-fill";
+  if (global.__snPlaceFill20260824053000) return;
+  global.__snPlaceFill20260824053000 = 1;
 
   var NAIROBI = { lat: -1.286, lng: 36.817 };
   var KALITHEA = { lat: 36.387557, lng: 28.222533 };
@@ -42,6 +45,11 @@
   var drapeLoader = null;
   var drapeCache = Object.create(null);
   var drapeLast = "";
+  var fillMesh = null;
+  var detailMesh = null;
+  var fillLast = "";
+  var fillInfo = null;
+  var fillBusy = false;
   var tilesBusy = false;
   var kaliBusy = false;
   var cliWrap = null;
@@ -507,6 +515,28 @@
     paintGlobe(g);
   }
 
+  /* Pull camera IN from GLOBAL (z=5.4) to land altitude. capCameraZ only
+   * blocked going closer, so flyGlobeTo left the guest in space with a
+   * postage-stamp z8 scrap on the facing hemisphere. */
+  function pullInLandZ(g, lat, lng) {
+    g = g || liveGlobe();
+    if (!g) return;
+    var cam = null;
+    try {
+      cam = typeof g.getCamera === "function" ? g.getCamera() : null;
+    } catch (_) {}
+    if (!cam || !cam.position) return;
+    var zWant = minZFor(lat, lng);
+    var z = +cam.position.z;
+    if (!isFinite(zWant)) return;
+    if (!isFinite(z) || z > zWant + 0.02) {
+      try {
+        cam.position.z = zWant;
+      } catch (_) {}
+      paintGlobe(g);
+    }
+  }
+
   function holdLookFrame(g) {
     if (!holdEuler || !lastFly) return;
     if (Date.now() > capUntil) return;
@@ -545,7 +575,7 @@
     return Math.floor(((lng + 180) / 360) * Math.pow(2, z));
   }
   function tileY(lat, z) {
-    var latRad = (lat * Math.PI) / 180;
+    var latRad = (Math.max(-85.05112878, Math.min(85.05112878, lat)) * Math.PI) / 180;
     return Math.floor(
       ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * Math.pow(2, z)
     );
@@ -564,35 +594,10 @@
     });
   }
 
-  /* Same zoom ladder the pizza/Rhodes fly (chrome-earth-levels) already uses.
-     Cap at 10 so we never dump a broken high-zoom smear (12/13/14). */
-  function tileZoomForCam(z) {
-    z = Number(z);
-    if (!isFinite(z)) return 8;
-    if (z >= 3.4) return 0;
-    if (z >= 2.05) return 6;
-    if (z >= 1.45) return 8;
-    return 10;
-  }
-
-  function coarserZoom(tz) {
-    tz = Number(tz) || 0;
-    if (tz >= 10) return 8;
-    if (tz >= 8) return 6;
-    if (tz >= 6) return 6;
-    return tz;
-  }
-
-  function camZForTileZoom(tz) {
-    if (tz <= 6) return 2.2;
-    if (tz <= 8) return 1.58;
-    return 1.52;
-  }
-
   function drapeUrl(z, x, y) {
     try {
       var gtiles = global.SNEarthLevels && typeof SNEarthLevels.google === "function" ? SNEarthLevels.google() : null;
-      if (gtiles && gtiles.ok && (gtiles.proxy || gtiles.ok === true)) {
+      if (gtiles && gtiles.ok && gtiles.proxy) {
         return "/api/gtiles?z=" + z + "&x=" + x + "&y=" + y;
       }
     } catch (_) {}
@@ -643,7 +648,8 @@
   function countMapped(group) {
     var n = 0;
     var total = 0;
-    if (!group || typeof group.traverse !== "function") return { n: 0, total: 0 };
+    var tex = Object.create(null);
+    if (!group || typeof group.traverse !== "function") return { n: 0, total: 0, unique: 0 };
     try {
       group.traverse(function (obj) {
         if (!obj || !obj.isMesh) return;
@@ -652,13 +658,16 @@
           if (obj.material && obj.material.map) {
             n++;
             try {
+              tex[obj.material.map.uuid || obj.material.map.id] = 1;
+            } catch (_) {}
+            try {
               obj.visible = true;
             } catch (_) {}
           }
         } catch (_) {}
       });
     } catch (_) {}
-    return { n: n, total: total };
+    return { n: n, total: total, unique: Object.keys(tex).length };
   }
 
   function hideWhitePlaceholders(group) {
@@ -697,27 +706,39 @@
     } catch (_) {}
   }
 
+  function disposeMesh(mesh) {
+    if (!mesh) return;
+    try {
+      if (mesh.parent) mesh.parent.remove(mesh);
+    } catch (_) {}
+    try {
+      if (mesh.geometry) mesh.geometry.dispose();
+    } catch (_) {}
+    try {
+      if (mesh.material) {
+        if (mesh.material.map) mesh.material.map.dispose();
+        mesh.material.dispose();
+      }
+    } catch (_) {}
+  }
 
   function clearDrape() {
     try {
       Object.keys(drapeCache).forEach(function (k) {
-        var mesh = drapeCache[k];
-        try {
-          if (mesh && mesh.parent) mesh.parent.remove(mesh);
-          if (mesh && mesh.geometry) mesh.geometry.dispose();
-          if (mesh && mesh.material) {
-            if (mesh.material.map) mesh.material.map.dispose();
-            mesh.material.dispose();
-          }
-        } catch (_) {}
+        disposeMesh(drapeCache[k]);
         delete drapeCache[k];
       });
     } catch (_) {}
+    disposeMesh(fillMesh);
+    disposeMesh(detailMesh);
+    fillMesh = null;
+    detailMesh = null;
     try {
       if (drapeGroup && drapeGroup.parent) drapeGroup.parent.remove(drapeGroup);
     } catch (_) {}
     drapeGroup = null;
     drapeLast = "";
+    fillLast = "";
   }
 
   function ensureDrapeHost(g, T) {
@@ -738,25 +759,159 @@
     return drapeGroup;
   }
 
-  function makeTileGeom(T, x, y, z, toVec) {
-    var north = tileNorth(y, z);
-    var south = tileNorth(y + 1, z);
-    var west = tileWest(x, z);
-    var east = tileWest(x + 1, z);
-    var segs = z >= 10 ? 4 : 6;
+  function ndcHit(g, nx, ny) {
+    var T = threeNS();
+    if (!g || !T || !T.Raycaster) return null;
+    try {
+      var earth = typeof g.getEarth === "function" ? g.getEarth() : null;
+      var camera = typeof g.getCamera === "function" ? g.getCamera() : null;
+      if (!earth || !camera) return null;
+      if (earth.updateMatrixWorld) earth.updateMatrixWorld(true);
+      if (camera.updateMatrixWorld) camera.updateMatrixWorld(true);
+      var ray = new T.Raycaster();
+      ray.setFromCamera(new T.Vector2(nx, ny), camera);
+      var hits = ray.intersectObject(earth, false);
+      if (hits && hits.length) {
+        var local = earth.worldToLocal(hits[0].point.clone());
+        return vecToLatLngLocal(local);
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function estimateBox(g, lat, lng) {
+    var cam = null;
+    try {
+      cam = g && typeof g.getCamera === "function" ? g.getCamera() : null;
+    } catch (_) {}
+    var z = cam && cam.position ? +cam.position.z : 1.58;
+    var aspect = cam && cam.aspect ? +cam.aspect : 1.4;
+    if (!isFinite(z) || z < 1.02) z = 1.58;
+    if (!isFinite(aspect) || aspect < 0.3) aspect = 1.4;
+    var dist = Math.max(0.06, z - 1);
+    var halfLat = Math.max(5, Math.min(55, dist * 48));
+    var halfLng = Math.max(7, Math.min(95, halfLat * aspect * 1.25));
+    return {
+      south: lat - halfLat,
+      north: lat + halfLat,
+      west: lng - halfLng,
+      east: lng + halfLng,
+    };
+  }
+
+  function frustumBox(g, lat, lng) {
+    g = g || liveGlobe();
+    lat = +lat;
+    lng = +lng;
+    var hits = [];
+    var u, v;
+    for (v = -1; v <= 1.001; v += 0.5) {
+      for (u = -1; u <= 1.001; u += 0.5) {
+        var h = ndcHit(g, u, v);
+        if (h && isFinite(h.lat) && isFinite(h.lng)) hits.push(h);
+      }
+    }
+    var box;
+    if (hits.length >= 3) {
+      var lats = [];
+      var lngs = [];
+      var i;
+      for (i = 0; i < hits.length; i++) {
+        lats.push(hits[i].lat);
+        lngs.push(lng + unwrapDeg(hits[i].lng - lng));
+      }
+      box = {
+        south: Math.min.apply(null, lats),
+        north: Math.max.apply(null, lats),
+        west: Math.min.apply(null, lngs),
+        east: Math.max.apply(null, lngs),
+      };
+    } else {
+      box = estimateBox(g, lat, lng);
+    }
+    var dLat = Math.max(1.2, (box.north - box.south) * 0.14);
+    var dLng = Math.max(1.6, (box.east - box.west) * 0.14);
+    box.south -= dLat;
+    box.north += dLat;
+    box.west -= dLng;
+    box.east += dLng;
+    if (box.south < -85) box.south = -85;
+    if (box.north > 85) box.north = 85;
+    if (lat < box.south) box.south = lat - 1.5;
+    if (lat > box.north) box.north = lat + 1.5;
+    if (lng < box.west) box.west = lng - 2;
+    if (lng > box.east) box.east = lng + 2;
+    return box;
+  }
+
+  function tileRange(box, z) {
+    var x0 = tileX(box.west, z);
+    var x1 = tileX(box.east, z);
+    var y0 = tileY(box.north, z);
+    var y1 = tileY(box.south, z);
+    var n = Math.pow(2, z);
+    if (x1 < x0) x1 += n;
+    if (y1 < y0) {
+      var t = y0;
+      y0 = y1;
+      y1 = t;
+    }
+    if (y0 < 0) y0 = 0;
+    if (y1 >= n) y1 = n - 1;
+    return {
+      z: z,
+      x0: x0,
+      x1: x1,
+      y0: y0,
+      y1: y1,
+      nx: x1 - x0 + 1,
+      ny: y1 - y0 + 1,
+      n: n,
+    };
+  }
+
+  function zoomToCover(box, maxN, capZ) {
+    capZ = capZ == null ? 8 : capZ;
+    if (capZ > 8) capZ = 8;
+    var z;
+    var last = tileRange(box, 3);
+    for (z = capZ; z >= 2; z--) {
+      var r = tileRange(box, z);
+      last = r;
+      if (r.nx * r.ny <= maxN && r.nx > 0 && r.ny > 0) return r;
+    }
+    return last;
+  }
+
+  function latLngVec(g, T, la, ln, r) {
+    if (g && typeof g.latLngToVec === "function") return g.latLngToVec(la, ln, r);
+    var phi = ((90 - la) * Math.PI) / 180;
+    var theta = ((ln + 180) * Math.PI) / 180;
+    return new T.Vector3(
+      -r * Math.sin(phi) * Math.cos(theta),
+      r * Math.cos(phi),
+      r * Math.sin(phi) * Math.sin(theta)
+    );
+  }
+
+  function makeBBoxGeom(T, g, south, north, west, east, radius) {
+    var dLat = Math.abs(north - south);
+    var dLng = Math.abs(east - west);
+    var segs = Math.max(8, Math.min(28, Math.round(Math.max(dLat, dLng) / 3) + 8));
     var pos = [];
     var uv = [];
     var idx = [];
     var cols = segs + 1;
-    for (var i = 0; i <= segs; i++) {
-      var v = i / segs;
-      var lat = north + (south - north) * v;
-      for (var j = 0; j <= segs; j++) {
-        var u = j / segs;
-        var lng = west + (east - west) * u;
-        var p = toVec(lat, lng, 1.006);
+    var i, j;
+    for (i = 0; i <= segs; i++) {
+      var vv = i / segs;
+      var la = north + (south - north) * vv;
+      for (j = 0; j <= segs; j++) {
+        var uu = j / segs;
+        var ln = west + (east - west) * uu;
+        var p = latLngVec(g, T, la, ln, radius);
         pos.push(p.x, p.y, p.z);
-        uv.push(u, 1 - v);
+        uv.push(uu, 1 - vv);
       }
     }
     for (var row = 0; row < segs; row++) {
@@ -786,7 +941,7 @@
         if (done) return;
         done = true;
         resolve(null);
-      }, ms || 3200);
+      }, ms || 4200);
       try {
         img.crossOrigin = "anonymous";
       } catch (_) {}
@@ -815,98 +970,200 @@
     });
   }
 
-  function texFromImg(T, img) {
-    var tex = new T.Texture(img);
+  async function blitRange(range, timeoutMs) {
+    var nx = range.nx;
+    var ny = range.ny;
+    if (nx < 1 || ny < 1) return null;
+    var maxPx = 4096;
+    var tw = 256;
+    if (nx * tw > maxPx) tw = Math.max(32, Math.floor(maxPx / nx));
+    if (ny * tw > maxPx) tw = Math.min(tw, Math.max(32, Math.floor(maxPx / ny)));
+    var canvas = document.createElement("canvas");
+    canvas.width = nx * tw;
+    canvas.height = ny * tw;
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.fillStyle = "#0a335c";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    var loaded = 0;
+    var jobs = [];
+    var x, y;
+    for (y = range.y0; y <= range.y1; y++) {
+      for (x = range.x0; x <= range.x1; x++) {
+        (function (ix, iy) {
+          var tx = ((ix % range.n) + range.n) % range.n;
+          var col = ix - range.x0;
+          var row = iy - range.y0;
+          jobs.push(
+            loadTileImage(drapeUrl(range.z, tx, iy), timeoutMs || 4200).then(function (img) {
+              if (!img) return;
+              try {
+                ctx.drawImage(img, col * tw, row * tw, tw, tw);
+                loaded++;
+              } catch (_) {}
+            })
+          );
+        })(x, y);
+      }
+    }
+    await Promise.all(jobs);
+    if (loaded < 1) return null;
+    return {
+      canvas: canvas,
+      loaded: loaded,
+      wanted: nx * ny,
+      z: range.z,
+      x0: range.x0,
+      x1: range.x1,
+      y0: range.y0,
+      y1: range.y1,
+      west: tileWest(range.x0, range.z),
+      east: tileWest(range.x1 + 1, range.z),
+      north: tileNorth(range.y0, range.z),
+      south: tileNorth(range.y1 + 1, range.z),
+    };
+  }
+
+  function texFromCanvas(T, canvas) {
+    var tex = T.CanvasTexture ? new T.CanvasTexture(canvas) : new T.Texture(canvas);
     tex.minFilter = T.LinearFilter;
     tex.magFilter = T.LinearFilter;
     tex.generateMipmaps = false;
+    try {
+      tex.flipY = true;
+    } catch (_) {}
     tex.needsUpdate = true;
     return tex;
   }
 
-  async function drapeLoadedZoom(lat, lng, zoom) {
+  function putLayer(host, T, g, blit, radius, renderOrder, name, prev) {
+    disposeMesh(prev);
+    if (!blit || !blit.canvas) return null;
+    var geo = makeBBoxGeom(T, g, blit.south, blit.north, blit.west, blit.east, radius);
+    var mat = new T.MeshBasicMaterial({
+      map: texFromCanvas(T, blit.canvas),
+      depthWrite: false,
+      depthTest: true,
+      transparent: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+      side: T.DoubleSide || 2,
+    });
+    var mesh = new T.Mesh(geo, mat);
+    mesh.renderOrder = renderOrder;
+    mesh.name = name;
+    mesh.frustumCulled = false;
+    host.add(mesh);
+    return mesh;
+  }
+
+  async function drapeFrustum(lat, lng) {
     var g = liveGlobe();
     var T = threeNS();
-    if (!g || !T || !T.Mesh || !T.Texture) return 0;
+    if (!g || !T || !T.Mesh) return { ok: false, reason: "no-globe" };
+    if (fillBusy) return fillInfo || { ok: false, reason: "busy" };
+    capCameraZ(g, lat, lng);
+    paintGlobe(g);
     var host = ensureDrapeHost(g, T);
-    if (!host) return 0;
-    var toVec =
-      typeof g.latLngToVec === "function"
-        ? function (la, ln, r) {
-            return g.latLngToVec(la, ln, r);
-          }
-        : function (la, ln, r) {
-            var phi = ((90 - la) * Math.PI) / 180;
-            var theta = ((ln + 180) * Math.PI) / 180;
-            return new T.Vector3(
-              -r * Math.sin(phi) * Math.cos(theta),
-              r * Math.cos(phi),
-              r * Math.sin(phi) * Math.sin(theta)
-            );
-          };
-    var n = Math.pow(2, zoom);
-    var cx = tileX(lng, zoom);
-    var cy = tileY(lat, zoom);
-    var span = zoom >= 10 ? 2 : 3;
-    var jobs = [];
-    var keep = Object.create(null);
-    for (var dy = -span; dy <= span; dy++) {
-      for (var dx = -span; dx <= span; dx++) {
-        var tx = ((cx + dx) % n + n) % n;
-        var ty = cy + dy;
-        if (ty < 0 || ty >= n) continue;
-        var id = zoom + "/" + tx + "/" + ty;
-        keep[id] = 1;
-        if (drapeCache[id] && drapeCache[id].material && drapeCache[id].material.map) continue;
-        jobs.push({ id: id, tx: tx, ty: ty });
+    if (!host) return { ok: false, reason: "no-host" };
+    var box = frustumBox(g, lat, lng);
+    var fillRange = zoomToCover(box, 160, 8);
+    var camZ = null;
+    try {
+      camZ = +g.getCamera().position.z;
+    } catch (_) {}
+    var key =
+      fillRange.z +
+      ":" +
+      fillRange.x0 +
+      "-" +
+      fillRange.x1 +
+      ":" +
+      fillRange.y0 +
+      "-" +
+      fillRange.y1 +
+      ":" +
+      (isFinite(camZ) ? camZ.toFixed(2) : "z") +
+      ":" +
+      lat.toFixed(2) +
+      ":" +
+      lng.toFixed(2);
+    if (key === fillLast && fillMesh && fillMesh.material && fillMesh.material.map) {
+      hideBrokenEarthDrape();
+      return fillInfo || { ok: true, cached: true };
+    }
+    fillBusy = true;
+    try {
+    var fillBlit = await blitRange(fillRange, 4500);
+    if (!fillBlit) return { ok: false, reason: "fill-empty", range: fillRange, box: box };
+    fillMesh = putLayer(host, T, g, fillBlit, 1.0065, 4, "sn-place-fill", fillMesh);
+
+    var detailBox;
+    var detailCap = 8;
+    if (isKalitheaCoord(lat, lng)) {
+      detailBox = { south: lat - 0.42, north: lat + 0.42, west: lng - 0.55, east: lng + 0.55 };
+      detailCap = 12;
+    } else {
+      detailBox = { south: lat - 4.2, north: lat + 4.2, west: lng - 5.2, east: lng + 5.2 };
+      detailCap = 8;
+    }
+    var detailRange = zoomToCover(detailBox, 96, detailCap);
+    if (isKalitheaCoord(lat, lng)) {
+      detailRange = tileRange(detailBox, 12);
+      if (detailRange.nx * detailRange.ny > 100) detailRange = zoomToCover(detailBox, 96, 11);
+    } else if (detailRange.z < 8) {
+      detailRange = tileRange(detailBox, 8);
+      if (detailRange.nx * detailRange.ny > 100) detailRange = zoomToCover(detailBox, 81, 8);
+    }
+    var detailBlit = null;
+    if (!(detailRange.z <= fillRange.z && detailRange.nx * detailRange.ny > fillRange.nx * fillRange.ny * 0.8)) {
+      detailBlit = await blitRange(detailRange, 4500);
+      if (detailBlit && detailBlit.loaded >= 4) {
+        detailMesh = putLayer(host, T, g, detailBlit, 1.0076, 5, "sn-place-detail", detailMesh);
       }
     }
-    Object.keys(drapeCache).forEach(function (k) {
-      if (keep[k]) return;
-      var mesh = drapeCache[k];
-      try {
-        if (mesh && mesh.parent) mesh.parent.remove(mesh);
-      } catch (_) {}
-      delete drapeCache[k];
-    });
-    var loaded = 0;
-    await Promise.all(
-      jobs.map(function (job) {
-        return loadTileImage(drapeUrl(zoom, job.tx, job.ty), 3200).then(function (img) {
-          if (!img) return;
-          try {
-            var tex = texFromImg(T, img);
-            var geo = makeTileGeom(T, job.tx, job.ty, zoom, toVec);
-            var mat = new T.MeshBasicMaterial({
-              map: tex,
-              depthWrite: false,
-              depthTest: true,
-              transparent: false,
-              polygonOffset: true,
-              polygonOffsetFactor: -2,
-              polygonOffsetUnits: -2,
-            });
-            var mesh = new T.Mesh(geo, mat);
-            mesh.renderOrder = 4;
-            mesh.name = "sn-place-tile-" + job.id;
-            if (drapeCache[job.id] && drapeCache[job.id].parent) {
-              try {
-                drapeCache[job.id].parent.remove(drapeCache[job.id]);
-              } catch (_) {}
-            }
-            drapeCache[job.id] = mesh;
-            host.add(mesh);
-            loaded++;
-          } catch (_) {}
-        });
-      })
-    );
-    Object.keys(drapeCache).forEach(function (k) {
-      if (keep[k] && drapeCache[k] && drapeCache[k].material && drapeCache[k].material.map) loaded++;
-    });
+    fillLast = key;
+    fillInfo = {
+      ok: true,
+      build: BUILD,
+      box: box,
+      fill: {
+        z: fillRange.z,
+        nx: fillRange.nx,
+        ny: fillRange.ny,
+        tiles: fillRange.nx * fillRange.ny,
+        loaded: fillBlit.loaded,
+        west: fillBlit.west,
+        east: fillBlit.east,
+        north: fillBlit.north,
+        south: fillBlit.south,
+      },
+      detail: detailBlit
+        ? {
+            z: detailRange.z,
+            nx: detailRange.nx,
+            ny: detailRange.ny,
+            tiles: detailRange.nx * detailRange.ny,
+            loaded: detailBlit.loaded,
+          }
+        : null,
+      camZ: (function () {
+        try {
+          return +g.getCamera().position.z;
+        } catch (_) {
+          return null;
+        }
+      })(),
+      view: { lat: lat, lng: lng },
+    };
     hideBrokenEarthDrape();
+    keepEarthVisible();
     paintGlobe(g);
-    return loaded;
+    return fillInfo;
+    } finally {
+      fillBusy = false;
+    }
   }
 
   function earthLevelsMapped() {
@@ -918,23 +1175,6 @@
       hideWhitePlaceholders(grp);
     }
     return countMapped(grp);
-  }
-
-  async function waitUntilMapped(minN, ms) {
-    var t0 = Date.now();
-    var last = { n: 0, total: 0 };
-    while (Date.now() - t0 < (ms || 4200)) {
-      last = earthLevelsMapped();
-      var own = 0;
-      try {
-        Object.keys(drapeCache).forEach(function (k) {
-          if (drapeCache[k] && drapeCache[k].material && drapeCache[k].material.map) own++;
-        });
-      } catch (_) {}
-      if (last.n >= minN || own >= minN) return true;
-      await sleep(180);
-    }
-    return last.n >= 1;
   }
 
   async function waitReadableTiles(lat, lng) {
@@ -953,79 +1193,14 @@
       keepEarthVisible();
       hideBrokenEarthDrape();
       if (!g) return false;
+      pullInLandZ(g, lat, lng);
       capCameraZ(g, lat, lng);
-      var cam = typeof g.getCamera === "function" ? g.getCamera() : null;
-      var nairobi = isNairobiCoord(lat, lng);
-      var targetZ = minZFor(lat, lng);
-      if (cam && cam.position && isFinite(+cam.position.z)) {
-        targetZ = Math.max(+cam.position.z, minZFor(lat, lng));
-      }
-      var wantZoom = tileZoomForCam(targetZ);
-      if (!wantZoom) wantZoom = 8;
-      /* Nairobi city z sits in earth-levels' z10 band. z10 stamps do not
-         fill the facing hemisphere — always drape z8 Kenya land instead. */
-      if (nairobi) wantZoom = 8;
-      var coarse = nairobi ? 6 : coarserZoom(wantZoom) || 6;
-      var key = coarse + ">" + wantZoom + ":" + lat.toFixed(3) + ":" + lng.toFixed(3);
-      var own = 0;
-      try {
-        Object.keys(drapeCache).forEach(function (k) {
-          if (drapeCache[k] && drapeCache[k].material && drapeCache[k].material.map) own++;
-        });
-      } catch (_) {}
-      var el0 = earthLevelsMapped();
-      var enough = nairobi ? own >= 12 : key === drapeLast && (el0.n >= 4 || own >= 4);
-      if (enough) {
-        capCameraZ(g, lat, lng);
-        return true;
-      }
-
-      var holdZ = Math.max(targetZ, camZForTileZoom(coarse), minZFor(lat, lng));
-      if (nairobi) holdZ = Math.max(holdZ, Z_NAIROBI);
-      try {
-        if (cam && cam.position) cam.position.z = holdZ;
-      } catch (_) {}
-      paintGlobe(g);
-
-      var ready = false;
-      if (!nairobi) {
-        ready = await waitUntilMapped(4, 1400);
-      }
-      if (!ready) {
-        var nCoarse = await drapeLoadedZoom(lat, lng, coarse);
-        ready = nCoarse >= 4 || (await waitUntilMapped(4, 1800));
-      } else {
-        await waitUntilMapped(6, 1600);
-      }
-
-      if (nairobi || wantZoom > coarse) {
-        try {
-          if (cam && cam.position) {
-            cam.position.z = Math.max(targetZ, minZFor(lat, lng), camZForTileZoom(wantZoom));
-          }
-        } catch (_) {}
-        paintGlobe(g);
-        var nFine = await drapeLoadedZoom(lat, lng, wantZoom);
-        var fine = nFine >= 8 || (await waitUntilMapped(8, 1400));
-        if (!fine && !nairobi) {
-          try {
-            if (cam && cam.position) cam.position.z = holdZ;
-          } catch (_) {}
-          await drapeLoadedZoom(lat, lng, coarse);
-          paintGlobe(g);
-        }
-        ready = ready || fine || nFine >= 4;
-      } else {
-        try {
-          if (cam && cam.position) cam.position.z = Math.max(targetZ, minZFor(lat, lng));
-        } catch (_) {}
-        paintGlobe(g);
-      }
+      var info = await drapeFrustum(lat, lng);
       capCameraZ(g, lat, lng);
       hideBrokenEarthDrape();
       keepEarthVisible();
-      drapeLast = key;
-      return !!ready;
+      drapeLast = fillLast;
+      return !!(info && info.ok && (info.cached || (info.fill && info.fill.loaded >= 4)));
     } catch (_) {
       return false;
     } finally {
@@ -1143,6 +1318,7 @@
         global._snGlobeFocus = { lat: lastLive.lat, lng: lastLive.lng, label: label || "", t: Date.now() };
         if (typeof g.setFocus === "function") g.setFocus(lastLive.lat, lastLive.lng);
       } catch (_) {}
+      pullInLandZ(g, lat, lng);
       capCameraZ(g, lat, lng);
       try {
         if (isNairobiCoord(lat, lng) || isKalitheaCoord(lat, lng)) {
@@ -1539,6 +1715,9 @@
     if (lastFly && Date.now() < capUntil) {
       holdLookFrame(liveGlobe());
       capCameraZ(liveGlobe(), lastFly.lat, lastFly.lng);
+      if (!tilesBusy && (isNairobiCoord(lastFly.lat, lastFly.lng) || isKalitheaCoord(lastFly.lat, lastFly.lng))) {
+        void drapeFrustum(lastFly.lat, lastFly.lng);
+      }
     }
   }, 700);
 
@@ -1549,6 +1728,9 @@
     viewLatLng: viewLatLngFromCamera,
     waitReadableTiles: waitReadableTiles,
     printKalitheaRungs: printKalitheaRungs,
+    fillInfo: function () {
+      return fillInfo;
+    },
     lastProbe: function () {
       return lastProbe;
     },
