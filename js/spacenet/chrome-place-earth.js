@@ -7,18 +7,18 @@
  *   after nairobi settle ~-1.286, 36.817
  *   after kalithea settle ~36.389, 28.223
  *
- * VERIFY (20260824053000): NOT a single-tile bind. Live probe after nairobi
- * bound 49 unique NASA textures on 49 meshes. The fail is frustum coverage:
- * camera FOV at land zoom (42°, z=1.58, 16:9) spans ~88°×38° ≈ 1800 z8
- * tiles; code only requested a 7×7 (~10°) window. NASA GIBS z8 / Esri cover
- * the whole world — those tiles exist — they were never fetched. Result:
- * one sharp NASA rectangle on the 2048 blue-marble smear. Kalithea same
- * plus earth-levels white placeholders.
+ * VERIFY (live probe): NOT (b) single-tile bind. After nairobi,
+ * sn-earth-drape had 49 children / 49 unique NASA textures plus fill+detail
+ * (uniqueTex 53). NASA GIBS z8 and Esri z8 both 200 image/jpeg ACAO *.
+ * Fail is (a)-class frustum coverage: FOV 42° at z=1.58 spans ~43°×77°
+ * ≈ 1900 z8 tiles that EXIST; code only requested 7×7 (~10°), so ONE
+ * sharp NASA rectangle sat on the 2048 blue-marble smear. Kalithea at
+ * regional 1.42 plus a 2×2 z8 inset = smear + white squares + one scrap.
  *
- * FIX: pull camera in to land z; raycast the frustum; blit a z8 (or the
- * finest zoom that fits) mosaic covering the FULL tile range of that
- * frustum onto one canvas / one mesh (correct UV). z8 inset around the
- * look-at. Leaflet hidden. Do NOT hide sn-earth-drape.
+ * FIX: pull Nairobi 1.58 / Kalithea STREET 1.04 (coastline fills FOV).
+ * NASA Worldview snapshot (Blue Marble EPSG:4326) or Esri export covers
+ * the FULL frustum bbox. Then native z8 GIBS / z12 Esri multi-tile bind
+ * with correct tile x/y + UV. Hide earth-levels whites. Leaflet hidden.
  *
  * Guest kalithea prints CLI rungs:
  *   Kalithea · village · Rhodes / lake / islands / olives
@@ -35,7 +35,7 @@
   var SETTLE_DEG = 0.15;
   var TILT_MAX = 1.05;
   var Z_NAIROBI = 1.58;
-  var Z_KALITHEA = 1.42;
+  var Z_KALITHEA = 1.04;
   var Z_FLOOR = 1.42;
   var lastLive = null;
   var lastFly = null;
@@ -47,6 +47,7 @@
   var drapeLast = "";
   var fillMesh = null;
   var detailMesh = null;
+  var tileMeshes = [];
   var fillLast = "";
   var fillInfo = null;
   var fillBusy = false;
@@ -517,7 +518,8 @@
 
   /* Pull camera IN from GLOBAL (z=5.4) to land altitude. capCameraZ only
    * blocked going closer, so flyGlobeTo left the guest in space with a
-   * postage-stamp z8 scrap on the facing hemisphere. */
+   * postage-stamp z8 scrap on the facing hemisphere. Also lock physics tZ
+   * so nairobi-ladder / kalithea-village easeZ cannot yank us back out. */
   function pullInLandZ(g, lat, lng) {
     g = g || liveGlobe();
     if (!g) return;
@@ -527,14 +529,21 @@
     } catch (_) {}
     if (!cam || !cam.position) return;
     var zWant = minZFor(lat, lng);
-    var z = +cam.position.z;
     if (!isFinite(zWant)) return;
-    if (!isFinite(z) || z > zWant + 0.02) {
-      try {
-        cam.position.z = zWant;
-      } catch (_) {}
-      paintGlobe(g);
-    }
+    try {
+      cam.position.z = zWant;
+    } catch (_) {}
+    try {
+      var p = typeof g.getPhysics === "function" ? g.getPhysics() : null;
+      if (p) {
+        p.tZ = zWant;
+        p.vZ = 0;
+      }
+    } catch (_) {}
+    try {
+      g.zoomAnim = false;
+    } catch (_) {}
+    paintGlobe(g);
   }
 
   function holdLookFrame(g) {
@@ -552,6 +561,7 @@
       }
     } catch (_) {}
     capCameraZ(g, lastFly.lat, lastFly.lng);
+    pullInLandZ(g, lastFly.lat, lastFly.lng);
   }
 
   function probeNodeAxis(node, axis, kind, nodes, earth, g) {
@@ -693,9 +703,12 @@
       var earthDrape = namedGroup("sn-earth-drape");
       if (earthDrape) {
         try {
-          earthDrape.visible = true;
+          /* 7×7 whites are the postage-stamp fail. Our frustum mosaic
+           * covers the view, so hide earth-levels while fill is up. */
+          earthDrape.visible = !fillMesh;
         } catch (_) {}
-        hideWhitePlaceholders(earthDrape);
+        if (!fillMesh) hideWhitePlaceholders(earthDrape);
+        else hideWhitePlaceholders(earthDrape);
       }
       if (drapeGroup) {
         try {
@@ -722,6 +735,12 @@
     } catch (_) {}
   }
 
+  function clearTileMeshes() {
+    var i;
+    for (i = 0; i < tileMeshes.length; i++) disposeMesh(tileMeshes[i]);
+    tileMeshes = [];
+  }
+
   function clearDrape() {
     try {
       Object.keys(drapeCache).forEach(function (k) {
@@ -731,6 +750,7 @@
     } catch (_) {}
     disposeMesh(fillMesh);
     disposeMesh(detailMesh);
+    clearTileMeshes();
     fillMesh = null;
     detailMesh = null;
     try {
@@ -1036,6 +1056,173 @@
     return tex;
   }
 
+  function snapshotSize(box) {
+    var dLat = Math.max(0.02, Math.abs(box.north - box.south));
+    var dLng = Math.max(0.02, Math.abs(box.east - box.west));
+    var maxPx = 4096;
+    var w;
+    var h;
+    if (dLng >= dLat) {
+      w = maxPx;
+      h = Math.max(512, Math.min(maxPx, Math.round(maxPx * (dLat / dLng))));
+    } else {
+      h = maxPx;
+      w = Math.max(512, Math.min(maxPx, Math.round(maxPx * (dLng / dLat))));
+    }
+    return { w: w, h: h };
+  }
+
+  function snapshotUrl(box, w, h, source) {
+    if (source === "esri") {
+      return (
+        "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=" +
+        box.west +
+        "," +
+        box.south +
+        "," +
+        box.east +
+        "," +
+        box.north +
+        "&bboxSR=4326&imageSR=4326&size=" +
+        w +
+        "," +
+        h +
+        "&format=jpg&f=image"
+      );
+    }
+    return (
+      "https://wvs.earthdata.nasa.gov/api/v1/snapshot?REQUEST=GetSnapshot&LAYERS=BlueMarble_NextGeneration&CRS=EPSG:4326&BBOX=" +
+      box.west +
+      "," +
+      box.south +
+      "," +
+      box.east +
+      "," +
+      box.north +
+      "&FORMAT=image/jpeg&WIDTH=" +
+      w +
+      "&HEIGHT=" +
+      h
+    );
+  }
+
+  async function blitSnapshot(box, source) {
+    var sz = snapshotSize(box);
+    var img = await loadTileImage(snapshotUrl(box, sz.w, sz.h, source), 14000);
+    if (!img) return null;
+    var canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth || sz.w;
+    canvas.height = img.naturalHeight || sz.h;
+    if (canvas.width < 8 || canvas.height < 8) return null;
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    try {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    } catch (_) {
+      return null;
+    }
+    return {
+      canvas: canvas,
+      loaded: 1,
+      wanted: 1,
+      z: source === "esri" ? 12 : 8,
+      source: source,
+      west: box.west,
+      east: box.east,
+      north: box.north,
+      south: box.south,
+    };
+  }
+
+  function mosaicRangeAround(lat, lng, z, maxN) {
+    var half = Math.max(1, Math.floor(Math.sqrt(maxN) / 2));
+    var cx = tileX(lng, z);
+    var cy = tileY(lat, z);
+    var n = Math.pow(2, z);
+    var y0 = cy - half;
+    var y1 = cy + half;
+    if (y0 < 0) y0 = 0;
+    if (y1 >= n) y1 = n - 1;
+    return {
+      z: z,
+      x0: cx - half,
+      x1: cx + half,
+      y0: y0,
+      y1: y1,
+      n: n,
+      nx: 2 * half + 1,
+      ny: y1 - y0 + 1,
+    };
+  }
+
+  async function putTileMeshes(host, T, g, range, radius, renderOrder, maxN) {
+    clearTileMeshes();
+    if (!range || range.nx < 1 || range.ny < 1) return { loaded: 0, wanted: 0, z: 0 };
+    var queue = [];
+    var x, y;
+    for (y = range.y0; y <= range.y1; y++) {
+      for (x = range.x0; x <= range.x1; x++) {
+        queue.push({ x: x, y: y });
+      }
+    }
+    if (maxN && queue.length > maxN) {
+      var cx = (range.x0 + range.x1) / 2;
+      var cy = (range.y0 + range.y1) / 2;
+      queue.sort(function (a, b) {
+        var da = (a.x - cx) * (a.x - cx) + (a.y - cy) * (a.y - cy);
+        var db = (b.x - cx) * (b.x - cx) + (b.y - cy) * (b.y - cy);
+        return da - db;
+      });
+      queue = queue.slice(0, maxN);
+    }
+    var loaded = 0;
+    var i = 0;
+    function runOne(item) {
+      var tx = ((item.x % range.n) + range.n) % range.n;
+      var west = tileWest(item.x, range.z);
+      var east = tileWest(item.x + 1, range.z);
+      var north = tileNorth(item.y, range.z);
+      var south = tileNorth(item.y + 1, range.z);
+      return loadTileImage(drapeUrl(range.z, tx, item.y), 5200).then(function (img) {
+        if (!img) return;
+        var canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth || 256;
+        canvas.height = img.naturalHeight || 256;
+        var ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        try {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        } catch (_) {
+          return;
+        }
+        var mesh = putLayer(
+          host,
+          T,
+          g,
+          { canvas: canvas, south: south, north: north, west: west, east: east },
+          radius,
+          renderOrder,
+          "sn-place-z8-" + range.z + "-" + tx + "-" + item.y,
+          null
+        );
+        if (mesh) {
+          tileMeshes.push(mesh);
+          loaded++;
+        }
+      });
+    }
+    function worker() {
+      if (i >= queue.length) return Promise.resolve();
+      var item = queue[i++];
+      return runOne(item).then(worker);
+    }
+    var workers = [];
+    var w;
+    for (w = 0; w < 16; w++) workers.push(worker());
+    await Promise.all(workers);
+    return { loaded: loaded, wanted: queue.length, z: range.z, n: queue.length };
+  }
+
   function putLayer(host, T, g, blit, radius, renderOrder, name, prev) {
     disposeMesh(prev);
     if (!blit || !blit.canvas) return null;
@@ -1063,103 +1250,129 @@
     var T = threeNS();
     if (!g || !T || !T.Mesh) return { ok: false, reason: "no-globe" };
     if (fillBusy) return fillInfo || { ok: false, reason: "busy" };
+    pullInLandZ(g, lat, lng);
     capCameraZ(g, lat, lng);
     paintGlobe(g);
     var host = ensureDrapeHost(g, T);
     if (!host) return { ok: false, reason: "no-host" };
+    var kali = isKalitheaCoord(lat, lng);
     var box = frustumBox(g, lat, lng);
-    var fillRange = zoomToCover(box, 160, 8);
     var camZ = null;
     try {
       camZ = +g.getCamera().position.z;
     } catch (_) {}
+    var source = kali ? "esri" : "nasa";
+    var mosaicZ = kali ? 12 : 8;
     var key =
-      fillRange.z +
+      source +
       ":" +
-      fillRange.x0 +
-      "-" +
-      fillRange.x1 +
+      mosaicZ +
       ":" +
-      fillRange.y0 +
-      "-" +
-      fillRange.y1 +
+      box.west.toFixed(2) +
       ":" +
-      (isFinite(camZ) ? camZ.toFixed(2) : "z") +
+      box.east.toFixed(2) +
       ":" +
-      lat.toFixed(2) +
+      box.south.toFixed(2) +
       ":" +
-      lng.toFixed(2);
+      box.north.toFixed(2) +
+      ":" +
+      (isFinite(camZ) ? camZ.toFixed(2) : "z");
     if (key === fillLast && fillMesh && fillMesh.material && fillMesh.material.map) {
       hideBrokenEarthDrape();
       return fillInfo || { ok: true, cached: true };
     }
     fillBusy = true;
     try {
-    var fillBlit = await blitRange(fillRange, 4500);
-    if (!fillBlit) return { ok: false, reason: "fill-empty", range: fillRange, box: box };
-    fillMesh = putLayer(host, T, g, fillBlit, 1.0065, 4, "sn-place-fill", fillMesh);
-
-    var detailBox;
-    var detailCap = 8;
-    if (isKalitheaCoord(lat, lng)) {
-      detailBox = { south: lat - 0.62, north: lat + 0.55, west: lng - 0.78, east: lng + 0.55 };
-      detailCap = 12;
-    } else {
-      detailBox = { south: lat - 4.2, north: lat + 4.2, west: lng - 5.2, east: lng + 5.2 };
-      detailCap = 8;
-    }
-    var detailRange = zoomToCover(detailBox, 96, detailCap);
-    if (isKalitheaCoord(lat, lng)) {
-      detailRange = zoomToCover(detailBox, 100, 12);
-    } else if (detailRange.z < 8) {
-      detailRange = tileRange(detailBox, 8);
-      if (detailRange.nx * detailRange.ny > 100) detailRange = zoomToCover(detailBox, 81, 8);
-    }
-    var detailBlit = null;
-    if (!(detailRange.z <= fillRange.z && detailRange.nx * detailRange.ny > fillRange.nx * fillRange.ny * 0.8)) {
-      detailBlit = await blitRange(detailRange, 4500);
-      if (detailBlit && detailBlit.loaded >= 4) {
-        detailMesh = putLayer(host, T, g, detailBlit, 1.0076, 5, "sn-place-detail", detailMesh);
+      var fillBlit = await blitSnapshot(box, source);
+      if (!fillBlit) {
+        var fillRange = zoomToCover(box, 200, kali ? 12 : 8);
+        fillBlit = await blitRange(fillRange, 7000);
       }
-    }
-    fillLast = key;
-    fillInfo = {
-      ok: true,
-      build: BUILD,
-      box: box,
-      fill: {
-        z: fillRange.z,
-        nx: fillRange.nx,
-        ny: fillRange.ny,
-        tiles: fillRange.nx * fillRange.ny,
-        loaded: fillBlit.loaded,
-        west: fillBlit.west,
-        east: fillBlit.east,
-        north: fillBlit.north,
-        south: fillBlit.south,
-      },
-      detail: detailBlit
-        ? {
-            z: detailRange.z,
-            nx: detailRange.nx,
-            ny: detailRange.ny,
-            tiles: detailRange.nx * detailRange.ny,
-            loaded: detailBlit.loaded,
-          }
-        : null,
-      camZ: (function () {
-        try {
-          return +g.getCamera().position.z;
-        } catch (_) {
-          return null;
+      if (!fillBlit) return { ok: false, reason: "fill-empty", box: box };
+      fillMesh = putLayer(host, T, g, fillBlit, 1.008, 6, "sn-place-fill", fillMesh);
+
+      var mosaicRange = tileRange(box, mosaicZ);
+      if (mosaicRange.nx * mosaicRange.ny > 180) {
+        var inner = kali
+          ? { south: lat - 0.38, north: lat + 0.34, west: lng - 0.48, east: lng + 0.42 }
+          : { south: lat - 6.2, north: lat + 6.2, west: lng - 8.4, east: lng + 8.4 };
+        mosaicRange = tileRange(inner, mosaicZ);
+        if (mosaicRange.nx * mosaicRange.ny > 180) {
+          mosaicRange = mosaicRangeAround(lat, lng, mosaicZ, 169);
         }
-      })(),
-      view: { lat: lat, lng: lng },
-    };
-    hideBrokenEarthDrape();
-    keepEarthVisible();
-    paintGlobe(g);
-    return fillInfo;
+      }
+      var tileInfo = await putTileMeshes(host, T, g, mosaicRange, 1.0096, 7, 180);
+      fillLast = key;
+      var unique = 0;
+      var mapped = 0;
+      var earthKids = 0;
+      try {
+        var ids = Object.create(null);
+        function walk(root) {
+          if (!root || !root.traverse) return;
+          root.traverse(function (obj) {
+            if (!obj || !obj.isMesh || !obj.material) return;
+            if (obj.material.map) {
+              mapped++;
+              try {
+                ids[obj.material.map.uuid || obj.material.map.id] = 1;
+              } catch (_) {}
+            }
+          });
+        }
+        walk(g.getEarth && g.getEarth());
+        walk(g.getSpin && g.getSpin());
+        unique = Object.keys(ids).length;
+      } catch (_) {}
+      try {
+        var ed = namedGroup("sn-earth-drape");
+        earthKids = ed && ed.children ? ed.children.length : 0;
+      } catch (_) {}
+      fillInfo = {
+        ok: true,
+        build: BUILD,
+        bind: {
+          finding: "not-single-tile",
+          uniqueTex: unique,
+          mapped: mapped,
+          tileMeshes: tileMeshes.length,
+          earthDrape: earthKids,
+          fillSource: fillBlit.source || source,
+        },
+        box: box,
+        fill: {
+          z: fillBlit.z,
+          source: fillBlit.source || source,
+          loaded: fillBlit.loaded,
+          w: fillBlit.canvas && fillBlit.canvas.width,
+          h: fillBlit.canvas && fillBlit.canvas.height,
+          west: fillBlit.west,
+          east: fillBlit.east,
+          north: fillBlit.north,
+          south: fillBlit.south,
+        },
+        detail: tileInfo
+          ? {
+              z: tileInfo.z,
+              tiles: tileInfo.n,
+              loaded: tileInfo.loaded,
+              nx: mosaicRange.nx,
+              ny: mosaicRange.ny,
+            }
+          : null,
+        camZ: (function () {
+          try {
+            return +g.getCamera().position.z;
+          } catch (_) {
+            return null;
+          }
+        })(),
+        view: { lat: lat, lng: lng },
+      };
+      hideBrokenEarthDrape();
+      keepEarthVisible();
+      paintGlobe(g);
+      return fillInfo;
     } finally {
       fillBusy = false;
     }
@@ -1199,7 +1412,7 @@
       hideBrokenEarthDrape();
       keepEarthVisible();
       drapeLast = fillLast;
-      return !!(info && info.ok && (info.cached || (info.fill && info.fill.loaded >= 4)));
+      return !!(info && info.ok && (info.cached || (info.fill && info.fill.loaded >= 1)));
     } catch (_) {
       return false;
     } finally {
@@ -1583,6 +1796,7 @@
           var look = lastFly || lastLive;
           if (!look) return;
           if (isNairobiCoord(look.lat, look.lng) || isKalitheaCoord(look.lat, look.lng)) {
+            pullInLandZ(g, look.lat, look.lng);
             capCameraZ(g, look.lat, look.lng);
             keepEarthVisible();
             hideBrokenEarthDrape();
@@ -1713,6 +1927,7 @@
     patchCli();
     if (lastFly && Date.now() < capUntil) {
       holdLookFrame(liveGlobe());
+      pullInLandZ(liveGlobe(), lastFly.lat, lastFly.lng);
       capCameraZ(liveGlobe(), lastFly.lat, lastFly.lng);
       if (!tilesBusy && (isNairobiCoord(lastFly.lat, lastFly.lng) || isKalitheaCoord(lastFly.lat, lastFly.lng))) {
         void drapeFrustum(lastFly.lat, lastFly.lng);
