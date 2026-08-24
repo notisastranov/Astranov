@@ -872,7 +872,16 @@
 
   function zoomToCover(box, maxN, capZ) {
     capZ = capZ == null ? 8 : capZ;
-    if (capZ > 8) capZ = 8;
+    if (capZ > 13) capZ = 13;
+    var z;
+    var last = tileRange(box, 3);
+    for (z = capZ; z >= 2; z--) {
+      var r = tileRange(box, z);
+      last = r;
+      if (r.nx * r.ny <= maxN && r.nx > 0 && r.ny > 0) return r;
+    }
+    return last;
+  }
     var z;
     var last = tileRange(box, 3);
     for (z = capZ; z >= 2; z--) {
@@ -1102,7 +1111,7 @@
     var detailBox;
     var detailCap = 8;
     if (isKalitheaCoord(lat, lng)) {
-      detailBox = { south: lat - 0.42, north: lat + 0.42, west: lng - 0.55, east: lng + 0.55 };
+      detailBox = { south: lat - 0.62, north: lat + 0.55, west: lng - 0.78, east: lng + 0.55 };
       detailCap = 12;
     } else {
       detailBox = { south: lat - 4.2, north: lat + 4.2, west: lng - 5.2, east: lng + 5.2 };
@@ -1110,8 +1119,7 @@
     }
     var detailRange = zoomToCover(detailBox, 96, detailCap);
     if (isKalitheaCoord(lat, lng)) {
-      detailRange = tileRange(detailBox, 12);
-      if (detailRange.nx * detailRange.ny > 100) detailRange = zoomToCover(detailBox, 96, 11);
+      detailRange = zoomToCover(detailBox, 100, 12);
     } else if (detailRange.z < 8) {
       detailRange = tileRange(detailBox, 8);
       if (detailRange.nx * detailRange.ny > 100) detailRange = zoomToCover(detailBox, 81, 8);
