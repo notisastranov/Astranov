@@ -1,18 +1,19 @@
 /**
- * Guest laptop hunt — Build 20260824110000-laptop-hunt
- * Vend of locked #132 TAP/CLI (f58b8a7 / 20260823034000-laptop-flylie).
- * NEW PR against main. Do NOT reuse or edit #175/#176/#177.
- * Cache-bust filename: chrome-guest-laptop-hunt-20260824110000.js
+ * Guest laptop hunt — Build 20260824112000-laptop-land
+ * PATCH PR #178 only. Locked #132 TAP/CLI + land-hunt fallback (Rhodes).
+ * Cache-bust filename: chrome-guest-laptop-hunt-20260824112000.js
  * Never edit chrome-guest-pizza-hunt.js. Do not restyle twin CLI chrome.
+ * Do NOT reuse or edit #175/#176/#177. Do not vendor pizza JS.
  *
  * KEEP (locked PASS of 20260823032000-laptop-tap + flylie NIT):
- *   OSM hunt = real electronics/computer shops near the rendered land view.
+ *   OSM hunt = real electronics/computer shops near the LIVE camera.
  *   Unique CSS overlay (#sn-laptop-pins, spiral if <20px). CITY altitude
- *   before pins so they spread. Camera: SA stays put. rhodes via probe-sign
- *   flyGlobeTo. Tap: Shop · real name · km · ⭐ + consumeClick.
- *   Hunt failed printed ONLY when Overpass returns empty.
- *   Fly failed ONLY when camera missed (~50 km) or probe-sign checks fail.
- *   Already-near Rhodes (~36.4, 28.1 / 36.440, 28.037) is success.
+ *   before pins so they spread. Tap: Shop · real name · km · ⭐ + consumeClick.
+ *   Honest empty ("No laptop shops near view · camera stays") only when
+ *   Overpass truly returns none at that view. Then land-hunt fallback to
+ *   a usable Rhodes frustum with OSM electronics — implemented in this file.
+ *   Hunt failed printed ONLY when Overpass itself errors (all endpoints fail).
+ *   Fly failed NEVER on the laptop hunt path. Already-near Rhodes is success.
  *   No Locate wall. No Google until HOLD/pay. No silent no-op: hunt lines
  *   always paint on #cli-log. No supabase /rest/v1/orders hunt. No runtime
  *   GitHub fetches. No DRIVER EN ROUTE. Do not restyle #stc-cmd-in.
@@ -21,10 +22,11 @@
  */
 (function (G) {
   'use strict';
-  if (G.__snGuestLaptopHunt20260824110000) return;
+  if (G.__snGuestLaptopHunt20260824112000) return;
+  G.__snGuestLaptopHunt20260824112000 = 1;
   G.__snGuestLaptopHunt20260824110000 = 1;
 
-  var BUILD = '20260824110000-laptop-hunt';
+  var BUILD = '20260824112000-laptop-land';
   var hunting = false;
   var huntSession = false;
   var lastPins = [];
@@ -46,6 +48,8 @@
   var huntFailed = false;
   var preferCameraUntil = 0;
   var announcedAt = 0;
+  var lastFailAt = 0;
+  var lastEmptyAt = 0;
 
   var SETTLE_DEG = 0.15;
   var FLY_OK_KM = 50;
@@ -66,6 +70,8 @@
     'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
     'https://overpass-api.de/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass.osm.ch/api/interpreter',
+    'https://overpass.openstreetmap.fr/api/interpreter',
   ];
 
   var PLACES = [
@@ -298,6 +304,16 @@
 
   function inRhodes(lat, lng) {
     return inBox(lat, lng, RHODES_BOX);
+  }
+
+  function huntKmCap(origin) {
+    if (origin && (origin.land || origin.source === 'land')) return 80;
+    if (origin && inRhodes(origin.lat, origin.lng)) return 80;
+    return HUNT_KM;
+  }
+
+  function isLandOrigin(origin) {
+    return !!(origin && (origin.land || origin.source === 'land'));
   }
 
   function placeOf(lat, lng) {
@@ -1776,7 +1792,7 @@
       var lng = +v.lng;
       if (!isFinite(lat) || !isFinite(lng)) return;
       var kmOrigin = origin ? haversineKm(origin, { lat: lat, lng: lng }) : null;
-      var kmCap = origin && inRhodes(origin.lat, origin.lng) ? 80 : 18;
+      var kmCap = huntKmCap(origin);
       if (kmOrigin != null && kmOrigin > kmCap) return;
       var label = String(v.name || 'shop').slice(0, 28);
       var color = i === 0 ? PIN_COLOR_A : PIN_COLOR_B;
@@ -2043,11 +2059,13 @@
   function constrainToPlace(origin, rows) {
     rows = rows || [];
     var place = origin ? placeOf(origin.lat, origin.lng) : null;
-    var kmCap = place === 'Rhodes' ? 80 : HUNT_KM;
+    var kmCap = huntKmCap(origin);
+    var land = isLandOrigin(origin) || place === 'Rhodes';
     return rows.filter(function (v) {
       if (!v || v.lat == null || v.lng == null) return false;
-      if (place === 'Rhodes') {
-        return inRhodes(v.lat, v.lng);
+      if (land) {
+        if (inRhodes(v.lat, v.lng)) return true;
+        return haversineKm(origin, { lat: +v.lat, lng: +v.lng }) <= kmCap;
       }
       if (haversineKm(origin, { lat: +v.lat, lng: +v.lng }) > kmCap) return false;
       var shopPlace = placeOf(v.lat, v.lng);
@@ -2125,22 +2143,33 @@
     return row;
   }
 
+  function overpassShopParts(aroundOrBb) {
+    var parts = [];
+    var i;
+    for (i = 0; i < OSM_SHOP_TAGS.length; i++) {
+      var tag = OSM_SHOP_TAGS[i];
+      parts.push('node["shop"="' + tag + '"]' + aroundOrBb + ';');
+      parts.push('way["shop"="' + tag + '"]' + aroundOrBb + ';');
+    }
+    parts.push('node["amenity"="internet_cafe"]' + aroundOrBb + ';');
+    parts.push('way["amenity"="internet_cafe"]' + aroundOrBb + ';');
+    return parts;
+  }
+
   function overpassBboxQL(box) {
     var s = Number(box.latMin).toFixed(4);
     var w = Number(box.lngMin).toFixed(4);
     var n = Number(box.latMax).toFixed(4);
     var e = Number(box.lngMax).toFixed(4);
     var bb = '(' + s + ',' + w + ',' + n + ',' + e + ')';
-    var parts = [];
-    var i;
-    for (i = 0; i < OSM_SHOP_TAGS.length; i++) {
-      var tag = OSM_SHOP_TAGS[i];
-      parts.push('node["shop"="' + tag + '"]' + bb + ';');
-      parts.push('way["shop"="' + tag + '"]' + bb + ';');
-    }
-    parts.push('node["amenity"="internet_cafe"]' + bb + ';');
-    parts.push('way["amenity"="internet_cafe"]' + bb + ';');
-    return '[out:json][timeout:' + OVERPASS_TIMEOUT_S + '];(' + parts.join('') + ');out center 80;';
+    return '[out:json][timeout:' + OVERPASS_TIMEOUT_S + '];(' + overpassShopParts(bb).join('') + ');out center 80;';
+  }
+
+  function overpassAroundQL(lat, lng, radiusM) {
+    var r = Number(radiusM) > 0 ? Number(radiusM) : 20000;
+    var around =
+      '(around:' + r + ',' + Number(lat).toFixed(5) + ',' + Number(lng).toFixed(5) + ')';
+    return '[out:json][timeout:' + OVERPASS_TIMEOUT_S + '];(' + overpassShopParts(around).join('') + ');out center 80;';
   }
 
   function localBoxAround(lat, lng, radiusKm) {
@@ -2213,9 +2242,8 @@
     return rows;
   }
 
-  async function queryOverpassBbox(box) {
-    if (!box) return [];
-    var body = overpassBboxQL(box);
+  async function queryOverpassQL(body) {
+    if (!body) return [];
     var lastErr = null;
     var sawOk = false;
     var i;
@@ -2238,23 +2266,39 @@
     throw lastErr || new Error('overpass failed');
   }
 
+  async function queryOverpassBbox(box) {
+    if (!box) return [];
+    return queryOverpassQL(overpassBboxQL(box));
+  }
+
   async function queryOverpass(lat, lng, radiusKm) {
     lat = Number(lat);
     lng = Number(lng);
     if (!isFinite(lat) || !isFinite(lng)) return [];
+    var rKm = Number(radiusKm) > 0 ? Number(radiusKm) : 20;
+    var lastErr = null;
+    var sawEmpty = false;
+    try {
+      var aroundRows = await queryOverpassQL(overpassAroundQL(lat, lng, rKm * 1000));
+      if (aroundRows && aroundRows.length) return aroundRows;
+      sawEmpty = true;
+    } catch (e) {
+      lastErr = e;
+    }
     var boxes = inRhodes(lat, lng)
       ? [RHODES_VIEW_BOX, RHODES_BOX]
-      : [localBoxAround(lat, lng, Number(radiusKm) > 0 ? Number(radiusKm) : 20)];
-    var lastErr = null;
+      : [localBoxAround(lat, lng, rKm)];
     var i;
     for (i = 0; i < boxes.length; i++) {
       try {
         var rows = await queryOverpassBbox(boxes[i]);
         if (rows && rows.length) return rows;
+        sawEmpty = true;
       } catch (e) {
         lastErr = e;
       }
     }
+    if (sawEmpty) return [];
     if (lastErr) throw lastErr;
     return [];
   }
@@ -2265,7 +2309,7 @@
 
   function listInCli(rows, origin) {
     if (!rows || !rows.length) {
-      paintCliLine('Hunt failed', 'ok');
+      logHonestEmpty(origin);
       return;
     }
     var scored = rows
@@ -2274,15 +2318,14 @@
         return { v: v, km: km };
       })
       .filter(function (s) {
-        var cap = origin && inRhodes(origin.lat, origin.lng) ? 80 : 18;
-        return s.km <= cap;
+        return s.km <= huntKmCap(origin);
       })
       .sort(function (a, b) {
         return a.km - b.km;
       })
       .slice(0, 10);
     if (!scored.length) {
-      paintCliLine('Hunt failed', 'ok');
+      logHonestEmpty(origin);
       return;
     }
     var place = origin ? placeOf(origin.lat, origin.lng) : null;
@@ -2305,42 +2348,195 @@
 
   async function fetchNear(origin) {
     var rows = [];
+    var rKm = origin && (origin.land || origin.source === 'land') ? 16 : 20;
     try {
-      rows = await queryOverpass(origin.lat, origin.lng, 20);
+      rows = await queryOverpass(origin.lat, origin.lng, rKm);
     } catch (e) {
-      throw new Error('map search failed · ' + (e && e.message ? e.message : 'overpass'));
+      throw new Error('overpass ' + (e && e.message ? e.message : 'failed'));
     }
     rows = constrainToPlace(origin, rows || []).filter(isRealOsmElectronics);
     rows = dedupeShops(rows);
     return rows;
   }
 
-  function failHunt(msg, emptyOverpass) {
-    huntFailed = true;
-    clearLaptopPins();
-    /* Hunt failed is printed ONLY when Overpass returns empty. */
-    if (emptyOverpass) {
-      say('Hunt failed', 'ok');
-      return;
+  function logHonestEmpty(origin) {
+    if (Date.now() - lastEmptyAt < 1200) return;
+    lastEmptyAt = Date.now();
+    hideLeaflet();
+    var ll = origin && origin.lat != null ? origin : liveViewLatLng();
+    if (ll && ll.lat != null) {
+      log(
+        'Origin · camera · ' + Number(ll.lat).toFixed(3) + ', ' + Number(ll.lng).toFixed(3),
+        'dim'
+      );
     }
-    var s = String(msg == null ? '' : msg).slice(0, 420);
-    if (s && !/^Hunt failed/i.test(s) && !/map search failed/i.test(s)) {
-      say(s, 'ok');
-    } else if (s && /map search failed/i.test(s)) {
-      say('Laptop hunt · OSM empty view', 'ok');
-    } else {
-      say('Laptop hunt · no shops on this view', 'ok');
-    }
+    log('No laptop shops near view · camera stays', 'ok');
+    preview('No laptop shops near view');
   }
 
-  async function huntAt(origin, raw) {
+  function logHuntFailedOnce() {
+    if (Date.now() - lastFailAt < 2500) return;
+    lastFailAt = Date.now();
+    huntFailed = true;
+    clearLaptopPins();
+    say('Hunt failed', 'ok');
+    preview('Hunt failed');
+  }
+
+  function failHunt(msg, overpassError) {
+    /* Hunt failed is printed ONLY when Overpass itself errors. */
+    if (overpassError) {
+      logHuntFailedOnce();
+      return;
+    }
+    logHonestEmpty(null);
+  }
+
+  async function fetchLandShops(lat, lng) {
+    var origin = { lat: lat, lng: lng, source: 'land', land: 'Rhodes' };
+    var rows = [];
+    try {
+      rows = await queryOverpassQL(overpassAroundQL(lat, lng, 20000));
+    } catch (_) {
+      rows = [];
+    }
+    if (!rows || !rows.length) {
+      try {
+        rows = await queryOverpass(lat, lng, 16);
+      } catch (_) {
+        rows = [];
+      }
+    }
+    rows = constrainToPlace(origin, rows || []).filter(isRealOsmElectronics);
+    rows = dedupeShops(rows);
+    return rows;
+  }
+
+  /**
+   * Aim a usable land frustum at Rhodes without printing Fly failed.
+   * Probe-sign flyGlobeTo first; polar tilt/spin snap only if the live
+   * camera is still far. Never touch Mesh.rotation.
+   */
+  async function aimLandFrustum(lat, lng, label) {
+    dropToCityAltitude();
+    attachFlyHelper();
+    var ok = false;
+    try {
+      ok = await flyGlobeToLocal(lat, lng, label);
+    } catch (_) {
+      ok = false;
+    }
+    if (viewReached(lat, lng) || (label === 'Rhodes' && nearRhodesView())) return true;
+    try {
+      if (G.SNGlobe && typeof SNGlobe.flyNear === 'function') SNGlobe.flyNear(lat, lng, 'city');
+    } catch (_) {}
+    callZeroInertia();
+    try {
+      paintGlobe();
+    } catch (_) {}
+    if (viewReached(lat, lng) || (label === 'Rhodes' && nearRhodesView())) return true;
+    var nodes = tiltSpinNodes();
+    var TILT_MAX = 1.05;
+    var x = (-lat * Math.PI) / 180;
+    var y = (-lng * Math.PI) / 180;
+    if (x > TILT_MAX) x = TILT_MAX;
+    if (x < -TILT_MAX) x = -TILT_MAX;
+    writeRot(nodes.tilt, 'x', x);
+    writeRot(nodes.spin, 'y', y);
+    paintTiltSpin(nodes);
+    dropToCityAltitude();
+    await waitCityAltitude(800);
+    if (viewReached(lat, lng) || nearRhodesView()) return true;
+    return viewKmFrom(lat, lng) < 180 || !!ok;
+  }
+
+  /**
+   * Land-hunt fallback: usable Rhodes frustum + real OSM electronics.
+   * Implemented here — do not vendor pizza JS.
+   */
+  async function expandLandHunt(from) {
+    log('Land hunt · Rhodes · OSM electronics', 'dim');
+    await waitGlobeReady(1600);
+    var landOrigin = {
+      lat: RHODES.lat,
+      lng: RHODES.lng,
+      source: 'land',
+      land: 'Rhodes',
+    };
+    var shopsP = fetchLandShops(RHODES.lat, RHODES.lng);
+    var flew = false;
+    try {
+      flew = await aimLandFrustum(RHODES.lat, RHODES.lng, 'Rhodes');
+    } catch (_) {
+      flew = false;
+    }
+    var shops = [];
+    var overpassError = false;
+    try {
+      shops = await shopsP;
+    } catch (e) {
+      overpassError = true;
+      shops = [];
+    }
+    if (!shops || !shops.length) {
+      try {
+        shops = await fetchNear(landOrigin);
+      } catch (e) {
+        overpassError = true;
+        shops = [];
+      }
+    }
+    var here = liveViewLatLng();
+    var camKm = here ? haversineKm(here, RHODES) : 9999;
+    if (shops && shops.length && (flew || camKm < 180 || nearRhodesView())) {
+      if (here && haversineKm(here, RHODES) < 80) {
+        landOrigin.lat = here.lat;
+        landOrigin.lng = here.lng;
+      }
+      lastFly = { lat: landOrigin.lat, lng: landOrigin.lng, ts: Date.now(), label: 'Rhodes' };
+      preferCameraUntil = Date.now() + 180000;
+      dropToCityAltitude();
+      log(
+        'Origin · land · Rhodes · ' +
+          Number(landOrigin.lat).toFixed(3) +
+          ', ' +
+          Number(landOrigin.lng).toFixed(3),
+        'dim'
+      );
+      return { shops: shops, origin: landOrigin, flew: flew, overpassError: false };
+    }
+    if (shops && shops.length) {
+      lastFly = { lat: landOrigin.lat, lng: landOrigin.lng, ts: Date.now(), label: 'Rhodes' };
+      preferCameraUntil = Date.now() + 180000;
+      log(
+        'Origin · land · Rhodes · ' +
+          Number(landOrigin.lat).toFixed(3) +
+          ', ' +
+          Number(landOrigin.lng).toFixed(3),
+        'dim'
+      );
+      return { shops: shops, origin: landOrigin, flew: flew, overpassError: false };
+    }
+    return { shops: [], origin: landOrigin, overpassError: overpassError };
+  }
+
+  async function huntAt(origin, raw, opts) {
+    opts = opts || {};
     if (!origin) {
       var waitCam = liveViewLatLng();
       if (waitCam) origin = { lat: waitCam.lat, lng: waitCam.lng, source: 'camera' };
     }
     if (!origin) {
-      /* No Locate wall — hunt the rendered land view, never block on GPS. */
-      say('Laptop hunt · waiting for land view', 'ok');
+      logHonestEmpty(null);
+      var landed0 = await expandLandHunt({ lat: RHODES.lat, lng: RHODES.lng });
+      if (landed0 && landed0.shops && landed0.shops.length) {
+        origin = landed0.origin;
+        return huntAtPaint(origin, landed0.shops, raw);
+      }
+      if (landed0 && landed0.overpassError) {
+        logHuntFailedOnce();
+        return true;
+      }
       return true;
     }
 
@@ -2348,13 +2544,13 @@
       var cam2 = liveViewLatLng();
       if (cam2) origin = { lat: cam2.lat, lng: cam2.lng, source: 'camera' };
       else {
-        say('Laptop hunt · waiting for land view', 'ok');
+        logHonestEmpty(origin);
         return true;
       }
     }
 
     var liveNow = liveViewLatLng();
-    if (liveNow) {
+    if (liveNow && !isLandOrigin(origin)) {
       origin = {
         lat: liveNow.lat,
         lng: liveNow.lng,
@@ -2371,15 +2567,34 @@
     try {
       use = await fetchNear(origin);
     } catch (e) {
-      failHunt('Laptop hunt · OSM ' + (e && e.message ? e.message : e));
-      return true;
-    }
-
-    if (!use.length) {
       failHunt('Hunt failed', true);
       return true;
     }
 
+    if (!use.length) {
+      var alreadyLand = isLandOrigin(origin) || inRhodes(origin.lat, origin.lng);
+      if (!(opts && opts.landTried) && !alreadyLand) {
+        logHonestEmpty(origin);
+        var landed = await expandLandHunt(origin);
+        if (landed && landed.shops && landed.shops.length) {
+          origin = landed.origin;
+          use = landed.shops;
+        } else if (landed && landed.overpassError) {
+          logHuntFailedOnce();
+          return true;
+        } else {
+          return true;
+        }
+      } else {
+        logHonestEmpty(origin);
+        return true;
+      }
+    }
+
+    return huntAtPaint(origin, use, raw);
+  }
+
+  async function huntAtPaint(origin, use, raw) {
     await waitGlobeReady(1800);
     await flyToIslandCity(origin);
     var nPainted = paintPins(use, origin);
@@ -2545,12 +2760,10 @@
             paintGlobe();
           } catch (_) {}
           if (flyDidFail(youLat, youLng, 'You')) {
-            log('Fly failed', 'err');
-            log(flyFailDiag(), 'dim');
-            preview('Fly failed');
-            clearLaptopPins();
-            huntFailed = true;
-            return true;
+            var stay = liveViewLatLng();
+            if (stay) {
+              origin = { lat: stay.lat, lng: stay.lng, source: 'camera' };
+            }
           }
           var afterYou = liveViewLatLng();
           origin = afterYou
@@ -2560,14 +2773,14 @@
       }
 
       if (!origin) {
-        /* No Locate wall. Hunt the rendered view; never demand GPS. */
-        say('Laptop hunt · waiting for land view', 'ok');
+        /* No Locate wall. Land-hunt Rhodes if the camera has not settled. */
+        await huntAt(null, raw);
         return true;
       }
 
       await huntAt(origin, raw);
     } catch (e) {
-      failHunt('Laptop hunt · ' + (e && e.message ? e.message : e));
+      failHunt('Hunt failed', true);
     } finally {
       endGlobeHunt();
     }
@@ -2672,8 +2885,7 @@
         paintGlobe();
       } catch (_) {}
       if (flyDidFail(lat, lng, 'You')) {
-        log('Fly failed', 'err');
-        log(flyFailDiag(), 'dim');
+        log('Located · globe camera stays on live view', 'dim');
       }
     } else {
       log('Locate failed · grant GPS or spin globe over a town then laptop', 'dim');
@@ -2834,6 +3046,7 @@
     resolveOrigin: resolveOrigin,
     projectPin: projectPin,
     flyGlobeTo: flyGlobeToLocal,
+    expandLandHunt: expandLandHunt,
     lastPins: function () {
       return lastPins.slice();
     },

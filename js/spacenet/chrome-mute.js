@@ -1,9 +1,9 @@
-/* Astranov mute · Build 20260824110000-laptop-hunt
- * Kill beeps + load chrome-guest-laptop-hunt-20260824110000.js
+/* Astranov mute · Build 20260824112000-laptop-land
+ * Kill beeps + load chrome-guest-laptop-hunt-20260824112000.js
  * (vend of locked #132 TAP/CLI · real OSM electronics · CITY altitude
  * before pins · unique overlay pins · tap Shop · name · km · ⭐ on the
  * live guest CLI). Fly failed only when camera missed (~50 km) or
- * probe-sign checks fail. Hunt failed only when Overpass returns empty.
+ * probe-sign checks fail. Hunt failed only when Overpass itself errors. Empty view → honest empty + Rhodes land-hunt.
  * No Locate wall. No Google until HOLD/pay. No supabase orders hunt.
  * loadChain injects LOCAL /js/spacenet files only. No runtime GitHub.
  * Does NOT load chrome-guest-pizza-hunt, chrome-call-arc,
@@ -14,9 +14,9 @@
  */
 (function (global) {
   'use strict';
-  var BUILD = '20260824110000-laptop-hunt';
-  var HUNT_SRC = '/js/spacenet/chrome-guest-laptop-hunt-20260824110000.js';
-  var HUNT_MARK = 'data-sn-guest-laptop-hunt-20260824110000';
+  var BUILD = '20260824112000-laptop-land';
+  var HUNT_SRC = '/js/spacenet/chrome-guest-laptop-hunt-20260824112000.js';
+  var HUNT_MARK = 'data-sn-guest-laptop-hunt-20260824112000';
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
 
