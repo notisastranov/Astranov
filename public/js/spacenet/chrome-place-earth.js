@@ -882,15 +882,6 @@
     }
     return last;
   }
-    var z;
-    var last = tileRange(box, 3);
-    for (z = capZ; z >= 2; z--) {
-      var r = tileRange(box, z);
-      last = r;
-      if (r.nx * r.ny <= maxN && r.nx > 0 && r.ny > 0) return r;
-    }
-    return last;
-  }
 
   function latLngVec(g, T, la, ln, r) {
     if (g && typeof g.latLngToVec === "function") return g.latLngToVec(la, ln, r);
