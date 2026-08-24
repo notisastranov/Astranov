@@ -1,27 +1,27 @@
-/* Astranov place-land · Build 20260824014000-place-land
+/* Astranov place-tiles · Build 20260824025000-place-tiles
  * PR #174 only. Do not merge. Does not edit #130 / #131.
  *
  * window.SNGlobe is the LIVE globe.js object (plain assign, never a stub,
  * never a getter). viewLatLng is a function returning the rendered camera
- * look-at {lat,lng}. After nairobi settle ~-1.3, 36.8. After kalithea
- * ~36.39, 28.22.
+ * look-at {lat,lng}. KEEP flyGlobeTo + those exact look-ats:
+ *   after nairobi settle ~-1.286, 36.817
+ *   after kalithea settle ~36.389, 28.223
  *
- * Camera sits on +Z looking down -Z. globe.js flyNear / setGlobeLatLng
- * (tilt.x=-lat, spin.y=-lng) faces +X, so Nairobi reads ~4.73,-53.18 and
- * Kalithea ~-32.95,-61.78. This file snaps with the +Z inverse:
- *   spin.y = atan2(-Tx, Tz), tilt.x from camera-y look point.
- * Probe-sign loop refines. Never re-snap with the +X formula.
+ * After the fly settles, WAIT until satellite/texture tiles for THAT
+ * look-at are actually loaded. Hold one zoom level coarser until they
+ * are. Prefer the pizza/Rhodes tile source (SNEarthLevels: /api/gtiles
+ * else NASA GIBS z<=8 else Esri World Imagery). Never dump a broken
+ * high-zoom drape. No white placeholder squares. Leaflet stays hidden.
  *
- * Cap fly/zoom so Earth stays a PLACE. Last Nairobi rung = city altitude
- * with readable land (globe texture + satellite drape). Kalithea stays
- * island/village scale, not a sea smear. Leaflet covering the globe is
- * skipped — Earth stays on screen.
+ * Guest kalithea prints CLI rungs:
+ *   Kalithea · village · Rhodes / lake / islands / olives
+ * matching how nairobi prints national/city/streets.
  */
 (function (global) {
   "use strict";
-  var BUILD = "20260824014000-place-land";
-  if (global.__snPlaceLand20260824014000) return;
-  global.__snPlaceLand20260824014000 = 1;
+  var BUILD = "20260824025000-place-tiles";
+  if (global.__snPlaceTiles20260824025000) return;
+  global.__snPlaceTiles20260824025000 = 1;
 
   var NAIROBI = { lat: -1.286, lng: 36.817 };
   var KALITHEA = { lat: 36.387557, lng: 28.222533 };
@@ -37,6 +37,11 @@
   var adopted = null;
   var drapeGroup = null;
   var drapeLoader = null;
+  var drapeCache = Object.create(null);
+  var drapeLast = "";
+  var tilesBusy = false;
+  var kaliBusy = false;
+  var cliWrap = null;
   var capUntil = 0;
   var holdEuler = null;
   var suppressMo = false;
@@ -550,7 +555,45 @@
     return (x / Math.pow(2, z)) * 360 - 180;
   }
 
+  function sleep(ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  /* Same zoom ladder the pizza/Rhodes fly (chrome-earth-levels) already uses.
+     Cap at 10 so we never dump a broken high-zoom smear (12/13/14). */
+  function tileZoomForCam(z) {
+    z = Number(z);
+    if (!isFinite(z)) return 8;
+    if (z >= 3.4) return 0;
+    if (z >= 2.1) return 6;
+    if (z >= 1.55) return 8;
+    if (z >= 1.28) return 10;
+    return 10;
+  }
+
+  function coarserZoom(tz) {
+    tz = Number(tz) || 0;
+    if (tz >= 10) return 8;
+    if (tz >= 8) return 6;
+    if (tz >= 6) return 6;
+    return tz;
+  }
+
+  function camZForTileZoom(tz) {
+    if (tz <= 6) return 2.2;
+    if (tz <= 8) return 1.62;
+    return 1.52;
+  }
+
   function drapeUrl(z, x, y) {
+    try {
+      var gtiles = global.SNEarthLevels && typeof SNEarthLevels.google === "function" ? SNEarthLevels.google() : null;
+      if (gtiles && gtiles.ok && (gtiles.proxy || gtiles.ok === true)) {
+        return "/api/gtiles?z=" + z + "&x=" + x + "&y=" + y;
+      }
+    } catch (_) {}
     if (z <= 8) {
       return (
         "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/" +
@@ -565,11 +608,101 @@
     return "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/" + z + "/" + y + "/" + x;
   }
 
+  function hideBrokenEarthDrape() {
+    try {
+      var g = liveGlobe();
+      var land =
+        lastFly &&
+        (isNairobiCoord(lastFly.lat, lastFly.lng) || isKalitheaCoord(lastFly.lat, lastFly.lng));
+      var roots = [];
+      try {
+        if (typeof g.getSpin === "function" && g.getSpin()) roots.push(g.getSpin());
+      } catch (_) {}
+      try {
+        if (typeof g.getEarth === "function" && g.getEarth()) roots.push(g.getEarth());
+      } catch (_) {}
+      try {
+        if (typeof g.getScene === "function" && g.getScene()) roots.push(g.getScene());
+      } catch (_) {}
+      var i;
+      for (i = 0; i < roots.length; i++) {
+        var root = roots[i];
+        if (!root || typeof root.traverse !== "function") continue;
+        root.traverse(function (obj) {
+          if (!obj) return;
+          var nm = "";
+          try {
+            nm = String(obj.name || "");
+          } catch (_) {}
+          var parentNm = "";
+          try {
+            parentNm = obj.parent ? String(obj.parent.name || "") : "";
+          } catch (_) {}
+          if (land && (nm === "sn-earth-drape" || nm.indexOf("sn-earth-drape") === 0)) {
+            try {
+              obj.visible = false;
+            } catch (_) {}
+            return;
+          }
+          try {
+            if (!obj.isMesh || !obj.material) return;
+            var mat = obj.material;
+            var noMap = !mat.map;
+            var white = false;
+            try {
+              white = !!(mat.color && mat.color.getHex && mat.color.getHex() === 0xffffff);
+            } catch (_) {}
+            if (noMap && (white || nm.indexOf("sn-earth") >= 0 || parentNm === "sn-earth-drape")) {
+              obj.visible = false;
+            }
+          } catch (_) {}
+        });
+      }
+    } catch (_) {}
+  }
+
+
   function clearDrape() {
+    try {
+      Object.keys(drapeCache).forEach(function (k) {
+        var mesh = drapeCache[k];
+        try {
+          if (mesh && mesh.parent) mesh.parent.remove(mesh);
+          if (mesh && mesh.geometry) mesh.geometry.dispose();
+          if (mesh && mesh.material) {
+            if (mesh.material.map) mesh.material.map.dispose();
+            mesh.material.dispose();
+          }
+        } catch (_) {}
+        delete drapeCache[k];
+      });
+    } catch (_) {}
     try {
       if (drapeGroup && drapeGroup.parent) drapeGroup.parent.remove(drapeGroup);
     } catch (_) {}
     drapeGroup = null;
+    drapeLast = "";
+  }
+
+  function ensureDrapeHost(g, T) {
+    if (drapeGroup && drapeGroup.parent) return drapeGroup;
+    var earth = null;
+    var spin = null;
+    try {
+      earth = g.getEarth();
+      spin = typeof g.getSpin === "function" ? g.getSpin() : earth && earth.parent;
+    } catch (_) {}
+    var host = spin || earth;
+    if (!host) return null;
+    drapeGroup = new T.Group();
+    drapeGroup.name = "sn-place-tiles-drape";
+    try {
+      host.add(drapeGroup);
+    } catch (_) {
+      drapeGroup = null;
+      return null;
+    }
+    return drapeGroup;
   }
 
   function makeTileGeom(T, x, y, z, toVec) {
@@ -577,7 +710,7 @@
     var south = tileNorth(y + 1, z);
     var west = tileWest(x, z);
     var east = tileWest(x + 1, z);
-    var segs = 4;
+    var segs = z >= 10 ? 4 : 6;
     var pos = [];
     var uv = [];
     var idx = [];
@@ -612,21 +745,58 @@
     return geo;
   }
 
-  function drapeReadable(lat, lng) {
+  function loadTileImage(url, ms) {
+    return new Promise(function (resolve) {
+      var img = new Image();
+      var done = false;
+      var to = setTimeout(function () {
+        if (done) return;
+        done = true;
+        resolve(null);
+      }, ms || 3200);
+      try {
+        img.crossOrigin = "anonymous";
+      } catch (_) {}
+      img.onload = function () {
+        if (done) return;
+        done = true;
+        clearTimeout(to);
+        if (!img.naturalWidth || img.naturalWidth < 8) return resolve(null);
+        resolve(img);
+      };
+      img.onerror = function () {
+        if (done) return;
+        done = true;
+        clearTimeout(to);
+        resolve(null);
+      };
+      try {
+        img.src = url;
+      } catch (_) {
+        if (!done) {
+          done = true;
+          clearTimeout(to);
+          resolve(null);
+        }
+      }
+    });
+  }
+
+  function texFromImg(T, img) {
+    var tex = new T.Texture(img);
+    tex.minFilter = T.LinearFilter;
+    tex.magFilter = T.LinearFilter;
+    tex.generateMipmaps = false;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  async function drapeLoadedZoom(lat, lng, zoom) {
     var g = liveGlobe();
     var T = threeNS();
-    if (!g || !T || !T.TextureLoader) return;
-    var earth = null;
-    var spin = null;
-    try {
-      earth = g.getEarth();
-      spin = typeof g.getSpin === "function" ? g.getSpin() : earth && earth.parent;
-    } catch (_) {}
-    var host = spin || earth;
-    if (!host) return;
-    var zoom = isKalitheaCoord(lat, lng) ? 14 : 12;
-    var cx = tileX(lng, zoom);
-    var cy = tileY(lat, zoom);
+    if (!g || !T || !T.Mesh || !T.Texture) return 0;
+    var host = ensureDrapeHost(g, T);
+    if (!host) return 0;
     var toVec =
       typeof g.latLngToVec === "function"
         ? function (la, ln, r) {
@@ -641,49 +811,135 @@
               r * Math.sin(phi) * Math.sin(theta)
             );
           };
-    clearDrape();
-    drapeGroup = new T.Group();
-    drapeGroup.name = "sn-place-land-drape";
-    try {
-      host.add(drapeGroup);
-    } catch (_) {
-      return;
-    }
-    if (!drapeLoader) {
-      drapeLoader = new T.TextureLoader();
-      try {
-        drapeLoader.setCrossOrigin("anonymous");
-      } catch (_) {}
-    }
-    var span = 1;
+    var n = Math.pow(2, zoom);
+    var cx = tileX(lng, zoom);
+    var cy = tileY(lat, zoom);
+    var span = zoom >= 10 ? 1 : 2;
+    var jobs = [];
+    var keep = Object.create(null);
     for (var dy = -span; dy <= span; dy++) {
       for (var dx = -span; dx <= span; dx++) {
-        (function (tx, ty) {
-          var url = drapeUrl(zoom, tx, ty);
-          drapeLoader.load(
-            url,
-            function (tex) {
-              try {
-                tex.minFilter = T.LinearFilter;
-                tex.magFilter = T.LinearFilter;
-                tex.generateMipmaps = false;
-                var geo = makeTileGeom(T, tx, ty, zoom, toVec);
-                var mat = new T.MeshBasicMaterial({
-                  map: tex,
-                  depthWrite: false,
-                  transparent: false,
-                });
-                var mesh = new T.Mesh(geo, mat);
-                mesh.renderOrder = 2;
-                if (drapeGroup) drapeGroup.add(mesh);
-                paintGlobe(g);
-              } catch (_) {}
-            },
-            undefined,
-            function () {}
-          );
-        })(cx + dx, cy + dy);
+        var tx = ((cx + dx) % n + n) % n;
+        var ty = cy + dy;
+        if (ty < 0 || ty >= n) continue;
+        var id = zoom + "/" + tx + "/" + ty;
+        keep[id] = 1;
+        if (drapeCache[id] && drapeCache[id].material && drapeCache[id].material.map) continue;
+        jobs.push({ id: id, tx: tx, ty: ty });
       }
+    }
+    Object.keys(drapeCache).forEach(function (k) {
+      if (keep[k]) return;
+      var mesh = drapeCache[k];
+      try {
+        if (mesh && mesh.parent) mesh.parent.remove(mesh);
+      } catch (_) {}
+      delete drapeCache[k];
+    });
+    var loaded = 0;
+    await Promise.all(
+      jobs.map(function (job) {
+        return loadTileImage(drapeUrl(zoom, job.tx, job.ty), 3200).then(function (img) {
+          if (!img) return;
+          try {
+            var tex = texFromImg(T, img);
+            var geo = makeTileGeom(T, job.tx, job.ty, zoom, toVec);
+            var mat = new T.MeshBasicMaterial({
+              map: tex,
+              depthWrite: false,
+              transparent: false,
+            });
+            var mesh = new T.Mesh(geo, mat);
+            mesh.renderOrder = 3;
+            mesh.name = "sn-place-tile-" + job.id;
+            if (drapeCache[job.id] && drapeCache[job.id].parent) {
+              try {
+                drapeCache[job.id].parent.remove(drapeCache[job.id]);
+              } catch (_) {}
+            }
+            drapeCache[job.id] = mesh;
+            host.add(mesh);
+            loaded++;
+          } catch (_) {}
+        });
+      })
+    );
+    Object.keys(drapeCache).forEach(function (k) {
+      if (keep[k] && drapeCache[k] && drapeCache[k].material && drapeCache[k].material.map) loaded++;
+    });
+    hideBrokenEarthDrape();
+    paintGlobe(g);
+    return loaded;
+  }
+
+  async function waitReadableTiles(lat, lng) {
+    lat = +lat;
+    lng = +lng;
+    if (!isFinite(lat) || !isFinite(lng)) return false;
+    if (tilesBusy) return false;
+    tilesBusy = true;
+    var g = liveGlobe();
+    try {
+      hideCoveringTiles();
+      keepEarthVisible();
+      hideBrokenEarthDrape();
+      if (!g) return false;
+      capCameraZ(g, lat, lng);
+      var cam = typeof g.getCamera === "function" ? g.getCamera() : null;
+      var targetZ = cam && cam.position ? +cam.position.z : minZFor(lat, lng);
+      if (!isFinite(targetZ)) targetZ = minZFor(lat, lng);
+      var wantZoom = tileZoomForCam(targetZ);
+      if (!wantZoom) wantZoom = 8;
+      var coarse = coarserZoom(wantZoom) || 6;
+      var key = coarse + ">" + wantZoom + ":" + lat.toFixed(3) + ":" + lng.toFixed(3);
+      if (key === drapeLast && drapeGroup && Object.keys(drapeCache).length >= 4) {
+        capCameraZ(g, lat, lng);
+        return true;
+      }
+
+      /* Hold one zoom coarser until those tiles are actually loaded. */
+      var holdZ = Math.max(targetZ, camZForTileZoom(coarse), minZFor(lat, lng));
+      try {
+        if (cam && cam.position) cam.position.z = holdZ;
+      } catch (_) {}
+      paintGlobe(g);
+
+      var nCoarse = await drapeLoadedZoom(lat, lng, coarse);
+      var ready = nCoarse >= 4;
+      if (ready && wantZoom > coarse) {
+        var nWant = await drapeLoadedZoom(lat, lng, wantZoom);
+        if (nWant >= 4) {
+          try {
+            if (cam && cam.position) cam.position.z = Math.max(targetZ, minZFor(lat, lng));
+          } catch (_) {}
+          capCameraZ(g, lat, lng);
+          paintGlobe(g);
+          drapeLast = key;
+          return true;
+        }
+        /* Target zoom not loaded — keep the coarser readable drape. */
+        await drapeLoadedZoom(lat, lng, coarse);
+        try {
+          if (cam && cam.position) cam.position.z = holdZ;
+        } catch (_) {}
+        capCameraZ(g, lat, lng);
+        paintGlobe(g);
+        drapeLast = key;
+        return nCoarse >= 1;
+      }
+      try {
+        if (cam && cam.position) cam.position.z = Math.max(targetZ, minZFor(lat, lng));
+      } catch (_) {}
+      capCameraZ(g, lat, lng);
+      paintGlobe(g);
+      drapeLast = key;
+      return ready;
+    } catch (_) {
+      return false;
+    } finally {
+      tilesBusy = false;
+      hideBrokenEarthDrape();
+      keepEarthVisible();
     }
   }
 
@@ -797,15 +1053,217 @@
       } catch (_) {}
       capCameraZ(g, lat, lng);
       try {
-        if (isNairobiCoord(lat, lng) || isKalitheaCoord(lat, lng)) drapeReadable(lat, lng);
+        if (isNairobiCoord(lat, lng) || isKalitheaCoord(lat, lng)) {
+          await waitReadableTiles(lat, lng);
+        }
       } catch (_) {}
       keepEarthVisible();
+      hideBrokenEarthDrape();
       return true;
     }
     lastFly = null;
     holdEuler = null;
     return false;
   }
+
+  function logCli(m, c) {
+    var s = String(m == null ? "" : m).slice(0, 420);
+    try {
+      var el = document.getElementById("cli-log");
+      if (el) {
+        el.style.setProperty("display", "block", "important");
+        var row = document.createElement("div");
+        row.className = "sn-cli-line cli-feed-item is-latest sn-" + (c || "ok");
+        row.setAttribute("data-sn-place-tiles", "1");
+        row.textContent = s;
+        el.appendChild(row);
+        el.scrollTop = el.scrollHeight;
+      }
+    } catch (_) {}
+    try {
+      if (global.SNCli && typeof SNCli.log === "function") SNCli.log(s, c || "ok", true);
+    } catch (_) {}
+  }
+
+  function cliHas(substr) {
+    try {
+      var el = document.getElementById("cli-log");
+      if (!el) return false;
+      var t = String(el.textContent || "");
+      if (t.indexOf(substr) >= 0) return true;
+      var rows = el.querySelectorAll("[data-sn-place-tiles], [data-sn-kalithea], .sn-cli-line, .cli-feed-item");
+      for (var i = 0; i < rows.length; i++) {
+        if (String(rows[i].textContent || "").indexOf(substr) >= 0) return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  function printKalitheaRungs() {
+    var lines = [
+      "Kalithea · village · Rhodes",
+      "Kalithea · lake",
+      "Kalithea · islands",
+      "Kalithea · olives",
+    ];
+    var i;
+    for (i = 0; i < lines.length; i++) {
+      if (!cliHas(lines[i])) logCli(lines[i], "ok");
+    }
+    try {
+      if (global.SNCli && typeof SNCli.preview === "function") SNCli.preview("Kalithea · village · Rhodes");
+    } catch (_) {}
+  }
+
+  function isKalitheaLine(raw) {
+    var t = String(raw || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+    if (!t) return false;
+    if (/pizza|nairobi|kenya|\bafrica\b|lagos|johannesburg/.test(t)) return false;
+    if (/\b(kalithea|kallithea|kalitheia)\b/.test(t)) return true;
+    if (/καλλιθ/.test(t)) return true;
+    if (/^(village|astranov village|sustainable village)$/.test(t)) return true;
+    if (/^research\b/.test(t) && /(kalith|kallith|village|καλλιθ)/.test(t)) return true;
+    return false;
+  }
+
+  async function guestKalithea(raw) {
+    printKalitheaRungs();
+    if (kaliBusy) return true;
+    kaliBusy = true;
+    hideCoveringTiles();
+    keepEarthVisible();
+    try {
+      logCli(String(raw || "kalithea").slice(0, 80), "cmd");
+      printKalitheaRungs();
+      var ok = false;
+      try {
+        ok = await flyGlobeTo(KALITHEA.lat, KALITHEA.lng, "Kalithea");
+      } catch (_) {
+        ok = false;
+      }
+      try {
+        if (global.SNVillage && typeof SNVillage.handleLine === "function") {
+          SNVillage.handleLine(raw || "kalithea");
+        } else if (global.SNVillage && typeof SNVillage.fly === "function") {
+          SNVillage.fly();
+        }
+      } catch (_) {}
+      printKalitheaRungs();
+      try {
+        await waitReadableTiles(KALITHEA.lat, KALITHEA.lng);
+      } catch (_) {}
+      printKalitheaRungs();
+      return !!ok;
+    } finally {
+      kaliBusy = false;
+      keepEarthVisible();
+      printKalitheaRungs();
+    }
+  }
+
+  function patchCli() {
+    try {
+      if (!global.SNCli || typeof SNCli.run !== "function") return;
+      if (SNCli.run === cliWrap) return;
+      var prev = SNCli.run.bind(SNCli);
+      cliWrap = function (raw) {
+        try {
+          if (isKalitheaLine(raw)) {
+            void guestKalithea(raw);
+            return Promise.resolve(true);
+          }
+        } catch (_) {}
+        return prev(raw);
+      };
+      SNCli.run = cliWrap;
+    } catch (_) {}
+  }
+
+  function bindKalitheaInputs() {
+    function capture(ev, el) {
+      var v = String((el && el.value) || "").trim();
+      if (!v || !isKalitheaLine(v)) return false;
+      try {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+      } catch (_) {}
+      if (el) el.value = "";
+      void guestKalithea(v);
+      return true;
+    }
+    try {
+      if (!document.documentElement.getAttribute("data-sn-place-tiles-kali")) {
+        document.documentElement.setAttribute("data-sn-place-tiles-kali", "1");
+        document.addEventListener(
+          "submit",
+          function (ev) {
+            var t = ev.target;
+            if (!t || (t.id !== "cli-form" && t.id !== "stc-cmd")) return;
+            var inp = t.querySelector("input") || document.getElementById(t.id === "stc-cmd" ? "stc-cmd-in" : "cli-in");
+            capture(ev, inp);
+          },
+          true
+        );
+        document.addEventListener(
+          "keydown",
+          function (ev) {
+            if (ev.key !== "Enter") return;
+            var el = ev.target;
+            if (!el || (el.id !== "cli-in" && el.id !== "stc-cmd-in")) return;
+            capture(ev, el);
+          },
+          true
+        );
+      }
+    } catch (_) {}
+    try {
+      var form = document.getElementById("cli-form");
+      var input = document.getElementById("cli-in");
+      if (form && input && !input._snPlaceTilesKalithea) {
+        input._snPlaceTilesKalithea = 1;
+        form.addEventListener(
+          "submit",
+          function (ev) {
+            capture(ev, input);
+          },
+          true
+        );
+        input.addEventListener(
+          "keydown",
+          function (ev) {
+            if (ev.key === "Enter") capture(ev, input);
+          },
+          true
+        );
+      }
+      var topForm = document.getElementById("stc-cmd");
+      var topIn = document.getElementById("stc-cmd-in");
+      if (topIn && !topIn._snPlaceTilesKalithea) {
+        topIn._snPlaceTilesKalithea = 1;
+        if (topForm) {
+          topForm.addEventListener(
+            "submit",
+            function (ev) {
+              capture(ev, topIn);
+            },
+            true
+          );
+        }
+        topIn.addEventListener(
+          "keydown",
+          function (ev) {
+            if (ev.key === "Enter") capture(ev, topIn);
+          },
+          true
+        );
+      }
+    } catch (_) {}
+  }
+
 
   function wrapViewLatLng(g) {
     if (!g || g.__snPlaceLandView === BUILD) return;
@@ -848,7 +1306,7 @@
   }
 
   function attachZCap(g) {
-    if (!g || g.__snPlaceLandZCap) return;
+    if (!g || g.__snPlaceLandZCap === BUILD) return;
     g.__snPlaceLandZCap = BUILD;
     if (typeof g.onFrame === "function") {
       try {
@@ -860,6 +1318,7 @@
           if (isNairobiCoord(look.lat, look.lng) || isKalitheaCoord(look.lat, look.lng)) {
             capCameraZ(g, look.lat, look.lng);
             keepEarthVisible();
+            hideBrokenEarthDrape();
           }
         });
       } catch (_) {}
@@ -897,7 +1356,7 @@
   function wrapMap(g) {
     try {
       var M = global.SNMap;
-      if (!M || typeof M.open !== "function" || M.__snPlaceLandOpen) return;
+      if (!M || typeof M.open !== "function" || M.__snPlaceLandOpen === BUILD) return;
       var prev = M.open.bind(M);
       M.open = function (lat, lng, opts) {
         hideCoveringTiles();
@@ -946,6 +1405,8 @@
     }
     adopted = global.SNGlobe && isLiveGlobeApi(global.SNGlobe) ? global.SNGlobe : g;
     wrapMap(adopted);
+    patchCli();
+    bindKalitheaInputs();
     return adopted;
   }
 
@@ -954,6 +1415,9 @@
     keepEarthVisible();
     watchHide();
     wrapMap();
+    patchCli();
+    bindKalitheaInputs();
+    hideBrokenEarthDrape();
     var g = null;
     try {
       g = global.SNGlobe;
@@ -978,6 +1442,8 @@
   setInterval(function () {
     ensure();
     keepEarthVisible();
+    hideBrokenEarthDrape();
+    patchCli();
     if (lastFly && Date.now() < capUntil) {
       holdLookFrame(liveGlobe());
       capCameraZ(liveGlobe(), lastFly.lat, lastFly.lng);
@@ -989,6 +1455,8 @@
     ensure: ensure,
     flyGlobeTo: flyGlobeTo,
     viewLatLng: viewLatLngFromCamera,
+    waitReadableTiles: waitReadableTiles,
+    printKalitheaRungs: printKalitheaRungs,
     lastProbe: function () {
       return lastProbe;
     },
