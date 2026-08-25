@@ -69,6 +69,6 @@ jobs:
               else:
                   st, j = api("POST", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records", payload)
               print("dns", type_, name, "proxied", proxied, st, j.get("success"), j.get("errors"))
-          upsert("A", "astranov.eu", "76.76.21.21", True)
-          upsert("CNAME", "www.astranov.eu", "cname.vercel-dns.com", True)
+          upsert("A", "astranov.eu", "76.76.21.21", False)  # grey-cloud: bypass dead worker (token cannot edit scripts)
+          upsert("CNAME", "www.astranov.eu", "cname.vercel-dns.com", False)
           PY
