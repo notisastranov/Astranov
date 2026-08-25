@@ -28,10 +28,10 @@
       }
       var log = document.getElementById('cli-log');
       if (log) {
-        if (/SPACEX BOT|owner note|AI art missing|USAGE SHIP|ASTRANOV LAW|type what|Talk ·|Locate ·/i.test(log.textContent || '')) {
+        if (/SPACEX BOT|owner note|AI art missing|USAGE SHIP|ASTRANOV LAW|type what|Talk ·|Locate ·|AVC genesis|treasury 2,000,000/i.test(log.textContent || '')) {
           var bad = log.querySelectorAll('.sn-log-line, .cli-feed-item, div, span');
           for (var i = 0; i < bad.length; i++) {
-            if (/SPACEX BOT|AI art missing|owner note|USAGE SHIP|ASTRANOV LAW|type what|Talk ·|Locate ·/i.test(bad[i].textContent || '')) {
+            if (/SPACEX BOT|AI art missing|owner note|USAGE SHIP|ASTRANOV LAW|type what|Talk ·|Locate ·|AVC genesis|treasury 2,000,000/i.test(bad[i].textContent || '')) {
               try { bad[i].remove(); } catch (_) {}
             }
           }

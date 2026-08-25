@@ -1169,22 +1169,26 @@
       }
       return true;
     }
-    // Lean default: load sprites only when first mission needs them
-    H.autoWake = opts.autoWake !== false;
+    // Relic law: unit stays buried until the user asks (helper / silver / unit)
+    H.autoWake = opts.autoWake === true;
     H.x = (window.innerWidth || 400) * 0.82;
     H.y = (window.innerHeight || 700) * 0.55;
     H.tx = H.x;
     H.ty = H.y;
     H.ready = true;
-    H.forceVisible = true;
-    H.visible = true;
+    H.forceVisible = !!H.autoWake;
+    H.visible = !!H.autoWake;
     H.parkMode = true;
     H.status = 'idle';
     try {
-      ensureSprites();
-      ensureCanvas();
-      bindHit();
-      parkAtMoon();
+      if (opts.sleep || !H.autoWake) {
+        sleep();
+      } else {
+        ensureSprites();
+        ensureCanvas();
+        bindHit();
+        parkAtMoon();
+      }
     } catch (_) {}
     // Rare visibility sync only when something is running
     try {

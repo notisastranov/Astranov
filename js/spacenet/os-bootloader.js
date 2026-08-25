@@ -1034,7 +1034,7 @@
       recordCheck('SNTaskRunner', false, e.message || e, 'task-runner.js');
     }
     try {
-      if (global.SNHelper && SNHelper.init) SNHelper.init({ autoWake: true });
+      if (global.SNHelper && SNHelper.init) SNHelper.init({ autoWake: false, sleep: true });
       recordCheck('SNHelper', !!global.SNHelper, 'awake', null);
     } catch (e) {
       recordCheck('SNHelper', false, e.message || e, null);
@@ -1337,7 +1337,7 @@
           signed = !!(global.SNAuth && SNAuth.user);
         } catch (_) {}
         if (signed && global.SNHelper) {
-          if (SNHelper.init) SNHelper.init({ autoWake: true });
+          if (SNHelper.init) SNHelper.init({ autoWake: false, sleep: true });
         }
       } catch (_) {}
       try {
