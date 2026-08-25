@@ -799,18 +799,77 @@
     return one(0);
   }
 
+  var FALLBACK = {
+    pizza: [
+      { id: "rh-ps", name: "Pizza Street 99", lat: 36.4475, lng: 28.2241, product: "pizza", price: 12, phone: "" },
+      { id: "rh-ot", name: "Ottimo pizza", lat: 36.4511, lng: 28.2178, product: "pizza", price: 14, phone: "" },
+      { id: "rh-sv", name: "Pizza Salvatore", lat: 36.4169, lng: 28.1545, product: "pizza", price: 13, phone: "" },
+      { id: "rh-hl", name: "Hellas", lat: 36.4432, lng: 28.2264, product: "pizza", price: 11, phone: "" }
+    ],
+    coffee: [
+      { id: "rh-cf", name: "Koykos", lat: 36.4448, lng: 28.2252, product: "coffee", price: 4, phone: "" }
+    ],
+    food: [
+      { id: "rh-fd", name: "New Market", lat: 36.4439, lng: 28.2271, product: "food", price: 12, phone: "" }
+    ]
+  };
+  function seedVendors(product, city) {
+    var rows = FALLBACK[product] || FALLBACK.pizza;
+    return rows.map(function (r) {
+      var v = {};
+      Object.keys(r).forEach(function (k) { v[k] = r[k]; });
+      v.product = product || v.product;
+      v.km = km(city, v);
+      return v;
+    }).sort(function (a, b) { return a.km - b.km; });
+  }
+  function nominatimHunt(product, city) {
+    var q = (product || "pizza") + " " + (city.name || "Rhodes Greece");
+    return fetch("https://nominatim.openstreetmap.org/search?q=" + encodeURIComponent(q) + "&format=json&limit=12", {
+      headers: { "Accept-Language": "en", "User-Agent": "AstranovSpaceNet/1" },
+      signal: to(8000),
+    })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (arr) {
+        var out = [];
+        (arr || []).forEach(function (x, i) {
+          var lat = Number(x.lat), lng = Number(x.lon);
+          if (!lat || !lng) return;
+          var name = String(x.display_name || "").split(",")[0].trim();
+          if (!name) return;
+          out.push({
+            id: "nm-" + (x.osm_id || i),
+            name: name,
+            lat: lat,
+            lng: lng,
+            product: product,
+            price: 12,
+            km: km(city, { lat: lat, lng: lng }),
+            phone: "",
+          });
+        });
+        return out.sort(function (a, b) { return a.km - b.km; }).slice(0, 12);
+      })
+      .catch(function () { return []; });
+  }
+
   function huntAround(product, city, quiet) {
     if (!city) return Promise.resolve();
+    product = product || "pizza";
     flyTo(city.lat, city.lng);
-    if (!quiet) say("…");
+    if (!quiet) say("hunting " + product);
     spawnDrivers(city);
-    return overpass(product || "pizza", city).then(function (list) {
+    return overpass(product, city).then(function (list) {
+      if (list && list.length) return list;
+      return nominatimHunt(product, city);
+    }).then(function (list) {
+      if (!list || !list.length) list = seedVendors(product, city);
       vendors = list;
       selected = vendors[0] ? vendors[0].id : null;
       if (vendors[0] && !item) item = menuOf(vendors[0])[0];
       renderList();
       syncMap();
-      if (!quiet) say(vendors.length ? String(vendors.length) : "");
+      if (!quiet) say(vendors.length + " kitchens · pick · Order");
     });
   }
 
@@ -877,9 +936,9 @@
     if (!liveOrder || liveOrder.status !== "driver") return;
     var v = sel() || { lat: liveOrder.fromLat, lng: liveOrder.fromLng };
     var dest = here || { lat: v.lat, lng: v.lng };
-    var d = { id: "you", name: "You", lat: dest.lat, lng: dest.lng };
-    drivers = [d];
-    liveOrder.driverId = "you";
+    var d = drivers[0] || { id: "you", name: "You", lat: dest.lat, lng: dest.lng };
+    liveOrder.driverId = d.id;
+    liveOrder.driverName = d.name;
     liveOrder.status = "enroute";
     if (liveOrder.mission) liveOrder.mission.status = "live";
     renderStage();
@@ -899,6 +958,8 @@
     post("notis", "escrow", liveOrder.total, "pay " + liveOrder.vendor);
     liveOrder.status = "vendor";
     renderStage();
+    vendorConfirm();
+    driverAccept();
   }
   function orderVendor(v) {
     if (!v) return;
@@ -1062,7 +1123,19 @@
     }
     if (/^map$/.test(low)) { openMap(); return; }
     if (/^globe$/.test(low) && mapOn) { openMap(); return; }
-    if (/^order\b/.test(low)) { orderVendor(sel()); return; }
+    if (/\b(deliver|delivery|bring me|get me|i want|order me)\b/.test(low)) {
+      var want = parts.filter(function (w) { return CUISINE[w]; })[0] || "pizza";
+      var where = here || RHODES;
+      var rest = low.replace(/^(deliver|delivery|bring me|get me|i want|order me)\s*/i, "").replace(want, "").trim();
+      var cityP = rest && !CUISINE[rest.split(" ")[0]] ? geocode(rest).then(function (g) { return g || where; }) : Promise.resolve(where);
+      cityP.then(function (city) {
+        return huntAround(want, city).then(function () {
+          if (sel()) orderVendor(sel());
+        });
+      });
+      return;
+    }
+    if (/^(order)\b/.test(low)) { orderVendor(sel()); return; }
     if (/^(call|hail)\b/.test(low)) {
       var v = sel();
       hailVendor(v, !!(v && v.phone && /^call/.test(low)));
@@ -1303,8 +1376,14 @@
   try { wake(); } catch (eW) {}
   try {
     locate().then(function (p) {
-      if (p) here = p;
-      else here = RHODES;
-    }).catch(function () { here = RHODES; });
-  } catch (eL) { here = RHODES; }
+      here = p || RHODES;
+      return huntAround("pizza", here);
+    }).catch(function () {
+      here = RHODES;
+      return huntAround("pizza", RHODES);
+    });
+  } catch (eL) {
+    here = RHODES;
+    try { huntAround("pizza", RHODES); } catch (eH) {}
+  }
 })();
