@@ -80,8 +80,8 @@ async function grokChat(key, messages, model) {
     body: JSON.stringify({
       model: model,
       messages: messages,
-      temperature: 0.4,
-      max_tokens: 700,
+      temperature: 0.3,
+      max_tokens: 220,
     }),
   });
   const j = await r.json().catch(function () {
