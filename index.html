@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260825062500-alive" />
+<meta name="astranov-build" content="20260825063200-live" />
 <meta name="theme-color" content="#050608" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <style>
@@ -49,13 +49,13 @@
 </style>
 <script>
 (function () {
-  var BUILD = "20260825062500-alive";
+  var BUILD = "20260825063200-live";
   var KEY = "sn-heal-" + BUILD;
   var DEAD = /os-bootloader|guardian|chrome-mute|chrome-fix|chrome-rib|chrome-radar|mobile-life|phone-os|owner-softload|simple-ux|chrome-shell|chrome-phone/i;
   var JS = [
     "/js/spacenet/grid-os.js?v=" + BUILD,
-    "/js/spacenet/grid-os-20260825044700.js?v=" + BUILD,
-    "/js/spacenet/grid-os-20260825044300.js?v=" + BUILD
+    "https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main/js/spacenet/grid-os.js",
+    "/js/spacenet/grid-os-20260825062500.js?v=" + BUILD
   ];
   var H = {
     build: BUILD,
