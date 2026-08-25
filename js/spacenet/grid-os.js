@@ -1,5 +1,7 @@
 (function () {
   "use strict";
+  if (window.__SN_GRID_OS) return;
+  window.__SN_GRID_OS = true;
 
   var canvas = document.getElementById("g");
   if (!canvas) {
