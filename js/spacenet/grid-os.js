@@ -171,6 +171,18 @@
       emitGlyphs(r.left + r.width * 0.2, r.top, 6);
     } catch (e) {}
   }
+  function talk(t) {
+    say(t);
+    try {
+      if (!t || !window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(String(t).replace(/·/g, ". "));
+      u.rate = 1.02;
+      u.pitch = 0.95;
+      u.lang = (navigator.language || "en-US");
+      window.speechSynthesis.speak(u);
+    } catch (eT) {}
+  }
 
   function to(ms) {
     if (typeof AbortSignal !== "undefined" && AbortSignal.timeout) return AbortSignal.timeout(ms);
@@ -203,11 +215,15 @@
     return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
   }
 
-  function flyTo(lat, lng) {
+  function flyTo(lat, lng, close) {
     lookLat = lat;
     lookLng = lng;
     lookT = 1;
-    dist = 1.55;
+    dist = close ? 0.46 : 1.15;
+  }
+  function enterCity(lat, lng, z) {
+    flyTo(lat, lng, true);
+    setTimeout(function () { openMap(true, lat, lng, z || 15); }, 380);
   }
 
   function loadLedger() {
@@ -673,10 +689,13 @@
     loadLeaflet.once = true;
     var css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "/js/vendor/leaflet.css";
+    css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
     document.head.appendChild(css);
     var s = document.createElement("script");
-    s.src = "/js/vendor/leaflet.js";
+    s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    s.onerror = function () {
+      s.src = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
+    };
     s.onload = function () {
       leafletReady = true;
       cb();
@@ -690,48 +709,70 @@
     leaflet.eachLayer(function (l) {
       if (l instanceof L.CircleMarker || l instanceof L.Polyline) leaflet.removeLayer(l);
     });
-    if (here) {
-      L.circleMarker([here.lat, here.lng], { radius: 8, color: "#dfe6ee", fillColor: "#dfe6ee", fillOpacity: 1 }).addTo(leaflet);
-      leaflet.setView([here.lat, here.lng], Math.max(leaflet.getZoom() || 14, 14));
-    }
-    vendors.forEach(function (v) {
-      var m = L.circleMarker([v.lat, v.lng], {
-        radius: v.id === selected ? 9 : 6,
-        color: v.id === selected ? "#f2f4f7" : "#9ec8e8",
-        fillColor: v.id === selected ? "#f2f4f7" : "#9ec8e8",
+    var pts = [];
+    function mark(lat, lng, color, r, label, extra) {
+      var m = L.circleMarker([lat, lng], {
+        radius: r,
+        color: color,
+        fillColor: color,
         fillOpacity: 0.95,
+        weight: 2,
       }).addTo(leaflet);
-      m.on("click", function () {
-        selected = v.id;
-        flyTo(v.lat, v.lng);
-        renderList();
-        syncMap();
+      if (label) m.bindTooltip(label, { permanent: true, direction: "right", className: "sn-tip", offset: [8, 0] });
+      if (extra) extra(m);
+      pts.push([lat, lng]);
+      return m;
+    }
+    if (here) mark(here.lat, here.lng, "#e8fbff", 8, "YOU");
+    vendors.forEach(function (v) {
+      mark(v.lat, v.lng, v.id === selected ? "#7ee9ff" : "#3aa7c9", v.id === selected ? 9 : 6, v.name, function (m) {
+        m.on("click", function () {
+          selected = v.id;
+          flyTo(v.lat, v.lng, true);
+          renderList();
+          syncMap();
+          talk(v.name + " · " + v.km.toFixed(1) + " km");
+        });
       });
     });
+    drivers.forEach(function (d) {
+      mark(d.lat, d.lng, "#c8d4a0", 6, d.name || "driver");
+    });
     if (liveOrder && liveOrder.route && liveOrder.route.length) {
-      L.polyline(liveOrder.route.map(function (p) { return [p.lat, p.lng]; }), { color: "#9ec8e8", weight: 3 }).addTo(leaflet);
+      L.polyline(liveOrder.route.map(function (p) { return [p.lat, p.lng]; }), { color: "#7ee9ff", weight: 3, opacity: 0.9 }).addTo(leaflet);
+      liveOrder.route.forEach(function (p) { pts.push([p.lat, p.lng]); });
     } else {
       missions.forEach(function (m) {
         if (m.status !== "live") return;
-        L.polyline([[m.from.lat, m.from.lng], [m.to.lat, m.to.lng]], { color: "#9ec8e8", weight: 3 }).addTo(leaflet);
+        L.polyline([[m.from.lat, m.from.lng], [m.to.lat, m.to.lng]], { color: "#7ee9ff", weight: 3, opacity: 0.7 }).addTo(leaflet);
       });
+    }
+    if (pts.length) {
+      try { leaflet.fitBounds(pts, { padding: [48, 48], maxZoom: 16 }); }
+      catch (eF) { leaflet.setView(pts[0], 15); }
     }
   }
 
-  function openMap(force) {
+  function openMap(force, lat, lng, z) {
     if (typeof force === "boolean") mapOn = force;
     else mapOn = !mapOn;
+    if (!cityEl) return;
     cityEl.classList.toggle("on", mapOn);
-    mapBtn.textContent = mapOn ? "GLOBE" : "MAP";
-    matter(mapBtn, mapOn);
+    if (mapBtn) {
+      mapBtn.textContent = mapOn ? "GLOBE" : "MAP";
+      matter(mapBtn, true);
+    }
     if (!mapOn) return;
     loadLeaflet(function () {
-      var c = here || sel() || RHODES;
+      var c = { lat: lat || (here && here.lat) || lookLat, lng: lng || (here && here.lng) || lookLng };
       if (!leaflet) {
-        leaflet = L.map(cityEl, { zoomControl: true, attributionControl: false }).setView([c.lat, c.lng], 14);
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", { maxZoom: 19 }).addTo(leaflet);
+        leaflet = L.map(cityEl, { zoomControl: true, attributionControl: false, zoomSnap: 0.25 }).setView([c.lat, c.lng], z || 15);
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+          maxZoom: 20,
+          subdomains: "abcd",
+        }).addTo(leaflet);
       } else {
-        leaflet.setView([c.lat, c.lng], 14);
+        leaflet.setView([c.lat, c.lng], z || Math.max(leaflet.getZoom() || 15, 15));
         leaflet.invalidateSize();
       }
       syncMap();
@@ -868,8 +909,16 @@
       selected = vendors[0] ? vendors[0].id : null;
       if (vendors[0] && !item) item = menuOf(vendors[0])[0];
       renderList();
-      syncMap();
-      if (!quiet) say(vendors.length + " kitchens · pick · Order");
+      var focus = vendors[0] || city;
+      enterCity(focus.lat, focus.lng, 15);
+      var names = vendors.slice(0, 3).map(function (v) { return v.name; }).join(", ");
+      if (!quiet) {
+        talk(
+          vendors.length + " kitchens around you. " +
+          (names ? names + ". " : "") +
+          drivers.length + " drivers live. You are the guest pin. Order when ready."
+        );
+      }
     });
   }
 
@@ -882,8 +931,8 @@
       }
       navigator.geolocation.getCurrentPosition(
         function (p) {
-          here = { lat: p.coords.latitude, lng: p.coords.longitude, name: "" };
-          flyTo(here.lat, here.lng);
+          here = { lat: p.coords.latitude, lng: p.coords.longitude, name: "You" };
+          flyTo(here.lat, here.lng, true);
           matter(meBtn, false);
           resolve(here);
         },
@@ -925,7 +974,7 @@
     if (liveOrder.mission) { liveOrder.mission.status = "done"; liveOrder.mission.progress = 1; }
     hat = "client";
     renderStage();
-    say(liveOrder.vendor);
+    talk(liveOrder.vendor + " delivered.");
   }
   function vendorConfirm() {
     if (!liveOrder || liveOrder.status !== "vendor") return;
@@ -949,8 +998,10 @@
       liveOrder.route = r.pts;
       liveOrder.status = "enroute";
       renderStage();
+      enterCity(dest.lat, dest.lng, 15);
+      talk((d.name || "Driver") + " is moving. " + Math.round(r.min) + " minutes. Route is on the city.");
     });
-    if (mapOn) syncMap();
+    enterCity(dest.lat, dest.lng, 15);
   }
   function payOrder() {
     if (!liveOrder || liveOrder.status !== "pay") return;
@@ -994,10 +1045,10 @@
       status: "pay",
       mission: mission,
     };
-    flyTo(v.lat, v.lng);
+    flyTo(v.lat, v.lng, true);
     renderStage();
-    say(v.name + " · " + name + " · €" + total);
-    if (mapOn) syncMap();
+    enterCity(v.lat, v.lng, 16);
+    talk("Ordering " + name + " from " + v.name + " for " + total + " euro. Pay to dispatch a driver.");
   }
 
   function hailVendor(v, ring) {
@@ -1077,10 +1128,10 @@
       .then(function (t) {
         if (t) {
           historyChat.push({ role: "assistant", content: t });
-          say(t);
-        } else say("AI");
+          talk(t);
+        } else talk("SpaceNet live.");
       })
-      .catch(function () { say("AI"); });
+      .catch(function () { talk("SpaceNet live."); });
   }
 
   function run(raw) {
@@ -1163,8 +1214,8 @@
       .then(function (text) {
         if (text) {
           historyChat.push({ role: "assistant", content: text });
-          say(text);
-        } else say("AI");
+          talk(text);
+        } else talk("Say pizza or deliver.");
       })
       .catch(function () { say(""); })
       .then(function () { busy = false; });

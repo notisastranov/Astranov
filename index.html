@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260825161000-deliver" />
+<meta name="astranov-build" content="20260825161500-citytalk" />
 <meta name="theme-color" content="#050608" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta name="astranov-law" content="grid-os-latest-no-ghost" />
@@ -15,8 +15,12 @@
 <style>
   html,body{margin:0;height:100%;background:#02040a;color:#d8f6ff;overflow:hidden;font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif}
   #g{position:fixed;inset:0}
-  #city{position:fixed;inset:0;z-index:12;display:none}
+  #city{position:fixed;inset:0;z-index:12;display:none;background:#02040a}
   #city.on{display:block}
+  #city.leaflet-container{background:#02040a;font-family:"Space Grotesk",ui-sans-serif,system-ui}
+  .leaflet-control-zoom a{background:#041018!important;color:#7ee9ff!important;border:1px solid rgba(126,233,255,.35)!important}
+  .sn-tip{background:rgba(4,10,20,.9)!important;color:#7ee9ff!important;border:1px solid rgba(126,233,255,.35)!important;border-radius:0!important;box-shadow:none!important;font:600 10px "JetBrains Mono",ui-monospace,monospace!important;letter-spacing:.08em}
+  .sn-tip:before{border-top-color:rgba(4,10,20,.9)!important}
   #top,#dock{position:fixed;left:0;right:0;display:flex;justify-content:center;pointer-events:none;z-index:20}
   #top{top:max(10px,env(safe-area-inset-top))}
   #dock{bottom:0;padding:0 10px max(12px,env(safe-area-inset-bottom))}
@@ -59,7 +63,7 @@
 </style>
 <script>
 (function () {
-  var BUILD = "20260825161000-deliver";
+  var BUILD = "20260825161500-citytalk";
   var KEY = "sn-heal-" + BUILD;
   var DEAD = /os-bootloader|guardian|chrome-fix|chrome-rib|chrome-radar|chrome-defend|chrome-helper|chrome-place-earth|chrome-mobile-alive|hud-law|relic-defend|mobile-life|phone-os|owner-softload|simple-ux|chrome-shell|chrome-phone/i;
   var JS = [
@@ -366,7 +370,7 @@
   else setTimeout(fallback, 900);
 })();
 </script>
-<script src="/js/spacenet/grid-os.js?v=20260825161000-deliver"></script>
+<script src="/js/spacenet/grid-os.js?v=20260825161500-citytalk"></script>
 <script src="https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@89c27dcb598c6989e863c653be894fb6dd28bf82/js/spacenet/grid-os.js"></script>
 </body>
 </html>
