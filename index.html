@@ -4,12 +4,9 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260825022100-bootlaw" />
+<meta name="astranov-build" content="20260825044300-fast" />
 <meta name="theme-color" content="#050608" />
-<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
-<meta http-equiv="Pragma" content="no-cache" />
 <link rel="manifest" href="/manifest.webmanifest" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
 <style>
   html,body{margin:0;height:100%;background:#050608;color:#dfe6ee;overflow:hidden;font-family:ui-sans-serif,system-ui,sans-serif}
   #g{position:fixed;inset:0}
@@ -41,45 +38,24 @@
 </style>
 <script>
 (function () {
-  var KEY = "sn-boot-purge-202608250221";
-  function wipe(cb) {
-    var n = 0;
-    var left = 2;
-    function done() {
-      left -= 1;
-      if (left <= 0 && cb) cb(n);
-    }
+  function wipe() {
     try {
       if (navigator.serviceWorker) {
         navigator.serviceWorker.getRegistrations().then(function (rs) {
-          n += rs.length;
-          if (navigator.serviceWorker.controller) n += 1;
-          return Promise.all(rs.map(function (r) { return r.unregister(); }));
-        }).then(done, done);
-      } else done();
-    } catch (e) { done(); }
-    try {
+          rs.forEach(function (r) { r.unregister(); });
+        });
+      }
       if (window.caches) {
         caches.keys().then(function (ks) {
-          n += ks.length;
-          return Promise.all(ks.map(function (k) { return caches.delete(k); }));
-        }).then(done, done);
-      } else done();
-    } catch (e2) { done(); }
-  }
-  function onHide() { wipe(function () {}); }
-  window.addEventListener("pagehide", onHide);
-  window.addEventListener("freeze", onHide);
-  document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "hidden") onHide();
-  });
-  wipe(function (n) {
-    try {
-      if (n > 0 && sessionStorage.getItem(KEY) !== "1") {
-        sessionStorage.setItem(KEY, "1");
-        location.replace(location.pathname + location.search.replace(/[?&]v=\d+/g, "") + (location.search ? "&" : "?") + "v=" + Date.now());
+          ks.forEach(function (k) { caches.delete(k); });
+        });
       }
     } catch (e) {}
+  }
+  wipe();
+  window.addEventListener("pagehide", wipe);
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") wipe();
   });
 })();
 </script>
@@ -101,8 +77,6 @@
   <form id="f"><input id="in" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="go" /><button type="submit" aria-label="Go">↑</button></form>
   <div id="line" class="gone"></div>
 </div></div>
-<script src="https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/js/spacenet/grid-os-20260825022100.js?v=20260825022100-bootlaw"></script>
+<script src="/js/spacenet/grid-os-20260825044300.js?v=20260825044300-fast"></script>
 </body>
 </html>
