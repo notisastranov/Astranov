@@ -2,6 +2,11 @@
   "use strict";
 
   var canvas = document.getElementById("g");
+  if (!canvas) {
+    canvas = document.createElement("canvas");
+    canvas.id = "g";
+    document.body.appendChild(canvas);
+  }
   var cityEl = document.getElementById("city");
   var listEl = document.getElementById("list");
   var lineEl = document.getElementById("line");
@@ -250,6 +255,18 @@
 
 
   var ctx = canvas.getContext("2d");
+  if (!ctx) {
+    try { document.getElementById("line").textContent = "canvas"; } catch (eC) {}
+  }
+  function resize() {
+    if (!canvas) return;
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    var w = window.innerWidth || 320;
+    var h = window.innerHeight || 480;
+    var tw = Math.floor(w * dpr), th = Math.floor(h * dpr);
+    if (canvas.width !== tw) canvas.width = tw;
+    if (canvas.height !== th) canvas.height = th;
+  }
   var gridSegs = [];
   (function buildGrid() {
     var lat, lng;
@@ -357,9 +374,11 @@
     requestAnimationFrame(tick);
   }
 
-  resize();
+  try { resize(); } catch (eR) {}
   window.addEventListener("resize", resize);
   tick();
+  window.__SN_ALIVE = true;
+  window.__SN_FULL = true;
 
   var dragging = false, lx = 0, ly = 0;
   canvas.addEventListener("pointerdown", function (e) {
@@ -906,6 +925,7 @@
     });
   }
   function holdMenu(btn, ring, leftSide, tap) {
+    if (!btn) return;
     var tmr = 0, held = false;
     function down(e) {
       held = false;
@@ -932,14 +952,14 @@
     else if (liveOrder.status === "driver") driverAccept();
     else if (liveOrder.status === "enroute") settleOrder();
   };
-  orderBtn.onclick = function () { orderVendor(sel()); };
-  callBtn.onclick = function () {
+  if (orderBtn) orderBtn.onclick = function () { orderVendor(sel()); };
+  if (callBtn) callBtn.onclick = function () {
     var v = sel();
     hailVendor(v, !!(v && v.phone));
   };
-  meBtn.onclick = function () { run("me"); };
-  mapBtn.onclick = function () { openMap(); };
-  form.addEventListener("submit", function (e) {
+  if (meBtn) meBtn.onclick = function () { run("me"); };
+  if (mapBtn) mapBtn.onclick = function () { openMap(); };
+  if (form) form.addEventListener("submit", function (e) {
     e.preventDefault();
     sendNow();
   });
@@ -956,11 +976,15 @@
     else startVoice();
   });
   if (plusRing) plusRing.addEventListener("click", function (e) {
-    var b = e.target.closest("button");
+    var t = e.target;
+    if (t && t.nodeType !== 1) t = t.parentElement;
+    var b = t && t.closest && t.closest("button");
     if (b && b.getAttribute("data-act")) doPlus(b.getAttribute("data-act"));
   });
   if (goRing) goRing.addEventListener("click", function (e) {
-    var b = e.target.closest("button");
+    var t = e.target;
+    if (t && t.nodeType !== 1) t = t.parentElement;
+    var b = t && t.closest && t.closest("button");
     var a = b && b.getAttribute("data-act");
     if (a === "voice") { closeRings(); startVoice(); }
     if (a === "send") sendNow();
