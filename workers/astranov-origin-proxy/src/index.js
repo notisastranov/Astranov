@@ -2,6 +2,7 @@
  * Astranov origin proxy — multi-origin failover
  * Order: Vercel stable → jsDelivr → CF Pages → GitHub raw (last)
  * Never single-point github-sha (429/403 kills domain).
+ * Build 20260825151500-edge-alive — Vercel first.
  */
 const VERCEL = 'https://astranov-astranov.vercel.app';
 const PAGES = 'https://astranov.pages.dev';
@@ -35,7 +36,7 @@ export default {
 
     // Health for ops — does not depend on origins
     if (path === '/__edge_health') {
-      return new Response(JSON.stringify({ ok: true, worker: 'astranov-origin-proxy', v: 3 }), {
+      return new Response(JSON.stringify({ ok: true, worker: 'astranov-origin-proxy', v: 4 }), {
         headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
       });
     }
