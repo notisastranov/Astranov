@@ -150,6 +150,10 @@ serve(async (req) => {
   report.tried = tried;
   report.hasVercel = !!token;
   report.tokenLen = token.length;
+  report.restPaths = restPaths;
+  report.restErr = restErr;
+  report.tableHits = tableHits;
+  report.tokenFrom = reportTokenFrom || report.tokenFrom;
   if (!token) return json(report);
 
   const teams = await api(token, "GET", "https://api.vercel.com/v2/teams");
