@@ -11,6 +11,9 @@
   var callBtn = document.getElementById("call");
   var plusBtn = document.getElementById("plus");
   var goBtn = document.getElementById("go");
+  var stageEl = document.getElementById("stage");
+  var stageText = document.getElementById("stageText");
+  var stageGo = document.getElementById("stageGo");
   var plusRing = document.getElementById("plusRing");
   var goRing = document.getElementById("goRing");
   var fileIn = document.getElementById("fileIn");
@@ -41,6 +44,7 @@
   var drivers = [];
   var item = null;
   var liveOrder = null;
+  var hat = "client";
   var LEDGER_K = "sn:avc-ledger-v1";
   var MENUS = {
     pizza: [["Margherita", 12], ["Pepperoni", 14], ["Four cheese", 15]],
@@ -117,13 +121,13 @@
   }
 
   function loadLedger() {
-    var st = { accounts: { notis: 2000000 }, journal: [] };
+    var st = { accounts: { notis: 3000000 }, journal: [] };
     try {
       var raw = JSON.parse(localStorage.getItem(LEDGER_K) || "null");
       if (raw && raw.accounts) st = raw;
     } catch (e) {}
     if (!st.accounts) st.accounts = {};
-    if (typeof st.accounts.notis !== "number" || st.accounts.notis < 2000000) st.accounts.notis = 2000000;
+    st.accounts.notis = 3000000;
     return st;
   }
   var ledger = loadLedger();
@@ -579,6 +583,69 @@
     });
   }
 
+  function renderStage() {
+    if (!stageEl) return;
+    if (!liveOrder || liveOrder.status === "delivered") {
+      matter(stageEl, false);
+      return;
+    }
+    matter(stageEl, true);
+    var o = liveOrder;
+    var label = o.item + " · " + o.vendor + " · €" + o.total;
+    var btn = "";
+    if (o.status === "pay") { hat = "client"; stageText.textContent = label; btn = "Pay"; }
+    else if (o.status === "vendor") { hat = "vendor"; stageText.textContent = o.vendor; btn = "Confirm"; }
+    else if (o.status === "driver") { hat = "driver"; stageText.textContent = o.vendor; btn = "Accept"; }
+    else if (o.status === "enroute") { hat = "client"; stageText.textContent = o.min ? Math.round(o.min) + " min" : label; btn = "Delivered"; }
+    else { stageText.textContent = label; btn = ""; }
+    if (stageGo) {
+      stageGo.textContent = btn;
+      stageGo.style.display = btn ? "" : "none";
+    }
+  }
+  function settleOrder() {
+    if (!liveOrder) return;
+    post("escrow", "v:" + liveOrder.vendorId, liveOrder.food, "vendor");
+    post("escrow", "d:" + (liveOrder.driverId || "you"), liveOrder.fee, "driver");
+    post("escrow", "net", liveOrder.net, "net");
+    liveOrder.status = "delivered";
+    if (liveOrder.mission) { liveOrder.mission.status = "done"; liveOrder.mission.progress = 1; }
+    hat = "client";
+    renderStage();
+    say(liveOrder.vendor);
+  }
+  function vendorConfirm() {
+    if (!liveOrder || liveOrder.status !== "vendor") return;
+    liveOrder.status = "driver";
+    renderStage();
+  }
+  function driverAccept() {
+    if (!liveOrder || liveOrder.status !== "driver") return;
+    var v = sel() || { lat: liveOrder.fromLat, lng: liveOrder.fromLng };
+    var dest = here || { lat: v.lat, lng: v.lng };
+    var d = { id: "you", name: "You", lat: dest.lat, lng: dest.lng };
+    drivers = [d];
+    liveOrder.driverId = "you";
+    liveOrder.status = "enroute";
+    if (liveOrder.mission) liveOrder.mission.status = "live";
+    renderStage();
+    osrm([d, { lat: liveOrder.fromLat, lng: liveOrder.fromLng }, dest]).then(function (r) {
+      if (!r || !liveOrder) return;
+      liveOrder.km = r.km;
+      liveOrder.min = r.min;
+      liveOrder.route = r.pts;
+      liveOrder.status = "enroute";
+      renderStage();
+    });
+    if (mapOn) syncMap();
+  }
+  function payOrder() {
+    if (!liveOrder || liveOrder.status !== "pay") return;
+    if (bal() < liveOrder.total) { say(Math.round(bal()) + " AVC"); return; }
+    post("notis", "escrow", liveOrder.total, "pay " + liveOrder.vendor);
+    liveOrder.status = "vendor";
+    renderStage();
+  }
   function orderVendor(v) {
     if (!v) return;
     var dest = here || { lat: v.lat, lng: v.lng };
@@ -587,19 +654,13 @@
     var fee = 3;
     var net = 0.5;
     var total = food + fee + net;
-    if (bal() < total) {
-      say(Math.round(bal()) + " AVC");
-      return;
-    }
-    var d = drivers[0] || { id: "d0", name: "Driver", lat: dest.lat + 0.01, lng: dest.lng + 0.01 };
-    post("notis", "escrow", total, "hold " + v.name);
     var mission = {
       id: "o" + Date.now(),
       kind: "order",
       label: name + " · " + v.name,
       from: { lat: v.lat, lng: v.lng, name: v.name },
       to: dest,
-      status: "live",
+      status: "hold",
       progress: 0,
     };
     missions.unshift(mission);
@@ -607,28 +668,20 @@
     liveOrder = {
       vendor: v.name,
       vendorId: v.id,
-      driverId: d.id,
-      driverName: d.name,
+      fromLat: v.lat,
+      fromLng: v.lng,
+      driverId: "",
       item: name,
       food: food,
       fee: fee,
       net: net,
       total: total,
-      status: "paid",
+      status: "pay",
       mission: mission,
     };
     flyTo(v.lat, v.lng);
-    renderTx();
+    renderStage();
     say(v.name + " · " + name + " · €" + total);
-    osrm([d, v, dest]).then(function (r) {
-      if (!r || !liveOrder) return;
-      liveOrder.km = r.km;
-      liveOrder.min = r.min;
-      liveOrder.route = r.pts;
-      liveOrder.status = "enroute";
-      renderTx();
-      say(v.name + " · " + Math.round(r.min) + " min");
-    });
     if (mapOn) syncMap();
   }
 
@@ -872,6 +925,13 @@
     btn.addEventListener("contextmenu", function (e) { e.preventDefault(); openRing(ring, leftSide); });
   }
 
+  if (stageGo) stageGo.onclick = function () {
+    if (!liveOrder) return;
+    if (liveOrder.status === "pay") payOrder();
+    else if (liveOrder.status === "vendor") vendorConfirm();
+    else if (liveOrder.status === "driver") driverAccept();
+    else if (liveOrder.status === "enroute") settleOrder();
+  };
   orderBtn.onclick = function () { orderVendor(sel()); };
   callBtn.onclick = function () {
     var v = sel();
@@ -917,9 +977,8 @@
   try { wake(); } catch (eW) {}
   try {
     locate().then(function (p) {
-      var city = p || RHODES;
-      if (!p) here = RHODES;
-      return huntAround("pizza", city, true);
-    }).catch(function () {});
-  } catch (eL) {}
+      if (p) here = p;
+      else here = RHODES;
+    }).catch(function () { here = RHODES; });
+  } catch (eL) { here = RHODES; }
 })();
