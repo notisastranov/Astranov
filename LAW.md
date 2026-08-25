@@ -33,3 +33,12 @@ Those are past shells. Restoring them is **ghosting**.
 | `cloudflare/astranov-live.js` | Serve GitHub Grid OS. Reject ghost HTML. |
 
 If you are an agent about to "restore HUD law", **stop**. That is ghosting.
+
+## In-app Grok
+
+Grok inside the app **writes code on the fly**.
+
+- `SN.materialize(spec)` — pin, button, panel, route, note, or `js` patch
+- `SN.dematerialize(id)` — vanish it
+- Fences: ```materialize``` / ```dematerialize``` / ```js```
+- Never materialize ghost HUD

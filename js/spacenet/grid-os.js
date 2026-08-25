@@ -62,6 +62,8 @@
     tacos: [["Al pastor", 9], ["Veg", 8]],
     food: [["Plate", 12], ["Drink", 3]],
   };
+  var things = {};
+  var thingOrder = [];
   var yaw = 0.9;
   var pitch = 0.35;
   var dist = 2.7;
@@ -350,6 +352,10 @@
       for (i = 0; i < vendors.length; i++) {
         dotAt(vendors[i].lat, vendors[i].lng, vendors[i].id === selected ? "#f2f4f7" : "#9ec8e8", vendors[i].id === selected ? 5 : 3);
       }
+      for (i = 0; i < thingOrder.length; i++) {
+        var th = things[thingOrder[i]];
+        if (th && th.lat != null && th.lng != null) dotAt(th.lat, th.lng, th.color || "#ffe566", th.size || 4);
+      }
       for (i = 0; i < drivers.length; i++) dotAt(drivers[i].lat, drivers[i].lng, "#c8d4a0", 3);
       var arcs = [];
       var items = missions.concat(calls);
@@ -381,12 +387,101 @@
   tick();
   window.__SN_ALIVE = true;
   window.__SN_FULL = true;
+  function ghostCode(src) {
+    return /cli-in|stc-cmd-in|sn-topchrome|Command the HUD|hud-law|os-bootloader/i.test(String(src || ""));
+  }
+  function uid(prefix) {
+    return (prefix || "m") + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
+  }
+  function materialize(spec) {
+    spec = spec || {};
+    if (typeof spec === "string") spec = { kind: "note", label: spec };
+    var id = String(spec.id || uid(spec.kind || "m"));
+    spec.id = id;
+    spec.kind = spec.kind || (spec.lat != null ? "pin" : spec.js ? "code" : "note");
+    if (spec.js || spec.code) {
+      if (ghostCode(spec.js || spec.code)) return { ok: false, err: "ghost" };
+      try { (new Function("SN", spec.js || spec.code))(window.SN); spec.applied = true; }
+      catch (eC) { spec.applied = false; spec.err = String(eC); }
+    }
+    if (spec.kind === "pin" || spec.lat != null) {
+      spec.lat = Number(spec.lat != null ? spec.lat : lookLat);
+      spec.lng = Number(spec.lng != null ? spec.lng : lookLng);
+      try { flyTo(spec.lat, spec.lng); } catch (eF) {}
+    }
+    if (spec.kind === "button" && listEl) {
+      var b = document.createElement("button");
+      b.id = "sn-m-" + id;
+      b.type = "button";
+      b.textContent = spec.label || id;
+      b.addEventListener("click", function () {
+        if (spec.run) run(String(spec.run));
+        else if (spec.js) window.SN.patch(spec.js);
+      });
+      listEl.appendChild(b);
+      matter(listEl, true);
+      spec.el = b;
+    }
+    if (spec.kind === "panel") {
+      var oldP = document.getElementById("sn-m-" + id);
+      if (oldP && oldP.parentNode) oldP.parentNode.removeChild(oldP);
+      var pan = document.createElement("div");
+      pan.id = "sn-m-" + id;
+      pan.style.cssText = "position:fixed;z-index:30;left:50%;bottom:118px;transform:translateX(-50%);width:min(420px,92vw);border:1px solid #2a3340;border-radius:16px;background:rgba(14,16,20,.94);padding:12px 14px;color:#dfe6ee;font:14px/1.4 ui-sans-serif,system-ui";
+      pan.innerHTML = "<div style='display:flex;justify-content:space-between;gap:8px'><b>" + String(spec.title || spec.label || id).replace(/[<>]/g, "") + "</b><button type='button' data-x='1' style='border:0;background:0;color:#7a8494'>✕</button></div><div>" + String(spec.body || spec.label || "").replace(/[<>]/g, "") + "</div>";
+      pan.querySelector("[data-x]").onclick = function () { dematerialize(id); };
+      document.body.appendChild(pan);
+      spec.el = pan;
+    }
+    if (spec.kind === "route" || spec.kind === "mission") {
+      missions.unshift({
+        id: id,
+        kind: spec.kind,
+        label: spec.label || spec.kind,
+        from: spec.from || here || { lat: lookLat, lng: lookLng },
+        to: spec.to || { lat: spec.lat || lookLat, lng: spec.lng || lookLng, name: spec.label },
+        status: "live",
+        progress: 0,
+      });
+    }
+    if (spec.kind === "note") say(spec.label || spec.body || id);
+    things[id] = spec;
+    if (thingOrder.indexOf(id) < 0) thingOrder.push(id);
+    if (spec.kind !== "note") say((spec.label || spec.kind) + " · live");
+    return spec;
+  }
+  function dematerialize(id) {
+    if (!id || id === "*" || id === "all") {
+      Object.keys(things).slice().forEach(function (k) { dematerialize(k); });
+      return true;
+    }
+    id = String(id);
+    if (!things[id]) {
+      Object.keys(things).forEach(function (k) {
+        if (things[k] && things[k].kind === id) dematerialize(k);
+      });
+      var byEl = document.getElementById("sn-m-" + id);
+      if (byEl && byEl.parentNode) byEl.parentNode.removeChild(byEl);
+      return true;
+    }
+    var spec = things[id];
+    try { if (spec.el && spec.el.parentNode) spec.el.parentNode.removeChild(spec.el); } catch (eD) {}
+    delete things[id];
+    thingOrder = thingOrder.filter(function (x) { return x !== id; });
+    missions = missions.filter(function (m) { return m.id !== id; });
+    return true;
+  }
   window.SN = {
     say: say,
     hunt: function (q) { return huntAround(q || "pizza", here || { lat: lookLat, lng: lookLng }); },
     order: function () { return orderVendor(sel()); },
     heal: function () { try { resize(); } catch (e) {} if (!lineEl || !lineEl.textContent || lineEl.textContent === "…") wake(); },
+    materialize: materialize,
+    dematerialize: dematerialize,
+    vanish: dematerialize,
+    things: function () { return thingOrder.map(function (k) { return things[k]; }); },
     patch: function (src) {
+      if (ghostCode(src)) return "ghost";
       try { (new Function("SN", src))(window.SN); return true; }
       catch (e) { return String(e); }
     },
@@ -395,6 +490,8 @@
       if (name === "order") return window.SN.order();
       if (name === "heal") return window.SN.heal();
       if (name === "patch") return window.SN.patch(arg);
+      if (name === "materialize" || name === "make") return window.SN.materialize(arg);
+      if (name === "dematerialize" || name === "vanish") return window.SN.dematerialize(arg);
     }
   };
   function defend() {
@@ -754,32 +851,57 @@
   }
 
   function grok(msg) {
+    var law =
+      "You are Grok inside Astranov SpaceNet Grid OS. You write live code and you materialize or dematerialize anything the architect or a user needs. " +
+      "To create, emit a fenced block:\n```materialize\n{\"kind\":\"pin|button|panel|route|code|note\",\"id\":\"x\",\"label\":\"...\",\"lat\":36.43,\"lng\":28.22,\"body\":\"...\",\"js\":\"...\"}\n```\n" +
+      "To remove: ```dematerialize\n{\"id\":\"x\"}\n```\n" +
+      "To patch the OS: ```js\nSN.materialize({...})\n```\n" +
+      "Never restore twin CLI HUD, #cli-in, #stc-cmd-in, Command the HUD, or os-bootloader chrome — those are ghosts. Keep Grid OS.";
     return fetch("/api/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: msg,
+        message: law + "\n\n" + msg,
         history: historyChat.slice(-8),
         gift: true,
         allow_paid: true,
         force_paid: true,
         fast: true,
+        tools: ["materialize", "dematerialize", "patch", "hunt", "order", "heal"],
       }),
       signal: to(18000),
     })
       .then(function (r) { return r.json(); })
-      .then(function (j) { return ingest(String(j.text || j.response || "").trim()); });
+      .then(function (j) {
+        try {
+          if (j && j.tool) window.SN.tool(j.tool, j.arg || j.spec || j.id);
+          if (j && Array.isArray(j.tools)) j.tools.forEach(function (x) { window.SN.tool(x.name || x.tool, x.arg || x.spec); });
+        } catch (eT) {}
+        return ingest(String(j.text || j.response || "").trim());
+      });
   }
 
   function ingest(t) {
     if (!t) return t;
+    t = t.replace(/```(?:json)?\s*materialize\s*([\s\S]*?)```/ig, function (_, body) {
+      try { materialize(JSON.parse(body)); } catch (e) { try { materialize({ kind: "note", label: body }); } catch (e2) {} }
+      return "";
+    });
+    t = t.replace(/```(?:json)?\s*dematerialize\s*([\s\S]*?)```/ig, function (_, body) {
+      try {
+        var j = JSON.parse(body);
+        if (Array.isArray(j)) j.forEach(function (x) { dematerialize((x && x.id) || x); });
+        else dematerialize((j && j.id) || j);
+      } catch (e) { dematerialize(String(body).trim().replace(/[\"{}]/g, "")); }
+      return "";
+    });
     var m = t.match(/```(?:js|javascript)\s*([\s\S]*?)```/i);
     if (m && m[1]) {
-      var ok = SN.patch(m[1]);
+      var ok = window.SN.patch(m[1]);
       if (ok !== true) t = t + "\n" + String(ok);
       else t = t.replace(/```(?:js|javascript)[\s\S]*?```/ig, "").trim() || t;
     }
-    return t;
+    return String(t || "").trim();
   }
 
   function wake() {
@@ -798,6 +920,21 @@
     var t = raw.trim();
     if (!t || busy) return;
     var low = t.toLowerCase();
+    if (/^(make|materialize|spawn)\b/.test(low)) {
+      var rest = t.replace(/^(make|materialize|spawn)\s+/i, "");
+      materialize({ kind: /panel/.test(low) ? "panel" : /button/.test(low) ? "button" : /route/.test(low) ? "route" : "pin", label: rest || "live" });
+      return;
+    }
+    if (/^(vanish|dematerialize|gone|clear things)\b/.test(low)) {
+      var who = t.replace(/^(vanish|dematerialize|gone|clear things)\s*/i, "").trim() || "all";
+      dematerialize(who);
+      say("gone");
+      return;
+    }
+    if (/^things$/.test(low)) {
+      say(thingOrder.length ? thingOrder.map(function (k) { return (things[k].kind || "") + " " + k; }).join(" · ") : "none");
+      return;
+    }
     if (/^(me|locate|here|gps)$/.test(low)) {
       locate().then(function (p) { return huntAround("pizza", p || here || RHODES); });
       return;
