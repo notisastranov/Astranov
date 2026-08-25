@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260825045800-fix" />
+<meta name="astranov-build" content="20260825050200-btns" />
 <meta name="theme-color" content="#050608" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <style>
@@ -33,9 +33,13 @@
   #list button.on,#menu button.on{background:#16181d}
   #list span,#menu span,#tx{color:#7a8494;font-size:12px;font-variant-numeric:tabular-nums}
   #tx{display:flex;flex-direction:column;gap:6px;margin:0 0 8px}
-  form{display:flex;align-items:center;gap:8px;min-height:44px;border:1px solid #2a3340;border-radius:14px;padding:0 10px;background:rgba(8,9,12,.7)}
-  input{flex:1;min-width:0;height:36px;border:0;background:0;color:#dfe6ee;font:15px ui-sans-serif,system-ui;outline:0}
-  form button{width:36px;height:36px;border:0;border-radius:999px;background:#dfe6ee;color:#08090c}
+  form{display:flex;align-items:center;gap:8px;min-height:44px;border:1px solid #2a3340;border-radius:14px;padding:0 8px;background:rgba(8,9,12,.7)}
+  input#in{flex:1;min-width:0;height:36px;border:0;background:0;color:#dfe6ee;font:15px ui-sans-serif,system-ui;outline:0}
+  .hub{position:relative;flex-shrink:0;width:36px;height:36px}
+  .hub > button{width:36px;height:36px;border:0;border-radius:999px;background:#dfe6ee;color:#08090c;display:flex;align-items:center;justify-content:center;font:700 18px/1 ui-sans-serif,system-ui;padding:0}
+  #go.listen{background:#9ec8e8}
+  .ring{position:absolute;left:18px;bottom:18px;width:0;height:0;z-index:40;pointer-events:none}
+  .ring button{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border:1px solid #2a3340;border-radius:999px;background:rgba(14,16,20,.96);color:#dfe6ee;font:600 10px ui-sans-serif,system-ui;pointer-events:auto;padding:0}
   #line{margin:8px 4px 0;font-size:12px;color:#9aa4b2;max-height:6.5rem;overflow:auto;white-space:pre-wrap}
   .gone{display:none!important}
   .in{animation:mat .16s ease}
@@ -43,7 +47,7 @@
 </style>
 <script>
 (function () {
-  var BUILD = "20260825045800-fix";
+  var BUILD = "20260825050200-btns";
   var KEY = "sn-heal-" + BUILD;
   var DEAD = /os-bootloader|guardian|chrome-mute|chrome-fix|chrome-rib|chrome-radar|mobile-life|phone-os|owner-softload|simple-ux|chrome-shell|chrome-phone/i;
   var JS = [
@@ -258,7 +262,30 @@
   </div>
   <div id="menu"></div>
   <div id="list"></div>
-  <form id="f"><input id="in" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="go" /><button type="submit" aria-label="Go">↑</button></form>
+  <form id="f">
+    <div class="hub" id="plusHub">
+      <button type="button" id="plus" aria-label="Plus">+</button>
+      <div class="ring gone" id="plusRing">
+        <button type="button" data-act="post">Post</button>
+        <button type="button" data-act="call">Call</button>
+        <button type="button" data-act="photo">Photo</button>
+        <button type="button" data-act="file">File</button>
+      </div>
+    </div>
+    <input id="in" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="send" />
+    <div class="hub" id="goHub">
+      <button type="button" id="go" aria-label="Voice">
+        <svg id="goIcon" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 14a3 3 0 003-3V6a3 3 0 00-6 0v5a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.93V21h2v-3.07A7 7 0 0019 11h-2z"/></svg>
+      </button>
+      <div class="ring gone" id="goRing">
+        <button type="button" data-act="voice">Voice</button>
+        <button type="button" data-act="send">Send</button>
+        <button type="button" data-act="grok">Grok</button>
+      </div>
+    </div>
+    <input id="fileIn" type="file" class="gone" />
+    <input id="photoIn" type="file" accept="image/*" capture="environment" class="gone" />
+  </form>
   <div id="line" class="gone"></div>
 </div></div>
 </body>
