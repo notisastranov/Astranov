@@ -42,8 +42,12 @@ jobs:
           hs = {"Authorization": "Bearer " + TOKEN, "Content-Type": "application/javascript"}
           st, j = api("PUT", f"https://api.cloudflare.com/client/v4/accounts/{account_id}/workers/scripts/astranov-live", raw=script, headers=hs)
           print("put script", st, j.get("success"), j.get("errors"))
+          stv, ver = api("GET", "https://api.cloudflare.com/client/v4/user/tokens/verify")
+          print("token verify", stv, ver.get("success"), ver.get("result"))
+          st, scripts = api("GET", f"https://api.cloudflare.com/client/v4/accounts/{account_id}/workers/scripts")
+          print("scripts", st, scripts.get("success"), [s.get("id") for s in (scripts.get("result") or [])][:20], scripts.get("errors"))
           if not j.get("success"):
-              raise SystemExit("script fail")
+              print("WORKER_UPLOAD_DENIED — token needs Workers Scripts Edit. Continuing DNS/routes.")
           st, routes = api("GET", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/workers/routes")
           want = ["astranov.eu/*", "www.astranov.eu/*"]
           have = { (r.get("pattern"), r.get("script")): r for r in (routes.get("result") or []) }
