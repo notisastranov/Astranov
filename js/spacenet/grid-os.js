@@ -111,13 +111,13 @@
   }
 
   function loadLedger() {
-    var st = { accounts: { notis: 2000000, client: 200 }, journal: [] };
+    var st = { accounts: { notis: 2000000 }, journal: [] };
     try {
-      var p = JSON.parse(localStorage.getItem(LEDGER_K) || "null");
-      if (p && p.accounts) st = p;
+      var raw = JSON.parse(localStorage.getItem(LEDGER_K) || "null");
+      if (raw && raw.accounts) st = raw;
     } catch (e) {}
-    if (typeof st.accounts.notis !== "number") st.accounts.notis = 2000000;
-    if (typeof st.accounts.client !== "number") st.accounts.client = 200;
+    if (!st.accounts) st.accounts = {};
+    if (typeof st.accounts.notis !== "number" || st.accounts.notis < 2000000) st.accounts.notis = 2000000;
     return st;
   }
   var ledger = loadLedger();
@@ -125,10 +125,12 @@
     try { localStorage.setItem(LEDGER_K, JSON.stringify(ledger)); } catch (e) {}
   }
   function bal() {
-    return Number(ledger.accounts.client || 0);
+    return Number(ledger.accounts.notis || 0);
   }
   function paintBal() {
-    if (balEl) balEl.textContent = Math.round(bal()) + " AVC";
+    if (!balEl) return;
+    var n = Math.round(bal()).toString();
+    balEl.textContent = n.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " AVC";
   }
   function post(from, to, amount, memo) {
     amount = Math.round(amount * 100) / 100;
@@ -236,178 +238,65 @@
   }
 
 
-  /* —— tiny WebGL globe —— */
-  var gl = canvas.getContext("webgl", { antialias: true, alpha: false }) ||
-    canvas.getContext("experimental-webgl");
-  var prog, uMVP, aPos, aCol, gridBuf, pinBuf, arcBuf, gridN = 0;
 
-  function sh(type, src) {
-    var s = gl.createShader(type);
-    gl.shaderSource(s, src);
-    gl.compileShader(s);
-    return s;
-  }
-
-  function buildGrid() {
-    var v = [];
-    var lat, lng, a, b, i;
+  var ctx = canvas.getContext("2d");
+  var gridSegs = [];
+  (function buildGrid() {
+    var lat, lng;
     for (lng = -180; lng < 180; lng += 20) {
-      for (lat = -80; lat < 80; lat += 10) {
-        a = ll(lat, lng);
-        b = ll(lat + 10, lng);
-        v.push(a[0], a[1], a[2], 0.62, 0.78, 0.91, b[0], b[1], b[2], 0.62, 0.78, 0.91);
-      }
+      for (lat = -80; lat < 80; lat += 10) gridSegs.push([ll(lat, lng), ll(lat + 10, lng)]);
     }
     for (lat = -60; lat <= 60; lat += 20) {
-      for (lng = -180; lng < 180; lng += 10) {
-        a = ll(lat, lng);
-        b = ll(lat, lng + 10);
-        v.push(a[0], a[1], a[2], 0.62, 0.78, 0.91, b[0], b[1], b[2], 0.62, 0.78, 0.91);
-      }
+      for (lng = -180; lng < 180; lng += 10) gridSegs.push([ll(lat, lng), ll(lat, lng + 10)]);
     }
-    gridN = v.length / 6;
-    gridBuf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, gridBuf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v), gl.STATIC_DRAW);
-  }
+  })();
 
-  function mul(a, b) {
-    var o = new Float32Array(16);
-    var i, j, k;
-    for (i = 0; i < 4; i++) {
-      for (j = 0; j < 4; j++) {
-        var s = 0;
-        for (k = 0; k < 4; k++) s += a[k * 4 + j] * b[i * 4 + k];
-        o[i * 4 + j] = s;
-      }
+  function rot(p) {
+    var cy = Math.cos(yaw), sy = Math.sin(yaw);
+    var cp = Math.cos(pitch), sp = Math.sin(pitch);
+    var x1 = p[0] * cy - p[2] * sy;
+    var z1 = p[0] * sy + p[2] * cy;
+    var y2 = p[1] * cp - z1 * sp;
+    var z2 = p[1] * sp + z1 * cp;
+    return [x1, y2, z2];
+  }
+  function proj(p) {
+    var r = rot(p);
+    var w = canvas.width, h = canvas.height;
+    var scale = Math.min(w, h) * 0.42 / Math.max(0.35, dist);
+    var z = r[2] + dist;
+    if (z < 0.12) return null;
+    return [w * 0.5 + r[0] * scale, h * 0.5 - r[1] * scale, r[2]];
+  }
+  function strokeSegs(segs, color, width) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    var i, a, b;
+    for (i = 0; i < segs.length; i++) {
+      a = proj(segs[i][0]);
+      b = proj(segs[i][1]);
+      if (!a || !b) continue;
+      if (a[2] < 0 && b[2] < 0) continue;
+      ctx.moveTo(a[0], a[1]);
+      ctx.lineTo(b[0], b[1]);
     }
-    return o;
+    ctx.stroke();
   }
-
-  function persp(fovy, aspect, near, far) {
-    var f = 1 / Math.tan((fovy * Math.PI) / 360);
-    var m = new Float32Array(16);
-    m[0] = f / aspect;
-    m[5] = f;
-    m[10] = (far + near) / (near - far);
-    m[11] = -1;
-    m[14] = (2 * far * near) / (near - far);
-    return m;
-  }
-
-  function lookAt(ex, ey, ez) {
-    var zx = -ex, zy = -ey, zz = -ez;
-    var len = Math.hypot(zx, zy, zz) || 1;
-    zx /= len; zy /= len; zz /= len;
-    var ux = 0, uy = 1, uz = 0;
-    var xx = uy * zz - uz * zy;
-    var xy = uz * zx - ux * zz;
-    var xz = ux * zy - uy * zx;
-    len = Math.hypot(xx, xy, xz) || 1;
-    xx /= len; xy /= len; xz /= len;
-    var yx = zy * xz - zz * xy;
-    var yy = zz * xx - zx * xz;
-    var yz = zx * xy - zy * xx;
-    var m = new Float32Array(16);
-    m[0] = xx; m[1] = yx; m[2] = zx;
-    m[4] = xy; m[5] = yy; m[6] = zy;
-    m[8] = xz; m[9] = yz; m[10] = zz;
-    m[12] = -(xx * ex + xy * ey + xz * ez);
-    m[13] = -(yx * ex + yy * ey + yz * ez);
-    m[14] = -(zx * ex + zy * ey + zz * ez);
-    m[15] = 1;
-    return m;
-  }
-
-  function bind(buf, n) {
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 24, 0);
-    gl.vertexAttribPointer(aCol, 3, gl.FLOAT, false, 24, 12);
-    gl.drawArrays(gl.LINES, 0, n);
-  }
-
-  function pinVerts() {
-    var v = [];
-    function add(lat, lng, r, g, b, s) {
-      var p = ll(lat, lng, 1.02);
-      var d = s || 0.018;
-      v.push(p[0] - d, p[1], p[2], r, g, b, p[0] + d, p[1], p[2], r, g, b);
-      v.push(p[0], p[1] - d, p[2], r, g, b, p[0], p[1] + d, p[2], r, g, b);
-    }
-    if (here) add(here.lat, here.lng, 0.87, 0.9, 0.93, 0.022);
-    var i;
-    for (i = 0; i < vendors.length; i++) {
-      var on = vendors[i].id === selected;
-      add(vendors[i].lat, vendors[i].lng, on ? 0.95 : 0.62, on ? 0.96 : 0.78, on ? 0.97 : 0.91, on ? 0.02 : 0.012);
-    }
-    for (i = 0; i < drivers.length; i++) {
-      add(drivers[i].lat, drivers[i].lng, 0.78, 0.84, 0.55, 0.014);
-    }
-    return v;
-  }
-
-  function arcVerts() {
-    var v = [];
-    var items = missions.concat(calls);
-    var i, t, k;
-    for (i = 0; i < items.length; i++) {
-      var m = items[i];
-      var a = ll(m.from.lat, m.from.lng, 1.02);
-      var b = ll(m.to.lat, m.to.lng, 1.02);
-      var mx = (a[0] + b[0]) * 0.5, my = (a[1] + b[1]) * 0.5, mz = (a[2] + b[2]) * 0.5;
-      var nl = Math.hypot(mx, my, mz) || 1;
-      mx = (mx / nl) * 1.22; my = (my / nl) * 1.22; mz = (mz / nl) * 1.22;
-      var prev = a;
-      for (k = 1; k <= 20; k++) {
-        t = k / 20;
-        var omt = 1 - t;
-        var x = omt * omt * a[0] + 2 * omt * t * mx + t * t * b[0];
-        var y = omt * omt * a[1] + 2 * omt * t * my + t * t * b[1];
-        var z = omt * omt * a[2] + 2 * omt * t * mz + t * t * b[2];
-        var c = m.kind === "call" ? [0.72, 0.77, 0.83] : [0.62, 0.78, 0.91];
-        v.push(prev[0], prev[1], prev[2], c[0], c[1], c[2], x, y, z, c[0], c[1], c[2]);
-        prev = [x, y, z];
-      }
-    }
-    return v;
-  }
-
-  function resize() {
-    var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-    var w = window.innerWidth, h = window.innerHeight;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    canvas.style.width = w + "px";
-    canvas.style.height = h + "px";
-    if (gl) gl.viewport(0, 0, canvas.width, canvas.height);
-    if (leaflet) leaflet.invalidateSize();
-  }
-
-  if (gl) {
-    prog = gl.createProgram();
-    gl.attachShader(prog, sh(gl.VERTEX_SHADER,
-      "attribute vec3 p;attribute vec3 c;uniform mat4 mvp;varying vec3 vc;void main(){vc=c;gl_Position=mvp*vec4(p,1.0);}"));
-    gl.attachShader(prog, sh(gl.FRAGMENT_SHADER,
-      "precision mediump float;varying vec3 vc;void main(){gl_FragColor=vec4(vc,1.0);}"));
-    gl.linkProgram(prog);
-    gl.useProgram(prog);
-    uMVP = gl.getUniformLocation(prog, "mvp");
-    aPos = gl.getAttribLocation(prog, "p");
-    aCol = gl.getAttribLocation(prog, "c");
-    gl.enableVertexAttribArray(aPos);
-    gl.enableVertexAttribArray(aCol);
-    gl.clearColor(0.02, 0.024, 0.031, 1);
-    gl.enable(gl.DEPTH_TEST);
-    buildGrid();
-    pinBuf = gl.createBuffer();
-    arcBuf = gl.createBuffer();
+  function dotAt(lat, lng, color, r) {
+    var q = proj(ll(lat, lng, 1.02));
+    if (!q || q[2] < 0) return;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(q[0], q[1], r, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   function tick() {
     if (lookT > 0) {
       var targetYaw = ((lookLng + 180) * Math.PI) / 180;
       yaw += (((targetYaw - yaw + Math.PI) % (Math.PI * 2)) - Math.PI) * 0.08;
-      pitch += (lookLat * Math.PI / 180 - pitch) * 0.08;
+      pitch += ((lookLat * Math.PI) / 180 - pitch) * 0.08;
       lookT *= 0.9;
       if (lookT < 0.02) lookT = 0;
     }
@@ -424,30 +313,36 @@
       var pt = liveOrder.route[ix];
       if (drivers[0] && pt) { drivers[0].lat = pt.lat; drivers[0].lng = pt.lng; }
     }
-    if (gl) {
-      var ex = dist * Math.sin(yaw) * Math.cos(pitch);
-      var ey = dist * Math.sin(pitch);
-      var ez = dist * Math.cos(yaw) * Math.cos(pitch);
-      var mvp = mul(persp(42, canvas.width / canvas.height, 0.1, 40), lookAt(ex, ey, ez));
-      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-      gl.uniformMatrix4fv(uMVP, false, mvp);
-      bind(gridBuf, gridN);
-      var pv = pinVerts();
-      if (pv.length) {
-        gl.bindBuffer(gl.ARRAY_BUFFER, pinBuf);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pv), gl.DYNAMIC_DRAW);
-        gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 24, 0);
-        gl.vertexAttribPointer(aCol, 3, gl.FLOAT, false, 24, 12);
-        gl.drawArrays(gl.LINES, 0, pv.length / 6);
+    if (ctx) {
+      ctx.fillStyle = "#050608";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      strokeSegs(gridSegs, "rgba(158,200,232,0.55)", 1);
+      if (here) dotAt(here.lat, here.lng, "#dfe6ee", 5);
+      for (i = 0; i < vendors.length; i++) {
+        dotAt(vendors[i].lat, vendors[i].lng, vendors[i].id === selected ? "#f2f4f7" : "#9ec8e8", vendors[i].id === selected ? 5 : 3);
       }
-      var av = arcVerts();
-      if (av.length) {
-        gl.bindBuffer(gl.ARRAY_BUFFER, arcBuf);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(av), gl.DYNAMIC_DRAW);
-        gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 24, 0);
-        gl.vertexAttribPointer(aCol, 3, gl.FLOAT, false, 24, 12);
-        gl.drawArrays(gl.LINES, 0, av.length / 6);
+      for (i = 0; i < drivers.length; i++) dotAt(drivers[i].lat, drivers[i].lng, "#c8d4a0", 3);
+      var arcs = [];
+      var items = missions.concat(calls);
+      for (i = 0; i < items.length; i++) {
+        var m = items[i];
+        var a = ll(m.from.lat, m.from.lng, 1.02);
+        var b = ll(m.to.lat, m.to.lng, 1.02);
+        var mx = (a[0] + b[0]) * 0.5, my = (a[1] + b[1]) * 0.5, mz = (a[2] + b[2]) * 0.5;
+        var nl = Math.hypot(mx, my, mz) || 1;
+        mx = (mx / nl) * 1.22; my = (my / nl) * 1.22; mz = (mz / nl) * 1.22;
+        var prev = a, k, t, omt, x, y, z;
+        for (k = 1; k <= 16; k++) {
+          t = k / 16;
+          omt = 1 - t;
+          x = omt * omt * a[0] + 2 * omt * t * mx + t * t * b[0];
+          y = omt * omt * a[1] + 2 * omt * t * my + t * t * b[1];
+          z = omt * omt * a[2] + 2 * omt * t * mz + t * t * b[2];
+          arcs.push([[prev[0], prev[1], prev[2]], [x, y, z]]);
+          prev = [x, y, z];
+        }
       }
+      if (arcs.length) strokeSegs(arcs, "rgba(158,200,232,0.9)", 1.5);
     }
     requestAnimationFrame(tick);
   }
@@ -691,7 +586,7 @@
       return;
     }
     var d = drivers[0] || { id: "d0", name: "Driver", lat: dest.lat + 0.01, lng: dest.lng + 0.01 };
-    post("client", "escrow", total, "hold " + v.name);
+    post("notis", "escrow", total, "hold " + v.name);
     var mission = {
       id: "o" + Date.now(),
       kind: "order",
@@ -837,11 +732,13 @@
     if (t) run(t);
   });
 
-  paintBal();
-  wake();
-  locate().then(function (p) {
-    var city = p || RHODES;
-    if (!p) here = RHODES;
-    return huntAround("pizza", city, true);
-  });
+  try { paintBal(); } catch (eB) {}
+  try { wake(); } catch (eW) {}
+  try {
+    locate().then(function (p) {
+      var city = p || RHODES;
+      if (!p) here = RHODES;
+      return huntAround("pizza", city, true);
+    }).catch(function () {});
+  } catch (eL) {}
 })();
