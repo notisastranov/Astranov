@@ -1,0 +1,80 @@
+name: Vercel production
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  prod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create production deployment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TOKEN2: ${{ secrets.VERCEL_ACCESS_TOKEN }}
+        run: |
+          python3 <<'PY'
+          import json, os, urllib.request, urllib.error, time
+          tok = os.environ.get("VERCEL_TOKEN") or os.environ.get("VERCEL_TOKEN2") or ""
+          if not tok:
+              raise SystemExit("no vercel token")
+          def api(method, url, body=None):
+              data = None if body is None else json.dumps(body).encode()
+              req = urllib.request.Request(url, data=data, headers={
+                  "Authorization": "Bearer " + tok,
+                  "Content-Type": "application/json",
+              }, method=method)
+              try:
+                  with urllib.request.urlopen(req, timeout=90) as r:
+                      return r.status, json.loads(r.read().decode() or "{}")
+              except urllib.error.HTTPError as e:
+                  raw = e.read().decode(errors="replace")
+                  try: j = json.loads(raw)
+                  except Exception: j = {"raw": raw[:800]}
+                  return e.code, j
+          st, user = api("GET", "https://api.vercel.com/v2/user")
+          print("user", st, (user.get("user") or {}).get("username"))
+          st, teams = api("GET", "https://api.vercel.com/v2/teams")
+          team_list = teams.get("teams") or []
+          hit = None
+          team = None
+          for tid in [None] + [t.get("id") for t in team_list]:
+              q = "?limit=50" + (("&teamId=" + tid) if tid else "")
+              st, proj = api("GET", "https://api.vercel.com/v9/projects" + q)
+              for p in (proj.get("projects") or []):
+                  name = (p.get("name") or "").lower()
+                  if "astranov" in name:
+                      hit, team = p, tid
+                      break
+              if hit:
+                  break
+          if not hit:
+              raise SystemExit("no astranov project")
+          pid = hit.get("id")
+          print("project", hit.get("name"), pid, "team", team)
+          qs = ("?teamId=" + team) if team else ""
+          body = {
+              "name": hit.get("name"),
+              "project": pid,
+              "target": "production",
+              "gitSource": {
+                  "type": "github",
+                  "org": "notisastranov",
+                  "repo": "astranov.eu",
+                  "ref": "main",
+              },
+          }
+          st, d = api("POST", "https://api.vercel.com/v13/deployments" + qs, body)
+          print("deploy", st, d.get("id"), d.get("url"), d.get("readyState"), (d.get("error") or d.get("errorMessage")))
+          if st >= 400:
+              raise SystemExit("deploy failed")
+          uid = d.get("id")
+          for i in range(24):
+              time.sleep(5)
+              st2, d2 = api("GET", "https://api.vercel.com/v13/deployments/" + uid + qs)
+              print("poll", d2.get("readyState"), d2.get("url"))
+              if d2.get("readyState") in ("READY", "ERROR", "CANCELED"):
+                  if d2.get("readyState") != "READY":
+                      raise SystemExit("not ready")
+                  break
+          PY
