@@ -17,6 +17,8 @@
   }
 
   function alive() {
+    if (global.__SN_GRID_OS || global.__SN_ALIVE) return true;
+    if (document.getElementById('g') && document.getElementById('in')) return true;
     var canvas = document.querySelector('#globe canvas');
     var cli = document.getElementById('cli-in');
     var boot = global.SNOsBoot || global.SNOsBootloader;
@@ -24,6 +26,14 @@
   }
 
   function forceEnter() {
+    /* LAW: never resurrect twin-CLI HUD. Grid OS is the latest. */
+    if (global.__SN_GRID_OS || (document.getElementById('g') && document.getElementById('in'))) {
+      try { if (global.SN && SN.heal) SN.heal(); } catch (_) {}
+      return;
+    }
+    try {
+      if (global.SNLaw && SNLaw.heal) { SNLaw.heal(); return; }
+    } catch (_) {}
     try {
       var boot = global.SNOsBoot || global.SNOsBootloader;
       if (boot && boot.enterSystem) boot.enterSystem();

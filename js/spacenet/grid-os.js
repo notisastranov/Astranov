@@ -400,6 +400,13 @@
   function defend() {
     try { resize(); } catch (e) {}
     window.__SN_ALIVE = true;
+    window.__SN_GRID_OS = true;
+    try {
+      ["cli-in","stc-cmd-in","sn-topchrome","cli-coach"].forEach(function (id) {
+        var n = document.getElementById(id);
+        if (n && n.parentNode) n.parentNode.removeChild(n);
+      });
+    } catch (eG) {}
     if (lineEl && (!lineEl.textContent || lineEl.classList.contains("gone") || lineEl.textContent === "…")) wake();
   }
   setInterval(defend, 12000);

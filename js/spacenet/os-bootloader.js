@@ -15,6 +15,19 @@
 
   if (global.__snOsBoot) return;
   global.__snOsBoot = 1;
+  /* LAW: bootloader must not paint twin-CLI HUD. Grid OS is latest. */
+  if (global.__SN_GRID_OS || (document.getElementById('g') && document.getElementById('in') && !document.getElementById('cli-in'))) {
+    return;
+  }
+  if (document.getElementById('cli-in') || document.getElementById('stc-cmd-in') || document.getElementById('sn-topchrome')) {
+    try {
+      var hs = document.createElement('script');
+      hs.src = '/js/spacenet/chrome-mute.js?v=20260825154600-no-ghost';
+      hs.async = false;
+      (document.head || document.documentElement).appendChild(hs);
+    } catch (eLaw) {}
+    return;
+  }
 
   var BUILD =
     (document.querySelector('meta[name="astranov-build"]') || {}).content || 'os-1';

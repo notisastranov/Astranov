@@ -10,13 +10,18 @@ var VERCEL = "https://astranov-astranov.vercel.app";
 var JSD = "https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@main";
 var RAW = "https://raw.githubusercontent.com/notisastranov/astranov.eu/main";
 
+function isGhostHtml(text) {
+  return /Command the HUD|id="cli-in"|id="stc-cmd-in"|hud-law-restore|sn-topchrome-drag/i.test(text || "");
+}
+
 function candidates(path) {
   var p = path === "/" || path === "" ? "/index.html" : path;
   var bare = p.replace(/^\//, "");
+  /* LAW: GitHub Grid OS is latest. Vercel is often a frozen ghost. */
   return [
-    { url: VERCEL + p, tag: "vercel" },
+    { url: RAW + p + "?t=" + Date.now(), tag: "github-raw" },
     { url: JSD + "/" + bare, tag: "jsdelivr" },
-    { url: RAW + p + "?t=" + Date.now(), tag: "github-raw" }
+    { url: VERCEL + p, tag: "vercel" }
   ];
 }
 
@@ -50,6 +55,14 @@ function handle(request) {
       }
       return r.arrayBuffer().then(function (buf) {
         var type = path.indexOf(".js") > 0 ? "application/javascript; charset=utf-8" : "text/html; charset=utf-8";
+        if (type.indexOf("text/html") === 0) {
+          var text = "";
+          try { text = new TextDecoder("utf-8").decode(buf); } catch (e) {}
+          if (isGhostHtml(text)) {
+            fails.push(c.tag + ":ghost-hud");
+            return tryNext(i + 1);
+          }
+        }
         return new Response(buf, {
           status: 200,
           headers: {
