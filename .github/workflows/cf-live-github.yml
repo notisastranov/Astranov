@@ -1,0 +1,70 @@
+name: CF live from GitHub
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'cloudflare/astranov-live.js'
+      - '.github/workflows/cf-live-github.yml'
+      - 'index.html'
+      - 'js/spacenet/grid-os.js'
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Orange-cloud + worker serves GitHub main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          python3 <<'PY'
+          import json, os, pathlib, urllib.request, urllib.error
+          TOKEN = os.environ["CLOUDFLARE_API_TOKEN"]
+          H = {"Authorization": "Bearer " + TOKEN, "Content-Type": "application/json"}
+          def api(method, url, body=None, headers=None, raw=None):
+              data = raw if raw is not None else (None if body is None else json.dumps(body).encode())
+              req = urllib.request.Request(url, data=data, headers=headers or H, method=method)
+              try:
+                  with urllib.request.urlopen(req, timeout=60) as r:
+                      return r.status, json.loads(r.read().decode() or "{}")
+              except urllib.error.HTTPError as e:
+                  rawb = e.read().decode(errors="replace")
+                  try: j = json.loads(rawb)
+                  except Exception: j = {"raw": rawb[:600]}
+                  return e.code, j
+          st, zones = api("GET", "https://api.cloudflare.com/client/v4/zones?name=astranov.eu")
+          zone = (zones.get("result") or [{}])[0]
+          zone_id = zone.get("id")
+          account_id = (zone.get("account") or {}).get("id")
+          print("zone", zone_id, "account", account_id, zones.get("success"))
+          if not zone_id or not account_id:
+              raise SystemExit("no zone")
+          script = pathlib.Path("cloudflare/astranov-live.js").read_bytes()
+          hs = {"Authorization": "Bearer " + TOKEN, "Content-Type": "application/javascript"}
+          st, j = api("PUT", f"https://api.cloudflare.com/client/v4/accounts/{account_id}/workers/scripts/astranov-live", raw=script, headers=hs)
+          print("put script", st, j.get("success"), j.get("errors"))
+          if not j.get("success"):
+              raise SystemExit("script fail")
+          st, routes = api("GET", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/workers/routes")
+          want = ["astranov.eu/*", "www.astranov.eu/*"]
+          have = { (r.get("pattern"), r.get("script")): r for r in (routes.get("result") or []) }
+          for pat in want:
+              hit = next((r for r in (routes.get("result") or []) if r.get("pattern")==pat), None)
+              body = {"pattern": pat, "script": "astranov-live"}
+              if hit:
+                  st, j = api("PUT", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/workers/routes/{hit['id']}", body)
+              else:
+                  st, j = api("POST", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/workers/routes", body)
+              print("route", pat, st, j.get("success"), j.get("errors"))
+          st, dns = api("GET", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?per_page=100")
+          records = dns.get("result") or []
+          def upsert(type_, name, content, proxied):
+              hit = next((r for r in records if r.get("name")==name and r.get("type")==type_), None)
+              payload = {"type": type_, "name": name, "content": content, "proxied": proxied, "ttl": 1}
+              if hit:
+                  st, j = api("PUT", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{hit['id']}", payload)
+              else:
+                  st, j = api("POST", f"https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records", payload)
+              print("dns", type_, name, "proxied", proxied, st, j.get("success"), j.get("errors"))
+          upsert("A", "astranov.eu", "76.76.21.21", True)
+          upsert("CNAME", "www.astranov.eu", "cname.vercel-dns.com", True)
+          PY
