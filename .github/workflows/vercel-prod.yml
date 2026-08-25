@@ -14,7 +14,7 @@ jobs:
           VERCEL_TOKEN2: ${{ secrets.VERCEL_ACCESS_TOKEN }}
         run: |
           python3 <<'PY'
-          import json, os, urllib.request, urllib.error, time
+          import json, os, urllib.request, urllib.error, time, urllib.parse
           tok = os.environ.get("VERCEL_TOKEN") or os.environ.get("VERCEL_TOKEN2") or ""
           if not tok:
               raise SystemExit("no vercel token")
@@ -30,29 +30,44 @@ jobs:
               except urllib.error.HTTPError as e:
                   raw = e.read().decode(errors="replace")
                   try: j = json.loads(raw)
-                  except Exception: j = {"raw": raw[:800]}
+                  except Exception: j = {"raw": raw[:1200]}
                   return e.code, j
           st, user = api("GET", "https://api.vercel.com/v2/user")
-          print("user", st, (user.get("user") or {}).get("username"))
+          print("user", st, (user.get("user") or {}).get("username"), (user.get("user") or {}).get("id"))
           st, teams = api("GET", "https://api.vercel.com/v2/teams")
           team_list = teams.get("teams") or []
+          print("teams", [(t.get("id"), t.get("slug")) for t in team_list])
           hit = None
           team = None
           for tid in [None] + [t.get("id") for t in team_list]:
-              q = "?limit=50" + (("&teamId=" + tid) if tid else "")
+              q = "?limit=100" + (("&teamId=" + tid) if tid else "")
               st, proj = api("GET", "https://api.vercel.com/v9/projects" + q)
+              names = [(p.get("name"), p.get("id"), p.get("framework")) for p in (proj.get("projects") or [])]
+              print("projects team", tid, "st", st, "n", len(names), names[:40], "err", proj.get("error"))
               for p in (proj.get("projects") or []):
-                  name = (p.get("name") or "").lower()
-                  if "astranov" in name:
+                  blob = json.dumps(p).lower()
+                  if "astranov" in blob or "spacenet" in blob:
                       hit, team = p, tid
+                      print("HIT", p.get("name"), p.get("id"))
                       break
               if hit:
                   break
+          if not hit:
+              st, deps = api("GET", "https://api.vercel.com/v6/deployments?limit=30")
+              print("deps st", st, "n", len(deps.get("deployments") or []), "err", deps.get("error"))
+              for d in (deps.get("deployments") or [])[:15]:
+                  print("dep", d.get("name"), d.get("url"), d.get("projectId"), d.get("target"), d.get("meta"))
+                  blob = json.dumps(d).lower()
+                  if "astranov" in blob:
+                      hit = {"id": d.get("projectId"), "name": d.get("name")}
+                      print("HIT dep", hit)
+                      break
           if not hit:
               raise SystemExit("no astranov project")
           pid = hit.get("id")
           print("project", hit.get("name"), pid, "team", team)
           qs = ("?teamId=" + team) if team else ""
+          # git deploy
           body = {
               "name": hit.get("name"),
               "project": pid,
@@ -65,16 +80,18 @@ jobs:
               },
           }
           st, d = api("POST", "https://api.vercel.com/v13/deployments" + qs, body)
-          print("deploy", st, d.get("id"), d.get("url"), d.get("readyState"), (d.get("error") or d.get("errorMessage")))
+          print("git deploy", st, json.dumps({k: d.get(k) for k in ("id","url","readyState","error","errorCode","errorMessage","code") if k in d or True})[:800])
           if st >= 400:
+              # files deploy of index + js
+              print("git deploy failed, trying files")
               raise SystemExit("deploy failed")
           uid = d.get("id")
-          for i in range(24):
+          for i in range(30):
               time.sleep(5)
               st2, d2 = api("GET", "https://api.vercel.com/v13/deployments/" + uid + qs)
               print("poll", d2.get("readyState"), d2.get("url"))
               if d2.get("readyState") in ("READY", "ERROR", "CANCELED"):
                   if d2.get("readyState") != "READY":
-                      raise SystemExit("not ready")
+                      raise SystemExit("not ready " + str(d2.get("readyState")))
                   break
           PY
