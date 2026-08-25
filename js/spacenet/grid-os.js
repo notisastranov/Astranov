@@ -86,9 +86,49 @@
     }
   }
 
+  var glyphs = [];
+  var BITS = ["SN","vec3","lat","lng","make","live","grid","Grok","λ","{}","=>","patch","matter","OS","flyTo","defend"];
+  function emitGlyphs(x, y, n) {
+    var i;
+    for (i = 0; i < (n || 8); i++) {
+      glyphs.push({
+        x: x + (Math.random() - 0.5) * 80,
+        y: y + (Math.random() - 0.5) * 24,
+        vy: -0.4 - Math.random() * 1.6,
+        vx: (Math.random() - 0.5) * 0.6,
+        life: 1,
+        t: BITS[(Math.random() * BITS.length) | 0],
+      });
+    }
+    if (glyphs.length > 80) glyphs.splice(0, glyphs.length - 80);
+  }
+  var typeTimer = 0;
   function say(t) {
-    lineEl.textContent = t || "";
-    matter(lineEl, !!t);
+    var full = t || "";
+    matter(lineEl, !!full);
+    if (!lineEl) return;
+    lineEl.classList.add("streaming");
+    if (typeTimer) clearInterval(typeTimer);
+    if (!full) {
+      lineEl.textContent = "";
+      lineEl.classList.remove("streaming");
+      return;
+    }
+    var i = 0;
+    lineEl.textContent = "";
+    typeTimer = setInterval(function () {
+      i += Math.max(1, Math.ceil(full.length / 42));
+      lineEl.textContent = full.slice(0, i);
+      if (i >= full.length) {
+        clearInterval(typeTimer);
+        typeTimer = 0;
+        setTimeout(function () { if (lineEl) lineEl.classList.remove("streaming"); }, 900);
+      }
+    }, 16);
+    try {
+      var r = lineEl.getBoundingClientRect();
+      emitGlyphs(r.left + r.width * 0.2, r.top, 6);
+    } catch (e) {}
   }
 
   function to(ms) {
@@ -345,9 +385,23 @@
       if (drivers[0] && pt) { drivers[0].lat = pt.lat; drivers[0].lng = pt.lng; }
     }
     if (ctx) {
-      ctx.fillStyle = "#050608";
+      ctx.fillStyle = "#02040a";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      strokeSegs(gridSegs, "rgba(158,200,232,0.55)", 1);
+      var pulse = 0.38 + 0.22 * Math.sin(Date.now() / 680);
+      strokeSegs(gridSegs, "rgba(126,233,255," + pulse.toFixed(3) + ")", 1);
+      var gi, g;
+      ctx.font = '500 11px "JetBrains Mono",ui-monospace,monospace';
+      for (gi = glyphs.length - 1; gi >= 0; gi--) {
+        g = glyphs[gi];
+        g.y += g.vy;
+        g.x += g.vx;
+        g.life -= 0.016;
+        if (g.life <= 0) { glyphs.splice(gi, 1); continue; }
+        ctx.globalAlpha = Math.max(0, g.life);
+        ctx.fillStyle = "#7ee9ff";
+        ctx.fillText(g.t, g.x, g.y);
+        ctx.globalAlpha = 1;
+      }
       if (here) dotAt(here.lat, here.lng, "#dfe6ee", 5);
       for (i = 0; i < vendors.length; i++) {
         dotAt(vendors[i].lat, vendors[i].lng, vendors[i].id === selected ? "#f2f4f7" : "#9ec8e8", vendors[i].id === selected ? 5 : 3);
@@ -447,7 +501,13 @@
     if (spec.kind === "note") say(spec.label || spec.body || id);
     things[id] = spec;
     if (thingOrder.indexOf(id) < 0) thingOrder.push(id);
-    if (spec.kind !== "note") say((spec.label || spec.kind) + " · live");
+    if (spec.kind !== "note") say("materialized · " + (spec.label || spec.kind));
+    try {
+      if (spec.lat != null) {
+        var q = proj(ll(spec.lat, spec.lng, 1.02));
+        if (q) emitGlyphs(q[0], q[1], 16);
+      } else emitGlyphs((canvas.width || 400) * 0.5, (canvas.height || 700) * 0.7, 12);
+    } catch (eG) {}
     return spec;
   }
   function dematerialize(id) {
@@ -469,6 +529,8 @@
     delete things[id];
     thingOrder = thingOrder.filter(function (x) { return x !== id; });
     missions = missions.filter(function (m) { return m.id !== id; });
+    emitGlyphs((canvas.width || 400) * 0.5, (canvas.height || 700) * 0.68, 10);
+    say("dematerialized · " + id);
     return true;
   }
   window.SN = {
@@ -906,7 +968,8 @@
 
   function wake() {
     say("…");
-    grok("One short sentence: you are Grok on Astranov SpaceNet. Live. Vendors, menus, drivers, routes, AVC.")
+    emitGlyphs((canvas.width || 400) * 0.5, (canvas.height || 700) * 0.45, 18);
+    grok("One short sentence: you are Grok on Astranov SpaceNet. Live code. You materialize and dematerialize the OS.")
       .then(function (t) {
         if (t) {
           historyChat.push({ role: "assistant", content: t });
@@ -962,7 +1025,8 @@
       return;
     }
     busy = true;
-    say("…");
+    say("compiling intent · " + t.slice(0, 48));
+    emitGlyphs((canvas.width || 400) * 0.5, (canvas.height || 700) * 0.72, 14);
     historyChat.push({ role: "user", content: t });
     grok(t)
       .then(function (text) {
