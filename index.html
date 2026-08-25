@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260825050800-loop" />
+<meta name="astranov-build" content="20260825062100-access" />
 <meta name="theme-color" content="#050608" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <style>
@@ -49,7 +49,7 @@
 </style>
 <script>
 (function () {
-  var BUILD = "20260825050800-loop";
+  var BUILD = "20260825062100-access";
   var KEY = "sn-heal-" + BUILD;
   var DEAD = /os-bootloader|guardian|chrome-mute|chrome-fix|chrome-rib|chrome-radar|mobile-life|phone-os|owner-softload|simple-ux|chrome-shell|chrome-phone/i;
   var JS = [
@@ -169,6 +169,21 @@
       })
       .catch(function () { note("ai-down"); });
   }
+  function pingAccess() {
+    return fetch("https://lkoatrkhuigdolnjsbie.supabase.co/functions/v1/access-boot", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}"
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        H.access = j || {};
+        H.secrets = !!(j && j.ok);
+        if (j && j.missing && j.missing.length) note("sec-" + j.missing.join(","));
+        try { localStorage.setItem("sn:access-last", JSON.stringify({ t: Date.now(), missing: (j && j.missing) || [], vercel: j && j.vercel })); } catch (eA) {}
+      })
+      .catch(function () { note("access-down"); H.secrets = false; });
+  }
   function wakeAi() {
     var el = document.getElementById("line");
     if (el && el.textContent && el.textContent !== "…" && el.textContent !== "JS" && el.textContent !== "AI") return;
@@ -204,7 +219,7 @@
         reason: reason,
         href: location.href,
         ua: navigator.userAgent,
-        heal: { sw: H.sw, cache: H.cache, hijack: H.hijack, js: H.js, ai: H.ai, webgl: H.webgl, log: H.log.slice() }
+        heal: { sw: H.sw, cache: H.cache, hijack: H.hijack, js: H.js, ai: H.ai, webgl: H.webgl, secrets: H.secrets, access: H.access, log: H.log.slice() }
       };
       try { localStorage.setItem("sn:heal-last", JSON.stringify(dump)); } catch (e4) {}
       try {
@@ -214,6 +229,7 @@
       fetch("/api/fail", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(dump) }).catch(function () {});
     }
     pingAi();
+    pingAccess();
     nextJs(0).then(function () {
       dot(true);
       setTimeout(function () {
