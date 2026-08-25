@@ -30,36 +30,30 @@ async function api(token: string, method: string, url: string, body?: unknown) {
   return { st: r.status, j };
 }
 
+function shape(v: unknown, depth = 0): unknown {
+  if (v == null) return v;
+  if (typeof v === "string") return { t: "string", n: v.length, p: v.slice(0, 4) };
+  if (typeof v !== "object") return { t: typeof v };
+  if (depth > 4) return { t: "object", deep: true };
+  const o = v as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const k of Object.keys(o)) out[k] = shape(o[k], depth + 1);
+  return out;
+}
+function walkStrings(v: unknown, path: string, acc: { path: string; val: string }[]) {
+  if (typeof v === "string" && v.length >= 16) acc.push({ path, val: v });
+  else if (v && typeof v === "object") {
+    for (const [k, x] of Object.entries(v as object)) walkStrings(x, path ? path + "." + k : k, acc);
+  }
+}
+function parseBundle(raw: string) {
+  try { return JSON.parse(raw); } catch { return raw; }
+}
 function pickToken(env: Record<string, string>) {
   let token = env.VERCEL_TOKEN || env.VERCEL_ACCESS_TOKEN || env.VERCEL_API_TOKEN || env.NOW_TOKEN || "";
   const raw = env.SUPABASE_SECRET_KEYS || "";
-  let bundleKeys: string[] = [];
-  if (raw) {
-    try {
-      const b = JSON.parse(raw);
-      if (b && typeof b === "object") {
-        bundleKeys = Object.keys(b as object);
-        const o = b as Record<string, string>;
-        token =
-          token ||
-          o.VERCEL_TOKEN ||
-          o.VERCEL_ACCESS_TOKEN ||
-          o.VERCEL_API_TOKEN ||
-          o.vercel_token ||
-          o.VERCEL ||
-          "";
-      }
-    } catch {
-      for (const line of raw.split(/[\n,;]+/)) {
-        const m = line.match(/^\s*(VERCEL[^=]*)\s*[:=]\s*(.+)\s*$/i);
-        if (m) {
-          bundleKeys.push(m[1]);
-          if (!token) token = m[2].trim().replace(/^["']|["']$/g, "");
-        }
-      }
-    }
-  }
-  return { token, bundleKeys };
+  const bundle = raw ? parseBundle(raw) : null;
+  return { token, bundle };
 }
 
 serve(async (req) => {
@@ -68,6 +62,7 @@ serve(async (req) => {
   const names = Object.keys(env).sort().filter((k) => !k.startsWith("DENO_"));
   const picked = pickToken(env);
   let token = picked.token;
+  const bundleShape = shape(picked.bundle);
   let vaultNames: string[] = [];
   let vaultErr = "";
   try {
@@ -91,12 +86,33 @@ serve(async (req) => {
 
   const report: Record<string, unknown> = {
     envNames: names,
-    bundleKeys: picked.bundleKeys,
+    bundleShape,
     vaultNames,
     vaultErr,
     hasVercel: !!token,
     tokenLen: token.length,
   };
+  const cands: { path: string; val: string }[] = [];
+  walkStrings(picked.bundle, "bundle", cands);
+  for (const k of names) {
+    const val = env[k];
+    if (val && val.length >= 16 && !/SERVICE_ROLE|DB_URL|JWKS/i.test(k)) cands.push({ path: "env." + k, val });
+  }
+  const tried: string[] = [];
+  if (!token) {
+    for (const c of cands) {
+      tried.push(c.path + ":" + c.val.length);
+      const probe = await api(c.val, "GET", "https://api.vercel.com/v2/user");
+      if (probe.st === 200) {
+        token = c.val;
+        report.tokenFrom = c.path;
+        break;
+      }
+    }
+  }
+  report.tried = tried;
+  report.hasVercel = !!token;
+  report.tokenLen = token.length;
   if (!token) return json(report);
 
   const teams = await api(token, "GET", "https://api.vercel.com/v2/teams");
