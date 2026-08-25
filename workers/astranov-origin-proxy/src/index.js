@@ -1,8 +1,8 @@
 /**
  * Astranov origin proxy — multi-origin failover
- * Order: Vercel stable → jsDelivr → CF Pages → GitHub raw (last)
+ * Order: Vercel → jsDelivr → GitHub raw → CF Pages
  * Never single-point github-sha (429/403 kills domain).
- * Build 20260825151500-edge-alive — Vercel first.
+ * Build 20260825181000-edge-alive
  */
 const VERCEL = 'https://astranov-astranov.vercel.app';
 const PAGES = 'https://astranov.pages.dev';
@@ -17,6 +17,10 @@ function jsdelivr(path) {
 function githubRaw(path) {
   const p = path === '/' || path === '' ? 'index.html' : path.replace(/^\//, '');
   return `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/${GH_BRANCH}/${p}`;
+}
+
+function isGhostHtml(text) {
+  return /Command the HUD|id=["']cli-in["']|id=["']stc-cmd-in["']|hud-law-restore|sn-topchrome-drag|#cli-drag/i.test(text || '');
 }
 
 async function tryFetch(url, init) {
@@ -34,10 +38,9 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // Health for ops — does not depend on origins
     if (path === '/__edge_health') {
-      return new Response(JSON.stringify({ ok: true, worker: 'astranov-origin-proxy', v: 4 }), {
-        headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+      return new Response(JSON.stringify({ ok: true, worker: 'astranov-origin-proxy', v: '20260825181000-edge-alive' }), {
+        headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'cache-control': 'no-store' },
       });
     }
 
@@ -45,24 +48,23 @@ export default {
       method: request.method === 'HEAD' ? 'GET' : request.method,
       headers: new Headers(request.headers),
       redirect: 'follow',
-      cf: { cacheTtl: path.endsWith('.js') || path.endsWith('.css') ? 120 : 30 },
+      cf: { cacheTtl: 0 },
     };
     init.headers.delete('host');
     init.headers.delete('cookie');
+    init.headers.set('User-Agent', 'AstranovLive/20260825181000');
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       init.body = request.body;
       init.duplex = 'half';
     }
 
-    // Prefer hosts that do not rate-limit GitHub raw
     const candidates = [
       { url: new URL(path + url.search, vercelOrigin + '/').toString(), tag: 'vercel' },
       { url: jsdelivr(path) + (url.search || ''), tag: 'jsdelivr' },
-      { url: new URL(path + url.search, pagesOrigin + '/').toString(), tag: 'pages' },
       { url: githubRaw(path) + (url.search || ''), tag: 'github-raw' },
+      { url: new URL(path + url.search, pagesOrigin + '/').toString(), tag: 'pages' },
     ];
 
-    let last = null;
     const fails = [];
     for (const c of candidates) {
       const res = await tryFetch(c.url, init);
@@ -70,26 +72,31 @@ export default {
         fails.push(c.tag + ':network');
         continue;
       }
-      last = res;
-      if (res.status === 429 || res.status === 403) {
-        fails.push(c.tag + ':' + res.status);
-        continue;
-      }
-      if (res.status >= 500) {
+      if (res.status === 429 || res.status === 403 || res.status >= 500) {
         fails.push(c.tag + ':' + res.status);
         continue;
       }
       if (res.ok || (res.status >= 300 && res.status < 400)) {
+        if ((path === '/' || path.endsWith('.html') || path === '/index.html') && res.ok) {
+          try {
+            const text = await res.clone().text();
+            if (isGhostHtml(text)) {
+              fails.push(c.tag + ':ghost-hud');
+              continue;
+            }
+          } catch (_) {}
+        }
         const out = new Headers(res.headers);
         out.set('x-astranov-proxy', c.tag);
         out.set('x-astranov-origin', c.url.split('?')[0]);
+        out.set('x-astranov-build', '20260825181000-edge-alive');
         out.set('access-control-allow-origin', '*');
         if (path === '/' || path.endsWith('.html')) {
           out.set('cache-control', 'no-store, max-age=0, must-revalidate');
         } else if (path.includes('/js/')) {
           out.set('cache-control', 'public, max-age=60, must-revalidate');
         }
-        if (path.endsWith('.js') && !out.get('content-type')?.includes('javascript')) {
+        if (path.endsWith('.js') && !(out.get('content-type') || '').includes('javascript')) {
           out.set('content-type', 'application/javascript; charset=utf-8');
         }
         return new Response(res.body, { status: res.status, statusText: res.statusText, headers: out });
