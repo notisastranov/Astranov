@@ -379,6 +379,29 @@
   tick();
   window.__SN_ALIVE = true;
   window.__SN_FULL = true;
+  window.SN = {
+    say: say,
+    hunt: function (q) { return huntAround(q || "pizza", here || { lat: lookLat, lng: lookLng }); },
+    order: function () { return orderVendor(sel()); },
+    heal: function () { try { resize(); } catch (e) {} if (!lineEl || !lineEl.textContent || lineEl.textContent === "…") wake(); },
+    patch: function (src) {
+      try { (new Function("SN", src))(window.SN); return true; }
+      catch (e) { return String(e); }
+    },
+    tool: function (name, arg) {
+      if (name === "hunt") return window.SN.hunt(arg);
+      if (name === "order") return window.SN.order();
+      if (name === "heal") return window.SN.heal();
+      if (name === "patch") return window.SN.patch(arg);
+    }
+  };
+  function defend() {
+    try { resize(); } catch (e) {}
+    window.__SN_ALIVE = true;
+    if (lineEl && (!lineEl.textContent || lineEl.classList.contains("gone") || lineEl.textContent === "…")) wake();
+  }
+  setInterval(defend, 12000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) defend(); });
 
   var dragging = false, lx = 0, ly = 0;
   canvas.addEventListener("pointerdown", function (e) {
@@ -736,7 +759,18 @@
       signal: to(18000),
     })
       .then(function (r) { return r.json(); })
-      .then(function (j) { return String(j.text || j.response || "").trim(); });
+      .then(function (j) { return ingest(String(j.text || j.response || "").trim()); });
+  }
+
+  function ingest(t) {
+    if (!t) return t;
+    var m = t.match(/```(?:js|javascript)\s*([\s\S]*?)```/i);
+    if (m && m[1]) {
+      var ok = SN.patch(m[1]);
+      if (ok !== true) t = t + "\n" + String(ok);
+      else t = t.replace(/```(?:js|javascript)[\s\S]*?```/ig, "").trim() || t;
+    }
+    return t;
   }
 
   function wake() {
@@ -746,9 +780,9 @@
         if (t) {
           historyChat.push({ role: "assistant", content: t });
           say(t);
-        } else say("");
+        } else say("AI");
       })
-      .catch(function () { say(""); });
+      .catch(function () { say("AI"); });
   }
 
   function run(raw) {
@@ -789,7 +823,7 @@
         if (text) {
           historyChat.push({ role: "assistant", content: text });
           say(text);
-        } else say("");
+        } else say("AI");
       })
       .catch(function () { say(""); })
       .then(function () { busy = false; });
