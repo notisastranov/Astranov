@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260825044700-market" />
+<meta name="astranov-build" content="20260825045200-heal" />
 <meta name="theme-color" content="#050608" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <style>
@@ -21,6 +21,9 @@
   #island .a{color:#dfe6ee} #island .s{color:#9ec8e8;letter-spacing:.18em;font-size:11px} #island .k{color:#7a8494;letter-spacing:.14em}
   #island button,#island #bal{height:28px;padding:0 10px;border:1px solid #2a3340;border-radius:999px;background:0;color:#dfe6ee;font:600 11px ui-sans-serif,system-ui}
   #bal{display:flex;align-items:center;color:#ffe566;font-variant-numeric:tabular-nums}
+  #heal{width:8px;height:8px;border-radius:99px;background:#3d4a3a;flex-shrink:0}
+  #heal.bad{background:#c45c4a}
+  #heal.ok{background:#8fb37a}
   #panel{width:min(440px,100%);border:1px solid #2a3340;border-radius:22px;background:rgba(14,16,20,.92);padding:10px}
   #acts{display:flex;gap:6px;margin:0 0 8px}
   #acts button,#tx button{flex:1;height:36px;border:1px solid #2a3340;border-radius:12px;background:#16181d;color:#dfe6ee;font:600 12px ui-sans-serif,system-ui}
@@ -40,25 +43,180 @@
 </style>
 <script>
 (function () {
+  var BUILD = "20260825045200-heal";
+  var KEY = "sn-heal-" + BUILD;
+  var DEAD = /os-bootloader|guardian|chrome-mute|chrome-fix|chrome-rib|chrome-radar|mobile-life|phone-os|owner-softload|simple-ux|chrome-shell|chrome-phone/i;
+  var JS = [
+    "/js/spacenet/grid-os.js?v=" + BUILD,
+    "/js/spacenet/grid-os-20260825044700.js?v=" + BUILD,
+    "/js/spacenet/grid-os-20260825044300.js?v=" + BUILD
+  ];
+  var H = {
+    build: BUILD,
+    sw: 0,
+    cache: 0,
+    hijack: 0,
+    js: "",
+    ai: false,
+    webgl: false,
+    log: []
+  };
+  window.SNHeal = H;
+  function note(x) { H.log.push(x); if (H.log.length > 24) H.log.shift(); }
+  function dot(ok) {
+    var el = document.getElementById("heal");
+    if (!el) return;
+    el.className = ok ? "ok" : "bad";
+  }
+  function line(t) {
+    var el = document.getElementById("line");
+    if (!el || !t) return;
+    el.textContent = t;
+    el.classList.remove("gone");
+  }
+  if (location.protocol === "http:" && location.hostname !== "localhost") {
+    location.replace("https://" + location.host + location.pathname + location.search);
+    return;
+  }
+  if (navigator.serviceWorker) {
+    try {
+      navigator.serviceWorker.register = function () {
+        note("sw-block");
+        return Promise.reject(new Error("sw-block"));
+      };
+    } catch (e) {}
+  }
   function wipe() {
     try {
       if (navigator.serviceWorker) {
         navigator.serviceWorker.getRegistrations().then(function (rs) {
+          H.sw = rs.length;
           rs.forEach(function (r) { r.unregister(); });
         });
       }
       if (window.caches) {
         caches.keys().then(function (ks) {
+          H.cache = ks.length;
           ks.forEach(function (k) { caches.delete(k); });
         });
       }
-    } catch (e) {}
+    } catch (e) { note("wipe-fail"); }
   }
   wipe();
   window.addEventListener("pagehide", wipe);
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState === "hidden") wipe();
   });
+  setInterval(wipe, 20000);
+  function kill(node) {
+    if (!node || !node.tagName) return;
+    var tag = node.tagName.toLowerCase();
+    if (tag === "script") {
+      var src = node.getAttribute("src") || node.src || "";
+      if (DEAD.test(src)) {
+        H.hijack += 1;
+        note("kill-js");
+        node.type = "text/plain";
+        node.src = "";
+        if (node.parentNode) node.parentNode.removeChild(node);
+      }
+    }
+    if (node.id === "cli-in" || node.id === "stc-cmd-in" || node.id === "sn-topchrome" || node.id === "cli-coach" || node.id === "fbh-s") {
+      H.hijack += 1;
+      note("kill-hud");
+      if (node.parentNode) node.parentNode.removeChild(node);
+    }
+  }
+  var mo = new MutationObserver(function (recs) {
+    recs.forEach(function (r) {
+      r.addedNodes.forEach(kill);
+    });
+  });
+  mo.observe(document.documentElement, { childList: true, subtree: true });
+  function alive(url) {
+    return fetch(url, { method: "GET", cache: "no-store", signal: AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined })
+      .then(function (r) { return r.ok ? url : Promise.reject(); });
+  }
+  function load(src) {
+    return new Promise(function (res, rej) {
+      var s = document.createElement("script");
+      s.src = src;
+      s.onload = function () { H.js = src; res(src); };
+      s.onerror = rej;
+      document.body.appendChild(s);
+    });
+  }
+  function nextJs(i) {
+    if (i >= JS.length) {
+      dot(false);
+      line("JS");
+      return Promise.reject();
+    }
+    return alive(JS[i]).then(load, function () { return nextJs(i + 1); });
+  }
+  function pingAi() {
+    return fetch("/api/ai", { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        H.ai = !!(j && (j.keyed || j.ok));
+        if (!H.ai) note("ai-unkeyed");
+      })
+      .catch(function () { note("ai-down"); });
+  }
+  function wakeAi() {
+    var el = document.getElementById("line");
+    if (el && el.textContent && el.textContent !== "…" && el.textContent !== "JS" && el.textContent !== "AI") return;
+    fetch("/api/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "One short sentence: Grok on Astranov SpaceNet is live.", gift: true, allow_paid: true, force_paid: true, fast: true })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var t = String((j && (j.text || j.response)) || "").trim();
+        if (t) line(t);
+        else if (!el || !el.textContent) line("AI");
+      })
+      .catch(function () { line("AI"); });
+  }
+  function boot() {
+    var had = navigator.serviceWorker && navigator.serviceWorker.controller;
+    try {
+      if (had && sessionStorage.getItem(KEY) !== "1") {
+        sessionStorage.setItem(KEY, "1");
+        location.replace(location.pathname + "?h=" + Date.now());
+        return;
+      }
+    } catch (e) {}
+    try {
+      var probe = document.createElement("canvas");
+      H.webgl = !!(probe.getContext("webgl") || probe.getContext("experimental-webgl"));
+    } catch (e2) { H.webgl = false; }
+    pingAi();
+    nextJs(0).then(function () {
+      dot(true);
+      setTimeout(function () {
+        var el = document.getElementById("line");
+        if (!el || !el.textContent || el.classList.contains("gone")) wakeAi();
+      }, 3500);
+    }).catch(function () {
+      dot(false);
+      wakeAi();
+    });
+    setTimeout(function () {
+      if (!H.js) {
+        dot(false);
+        try {
+          if (sessionStorage.getItem(KEY + "-js") !== "1") {
+            sessionStorage.setItem(KEY + "-js", "1");
+            location.replace(location.pathname + "?h=" + Date.now());
+          }
+        } catch (e3) {}
+      }
+    }, 8000);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
 })();
 </script>
 </head>
@@ -66,6 +224,7 @@
 <canvas id="g"></canvas>
 <div id="city"></div>
 <div id="top"><div id="island">
+  <span id="heal"></span>
   <b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b>
   <span id="bal">0</span>
   <button id="me" class="gone" type="button">ME</button>
@@ -82,6 +241,5 @@
   <form id="f"><input id="in" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="go" /><button type="submit" aria-label="Go">↑</button></form>
   <div id="line" class="gone"></div>
 </div></div>
-<script src="/js/spacenet/grid-os-20260825044700.js?v=20260825044700-market"></script>
 </body>
 </html>
