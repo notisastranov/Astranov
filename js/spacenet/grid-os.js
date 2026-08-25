@@ -9,6 +9,12 @@
   var input = document.getElementById("in");
   var orderBtn = document.getElementById("order");
   var callBtn = document.getElementById("call");
+  var plusBtn = document.getElementById("plus");
+  var goBtn = document.getElementById("go");
+  var plusRing = document.getElementById("plusRing");
+  var goRing = document.getElementById("goRing");
+  var fileIn = document.getElementById("fileIn");
+  var photoIn = document.getElementById("photoIn");
   var meBtn = document.getElementById("me");
   var mapBtn = document.getElementById("mapbtn");
   var menuEl = document.getElementById("menu");
@@ -717,6 +723,155 @@
       .then(function () { busy = false; });
   }
 
+
+  var MIC = '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 14a3 3 0 003-3V6a3 3 0 00-6 0v5a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.93V21h2v-3.07A7 7 0 0019 11h-2z"/></svg>';
+  var SEND = '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 4l-1.4 1.4 6.6 6.6H4v2h13.2l-6.6 6.6L12 22l10-10z" transform="rotate(-90 12 12)"/></svg>';
+  var rec = null;
+  var listening = false;
+  function hasText() { return !!(input && input.value.trim()); }
+  function paintGo() {
+    if (!goBtn) return;
+    goBtn.innerHTML = hasText() ? SEND : MIC;
+    goBtn.setAttribute("aria-label", hasText() ? "Send" : "Voice");
+    if (listening) goBtn.classList.add("listen");
+    else goBtn.classList.remove("listen");
+  }
+  function placeRing(ring, leftSide) {
+    if (!ring) return;
+    var btns = ring.querySelectorAll("button");
+    var n = btns.length;
+    var i, a, r = 56, start = leftSide ? 0.35 * Math.PI : 0.65 * Math.PI, span = 0.7 * Math.PI;
+    for (i = 0; i < n; i++) {
+      a = leftSide ? start + (i / Math.max(1, n - 1)) * span : start - (i / Math.max(1, n - 1)) * span;
+      btns[i].style.left = Math.round(Math.cos(a) * r) + "px";
+      btns[i].style.top = Math.round(-Math.sin(a) * r) + "px";
+    }
+  }
+  function closeRings() {
+    if (plusRing) { plusRing.classList.add("gone"); plusRing.classList.remove("in"); }
+    if (goRing) { goRing.classList.add("gone"); goRing.classList.remove("in"); }
+  }
+  function openRing(ring, leftSide) {
+    var other = ring === plusRing ? goRing : plusRing;
+    if (other) { other.classList.add("gone"); other.classList.remove("in"); }
+    placeRing(ring, leftSide);
+    ring.classList.remove("gone");
+    ring.classList.remove("in");
+    void ring.offsetWidth;
+    ring.classList.add("in");
+  }
+  function toggleRing(ring, leftSide) {
+    if (!ring) return;
+    if (ring.classList.contains("gone")) openRing(ring, leftSide);
+    else closeRings();
+  }
+  function sendNow() {
+    var t = input.value.trim();
+    if (!t) return;
+    input.value = "";
+    input.blur();
+    paintGo();
+    closeRings();
+    run(t);
+  }
+  function startVoice() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      input.focus();
+      return;
+    }
+    if (listening && rec) {
+      try { rec.stop(); } catch (e) {}
+      return;
+    }
+    rec = new SR();
+    rec.lang = (navigator.language || "en-US");
+    rec.interimResults = true;
+    rec.continuous = false;
+    listening = true;
+    paintGo();
+    rec.onresult = function (ev) {
+      var i, t = "";
+      for (i = ev.resultIndex; i < ev.results.length; i++) t += ev.results[i][0].transcript;
+      input.value = t;
+      paintGo();
+      if (ev.results[ev.results.length - 1].isFinal) {
+        listening = false;
+        paintGo();
+        sendNow();
+      }
+    };
+    rec.onerror = function () { listening = false; paintGo(); };
+    rec.onend = function () { listening = false; paintGo(); };
+    try { rec.start(); } catch (e2) { listening = false; paintGo(); }
+  }
+  function doPlus(act) {
+    closeRings();
+    if (act === "post") {
+      var t = input.value.trim() || "post";
+      var p = here || { lat: lookLat, lng: lookLng };
+      missions.unshift({
+        id: "p" + Date.now(),
+        kind: "post",
+        label: t,
+        from: p,
+        to: p,
+        status: "live",
+        progress: 0,
+      });
+      input.value = "";
+      paintGo();
+      say(t);
+      return;
+    }
+    if (act === "call") {
+      var v = sel();
+      if (v) hailVendor(v, !!v.phone);
+      else startVoice();
+      return;
+    }
+    if (act === "photo" && photoIn) { photoIn.click(); return; }
+    if (act === "file" && fileIn) { fileIn.click(); return; }
+  }
+  function onPick(el, kind) {
+    if (!el) return;
+    el.addEventListener("change", function () {
+      var f = el.files && el.files[0];
+      el.value = "";
+      if (!f) return;
+      var p = here || { lat: lookLat, lng: lookLng };
+      missions.unshift({
+        id: kind[0] + Date.now(),
+        kind: kind,
+        label: f.name,
+        from: p,
+        to: p,
+        status: "live",
+        progress: 0,
+      });
+      say(f.name);
+    });
+  }
+  function holdMenu(btn, ring, leftSide, tap) {
+    var tmr = 0, held = false;
+    function down(e) {
+      held = false;
+      tmr = setTimeout(function () {
+        held = true;
+        openRing(ring, leftSide);
+      }, 380);
+    }
+    function up(e) {
+      clearTimeout(tmr);
+      if (held) { e.preventDefault(); return; }
+      tap();
+    }
+    btn.addEventListener("pointerdown", down);
+    btn.addEventListener("pointerup", up);
+    btn.addEventListener("pointerleave", function () { clearTimeout(tmr); });
+    btn.addEventListener("contextmenu", function (e) { e.preventDefault(); openRing(ring, leftSide); });
+  }
+
   orderBtn.onclick = function () { orderVendor(sel()); };
   callBtn.onclick = function () {
     var v = sel();
@@ -726,11 +881,37 @@
   mapBtn.onclick = function () { openMap(); };
   form.addEventListener("submit", function (e) {
     e.preventDefault();
-    var t = input.value.trim();
-    input.value = "";
-    input.blur();
-    if (t) run(t);
+    sendNow();
   });
+  if (input) {
+    input.addEventListener("input", paintGo);
+    input.addEventListener("focus", closeRings);
+  }
+  holdMenu(plusBtn, plusRing, true, function () {
+    if (hasText()) doPlus("post");
+    else toggleRing(plusRing, true);
+  });
+  holdMenu(goBtn, goRing, false, function () {
+    if (hasText()) sendNow();
+    else startVoice();
+  });
+  if (plusRing) plusRing.addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (b && b.getAttribute("data-act")) doPlus(b.getAttribute("data-act"));
+  });
+  if (goRing) goRing.addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    var a = b && b.getAttribute("data-act");
+    if (a === "voice") { closeRings(); startVoice(); }
+    if (a === "send") sendNow();
+    if (a === "grok") { closeRings(); if (hasText()) sendNow(); else startVoice(); }
+  });
+  onPick(fileIn, "file");
+  onPick(photoIn, "photo");
+  document.addEventListener("pointerdown", function (e) {
+    if (!e.target.closest || !e.target.closest(".hub")) closeRings();
+  });
+  paintGo();
 
   try { paintBal(); } catch (eB) {}
   try { wake(); } catch (eW) {}
