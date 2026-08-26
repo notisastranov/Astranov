@@ -2,7 +2,7 @@
   "use strict";
   if (window.__SN_GRID_OS) return;
   window.__SN_GRID_OS = true;
-  var BUILD = "20260826192000-forever";
+  var BUILD = "20260826224500-paywire";
   var canvas = document.getElementById("g");
   var cityEl = document.getElementById("city");
   var lineEl = document.getElementById("line");
@@ -205,7 +205,7 @@
         leaflet.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
       } catch (e) {}
       var mins = Math.round(route.duration / 60), kmR = (route.distance / 1000).toFixed(1);
-      materialize({ id: "pay", label: "PAY", run: function () { say("Opening PayPal…"); window.location.href = "/api/paypal"; } });
+      materialize({ id: "pay", label: "PAY", run: function () { payDeposit(10); } });
       done("Route " + kmR + " km · ~" + mins + " min · PAY or pick another shop");
     }).catch(function () { clearTimeout(tmo); done("Router offline. Shop selected — PAY or try again."); });
   }
@@ -309,6 +309,24 @@
       });
     });
   }
+  function payDeposit(eur) {
+    say("PayPal deposit…");
+    fetch("/api/paypal/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: eur || 10, origin: location.origin })
+    })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) {
+        if (x.j && x.j.approve) { say("Approve PayPal…"); window.location.href = x.j.approve; return; }
+        if (x.j && x.j.error === "paypal_not_configured") {
+          done("PayPal keys not on Vercel yet — add PAYPAL_CLIENT_ID + SECRET in Vercel Project Settings → Environment Variables (they exist in Supabase). Map still live.");
+          return;
+        }
+        done("Pay failed · " + ((x.j && (x.j.error || x.j.message)) || "retry"));
+      })
+      .catch(function () { done("Pay network error — still live."); });
+  }
   function run(raw) {
     var t = String(raw || "").trim(); if (!t) return;
     var low = t.toLowerCase(); lastBeat = Date.now();
@@ -333,12 +351,12 @@
         });
       }
       if (low.indexOf("deposit") >= 0 || low.indexOf("paypal") >= 0 || low === "pay") {
-        say("Opening PayPal…"); window.location.href = "/api/paypal"; return;
+        return payDeposit(10);
       }
       return grok(t);
     } catch (err) { done("Still running. locate · pizza · globe"); }
   }
-  window.SN = { gold: true, build: BUILD, forever: true, flyTo: flyTo, locate: locate, openCity: openCity, closeCity: closeCity, materialize: materialize, dematerialize: dematerialize, run: run, armCore: armCore };
+  window.SN = { gold: true, build: BUILD, forever: true, flyTo: flyTo, locate: locate, openCity: openCity, closeCity: closeCity, materialize: materialize, dematerialize: dematerialize, run: run, armCore: armCore, payDeposit: payDeposit };
   if (canvas) {
     canvas.addEventListener("pointerdown", function (e) { if (mapOn) return; dragging = true; lx = e.clientX; ly = e.clientY; });
     window.addEventListener("pointermove", function (e) {
@@ -367,5 +385,5 @@
   window.addEventListener("resize", size); size(); tick();
   window.__SN_ALIVE = true; window.__SN_FULL = true;
   armCore();
-  say("SpaceNet forever · " + BUILD + " · never stuck · locate then pizza");
+  say("SpaceNet · " + BUILD + " · never stuck · locate → pizza → order → pay");
 })();
