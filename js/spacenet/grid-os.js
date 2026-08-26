@@ -1,249 +1,338 @@
 (function () {
   "use strict";
-  if (window.__SN_GRID_FINISH) return;
-  window.__SN_GRID_FINISH = true;
-  var BUILD = "20260826173500-gold";
-  var SRC = [
-    "https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@1c4e3ea85800d7c74c5bf9a0d2a2d5a9b8e7a6e8/js/spacenet/grid-os.js"
-  ];
+  if (window.__SN_GRID_OS) return;
+  window.__SN_GRID_OS = true;
+  var BUILD = "20260826181500-finish";
+  var canvas = document.getElementById("g");
+  var cityEl = document.getElementById("city");
+  var lineEl = document.getElementById("line");
+  var inEl = document.getElementById("in");
+  var form = document.getElementById("f");
+  var liveEl = document.getElementById("sn-live");
+  var leaflet = null, mapOn = false, mapKind = "dark", tileLayer = null;
+  var yaw = 0.55, pitch = 0.12, dist = 2.15;
+  var look = { lat: 36.434, lng: 28.217 };
+  var here = null, things = {}, dragging = false, lx = 0, ly = 0;
 
-  /* LAW: this file is a finish layer only.
-     Never overwrite SN.materialize / dematerialize / fly / run / gold / patch.
-     Kernel IS the developed Grok. No terminology training. */
-
-  function ownerYes() {
-    try {
-      var u = window.SNAuth && SNAuth.user;
-      var em = (u && (u.email || (u.user_metadata && u.user_metadata.email))) || "";
-      return /notisastranov@gmail\.com/i.test(em) || !!(window.SNAuth && SNAuth.owner);
-    } catch (e) {
-      return false;
+  function say(t) {
+    if (!lineEl || t == null) return;
+    lineEl.classList.remove("gone");
+    lineEl.textContent = String(t);
+  }
+  function size() {
+    if (!canvas) return;
+    var d = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.floor((innerWidth || 320) * d);
+    canvas.height = Math.floor((innerHeight || 480) * d);
+  }
+  function ll(lat, lng) {
+    var p = (90 - lat) * Math.PI / 180, t = (lng + 180) * Math.PI / 180;
+    return [-Math.sin(p) * Math.cos(t), Math.cos(p), Math.sin(p) * Math.sin(t)];
+  }
+  function pr(p) {
+    var cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    var x1 = p[0] * cy - p[2] * sy, z1 = p[0] * sy + p[2] * cy;
+    var y2 = p[1] * cp - z1 * sp, z2 = p[1] * sp + z1 * cp;
+    var w = canvas.width, h = canvas.height, s = Math.min(w, h) * 0.42 / dist, z = z2 + dist;
+    if (z < 0.12) return null;
+    return [w * 0.5 + x1 * s, h * 0.48 - y2 * s, z2];
+  }
+  var segs = [];
+  (function build() {
+    var lat, lng;
+    for (lng = -180; lng < 180; lng += 20)
+      for (lat = -80; lat < 80; lat += 10) segs.push([ll(lat, lng), ll(lat + 10, lng)]);
+    for (lat = -60; lat <= 60; lat += 20)
+      for (lng = -180; lng < 180; lng += 10) segs.push([ll(lat, lng), ll(lat, lng + 10)]);
+  })();
+  function tick() {
+    if (!canvas) return;
+    var ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.fillStyle = "#050608";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "rgba(158,200,232,0.55)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (var i = 0; i < segs.length; i++) {
+      var a = pr(segs[i][0]), b = pr(segs[i][1]);
+      if (!a || !b) continue;
+      ctx.moveTo(a[0], a[1]);
+      ctx.lineTo(b[0], b[1]);
     }
+    ctx.stroke();
+    if (here) {
+      var d = pr(ll(here.lat, here.lng));
+      if (d) {
+        ctx.fillStyle = "#7ee9ff";
+        ctx.beginPath();
+        ctx.arc(d[0], d[1], 4, 0, 6.28);
+        ctx.fill();
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+  function flyTo(lat, lng) {
+    look = { lat: +lat, lng: +lng };
+    yaw = ((lng + 180) * Math.PI) / 180 - Math.PI / 2;
+    pitch = (lat * Math.PI) / 180 * 0.65;
   }
 
-  function hide(el) {
-    if (!el) return;
-    el.classList.add("gone");
-    el.style.display = "none";
+  var TILES = {
+    dark: "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+    bright: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    national: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+    marble: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg",
+    google: "/api/gtiles?z={z}&x={x}&y={y}"
+  };
+
+  function loadLeaflet(cb) {
+    if (window.L) return cb();
+    if (loadLeaflet.busy) { loadLeaflet.wait = cb; return; }
+    loadLeaflet.busy = true;
+    var css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+    document.head.appendChild(css);
+    var s = document.createElement("script");
+    s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    s.onload = function () { loadLeaflet.busy = false; cb(); if (loadLeaflet.wait) loadLeaflet.wait(); };
+    s.onerror = function () { s.src = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"; };
+    document.head.appendChild(s);
   }
 
-  function signInPill(mount) {
-    if (!mount) return;
-    mount.innerHTML = "";
-    var b = document.createElement("button");
-    b.type = "button";
-    b.className = "pill live";
-    b.textContent = "Sign in";
-    b.onclick = function (ev) {
-      ev.preventDefault();
-      if (window.SNAuth && SNAuth.signInGoogle) SNAuth.signInGoogle();
-    };
-    mount.appendChild(b);
-    mount.classList.remove("gone");
-    mount.style.display = "flex";
+  function setMap(kind) {
+    mapKind = TILES[kind] ? kind : "dark";
+    if (!leaflet || !window.L) return;
+    if (tileLayer) leaflet.removeLayer(tileLayer);
+    tileLayer = L.tileLayer(TILES[mapKind], { maxZoom: mapKind === "marble" ? 8 : 19 });
+    tileLayer.addTo(leaflet);
   }
 
-  function stripGhosts() {
-    var inEl = document.getElementById("in");
-    if (inEl) inEl.placeholder = "Talk to Astranov SpaceNet Grok";
-    hide(document.getElementById("me"));
-    hide(document.getElementById("mapbtn"));
-    ["bal", "pool"].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (!el) return;
-      if (id === "pool") el.textContent = "ABC Supply";
-      if (ownerYes()) {
-        el.classList.add("on");
-        el.classList.remove("gone");
-        el.style.display = "flex";
-      } else hide(el);
+  function openCity(lat, lng, kind, z) {
+    if (!cityEl) return;
+    mapOn = true;
+    cityEl.classList.add("on");
+    loadLeaflet(function () {
+      var c = [lat || look.lat, lng || look.lng];
+      if (!leaflet) leaflet = L.map(cityEl, { zoomControl: true, attributionControl: false }).setView(c, z || 14);
+      else { leaflet.setView(c, z || leaflet.getZoom() || 14); leaflet.invalidateSize(); }
+      setMap(kind || mapKind || "dark");
+      if (here) L.circleMarker([here.lat, here.lng], { radius: 7, color: "#7ee9ff", fillColor: "#7ee9ff", fillOpacity: 0.9 }).addTo(leaflet);
     });
-    var g = document.getElementById("btn-google");
-    if (g) {
-      if (window.SNAuth && SNAuth.user) hide(g);
-      else {
-        var txt = (g.textContent || "").replace(/\s+/g, " ").trim();
-        if (/unavailable|google unavailable/i.test(txt) || txt === "Google" || !g.querySelector("button.pill"))
-          signInPill(g);
-      }
+  }
+
+  function closeCity() {
+    mapOn = false;
+    if (cityEl) cityEl.classList.remove("on");
+  }
+
+  function geocode(q) {
+    return fetch("https://nominatim.openstreetmap.org/search?q=" + encodeURIComponent(q) + "&format=json&limit=1", { headers: { Accept: "application/json" } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j || !j[0]) return null;
+        return { lat: +j[0].lat, lng: +j[0].lon, name: j[0].display_name };
+      })
+      .catch(function () { return null; });
+  }
+
+  function hunt(q, city) {
+    var c = city || here || look;
+    var body = '[out:json][timeout:12];(nwr["amenity"~"restaurant|cafe|fast_food"]["name"~' + JSON.stringify(q) + ",i](around:7000," + c.lat + "," + c.lng + "););out center 20;";
+    return fetch("https://overpass-api.de/api/interpreter", { method: "POST", body: body })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        var els = (j && j.elements) || [];
+        return els.map(function (e) {
+          var lat = e.lat || (e.center && e.center.lat);
+          var lng = e.lon || (e.center && e.center.lon);
+          return { name: (e.tags && e.tags.name) || q, lat: lat, lng: lng };
+        }).filter(function (v) { return v.lat; });
+      })
+      .catch(function () { return []; });
+  }
+
+  function locate() {
+    if (!navigator.geolocation) { say("No GPS on this device."); return; }
+    say("Locate…");
+    navigator.geolocation.getCurrentPosition(
+      function (p) {
+        here = { lat: p.coords.latitude, lng: p.coords.longitude };
+        flyTo(here.lat, here.lng);
+        openCity(here.lat, here.lng, "dark", 15);
+        say("You · " + here.lat.toFixed(4) + "," + here.lng.toFixed(4));
+      },
+      function () { say("Allow location for SpaceNet, then LOCATE again."); },
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
+  }
+
+  function materialize(spec) {
+    spec = spec || {};
+    var id = spec.id || "m" + Date.now();
+    things[id] = spec;
+    if (!liveEl) return id;
+    liveEl.style.display = "flex";
+    var b = document.createElement("button");
+    b.id = "sn-m-" + id;
+    b.type = "button";
+    b.textContent = spec.label || spec.title || id;
+    b.onclick = function () {
+      if (typeof spec.run === "function") spec.run();
+      else if (typeof spec.run === "string") run(spec.run);
+    };
+    liveEl.appendChild(b);
+    return id;
+  }
+
+  function dematerialize(id) {
+    if (id === "all") {
+      Object.keys(things).forEach(dematerialize);
+      if (liveEl) liveEl.innerHTML = "";
+      return;
     }
-    var line = document.getElementById("line");
-    if (line) {
-      var t = line.textContent || "";
-      if (/don.?t have access to your accounts|grant location permission|private logins|I can only display/i.test(t)) {
-        line.textContent = "";
-        line.classList.add("gone");
-      }
+    delete things[id];
+    var n = document.getElementById("sn-m-" + id);
+    if (n && n.parentNode) n.parentNode.removeChild(n);
+  }
+
+  function grok(text) {
+    say("…");
+    return fetch("/api/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: text,
+        system: "You are Astranov SpaceNet Grok. Act on Earth. Prefer short answers. No ghost HUD. No kitchen slang."
+      })
+    })
+      .then(function (r) { return r.json().catch(function () { return {}; }); })
+      .then(function (j) {
+        var t = (j && (j.text || j.answer || j.reply || j.message)) || "";
+        if (!t && j && j.error) t = String(j.error);
+        if (!t) t = "Here.";
+        say(t);
+        return t;
+      })
+      .catch(function () { say("AI line down. Globe works: locate · rhodes · pizza · map dark · map marble."); });
+  }
+
+  function run(raw) {
+    var t = String(raw || "").trim();
+    if (!t) return;
+    var low = t.toLowerCase();
+    if (low === "locate" || low === "where am i") return locate();
+    if (low === "globe" || low === "earth") { closeCity(); say("Globe."); return; }
+    if (/^map\s*(dark|bright|national|marble|google)?$/.test(low)) {
+      var k = (low.match(/dark|bright|national|marble|google/) || ["dark"])[0];
+      openCity(look.lat, look.lng, k, k === "marble" ? 3 : 13);
+      say("Map · " + k);
+      return;
     }
-    document
-      .querySelectorAll("#cli-in,#stc-cmd-in,#sn-topchrome,#cli-coach,#fbh-s")
-      .forEach(function (n) {
-        if (n && n.parentNode) n.parentNode.removeChild(n);
+    if (low.indexOf("pizza") >= 0 || low.indexOf("order") >= 0 || low.indexOf("delivery") >= 0) {
+      var origin = here || look;
+      flyTo(origin.lat, origin.lng);
+      openCity(origin.lat, origin.lng, "dark", 14);
+      say("Hunting…");
+      hunt("pizza", origin).then(function (vs) {
+        if (!vs.length) { say("No vendors in range. LOCATE first, then pizza."); return; }
+        vs.slice(0, 8).forEach(function (v) {
+          if (leaflet && window.L)
+            L.circleMarker([v.lat, v.lng], { radius: 6, color: "#ffe566", fillOpacity: 0.85 }).addTo(leaflet).bindTooltip(v.name);
+        });
+        say(vs.length + " vendors on dark city map.");
       });
-  }
-
-  function centerGlobe() {
-    try {
-      if (!window.SN || !SN.set) return;
-      SN.set("yaw", 0.55);
-      SN.set("pitch", 0.12);
-      SN.set("dist", 2.15);
-    } catch (e) {}
-  }
-
-  function muteNoise() {
-    try {
-      if (navigator.vibrate)
-        navigator.vibrate = function () {
-          return false;
-        };
-    } catch (e) {}
-  }
-
-  /* one-shot mic only — never continuous restart (Android beeps) */
-  var rec = null;
-  var voiceOn = false;
-  function paintMic(on) {
-    var go = document.getElementById("go");
-    if (!go) return;
-    if (on) go.classList.add("listen");
-    else go.classList.remove("listen");
-  }
-  function listenOnce() {
-    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
-    if (rec) {
-      try {
-        rec.onend = null;
-        rec.stop();
-      } catch (e) {}
-      rec = null;
+      return;
     }
-    rec = new SR();
-    rec.lang = navigator.language || "en-US";
-    rec.interimResults = true;
+    if (/^(go |fly |show )/.test(low) || /rhodes|athens|nairobi|london|paris/.test(low)) {
+      var q = t.replace(/^(go|fly|show)\s+/i, "");
+      geocode(q).then(function (g) {
+        if (!g) { grok(t); return; }
+        flyTo(g.lat, g.lng);
+        look = g;
+        say(g.name);
+        if (/street|city|map|deliver|order|pizza/.test(low)) openCity(g.lat, g.lng, "dark", 14);
+      });
+      return;
+    }
+    if (low.indexOf("deposit") >= 0 || low.indexOf("paypal") >= 0) {
+      say("Opening PayPal deposit…");
+      window.location.href = "/api/paypal";
+      return;
+    }
+    grok(t);
+  }
+
+  window.SN = {
+    gold: true,
+    build: BUILD,
+    flyTo: flyTo,
+    locate: locate,
+    hunt: hunt,
+    setMap: setMap,
+    openCity: openCity,
+    closeCity: closeCity,
+    materialize: materialize,
+    dematerialize: dematerialize,
+    run: run,
+    set: function (k, v) {
+      if (k === "yaw") yaw = v;
+      if (k === "pitch") pitch = v;
+      if (k === "dist") dist = v;
+    }
+  };
+
+  if (canvas) {
+    canvas.addEventListener("pointerdown", function (e) { dragging = true; lx = e.clientX; ly = e.clientY; });
+    window.addEventListener("pointermove", function (e) {
+      if (!dragging) return;
+      yaw += (e.clientX - lx) * 0.005;
+      pitch = Math.max(-1.2, Math.min(1.2, pitch + (e.clientY - ly) * 0.003));
+      lx = e.clientX; ly = e.clientY;
+    });
+    window.addEventListener("pointerup", function () { dragging = false; });
+    canvas.addEventListener("wheel", function (e) {
+      e.preventDefault();
+      dist = Math.max(1.25, Math.min(4.2, dist + (e.deltaY > 0 ? 0.12 : -0.12)));
+    }, { passive: false });
+  }
+
+  if (form) form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var v = inEl && inEl.value;
+    if (inEl) inEl.value = "";
+    run(v);
+  });
+
+  var go = document.getElementById("go");
+  if (go) go.addEventListener("click", function (e) {
+    if (inEl && inEl.value.trim()) return;
+    e.preventDefault();
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { say("Type instead of mic."); return; }
+    var rec = new SR();
     rec.continuous = false;
-    voiceOn = true;
-    paintMic(true);
+    rec.interimResults = true;
     rec.onresult = function (ev) {
-      var i,
-        t = "",
-        fin = false;
+      var i, t = "", fin = false;
       for (i = ev.resultIndex; i < ev.results.length; i++) {
         t += ev.results[i][0].transcript;
         if (ev.results[i].isFinal) fin = true;
       }
-      var inEl = document.getElementById("in");
       if (inEl) inEl.value = t;
-      if (fin && t.trim()) {
-        voiceOn = false;
-        paintMic(false);
-        if (window.SN && typeof SN.run === "function") SN.run(t.trim());
-        else if (inEl) {
-          inEl.value = t.trim();
-          var f = document.getElementById("f");
-          if (f) f.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-        }
-      }
+      if (fin && t.trim()) run(t.trim());
     };
-    rec.onerror = function () {
-      voiceOn = false;
-      paintMic(false);
-    };
-    rec.onend = function () {
-      voiceOn = false;
-      paintMic(false);
-    };
-    try {
-      rec.start();
-    } catch (e2) {
-      voiceOn = false;
-      paintMic(false);
-    }
-  }
-  function armMic() {
-    var go = document.getElementById("go");
-    if (!go || go.__snGoldMic) return;
-    go.__snGoldMic = true;
-    go.addEventListener(
-      "click",
-      function (ev) {
-        var inEl = document.getElementById("in");
-        if (inEl && inEl.value.trim()) return;
-        ev.preventDefault();
-        ev.stopPropagation();
-        if (voiceOn) {
-          try {
-            if (rec) rec.stop();
-          } catch (e) {}
-          voiceOn = false;
-          paintMic(false);
-        } else listenOnce();
-      },
-      true
-    );
-  }
+    try { rec.start(); } catch (err) {}
+  });
 
-  function armKernelControls() {
-    /* use KERNEL materialize only — never replace SN.materialize */
-    if (!window.SN || typeof SN.materialize !== "function") return;
-    if (window.__SN_GOLD_ARMED) return;
-    window.__SN_GOLD_ARMED = true;
-    try {
-      SN.materialize({
-        id: "locate",
-        kind: "button",
-        label: "LOCATE",
-        run: "locate"
-      });
-      SN.materialize({
-        id: "fly-rhodes",
-        kind: "button",
-        label: "RHODES",
-        run: "go Rhodes Greece"
-      });
-    } catch (e) {}
-  }
-
-  function afterKernel() {
-    window.__SN_ALIVE = true;
-    window.__SN_FULL = true;
-    muteNoise();
-    stripGhosts();
-    centerGlobe();
-    armMic();
-    armKernelControls();
-    setTimeout(centerGlobe, 500);
-    setTimeout(centerGlobe, 1500);
-    setTimeout(armKernelControls, 800);
-    setInterval(function () {
-      stripGhosts();
-      centerGlobe();
-      armMic();
-    }, 3000);
-  }
-
-  function load(i) {
-    if (i >= SRC.length) {
-      afterKernel();
-      return;
-    }
-    var s = document.createElement("script");
-    s.src = SRC[i];
-    s.onload = afterKernel;
-    s.onerror = function () {
-      load(i + 1);
-    };
-    document.head.appendChild(s);
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function () {
-      stripGhosts();
-      load(0);
-    });
-  } else {
-    stripGhosts();
-    load(0);
-  }
+  window.addEventListener("resize", size);
+  size();
+  tick();
+  window.__SN_ALIVE = true;
+  window.__SN_FULL = true;
+  materialize({ id: "locate", label: "LOCATE", run: "locate" });
+  materialize({ id: "rhodes", label: "RHODES", run: "go Rhodes Greece" });
+  materialize({ id: "marble", label: "MARBLE", run: "map marble" });
+  say("SpaceNet ready. Globe first. Maps load only on locate / order / map.");
 })();
