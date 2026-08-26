@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260826184000-no-rhodes" />
+<meta name="astranov-build" content="20260826191500-alive" />
 <meta name="theme-color" content="#050608" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta name="astranov-law" content="grid-os-latest-no-ghost" />
@@ -12,194 +12,70 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="SpaceNet" />
 <meta name="mobile-web-app-capable" content="yes" />
-<meta name="application-name" content="Astranov SpaceNet Grok" />
-<link rel="apple-touch-icon" href="/icon-192.png" />
 <link rel="manifest" href="/manifest.webmanifest" />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
-  html,body{margin:0;height:100%;background:#02040a;color:#d8f6ff;overflow:hidden;font-family:"Space Grotesk",ui-sans-serif,system-ui,sans-serif}
-  #g{position:fixed;inset:0}
-  #city{position:fixed;inset:0;z-index:12;display:none;background:#02040a}
-  #city.on{display:block}
-  #city.leaflet-container{background:#02040a;font-family:"Space Grotesk",ui-sans-serif,system-ui}
-  .leaflet-control-zoom a{background:#041018!important;color:#7ee9ff!important;border:1px solid rgba(126,233,255,.35)!important}
-  .sn-tip{background:rgba(4,10,20,.9)!important;color:#7ee9ff!important;border:1px solid rgba(126,233,255,.35)!important;border-radius:0!important;box-shadow:none!important;font:600 10px "JetBrains Mono",ui-monospace,monospace!important;letter-spacing:.08em}
-  .sn-tip:before{border-top-color:rgba(4,10,20,.9)!important}
-  #top,#dock{position:fixed;left:0;right:0;display:flex;justify-content:center;pointer-events:none;z-index:20}
-  #top{top:max(10px,env(safe-area-inset-top))}
-  #dock{bottom:0;padding:0 10px max(12px,env(safe-area-inset-bottom))}
-  #island,#panel{pointer-events:auto}
-  #island{display:flex;align-items:center;gap:10px;padding:8px 14px;background:linear-gradient(180deg,rgba(8,20,36,.55),rgba(4,8,16,.2));border:0;border-bottom:1px solid rgba(80,220,255,.28);border-radius:0;backdrop-filter:blur(10px)}
-  #island b{font:700 11px/1 "Space Grotesk",ui-sans-serif;letter-spacing:.22em}
-  #island .a{color:#e8fbff;text-shadow:0 0 12px rgba(80,220,255,.45)} #island .s{color:#7ee9ff;letter-spacing:.28em;font-size:11px} #island .k{color:#5a7a90;letter-spacing:.2em}
-  #island button,#island #bal{height:26px;padding:0 8px;border:0;border-radius:0;background:0;color:#d8f6ff;font:600 11px "JetBrains Mono",ui-monospace,monospace}
-  #bal{display:none;align-items:center;color:#ffe566;font-variant-numeric:tabular-nums;text-shadow:0 0 10px rgba(255,229,102,.35)}
-  #bal.on{display:flex}
-  #pool{display:none;align-items:center;color:#7ee9ff;font:600 10px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.06em;opacity:.9}
-  #pool.on{display:flex}
-  #heal{width:7px;height:7px;border-radius:99px;background:#1c2a24;box-shadow:0 0 0 0 rgba(126,233,255,.0);flex-shrink:0}
-  #heal.bad{background:#c45c4a;box-shadow:0 0 10px #c45c4a}
-  #heal.ok{background:#7ee9ff;box-shadow:0 0 12px #7ee9ff;animation:pulse 2.4s ease-in-out infinite}
-  #panel{width:min(520px,100%);border:0;border-radius:0;background:linear-gradient(180deg,rgba(2,6,14,0),rgba(2,8,18,.72));padding:8px 6px 4px;backdrop-filter:blur(14px)}
-  #acts{display:flex;gap:6px;margin:0 0 8px}
-  #acts button,#tx button,#stageGo{flex:1;height:36px;border:1px solid rgba(80,220,255,.22);border-radius:2px;background:rgba(6,16,28,.5);color:#d8f6ff;font:600 12px "Space Grotesk",ui-sans-serif}
-  #stage{display:flex;flex-direction:column;gap:6px;margin:0 0 8px}
-  #stageText{color:#8ab4d4;font:500 13px "JetBrains Mono",ui-monospace,monospace}
-  #list,#menu{max-height:128px;overflow:auto;margin:0 0 8px}
-  #list:empty,#menu:empty{display:none;margin:0}
-  #list button,#menu button{display:flex;width:100%;justify-content:space-between;gap:8px;background:0;border:0;border-left:2px solid rgba(80,220,255,.0);color:#d8f6ff;padding:8px 10px;border-radius:0;text-align:left;font:500 13px/1.3 "JetBrains Mono",ui-monospace,monospace}
-  #list button.on,#menu button.on,#list button:hover{background:rgba(80,220,255,.08);border-left-color:#7ee9ff}
-  #list span,#menu span,#tx{color:#6a8aa8;font-size:12px;font-variant-numeric:tabular-nums}
-  #tx{display:flex;flex-direction:column;gap:6px;margin:0 0 8px}
-  form{display:flex;align-items:center;gap:10px;min-height:48px;border:0;border-bottom:1px solid rgba(126,233,255,.4);border-radius:0;padding:0 4px;background:transparent;box-shadow:0 18px 50px rgba(20,195,243,.08)}
-  input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font:500 16px/1.2 "Space Grotesk",ui-sans-serif;outline:none;caret-color:#7ee9ff}
-  input#in::placeholder{color:rgba(126,233,255,.35);font:500 13px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.08em}
-  .hub{position:relative;flex-shrink:0;width:38px;height:38px}
-  .hub > button{width:38px;height:38px;border:1px solid rgba(126,233,255,.55);border-radius:999px;background:rgba(4,12,24,.35);color:#7ee9ff;display:flex;align-items:center;justify-content:center;font:600 18px/1 "Space Grotesk",ui-sans-serif;padding:0;box-shadow:0 0 16px rgba(80,220,255,.25)}
-  #go.listen{background:rgba(126,233,255,.2);box-shadow:0 0 22px #7ee9ff}
-  .ring{position:absolute;left:19px;bottom:19px;width:0;height:0;z-index:40;pointer-events:none}
-  .ring button{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border:1px solid rgba(80,220,255,.4);border-radius:999px;background:rgba(4,10,20,.92);color:#d8f6ff;font:600 10px "Space Grotesk",ui-sans-serif;pointer-events:auto;padding:0}
-  #line{margin:10px 4px 0;font:500 12px/1.55 "JetBrains Mono",ui-monospace,monospace;color:#7ee9ff;max-height:7rem;overflow:auto;white-space:pre-wrap;text-shadow:0 0 14px rgba(80,220,255,.35);letter-spacing:.02em}
-  #line.streaming::after{content:"0";margin-left:2px;animation:blink 1s steps(1) infinite}
-  .gone{display:none!important}
-  .in{animation:mat .28s cubic-bezier(.2,.8,.2,1)}
-  @keyframes mat{from{opacity:0;filter:blur(8px);transform:translateY(10px) scale(.96)}to{opacity:1;filter:none;transform:none}}
-  @keyframes blink{50%{opacity:0}}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-  #btn-google{min-width:0;min-height:28px;display:flex;align-items:center;max-width:140px;overflow:hidden}
-  #btn-google.gone{display:none!important}
-  #btn-google:empty{display:none}
-  #btn-google .pill{cursor:pointer}
-  #me-pill,#me-pill.pill{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px 0 3px;border-radius:999px;border:1px solid rgba(126,233,255,.4);background:rgba(4,12,24,.75);color:#e8fbff;font:600 11px "Space Grotesk",ui-sans-serif;letter-spacing:.06em;box-shadow:0 0 14px rgba(80,220,255,.28)}
-  #me-pill.gone{display:none!important}
-  #me-pill img,.pill img{width:26px;height:26px;border-radius:99px;object-fit:cover}
-  #me-pill .ph,.pill .ph{width:26px;height:26px;border-radius:99px;display:flex;align-items:center;justify-content:center;background:#0a2434;color:#7ee9ff;font:700 11px "Space Grotesk",ui-sans-serif}
-  .pill{display:flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 4px;border-radius:999px;border:1px solid rgba(126,233,255,.4);background:rgba(4,12,24,.88);color:#e8fbff;font:600 11px "Space Grotesk",ui-sans-serif;box-shadow:0 0 16px rgba(80,220,255,.3);white-space:nowrap}
-  .pill.on,.pill.live{box-shadow:0 0 22px rgba(126,233,255,.7);border-color:#7ee9ff}
-  .pill.role-vendor{border-color:rgba(255,229,102,.55);box-shadow:0 0 16px rgba(255,229,102,.28)}
-  .pill.role-driver{border-color:rgba(200,212,160,.55);box-shadow:0 0 16px rgba(200,212,160,.3)}
-  .sn-pill-icon{background:transparent!important;border:0!important}
-  #sn-live{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px;min-height:0}
-  #sn-live:empty{display:none;margin:0}
-  #sn-live button{height:36px;padding:0 14px;border:1px solid rgba(126,233,255,.45);border-radius:2px;background:rgba(4,16,28,.55);color:#7ee9ff;font:600 12px "Space Grotesk",ui-sans-serif;letter-spacing:.08em;animation:mat .28s cubic-bezier(.2,.8,.2,1)}
-  #sn-station{position:fixed;inset:0;z-index:28;display:none;background:radial-gradient(ellipse at 50% 30%,rgba(8,28,48,.92),rgba(2,4,10,.96));color:#d8f6ff;padding:72px 14px 120px;overflow:auto}
-  #sn-station.on{display:block;animation:mat .35s cubic-bezier(.2,.8,.2,1)}
-  #sn-station h2{margin:0 0 8px;font:700 16px "Space Grotesk",ui-sans-serif;letter-spacing:.18em;color:#7ee9ff}
-  #sn-station .meta{font:500 11px "JetBrains Mono",ui-monospace,monospace;color:#6a8aa8;margin:0 0 14px}
-  #sn-station .rigs{display:flex;flex-direction:column;gap:8px;max-width:420px;margin:0 auto}
-  #sn-station .rig{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:10px 12px;border:1px solid rgba(126,233,255,.28);background:rgba(4,16,28,.7);border-radius:4px;box-shadow:0 0 18px rgba(80,220,255,.12)}
-  #sn-station .rig b{font:600 13px "Space Grotesk",ui-sans-serif}
-  #sn-station .rig .go{height:28px;padding:0 12px;border-radius:999px;border:1px solid rgba(126,233,255,.5);background:transparent;color:#7ee9ff;font:600 10px "Space Grotesk",ui-sans-serif;letter-spacing:.08em}
-  #sn-station .rig .go.on{background:rgba(126,233,255,.18);box-shadow:0 0 14px rgba(126,233,255,.45)}
-  #sn-station .bar{height:4px;background:rgba(126,233,255,.12);grid-column:1/-1}
-  #sn-station .bar i{display:block;height:100%;background:#7ee9ff;box-shadow:0 0 8px #7ee9ff;width:40%}
-  #sn-station .x{position:absolute;top:18px;right:16px;border:0;background:0;color:#7ee9ff;font:600 12px "Space Grotesk",ui-sans-serif}
-  #sn-code-rain{position:fixed;inset:0;z-index:8;pointer-events:none;overflow:hidden}
+html,body{margin:0;height:100%;background:#02040a;color:#d8f6ff;overflow:hidden;font-family:system-ui,sans-serif}
+#g{position:fixed;inset:0}
+#city{position:fixed;inset:0;z-index:12;display:none;background:#02040a;pointer-events:none}
+#city.on{display:block;pointer-events:auto}
+#top,#dock{position:fixed;left:0;right:0;display:flex;justify-content:center;pointer-events:none;z-index:30}
+#top{top:max(10px,env(safe-area-inset-top))}
+#dock{bottom:0;padding:0 10px max(12px,env(safe-area-inset-bottom))}
+#island,#panel{pointer-events:auto}
+#island{display:flex;align-items:center;gap:10px;padding:8px 14px;background:rgba(8,20,36,.55);border-bottom:1px solid rgba(80,220,255,.28)}
+#island b{font:700 11px/1 system-ui;letter-spacing:.2em}
+#island .a{color:#e8fbff} #island .s{color:#7ee9ff} #island .k{color:#5a7a90}
+#heal{width:7px;height:7px;border-radius:99px;background:#1c2a24}
+#heal.ok{background:#7ee9ff;box-shadow:0 0 12px #7ee9ff}
+#panel{width:min(520px,100%);padding:8px 6px 4px;background:linear-gradient(180deg,transparent,rgba(2,8,18,.85))}
+#sn-live{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+#sn-live:empty{display:none}
+#sn-live button{height:36px;padding:0 12px;border:1px solid rgba(126,233,255,.45);background:rgba(4,16,28,.75);color:#7ee9ff;font:600 12px system-ui;letter-spacing:.06em}
+form{display:flex;align-items:center;gap:10px;min-height:48px;border-bottom:1px solid rgba(126,233,255,.4)}
+input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font:500 16px system-ui;outline:none;caret-color:#7ee9ff}
+.hub button{width:38px;height:38px;border:1px solid rgba(126,233,255,.55);border-radius:999px;background:rgba(4,12,24,.35);color:#7ee9ff}
+#line{margin:10px 4px 0;font:500 12px/1.5 ui-monospace,monospace;color:#7ee9ff;max-height:7rem;overflow:auto;white-space:pre-wrap}
+.gone{display:none!important}
 </style>
 <script>
-(function () {
-  var BUILD = "20260826184000-no-rhodes";
-  var KEY = "sn-heal-" + BUILD;
-  var DEAD = /os-bootloader|guardian|chrome-fix|chrome-rib|chrome-radar|chrome-defend|chrome-helper|chrome-place-earth|chrome-mobile-alive|hud-law|relic-defend|mobile-life|phone-os|owner-softload|simple-ux|chrome-shell|chrome-phone/i;
-  var JS = ["/js/spacenet/grid-os.js?v=" + BUILD];
-  var H = { build: BUILD, sw: 0, cache: 0, hijack: 0, js: "", ai: false, webgl: false, log: [] };
-  window.SNHeal = H;
-  function note(x) { H.log.push(x); if (H.log.length > 24) H.log.shift(); }
-  function dot(ok) { var el = document.getElementById("heal"); if (!el) return; el.className = ok ? "ok" : "bad"; }
-  function line(t) { var el = document.getElementById("line"); if (!el || !t) return; el.textContent = t; el.classList.remove("gone"); }
-  if (location.protocol === "http:" && location.hostname !== "localhost") { location.replace("https://" + location.host + location.pathname + location.search); return; }
-  function registerSW() {
-    if (!navigator.serviceWorker) return;
-    navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(function (reg) {
-      H.sw = 1; note("sw-ok"); try { reg.update(); } catch (e) {}
-    }).catch(function (err) { note("sw-fail"); });
-  }
+(function(){
+  var BUILD="20260826191500-alive";
+  var KEY="sn-heal-"+BUILD;
+  var JS=["/js/spacenet/grid-os.js?v="+BUILD];
+  function registerSW(){if(!navigator.serviceWorker)return;navigator.serviceWorker.register("/sw.js",{scope:"/"}).catch(function(){});}
   registerSW();
-  function wipeCaches() {
-    try {
-      if (window.caches) caches.keys().then(function (ks) {
-        H.cache = ks.length;
-        ks.forEach(function (k) {
-          if (k.indexOf("sn-shell-") === 0 && k.indexOf("20260826184000") < 0) caches.delete(k);
-        });
-      });
-    } catch (e) { note("wipe-fail"); }
-  }
-  wipeCaches();
-  function kill(node) {
-    if (!node || !node.tagName) return;
-    var tag = node.tagName.toLowerCase();
-    if (tag === "script") {
-      var src = node.getAttribute("src") || node.src || "";
-      if (DEAD.test(src)) { H.hijack += 1; note("kill-js"); node.type = "text/plain"; node.src = ""; if (node.parentNode) node.parentNode.removeChild(node); }
-    }
-    if (node.id === "cli-in" || node.id === "stc-cmd-in" || node.id === "sn-topchrome" || node.id === "cli-coach" || node.id === "fbh-s") {
-      H.hijack += 1; note("kill-hud"); if (node.parentNode) node.parentNode.removeChild(node);
-    }
-  }
-  var mo = new MutationObserver(function (recs) { recs.forEach(function (r) { r.addedNodes.forEach(kill); }); });
-  mo.observe(document.documentElement, { childList: true, subtree: true });
-  function alive(url) {
-    return fetch(url, { method: "GET", cache: "no-store", signal: AbortSignal.timeout ? AbortSignal.timeout(4000) : undefined }).then(function (r) { return r.ok ? url : Promise.reject(); });
-  }
-  function load(src) {
-    return new Promise(function (res, rej) {
-      var s = document.createElement("script"); s.src = src; s.onload = function () { H.js = src; res(src); }; s.onerror = rej; document.body.appendChild(s);
-    });
-  }
-  function nextJs(i) {
-    if (i >= JS.length) { dot(false); line("JS"); return Promise.reject(); }
-    return alive(JS[i]).then(load, function () { return nextJs(i + 1); });
-  }
-  function boot() {
-    wipeCaches();
-    try {
-      var seen = localStorage.getItem("sn:seen-build");
-      if (seen !== BUILD && sessionStorage.getItem(KEY) !== "1") {
-        localStorage.setItem("sn:seen-build", BUILD);
-        sessionStorage.setItem(KEY, "1");
-        location.replace(location.pathname + "?h=" + encodeURIComponent(BUILD) + "&t=" + Date.now());
+  function boot(){
+    try{
+      var seen=localStorage.getItem("sn:seen-build");
+      if(seen!==BUILD&&sessionStorage.getItem(KEY)!=="1"){
+        localStorage.setItem("sn:seen-build",BUILD);
+        sessionStorage.setItem(KEY,"1");
+        location.replace(location.pathname+"?h="+encodeURIComponent(BUILD)+"&t="+Date.now());
         return;
       }
-      localStorage.setItem("sn:seen-build", BUILD);
-    } catch (e) {}
-    nextJs(0).then(function () { dot(true); }).catch(function () { dot(false); });
+      localStorage.setItem("sn:seen-build",BUILD);
+    }catch(e){}
+    var s=document.createElement("script");s.src=JS[0];document.body.appendChild(s);
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 })();
 </script>
 </head>
 <body>
 <canvas id="g"></canvas>
 <div id="city"></div>
-<div id="sn-station"></div>
 <div id="top"><div id="island">
-  <span id="heal"></span>
+  <span id="heal" class="ok"></span>
   <b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b>
-  <span id="bal" class="gone">0</span>
-  <span id="pool" class="gone" title="ABC Supply">ABC Supply 0</span>
-  <div id="btn-google" title="Google"></div>
-  <button id="me-pill" class="pill gone" type="button"></button>
-  <button id="me" class="gone" type="button">ME</button>
-  <button id="mapbtn" class="gone" type="button">MAP</button>
 </div></div>
 <div id="dock"><div id="panel">
-  <div id="sn-live" data-slot="controls"></div>
+  <div id="sn-live"></div>
   <form id="f">
-    <div class="hub" id="plusHub">
-      <button type="button" id="plus" aria-label="Plus">+</button>
-    </div>
-    <input id="in" autocomplete="off" autocapitalize="off" autocorrect="off" enterkeyhint="send" placeholder="Talk to Astranov SpaceNet Grok" />
-    <div class="hub" id="goHub">
-      <button type="button" id="go" aria-label="Voice">
-        <svg id="goIcon" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 14a3 3 0 003-3V6a3 3 0 00-6 0v5a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.93V21h2v-3.07A7 7 0 0019 11h-2z"/></svg>
-      </button>
-    </div>
+    <div class="hub"><button type="button" id="plus">+</button></div>
+    <input id="in" autocomplete="off" enterkeyhint="send" placeholder="Talk to Astranov SpaceNet Grok" />
+    <div class="hub"><button type="button" id="go" aria-label="Voice">🎤</button></div>
   </form>
   <div id="line">…</div>
 </div></div>
-<script src="/js/spacenet/grid-os.js?v=20260826184000-no-rhodes"></script>
 </body>
 </html>
