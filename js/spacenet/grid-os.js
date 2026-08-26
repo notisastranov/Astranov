@@ -2,7 +2,7 @@
   "use strict";
   if (window.__SN_GRID_FINISH) return;
   window.__SN_GRID_FINISH = true;
-  var BUILD = "20260826162500-tasks";
+  var BUILD = "20260826163500-plain";
   var SRC = [
     "https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@1c4e3ea85800d7c74c5bf9a0d2a2d5a9b8e7a6e8/js/spacenet/grid-os.js"
   ];
@@ -43,6 +43,13 @@
     mount.style.display = "flex";
   }
 
+  function plainLine(t) {
+    if (!t) return t;
+    return String(t)
+      .replace(/\bkitchens?\b/gi, "vendors")
+      .replace(/\bcooking spots?\b/gi, "vendors");
+  }
+
   function stripJunk() {
     var inEl = document.getElementById("in");
     if (inEl) inEl.placeholder = "Talk to Astranov SpaceNet Grok";
@@ -71,7 +78,9 @@
     if (line) {
       var t = line.textContent || "";
       if (/don.?t have access to your accounts|grant location permission|private logins/i.test(t)) {
-        line.textContent = "Tap LOCATE to pin you, or PIZZA to hunt kitchens on the globe (Rhodes fallback if GPS is off).";
+        line.textContent = "Tap LOCATE to pin you, or PIZZA to find pizza vendors on the globe (Rhodes if GPS is off).";
+      } else if (/\bkitchen/i.test(t)) {
+        line.textContent = plainLine(t);
       }
     }
     document.querySelectorAll("#cli-in,#stc-cmd-in,#sn-topchrome,#cli-coach,#fbh-s").forEach(function (n) {
@@ -111,7 +120,7 @@
   function doLocate() {
     say("requesting GPS · allow location in the browser prompt");
     if (!navigator.geolocation) {
-      say("no GPS on this device · using Rhodes · hunt continues");
+      say("no GPS on this device · using Rhodes");
       if (window.SN) {
         try { SN.set && SN.set("here", RHODES); } catch (e0) {}
         try { SN.flyTo && SN.flyTo(RHODES.lat, RHODES.lng); } catch (e1) {}
@@ -132,8 +141,8 @@
           }
         } catch (e) {}
       },
-      function (err) {
-        say("GPS denied or timed out · Rhodes fallback · kitchens on globe");
+      function () {
+        say("GPS denied or timed out · Rhodes fallback · vendors on the globe");
         try {
           if (window.SN) {
             if (SN.set) SN.set("here", RHODES);
@@ -147,7 +156,7 @@
   }
 
   function doPizza() {
-    say("hunting pizza · painting vendors on the globe");
+    say("finding pizza vendors · pinning them on the globe");
     try {
       if (window.SN && SN.hunt) {
         SN.hunt("pizza");
@@ -158,7 +167,7 @@
         return;
       }
     } catch (e) {}
-    say("kernel hunt armed · type pizza again if pins miss");
+    say("hunt armed · type pizza again if pins miss");
   }
 
   function armTasks() {
@@ -181,8 +190,8 @@
             doLocate();
             return false;
           }
-          if (/\bpizza\b|\border\b|\bdeliver|\bfood\b|\bkitchens?\b/.test(q)) {
-            /* let kernel handle, but if AI lectures, stripJunk fixes line */
+          /* kitchen = home fixture, not food slang — do not hijack */
+          if (/\bpizza\b|\border me\b|\bdeliver(y)?\b|\bfood delivery\b/.test(q) && !/\bkitchen\b/.test(q)) {
             setTimeout(function () {
               doPizza();
               stripJunk();
@@ -203,7 +212,7 @@
       stripJunk();
       armTasks();
     }, 900);
-    say("LOCATE pins you · PIZZA paints kitchens · talk for the rest");
+    say("LOCATE pins you · PIZZA finds pizza vendors · talk for the rest");
   }
 
   function load(i) {
