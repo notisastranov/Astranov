@@ -4,14 +4,12 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260826191500-alive" />
+<meta name="astranov-build" content="20260826192000-forever" />
 <meta name="theme-color" content="#050608" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
-<meta name="astranov-law" content="grid-os-latest-no-ghost" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="SpaceNet" />
-<meta name="mobile-web-app-capable" content="yes" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <style>
 html,body{margin:0;height:100%;background:#02040a;color:#d8f6ff;overflow:hidden;font-family:system-ui,sans-serif}
@@ -24,26 +22,21 @@ html,body{margin:0;height:100%;background:#02040a;color:#d8f6ff;overflow:hidden;
 #island,#panel{pointer-events:auto}
 #island{display:flex;align-items:center;gap:10px;padding:8px 14px;background:rgba(8,20,36,.55);border-bottom:1px solid rgba(80,220,255,.28)}
 #island b{font:700 11px/1 system-ui;letter-spacing:.2em}
-#island .a{color:#e8fbff} #island .s{color:#7ee9ff} #island .k{color:#5a7a90}
-#heal{width:7px;height:7px;border-radius:99px;background:#1c2a24}
-#heal.ok{background:#7ee9ff;box-shadow:0 0 12px #7ee9ff}
+#island .a{color:#e8fbff}#island .s{color:#7ee9ff}#island .k{color:#5a7a90}
+#heal{width:7px;height:7px;border-radius:99px;background:#7ee9ff;box-shadow:0 0 12px #7ee9ff}
 #panel{width:min(520px,100%);padding:8px 6px 4px;background:linear-gradient(180deg,transparent,rgba(2,8,18,.85))}
 #sn-live{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
 #sn-live:empty{display:none}
-#sn-live button{height:36px;padding:0 12px;border:1px solid rgba(126,233,255,.45);background:rgba(4,16,28,.75);color:#7ee9ff;font:600 12px system-ui;letter-spacing:.06em}
+#sn-live button{height:36px;padding:0 12px;border:1px solid rgba(126,233,255,.45);background:rgba(4,16,28,.75);color:#7ee9ff;font:600 12px system-ui}
 form{display:flex;align-items:center;gap:10px;min-height:48px;border-bottom:1px solid rgba(126,233,255,.4)}
 input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font:500 16px system-ui;outline:none;caret-color:#7ee9ff}
 .hub button{width:38px;height:38px;border:1px solid rgba(126,233,255,.55);border-radius:999px;background:rgba(4,12,24,.35);color:#7ee9ff}
 #line{margin:10px 4px 0;font:500 12px/1.5 ui-monospace,monospace;color:#7ee9ff;max-height:7rem;overflow:auto;white-space:pre-wrap}
-.gone{display:none!important}
 </style>
 <script>
 (function(){
-  var BUILD="20260826191500-alive";
+  var BUILD="20260826192000-forever";
   var KEY="sn-heal-"+BUILD;
-  var JS=["/js/spacenet/grid-os.js?v="+BUILD];
-  function registerSW(){if(!navigator.serviceWorker)return;navigator.serviceWorker.register("/sw.js",{scope:"/"}).catch(function(){});}
-  registerSW();
   function boot(){
     try{
       var seen=localStorage.getItem("sn:seen-build");
@@ -55,7 +48,8 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
       }
       localStorage.setItem("sn:seen-build",BUILD);
     }catch(e){}
-    var s=document.createElement("script");s.src=JS[0];document.body.appendChild(s);
+    if(navigator.serviceWorker)navigator.serviceWorker.register("/sw.js",{scope:"/"}).catch(function(){});
+    var s=document.createElement("script");s.src="/js/spacenet/grid-os.js?v="+BUILD;document.body.appendChild(s);
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 })();
@@ -64,10 +58,7 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
 <body>
 <canvas id="g"></canvas>
 <div id="city"></div>
-<div id="top"><div id="island">
-  <span id="heal" class="ok"></span>
-  <b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b>
-</div></div>
+<div id="top"><div id="island"><span id="heal"></span><b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b></div></div>
 <div id="dock"><div id="panel">
   <div id="sn-live"></div>
   <form id="f">
