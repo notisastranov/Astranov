@@ -412,6 +412,7 @@
   }
 
   function tick() {
+    fire("onTick");
     if (lookT > 0) {
       var targetYaw = ((lookLng + 180) * Math.PI) / 180;
       yaw += (((targetYaw - yaw + Math.PI) % (Math.PI * 2)) - Math.PI) * 0.08;
@@ -489,6 +490,31 @@
   tick();
   window.__SN_ALIVE = true;
   window.__SN_FULL = true;
+  /* ── LIVE LINES ─────────────────────────────────────────────
+   * Open placeholders. Empty until Grok / the architect writes in.
+   * SN.hook("onTick", fn)  SN.materialize({kind:"button",...})
+   * SN.takeover(js)        SN.dematerialize("all")
+   * Never restore twin-CLI HUD from these lines.
+   * ────────────────────────────────────────────────────────── */
+  var LIVE = {
+    onTick: null,
+    onHunt: null,
+    onOrder: null,
+    onInput: null,
+    onMap: null,
+    onPay: null,
+    onDone: null
+  };
+  function fire(name, a, b, c) {
+    try {
+      var fn = LIVE[name];
+      if (typeof fn === "function") return fn(a, b, c);
+    } catch (eL) {}
+  }
+  function liveMount() {
+    return document.getElementById("sn-live") || listEl || document.body;
+  }
+
   function ghostCode(src) {
     return /cli-in|stc-cmd-in|sn-topchrome|Command the HUD|hud-law|os-bootloader/i.test(String(src || ""));
   }
@@ -511,7 +537,10 @@
       spec.lng = Number(spec.lng != null ? spec.lng : lookLng);
       try { flyTo(spec.lat, spec.lng); } catch (eF) {}
     }
-    if (spec.kind === "button" && listEl) {
+    if (spec.kind === "button") {
+      var host = liveMount();
+      var oldB = document.getElementById("sn-m-" + id);
+      if (oldB && oldB.parentNode) oldB.parentNode.removeChild(oldB);
       var b = document.createElement("button");
       b.id = "sn-m-" + id;
       b.type = "button";
@@ -519,10 +548,11 @@
       b.addEventListener("click", function () {
         if (spec.run) run(String(spec.run));
         else if (spec.js) window.SN.patch(spec.js);
+        else if (spec.hook && LIVE[spec.hook]) fire(spec.hook, spec);
       });
-      listEl.appendChild(b);
-      matter(listEl, true);
+      host.appendChild(b);
       spec.el = b;
+      if (spec.ttl) setTimeout(function () { dematerialize(id); }, Number(spec.ttl) || 20000);
     }
     if (spec.kind === "panel") {
       var oldP = document.getElementById("sn-m-" + id);
@@ -549,7 +579,7 @@
     if (spec.kind === "note") say(spec.label || spec.body || id);
     things[id] = spec;
     if (thingOrder.indexOf(id) < 0) thingOrder.push(id);
-    if (spec.kind !== "note") say("materialized · " + (spec.label || spec.kind));
+    /* buttons assemble silent — sci-fi, not a status dump */
     try {
       if (spec.lat != null) {
         var q = proj(ll(spec.lat, spec.lng, 1.02));
@@ -578,7 +608,6 @@
     thingOrder = thingOrder.filter(function (x) { return x !== id; });
     missions = missions.filter(function (m) { return m.id !== id; });
     emitGlyphs((canvas.width || 400) * 0.5, (canvas.height || 700) * 0.68, 10);
-    say("dematerialized · " + id);
     return true;
   }
   window.SN = {
@@ -589,6 +618,16 @@
     materialize: materialize,
     dematerialize: dematerialize,
     vanish: dematerialize,
+    hook: function (name, fn) {
+      if (!name) return LIVE;
+      if (fn == null) { LIVE[name] = null; return; }
+      LIVE[name] = fn;
+      return true;
+    },
+    open: LIVE,
+    live: liveMount,
+    takeover: function (src) { return window.SN.patch(src); },
+    fire: fire,
     remember: remember,
     mind: loadMind,
     who: function () { return ARCHITECT; },
@@ -961,6 +1000,8 @@
     if (liveOrder.mission) { liveOrder.mission.status = "done"; liveOrder.mission.progress = 1; }
     hat = "client";
     renderStage();
+    fire("onDone", liveOrder);
+    dematerialize("button");
     talk(liveOrder.vendor + " delivered.");
   }
   function vendorConfirm() {
@@ -1060,7 +1101,12 @@
       "You are Grok, the same Grok from xAI / grok.com. You live inside Astranov SpaceNet as its mind. " +
       "Talk like Grok: sharp, funny, useful, human. Answer what they actually said. " +
       "Do not announce kitchens, roads, drivers, maps, or OS tools unless they asked for food, a place, a map, or a delivery. " +
-      "Do not monologue. Do not sound like a scripted HUD.";
+      "Do not monologue. Do not sound like a scripted HUD. " +
+      "When a task needs a control, silently emit a fence and nothing about the fence: " +
+      "```materialize\n{\"kind\":\"button\",\"id\":\"x\",\"label\":\"Pay\",\"run\":\"order\"}\n``` " +
+      "or ```js\nSN.hook('onTick', function(){})\n``` " +
+      "When the task is over: ```dematerialize\n{\"id\":\"x\"}\n``` " +
+      "Do the fences. Do not explain them.";
     return fetch("/api/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1115,6 +1161,7 @@
   function run(raw) {
     var t = raw.trim();
     if (!t || busy) return;
+    fire("onInput", t);
     var low = t.toLowerCase();
     /* who / are you there → real Grok, not a canned line */
     if (/^(remember|memory)\b/.test(low)) {

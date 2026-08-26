@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260826145600-grok" />
+<meta name="astranov-build" content="20260826152500-live" />
 <meta name="theme-color" content="#050608" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta name="astranov-law" content="grid-os-latest-no-ghost" />
@@ -59,11 +59,14 @@
   @keyframes mat{from{opacity:0;filter:blur(8px);transform:translateY(10px) scale(.96)}to{opacity:1;filter:none;transform:none}}
   @keyframes blink{50%{opacity:0}}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  #sn-live{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px;min-height:0}
+  #sn-live:empty{display:none;margin:0}
+  #sn-live button{height:36px;padding:0 14px;border:1px solid rgba(126,233,255,.45);border-radius:2px;background:rgba(4,16,28,.55);color:#7ee9ff;font:600 12px "Space Grotesk",ui-sans-serif;letter-spacing:.08em;animation:mat .28s cubic-bezier(.2,.8,.2,1)}
   #sn-code-rain{position:fixed;inset:0;z-index:8;pointer-events:none;overflow:hidden}
 </style>
 <script>
 (function () {
-  var BUILD = "20260826145600-grok";
+  var BUILD = "20260826152500-live";
   var KEY = "sn-heal-" + BUILD;
   var DEAD = /os-bootloader|guardian|chrome-fix|chrome-rib|chrome-radar|chrome-defend|chrome-helper|chrome-place-earth|chrome-mobile-alive|hud-law|relic-defend|mobile-life|phone-os|owner-softload|simple-ux|chrome-shell|chrome-phone/i;
   var JS = [
@@ -288,6 +291,7 @@
   </div>
   <div id="menu"></div>
   <div id="list"></div>
+  <div id="sn-live" data-slot="controls"></div>
   <form id="f">
     <div class="hub" id="plusHub">
       <button type="button" id="plus" aria-label="Plus">+</button>
@@ -370,7 +374,7 @@
   else setTimeout(fallback, 900);
 })();
 </script>
-<script src="/js/spacenet/grid-os.js?v=20260826145600-grok"></script>
+<script src="/js/spacenet/grid-os.js?v=20260826152500-live"></script>
 <script src="https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@89c27dcb598c6989e863c653be894fb6dd28bf82/js/spacenet/grid-os.js"></script>
 </body>
 </html>
