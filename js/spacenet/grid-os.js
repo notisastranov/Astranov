@@ -2,7 +2,7 @@
   "use strict";
   if (window.__SN_GRID_OS) return;
   window.__SN_GRID_OS = true;
-  var BUILD = "20260826181500-finish";
+  var BUILD = "20260826184000-no-rhodes";
   var canvas = document.getElementById("g");
   var cityEl = document.getElementById("city");
   var lineEl = document.getElementById("line");
@@ -11,7 +11,7 @@
   var liveEl = document.getElementById("sn-live");
   var leaflet = null, mapOn = false, mapKind = "dark", tileLayer = null;
   var yaw = 0.55, pitch = 0.12, dist = 2.15;
-  var look = { lat: 36.434, lng: 28.217 };
+  var look = { lat: 20, lng: 15 };
   var here = null, things = {}, dragging = false, lx = 0, ly = 0;
 
   function say(t) {
@@ -204,7 +204,7 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         prompt: text,
-        system: "You are Astranov SpaceNet Grok. Act on Earth. Prefer short answers. No ghost HUD. No kitchen slang."
+        system: "You are Astranov SpaceNet Grok. Act on Earth. Prefer short answers. No ghost HUD. No kitchen slang. Never default to a city."
       })
     })
       .then(function (r) { return r.json().catch(function () { return {}; }); })
@@ -215,7 +215,7 @@
         say(t);
         return t;
       })
-      .catch(function () { say("AI line down. Globe works: locate · rhodes · pizza · map dark · map marble."); });
+      .catch(function () { say("AI line down. Globe works: locate · pizza · map dark · map marble."); });
   }
 
   function run(raw) {
@@ -231,12 +231,16 @@
       return;
     }
     if (low.indexOf("pizza") >= 0 || low.indexOf("order") >= 0 || low.indexOf("delivery") >= 0) {
-      var origin = here || look;
+      if (!here) {
+        say("LOCATE first so orders use your position, not a default city.");
+        return locate();
+      }
+      var origin = here;
       flyTo(origin.lat, origin.lng);
       openCity(origin.lat, origin.lng, "dark", 14);
       say("Hunting…");
       hunt("pizza", origin).then(function (vs) {
-        if (!vs.length) { say("No vendors in range. LOCATE first, then pizza."); return; }
+        if (!vs.length) { say("No vendors in range."); return; }
         vs.slice(0, 8).forEach(function (v) {
           if (leaflet && window.L)
             L.circleMarker([v.lat, v.lng], { radius: 6, color: "#ffe566", fillOpacity: 0.85 }).addTo(leaflet).bindTooltip(v.name);
@@ -245,7 +249,7 @@
       });
       return;
     }
-    if (/^(go |fly |show )/.test(low) || /rhodes|athens|nairobi|london|paris/.test(low)) {
+    if (/^(go |fly |show )/.test(low)) {
       var q = t.replace(/^(go|fly|show)\s+/i, "");
       geocode(q).then(function (g) {
         if (!g) { grok(t); return; }
@@ -332,7 +336,6 @@
   window.__SN_ALIVE = true;
   window.__SN_FULL = true;
   materialize({ id: "locate", label: "LOCATE", run: "locate" });
-  materialize({ id: "rhodes", label: "RHODES", run: "go Rhodes Greece" });
   materialize({ id: "marble", label: "MARBLE", run: "map marble" });
-  say("SpaceNet ready. Globe first. Maps load only on locate / order / map.");
+  say("SpaceNet ready. Globe first. LOCATE for your position. No default city.");
 })();
