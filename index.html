@@ -1,1 +1,32 @@
-PLACEHOLDER
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Astranov SpaceNet Grok</title>
+<meta name="astranov-build" content="20260826155500-center" />
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+<meta name="astranov-law" content="grid-os-latest-no-ghost" />
+<script>
+(function(){
+  var BUILD='20260826155500-center';
+  // Load last good shell from commit before PLACEHOLDER, then overlay center patches via grid-os
+  fetch('https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@1c4e3ea85800d7c74c5bf9a0d2a2d5a9b8e7a6e8/index.html',{cache:'no-store'})
+    .then(function(r){return r.text();})
+    .then(function(html){
+      html=html.replace(/talk to Grok/g,'Talk to Astranov SpaceNet Grok');
+      html=html.replace(/>pool 0</g,' class="gone" title="ABC Supply">ABC Supply 0<');
+      html=html.replace(/20260826155000-station/g,BUILD);
+      document.open(); document.write(html); document.close();
+    })
+    .catch(function(){
+      document.body.innerHTML='<canvas id=g></canvas><div id=line style="position:fixed;bottom:80px;left:12px;color:#7ee9ff">Astranov SpaceNet Grok · reconnecting</div>';
+      var s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@1c4e3ea85800d7c74c5bf9a0d2a2d5a9b8e7a6e8/js/spacenet/grid-os.js';
+      document.body.appendChild(s);
+    });
+})();
+</script>
+</head>
+<body style="background:#02040a;margin:0;height:100%"></body>
+</html>
