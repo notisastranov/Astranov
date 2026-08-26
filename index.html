@@ -4,10 +4,16 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260826165500-voice" />
+<meta name="astranov-build" content="20260826174500-pwa" />
 <meta name="theme-color" content="#050608" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta name="astranov-law" content="grid-os-latest-no-ghost" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="SpaceNet" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="application-name" content="Astranov SpaceNet Grok" />
+<link rel="apple-touch-icon" href="/icon-192.png" />
 <link rel="manifest" href="/manifest.webmanifest" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -94,7 +100,7 @@
 </style>
 <script>
 (function () {
-  var BUILD = "20260826165500-voice";
+  var BUILD = "20260826174500-pwa";
   var KEY = "sn-heal-" + BUILD;
   var DEAD = /os-bootloader|guardian|chrome-fix|chrome-rib|chrome-radar|chrome-defend|chrome-helper|chrome-place-earth|chrome-mobile-alive|hud-law|relic-defend|mobile-life|phone-os|owner-softload|simple-ux|chrome-shell|chrome-phone/i;
   var JS = ["/js/spacenet/grid-os.js?v=" + BUILD];
@@ -104,17 +110,31 @@
   function dot(ok) { var el = document.getElementById("heal"); if (!el) return; el.className = ok ? "ok" : "bad"; }
   function line(t) { var el = document.getElementById("line"); if (!el || !t) return; el.textContent = t; el.classList.remove("gone"); }
   if (location.protocol === "http:" && location.hostname !== "localhost") { location.replace("https://" + location.host + location.pathname + location.search); return; }
-  if (navigator.serviceWorker) { try { navigator.serviceWorker.register = function () { note("sw-block"); return Promise.reject(new Error("sw-block")); }; } catch (e) {} }
-  function wipe() {
+  /* PWA: real service worker — installable outside browser chrome */
+  function registerSW() {
+    if (!navigator.serviceWorker) return;
+    navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(function (reg) {
+      H.sw = 1;
+      note("sw-ok");
+      try { reg.update(); } catch (e) {}
+    }).catch(function (err) {
+      note("sw-fail");
+      console.warn("SW register failed", err);
+    });
+  }
+  registerSW();
+  /* Light cache hygiene only — never unregister the SW */
+  function wipeCaches() {
     try {
-      if (navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then(function (rs) { H.sw = rs.length; rs.forEach(function (r) { r.unregister(); }); });
-      if (window.caches) caches.keys().then(function (ks) { H.cache = ks.length; ks.forEach(function (k) { caches.delete(k); }); });
+      if (window.caches) caches.keys().then(function (ks) {
+        H.cache = ks.length;
+        ks.forEach(function (k) {
+          if (k.indexOf("sn-shell-") === 0 && k !== "sn-shell-20260826174500-pwa") caches.delete(k);
+        });
+      });
     } catch (e) { note("wipe-fail"); }
   }
-  wipe();
-  window.addEventListener("pagehide", wipe);
-  document.addEventListener("visibilitychange", function () { if (document.visibilityState === "hidden") wipe(); });
-  setInterval(wipe, 20000);
+  wipeCaches();
   function kill(node) {
     if (!node || !node.tagName) return;
     var tag = node.tagName.toLowerCase();
@@ -145,7 +165,7 @@
   }
   function wakeAi() {}
   function boot() {
-    wipe();
+    wipeCaches();
     try {
       var seen = localStorage.getItem("sn:seen-build");
       if (seen !== BUILD && sessionStorage.getItem(KEY) !== "1") {
@@ -282,6 +302,6 @@
   else setTimeout(fallback, 900);
 })();
 </script>
-<script src="/js/spacenet/grid-os.js?v=20260826165500-voice"></script>
+<script src="/js/spacenet/grid-os.js?v=20260826174500-pwa"></script>
 </body>
 </html>

@@ -1,7 +1,8 @@
-/* Astranov SpaceNet — installable app SW 20260826174000
-   Stay registered. Network-first. Minimal shell cache for offline shell. */
-var CACHE = "sn-shell-20260826174000";
-var SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icon-192.png", "/icon.png"];
+/* Astranov SpaceNet — installable standalone app SW 20260826174500-pwa
+   Stay registered. Network-first. Minimal shell cache for offline shell.
+   This is what lets the app run outside browser chrome. */
+var CACHE = "sn-shell-20260826174500-pwa";
+var SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icon-192.png", "/icon.png", "/icon.svg"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(
@@ -40,7 +41,7 @@ self.addEventListener("fetch", function (e) {
   e.respondWith(
     fetch(req)
       .then(function (res) {
-        if (res && res.ok && (url.pathname === "/" || url.pathname.indexOf("/js/") === 0 || url.pathname.indexOf("manifest") >= 0)) {
+        if (res && res.ok && (url.pathname === "/" || url.pathname === "/index.html" || url.pathname.indexOf("/js/") === 0 || url.pathname.indexOf("manifest") >= 0)) {
           var copy = res.clone();
           caches.open(CACHE).then(function (c) {
             c.put(req, copy);
