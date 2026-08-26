@@ -2,11 +2,14 @@
   "use strict";
   if (window.__SN_GRID_FINISH) return;
   window.__SN_GRID_FINISH = true;
-  var BUILD = "20260826164000-act";
+  var BUILD = "20260826165500-voice";
   var SRC = [
     "https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@1c4e3ea85800d7c74c5bf9a0d2a2d5a9b8e7a6e8/js/spacenet/grid-os.js"
   ];
   var RHODES = { lat: 36.4341, lng: 28.2176, name: "Rhodes" };
+  var voiceOn = false;
+  var rec = null;
+  var wantVoice = true;
 
   function say(t) {
     var el = document.getElementById("line");
@@ -16,6 +19,17 @@
     }
     try {
       if (window.SN && SN.say) SN.say(t);
+    } catch (e) {}
+  }
+
+  function speak(t) {
+    try {
+      if (!window.speechSynthesis) return;
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(String(t));
+      u.rate = 1.02;
+      u.pitch = 1;
+      window.speechSynthesis.speak(u);
     } catch (e) {}
   }
 
@@ -96,6 +110,16 @@
       });
   }
 
+  function centerGlobe() {
+    try {
+      if (window.SN && SN.set) {
+        SN.set("yaw", 0.55);
+        SN.set("pitch", 0.12);
+        SN.set("dist", 2.15);
+      }
+    } catch (e) {}
+  }
+
   function liveSlot() {
     var slot = document.getElementById("sn-live");
     if (!slot) {
@@ -133,6 +157,113 @@
     if (b && b.parentNode) b.parentNode.removeChild(b);
   }
 
+  function paintMic(on) {
+    var go = document.getElementById("go");
+    if (!go) return;
+    if (on) go.classList.add("listen");
+    else go.classList.remove("listen");
+  }
+
+  function runText(t) {
+    t = (t || "").trim();
+    if (!t) return;
+    var inEl = document.getElementById("in");
+    if (inEl) inEl.value = "";
+    try {
+      if (window.SN && typeof SN.run === "function") {
+        SN.run(t);
+        return;
+      }
+    } catch (e) {}
+    var form = document.getElementById("f");
+    if (form && inEl) {
+      inEl.value = t;
+      try {
+        form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+      } catch (e2) {}
+    }
+  }
+
+  function startContinuousVoice() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    if (rec) {
+      try {
+        rec.onend = null;
+        rec.stop();
+      } catch (e) {}
+      rec = null;
+    }
+    rec = new SR();
+    rec.lang = navigator.language || "en-US";
+    rec.interimResults = true;
+    rec.continuous = true;
+    voiceOn = true;
+    paintMic(true);
+    rec.onresult = function (ev) {
+      var i,
+        t = "",
+        final = false;
+      for (i = ev.resultIndex; i < ev.results.length; i++) {
+        t += ev.results[i][0].transcript;
+        if (ev.results[i].isFinal) final = true;
+      }
+      var inEl = document.getElementById("in");
+      if (inEl) inEl.value = t;
+      if (final && t.trim()) {
+        runText(t);
+      }
+    };
+    rec.onerror = function (ev) {
+      if (ev && (ev.error === "not-allowed" || ev.error === "service-not-allowed")) {
+        wantVoice = false;
+        voiceOn = false;
+        paintMic(false);
+        say("mic blocked — type below");
+        return;
+      }
+      /* restart unless user stopped */
+      if (wantVoice) {
+        setTimeout(function () {
+          if (wantVoice) startContinuousVoice();
+        }, 400);
+      }
+    };
+    rec.onend = function () {
+      voiceOn = false;
+      paintMic(false);
+      if (wantVoice) {
+        setTimeout(function () {
+          if (wantVoice) startContinuousVoice();
+        }, 250);
+      }
+    };
+    try {
+      rec.start();
+      voiceOn = true;
+      paintMic(true);
+    } catch (e3) {
+      voiceOn = false;
+      paintMic(false);
+      setTimeout(function () {
+        if (wantVoice) startContinuousVoice();
+      }, 800);
+    }
+  }
+
+  function stopVoice() {
+    wantVoice = false;
+    voiceOn = false;
+    paintMic(false);
+    if (rec) {
+      try {
+        rec.onend = null;
+        rec.stop();
+      } catch (e) {}
+      rec = null;
+    }
+  }
+
   function doLocate() {
     if (!navigator.geolocation) {
       try {
@@ -141,7 +272,6 @@
           if (SN.flyTo) SN.flyTo(RHODES.lat, RHODES.lng);
         }
       } catch (e) {}
-      say("Rhodes");
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -158,7 +288,6 @@
             if (SN.locate) SN.locate();
           }
         } catch (e) {}
-        say(p.lat.toFixed(4) + ", " + p.lng.toFixed(4));
       },
       function () {
         try {
@@ -167,7 +296,6 @@
             if (SN.flyTo) SN.flyTo(RHODES.lat, RHODES.lng);
           }
         } catch (e2) {}
-        say("Rhodes");
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
     );
@@ -190,17 +318,84 @@
     } catch (e) {}
   }
 
+  function armGo() {
+    var go = document.getElementById("go");
+    if (!go || go.__snVoice) return;
+    go.__snVoice = true;
+    go.addEventListener(
+      "click",
+      function (ev) {
+        var inEl = document.getElementById("in");
+        if (inEl && inEl.value.trim()) return; /* send path */
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (wantVoice && voiceOn) {
+          stopVoice();
+          say("voice off");
+        } else {
+          wantVoice = true;
+          startContinuousVoice();
+          say("listening");
+        }
+      },
+      true
+    );
+  }
+
+  function bootTalk() {
+    if (window.__SN_BOOTED_TALK) return;
+    window.__SN_BOOTED_TALK = true;
+    var msg =
+      "Astranov SpaceNet Grok online. Sign in when you want. Spin the globe. Say what you need.";
+    say(msg);
+    speak(msg);
+    /* permissions without blocking the UI */
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices
+          .getUserMedia({ audio: true })
+          .then(function (stream) {
+            try {
+              stream.getTracks().forEach(function (t) {
+                t.stop();
+              });
+            } catch (e) {}
+            wantVoice = true;
+            startContinuousVoice();
+          })
+          .catch(function () {
+            wantVoice = true;
+            startContinuousVoice();
+          });
+      } else {
+        wantVoice = true;
+        startContinuousVoice();
+      }
+    } catch (e2) {
+      wantVoice = true;
+      setTimeout(startContinuousVoice, 500);
+    }
+    setTimeout(doLocate, 700);
+  }
+
   function arm() {
     materialize("sn-btn-locate", "LOCATE", doLocate);
     materialize("sn-btn-pizza", "PIZZA", function () {
       doHunt("pizza");
     });
+    armGo();
+    centerGlobe();
 
     if (!window.SN) window.SN = {};
     window.SN.materialize = materialize;
     window.SN.dematerialize = dematerialize;
     window.SN.doLocate = doLocate;
     window.SN.doHunt = doHunt;
+    window.SN.startVoice = function () {
+      wantVoice = true;
+      startContinuousVoice();
+    };
+    window.SN.stopVoice = stopVoice;
 
     var form = document.getElementById("f");
     if (form && !form.__snAct) {
@@ -212,8 +407,6 @@
           var raw = ((inEl && inEl.value) || "").trim();
           var q = raw.toLowerCase();
           if (!q) return;
-
-          /* pure actions — no lectures */
           if (/^(locate|me|here|gps)$/.test(q)) {
             ev.preventDefault();
             ev.stopPropagation();
@@ -228,8 +421,6 @@
             doHunt("pizza");
             return false;
           }
-
-          /* kill permission lectures after AI answers */
           setTimeout(stripJunk, 600);
           setTimeout(stripJunk, 1600);
         },
@@ -243,10 +434,15 @@
     window.__SN_FULL = true;
     stripJunk();
     arm();
+    centerGlobe();
+    setTimeout(centerGlobe, 400);
+    setTimeout(centerGlobe, 1200);
+    setTimeout(bootTalk, 900);
     setInterval(function () {
       stripJunk();
       arm();
-    }, 1200);
+      centerGlobe();
+    }, 2000);
   }
 
   function load(i) {
