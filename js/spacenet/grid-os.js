@@ -218,13 +218,14 @@
   }
 
   function loadLedger() {
-    var st = { accounts: { notis: 3000000 }, journal: [] };
+    var st = { accounts: { notis: 3000000, pool: 0 }, journal: [] };
     try {
       var raw = JSON.parse(localStorage.getItem(LEDGER_K) || "null");
       if (raw && raw.accounts) st = raw;
     } catch (e) {}
     if (!st.accounts) st.accounts = {};
-    st.accounts.notis = 3000000;
+    if (typeof st.accounts.notis !== "number") st.accounts.notis = 3000000;
+    if (typeof st.accounts.pool !== "number") st.accounts.pool = Number(st.accounts.pool) || 0;
     return st;
   }
   var ledger = loadLedger();
@@ -234,10 +235,27 @@
   function bal() {
     return Number(ledger.accounts.notis || 0);
   }
+  function fmtMoney(n) {
+    return Math.round(Number(n) || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+  function pool() {
+    return Number(ledger.accounts.pool || 0);
+  }
   function paintBal() {
-    if (!balEl) return;
-    var n = Math.round(bal()).toString();
-    balEl.textContent = n.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " AVC";
+    if (balEl) balEl.textContent = fmtMoney(bal()) + " AVC";
+    var pEl = document.getElementById("pool");
+    if (pEl) pEl.textContent = "pool " + fmtMoney(pool());
+  }
+  function creditDeposit(eur, ref) {
+    eur = Math.round(Number(eur) * 100) / 100;
+    if (!(eur > 0)) return false;
+    ledger.accounts.notis = (ledger.accounts.notis || 0) + eur;
+    ledger.accounts.pool = (ledger.accounts.pool || 0) + eur;
+    ledger.journal.unshift({ t: Date.now(), from: "paypal", to: "notis", amount: eur, memo: "deposit " + (ref || "") });
+    saveLedger();
+    paintBal();
+    say("+" + eur + " AVC · pool " + fmtMoney(pool()));
+    return true;
   }
   function post(from, to, amount, memo) {
     amount = Math.round(amount * 100) / 100;
@@ -1289,6 +1307,11 @@
       say("remembered · " + note);
       return;
     }
+    if (/^(charge|deposit|paypal)\b/.test(low)) {
+      var n = parseFloat(low.replace(/[^0-9.]/g, "")) || 20;
+      startDeposit(n);
+      return;
+    }
     if (/^(make|materialize|spawn)\b/.test(low)) {
       var rest = t.replace(/^(make|materialize|spawn)\s+/i, "");
       materialize({ kind: /panel/.test(low) ? "panel" : /button/.test(low) ? "button" : /route/.test(low) ? "route" : "pin", label: rest || "live" });
@@ -1668,7 +1691,68 @@
     var g = document.getElementById("btn-google");
     if (g) g.classList.add("gone");
     if (!meProf.role) offerRoles();
+    offerCharge();
   }
+  function offerCharge() {
+    [10, 20, 50, 100].forEach(function (n) {
+      materialize({
+        kind: "button",
+        id: "pay-" + n,
+        label: "€" + n + " → AVC",
+        js: "SN.eval('startDeposit(" + n + ")')",
+      });
+    });
+  }
+  function startDeposit(eur) {
+    eur = Math.max(1, Number(eur) || 20);
+    say("PayPal · €" + eur + " → " + eur + " AVC");
+    fetch("/api/paypal/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: eur, origin: location.origin }),
+      signal: to(20000),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j || !j.approve) {
+          say((j && j.error) || "PayPal not keyed on the server");
+          return;
+        }
+        try { sessionStorage.setItem("sn:paypal-pending", JSON.stringify({ amount: eur, orderId: j.orderId })); } catch (eP) {}
+        location.href = j.approve;
+      })
+      .catch(function () { say("PayPal unreachable"); });
+  }
+  function completePaypalReturn() {
+    var q = new URLSearchParams(location.search || "");
+    var flag = q.get("paypal");
+    var token = q.get("token") || q.get("orderId");
+    if (!flag) return;
+    function clean() {
+      try {
+        q.delete("paypal"); q.delete("token"); q.delete("PayerID"); q.delete("orderId");
+        var s = q.toString();
+        history.replaceState(null, "", location.pathname + (s ? "?" + s : "") + (location.hash || ""));
+      } catch (eC) {}
+    }
+    if (flag === "cancel") { clean(); say("PayPal cancelled"); return; }
+    if (flag !== "success" || !token) { clean(); return; }
+    say("capturing…");
+    fetch("/api/paypal/capture-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId: token }),
+      signal: to(20000),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        clean();
+        if (j && j.ok && j.avc) creditDeposit(j.avc, j.captureId || j.orderId);
+        else say((j && j.error) || "PayPal capture failed");
+      })
+      .catch(function () { clean(); say("PayPal capture down"); });
+  }
+
   function loadAuth() {
     function paintGoogle() {
       var mount = document.getElementById("btn-google");
@@ -1733,4 +1817,5 @@
     locate().then(function (p) { here = p || RHODES; if (meProf && here) { meProf.lat = here.lat; meProf.lng = here.lng; saveMe(); } }).catch(function () { here = RHODES; });
   } catch (eL) { here = RHODES; }
   try { loadAuth(); } catch (eA) {}
+  try { completePaypalReturn(); } catch (eP) {}
 })();

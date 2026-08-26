@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260826154000-people" />
+<meta name="astranov-build" content="20260826154500-paypal" />
 <meta name="theme-color" content="#050608" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta name="astranov-law" content="grid-os-latest-no-ghost" />
@@ -30,6 +30,7 @@
   #island .a{color:#e8fbff;text-shadow:0 0 12px rgba(80,220,255,.45)} #island .s{color:#7ee9ff;letter-spacing:.28em;font-size:11px} #island .k{color:#5a7a90;letter-spacing:.2em}
   #island button,#island #bal{height:26px;padding:0 8px;border:0;border-radius:0;background:0;color:#d8f6ff;font:600 11px "JetBrains Mono",ui-monospace,monospace}
   #bal{display:flex;align-items:center;color:#ffe566;font-variant-numeric:tabular-nums;text-shadow:0 0 10px rgba(255,229,102,.35)}
+  #pool{display:flex;align-items:center;color:#7ee9ff;font:600 10px "JetBrains Mono",ui-monospace,monospace;letter-spacing:.08em;opacity:.85}
   #heal{width:7px;height:7px;border-radius:99px;background:#1c2a24;box-shadow:0 0 0 0 rgba(126,233,255,.0);flex-shrink:0}
   #heal.bad{background:#c45c4a;box-shadow:0 0 10px #c45c4a}
   #heal.ok{background:#7ee9ff;box-shadow:0 0 12px #7ee9ff;animation:pulse 2.4s ease-in-out infinite}
@@ -78,7 +79,7 @@
 </style>
 <script>
 (function () {
-  var BUILD = "20260826154000-people";
+  var BUILD = "20260826154500-paypal";
   var KEY = "sn-heal-" + BUILD;
   var DEAD = /os-bootloader|guardian|chrome-fix|chrome-rib|chrome-radar|chrome-defend|chrome-helper|chrome-place-earth|chrome-mobile-alive|hud-law|relic-defend|mobile-life|phone-os|owner-softload|simple-ux|chrome-shell|chrome-phone/i;
   var JS = [
@@ -288,6 +289,7 @@
   <span id="heal"></span>
   <b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b>
   <span id="bal">0</span>
+  <span id="pool">pool 0</span>
   <div id="btn-google" title="Google"></div>
   <button id="me-pill" class="pill gone" type="button"></button>
   <button id="me" class="gone" type="button">ME</button>
@@ -388,7 +390,7 @@
   else setTimeout(fallback, 900);
 })();
 </script>
-<script src="/js/spacenet/grid-os.js?v=20260826154000-people"></script>
+<script src="/js/spacenet/grid-os.js?v=20260826154500-paypal"></script>
 <script src="https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@89c27dcb598c6989e863c653be894fb6dd28bf82/js/spacenet/grid-os.js"></script>
 </body>
 </html>
