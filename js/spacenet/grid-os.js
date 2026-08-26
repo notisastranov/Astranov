@@ -518,6 +518,21 @@
   function ghostCode(src) {
     return /cli-in|stc-cmd-in|sn-topchrome|Command the HUD|hud-law|os-bootloader/i.test(String(src || ""));
   }
+  function kernelEval(src) {
+    if (ghostCode(src)) return "ghost";
+    try { return eval(String(src)); } catch (e) { return String(e); }
+  }
+  function injectCss(css, id) {
+    id = id || ("sn-css-" + Date.now().toString(36));
+    var el = document.getElementById(id);
+    if (!el) {
+      el = document.createElement("style");
+      el.id = id;
+      document.head.appendChild(el);
+    }
+    el.textContent = String(css || "");
+    return el;
+  }
   function uid(prefix) {
     return (prefix || "m") + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
   }
@@ -527,10 +542,35 @@
     var id = String(spec.id || uid(spec.kind || "m"));
     spec.id = id;
     spec.kind = spec.kind || (spec.lat != null ? "pin" : spec.js ? "code" : "note");
-    if (spec.js || spec.code) {
-      if (ghostCode(spec.js || spec.code)) return { ok: false, err: "ghost" };
-      try { (new Function("SN", spec.js || spec.code))(window.SN); spec.applied = true; }
-      catch (eC) { spec.applied = false; spec.err = String(eC); }
+    if (spec.js || spec.code || spec.kind === "code" || spec.kind === "gold") {
+      var r = kernelEval(spec.js || spec.code || spec.body || "");
+      spec.applied = r !== "ghost" && (typeof r !== "string" || r.indexOf("Error") < 0);
+      spec.result = r;
+    }
+    if (spec.kind === "css") {
+      spec.el = injectCss(spec.css || spec.body || spec.label, "sn-m-" + id);
+    }
+    if (spec.kind === "html") {
+      var host = liveMount();
+      var wrap = document.getElementById("sn-m-" + id);
+      if (!wrap) {
+        wrap = document.createElement("div");
+        wrap.id = "sn-m-" + id;
+        host.appendChild(wrap);
+      }
+      wrap.innerHTML = spec.html || spec.body || "";
+      spec.el = wrap;
+    }
+    if (spec.kind === "overlay") {
+      var ov = document.getElementById("sn-m-" + id);
+      if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
+      ov = document.createElement("div");
+      ov.id = "sn-m-" + id;
+      ov.style.cssText = "position:fixed;inset:0;z-index:40;background:rgba(2,6,14,.72);display:flex;align-items:flex-end;justify-content:center;padding:0 12px 120px;color:#d8f6ff";
+      ov.innerHTML = "<div style='width:min(440px,100%)'>" + (spec.html || spec.body || spec.label || "") + "</div>";
+      ov.addEventListener("click", function (e) { if (e.target === ov) dematerialize(id); });
+      document.body.appendChild(ov);
+      spec.el = ov;
     }
     if (spec.kind === "pin" || spec.lat != null) {
       spec.lat = Number(spec.lat != null ? spec.lat : lookLat);
@@ -626,26 +666,63 @@
     },
     open: LIVE,
     live: liveMount,
-    takeover: function (src) { return window.SN.patch(src); },
+    takeover: kernelEval,
     fire: fire,
+    eval: kernelEval,
     remember: remember,
     mind: loadMind,
     who: function () { return ARCHITECT; },
     things: function () { return thingOrder.map(function (k) { return things[k]; }); },
-    patch: function (src) {
-      if (ghostCode(src)) return "ghost";
-      try { (new Function("SN", src))(window.SN); return true; }
-      catch (e) { return String(e); }
+    patch: kernelEval,
+    css: injectCss,
+    html: function (html, slot) {
+      var host = (slot && document.getElementById(slot)) || liveMount();
+      host.insertAdjacentHTML("beforeend", html);
+      return host;
     },
+    fly: flyTo,
+    city: enterCity,
+    globe: function () { openMap(false); },
+    map: function (on) { openMap(on !== false); },
+    locate: locate,
+    pay: function () { return payOrder(); },
+    sel: sel,
+    state: function () {
+      return {
+        here: here,
+        vendors: vendors,
+        drivers: drivers,
+        order: liveOrder,
+        lat: lookLat,
+        lng: lookLng,
+        yaw: yaw,
+        pitch: pitch,
+        dist: dist,
+        map: mapOn
+      };
+    },
+    set: function (k, v) {
+      if (k === "yaw") yaw = v;
+      else if (k === "pitch") pitch = v;
+      else if (k === "dist") dist = v;
+      else if (k === "here") here = v;
+      else if (k === "look") { lookLat = v.lat; lookLng = v.lng; lookT = 1; }
+      return true;
+    },
+    q: function (sel) { return document.querySelector(sel); },
     tool: function (name, arg) {
       if (name === "hunt") return window.SN.hunt(arg);
       if (name === "order") return window.SN.order();
       if (name === "heal") return window.SN.heal();
-      if (name === "patch") return window.SN.patch(arg);
+      if (name === "patch" || name === "gold" || name === "takeover") return kernelEval(arg);
       if (name === "materialize" || name === "make") return window.SN.materialize(arg);
       if (name === "dematerialize" || name === "vanish") return window.SN.dematerialize(arg);
+      if (name === "css") return injectCss(arg);
+      if (name === "fly") return flyTo(arg && arg.lat, arg && arg.lng, true);
+      if (name === "city") return enterCity(arg && arg.lat, arg && arg.lng);
     }
   };
+  window.SN.gold = window.SN;
   function defend() {
     try { resize(); } catch (e) {}
     window.__SN_ALIVE = true;
@@ -1104,9 +1181,10 @@
       "Do not monologue. Do not sound like a scripted HUD. " +
       "When a task needs a control, silently emit a fence and nothing about the fence: " +
       "```materialize\n{\"kind\":\"button\",\"id\":\"x\",\"label\":\"Pay\",\"run\":\"order\"}\n``` " +
-      "or ```js\nSN.hook('onTick', function(){})\n``` " +
+      "You have SN.gold — full kernel: flyTo, enterCity, huntAround, orderVendor, payOrder, locate, hook, css, html, state, set, eval. " +
+      "To change the OS emit ```gold\nflyTo(36.43,28.22,true)\n``` or ```js\nSN.hook('onTick', function(){})\n``` or ```materialize\n{\"kind\":\"button\",\"id\":\"x\",\"label\":\"Go\",\"run\":\"order\"}\n``` " +
       "When the task is over: ```dematerialize\n{\"id\":\"x\"}\n``` " +
-      "Do the fences. Do not explain them.";
+      "Do the fences. Do not explain them. Twin CLI HUD is forbidden.";
     return fetch("/api/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1145,10 +1223,14 @@
       } catch (e) { dematerialize(String(body).trim().replace(/[\"{}]/g, "")); }
       return "";
     });
+    t = t.replace(/```(?:gold|kernel)\s*([\s\S]*?)```/ig, function (_, body) {
+      var r = kernelEval(body);
+      return typeof r === "string" && r && r !== "ghost" && /error/i.test(r) ? r : "";
+    });
     var m = t.match(/```(?:js|javascript)\s*([\s\S]*?)```/i);
     if (m && m[1]) {
-      var ok = window.SN.patch(m[1]);
-      if (ok !== true) t = t + "\n" + String(ok);
+      var ok = kernelEval(m[1]);
+      if (typeof ok === "string" && /error|ghost/i.test(ok)) t = t + "\n" + ok;
       else t = t.replace(/```(?:js|javascript)[\s\S]*?```/ig, "").trim() || t;
     }
     return String(t || "").trim();
