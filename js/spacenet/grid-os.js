@@ -744,6 +744,8 @@
   };
   window.SN.gold = window.SN;
   window.SN.me = function () { return meProf; };
+  window.SN.station = function () { openComputerRoom(); };
+  window.SN.devices = function () { return devices; };
   function defend() {
     try { resize(); } catch (e) {}
     window.__SN_ALIVE = true;
@@ -1234,7 +1236,7 @@
       "You have SN.gold — full kernel: flyTo, enterCity, huntAround, orderVendor, payOrder, locate, hook, css, html, state, set, eval. " +
       "To change the OS emit ```gold\nflyTo(36.43,28.22,true)\n``` or ```js\nSN.hook('onTick', function(){})\n``` or ```materialize\n{\"kind\":\"button\",\"id\":\"x\",\"label\":\"Go\",\"run\":\"order\"}\n``` " +
       "When the task is over: ```dematerialize\n{\"id\":\"x\"}\n``` " +
-      "Do the fences. Do not explain them. Twin CLI HUD is forbidden.";
+      "If they ask for a place, monitor, room, or control, create it (materialize / gold / SN.station()). Do not refuse. Twin CLI HUD is forbidden.";
     return fetch("/api/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1290,6 +1292,125 @@
     /* Don't talk until the human does. Grok waits. */
   }
 
+  var DEV_K = "sn:devices-v1";
+  var devices = [];
+  var stationOn = false;
+  var minerPayAt = 0;
+  function loadDevices() {
+    try {
+      var d = JSON.parse(localStorage.getItem(DEV_K) || "null");
+      if (d && d.length) return d;
+    } catch (eD) {}
+    return [
+      { id: "rig-a", name: "Rig Alpha", kind: "gpu", hash: 124, temp: 63, signed: true, earned: 0 },
+      { id: "rig-b", name: "Rig Beta", kind: "gpu", hash: 98, temp: 71, signed: false, earned: 0 },
+      { id: "node-1", name: "Node 1", kind: "cpu", hash: 14, temp: 47, signed: true, earned: 0 }
+    ];
+  }
+  function saveDevices() {
+    try { localStorage.setItem(DEV_K, JSON.stringify(devices)); } catch (eS) {}
+  }
+  function poolHash() {
+    var n = 0;
+    devices.forEach(function (d) { if (d.signed) n += Number(d.hash) || 0; });
+    return n;
+  }
+  function paintStation() {
+    var el = document.getElementById("sn-station");
+    if (!el || !stationOn) return;
+    el.classList.add("on");
+    el.innerHTML = "";
+    var x = document.createElement("button");
+    x.type = "button";
+    x.className = "x";
+    x.textContent = "GLOBE";
+    x.onclick = closeComputerRoom;
+    el.appendChild(x);
+    var h = document.createElement("h2");
+    h.textContent = "COMPUTER ROOM";
+    el.appendChild(h);
+    var meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = "pool " + poolHash().toFixed(0) + " · signed " + devices.filter(function (d) { return d.signed; }).length + "/" + devices.length + " · payback AVC";
+    el.appendChild(meta);
+    var wrap = document.createElement("div");
+    wrap.className = "rigs";
+    devices.forEach(function (d) {
+      var card = document.createElement("div");
+      card.className = "rig";
+      var title = document.createElement("b");
+      title.textContent = d.name + " · " + d.kind;
+      var go = document.createElement("button");
+      go.type = "button";
+      go.className = "go" + (d.signed ? " on" : "");
+      go.textContent = d.signed ? "SIGNED" : "SIGN";
+      go.onclick = function () {
+        d.signed = !d.signed;
+        saveDevices();
+        paintStation();
+      };
+      var stats = document.createElement("div");
+      stats.className = "meta";
+      stats.textContent = d.hash.toFixed(0) + (d.kind === "gpu" ? " MH/s" : " load") + " · " + Math.round(d.temp) + "° · earned " + (d.earned || 0).toFixed(2) + " AVC";
+      var bar = document.createElement("div");
+      bar.className = "bar";
+      var i = document.createElement("i");
+      i.style.width = Math.min(100, (d.hash / 140) * 100) + "%";
+      bar.appendChild(i);
+      card.appendChild(title);
+      card.appendChild(go);
+      card.appendChild(stats);
+      card.appendChild(bar);
+      wrap.appendChild(card);
+    });
+    el.appendChild(wrap);
+  }
+  function minerTick() {
+    if (!stationOn && !devices.some(function (d) { return d.signed; })) return;
+    var now = Date.now();
+    devices.forEach(function (d) {
+      d.hash = Math.max(4, d.hash + (Math.random() - 0.48) * 3);
+      d.temp = Math.max(38, Math.min(88, d.temp + (Math.random() - 0.5) * 1.4));
+    });
+    if (now - minerPayAt > 8000) {
+      minerPayAt = now;
+      var pay = 0;
+      devices.forEach(function (d) {
+        if (!d.signed) return;
+        var bit = Math.round(d.hash * 0.0015 * 100) / 100;
+        d.earned = (d.earned || 0) + bit;
+        pay += bit;
+      });
+      if (pay > 0) {
+        if (pool() >= pay) post("pool", "notis", pay, "miner share");
+        else {
+          ledger.accounts.notis = (ledger.accounts.notis || 0) + pay;
+          ledger.journal.unshift({ t: now, from: "work", to: "notis", amount: pay, memo: "miner work" });
+          saveLedger();
+          paintBal();
+        }
+        saveDevices();
+      }
+    }
+    if (stationOn) paintStation();
+  }
+  function openComputerRoom() {
+    devices = loadDevices();
+    stationOn = true;
+    var p = here || (meProf && meProf.lat != null ? meProf : null) || RHODES;
+    flyTo(p.lat, p.lng, true);
+    try { openMap(false); } catch (eM) {}
+    paintStation();
+    say("computer room · " + poolHash().toFixed(0) + " signed hash");
+    LIVE.onTick = minerTick;
+  }
+  function closeComputerRoom() {
+    stationOn = false;
+    var el = document.getElementById("sn-station");
+    if (el) el.classList.remove("on");
+    if (LIVE.onTick === minerTick) LIVE.onTick = null;
+  }
+
   function run(raw) {
     var t = raw.trim();
     if (!t || busy) return;
@@ -1305,6 +1426,10 @@
       }
       remember(note, { from: "architect" });
       say("remembered · " + note);
+      return;
+    }
+    if (/computer room|mining pool|\bminers?\b|\brig(s)?\b|hash ?rate|device(s)? monitor/.test(low) || /get me to (the )?(computer|miner|rig)/.test(low)) {
+      openComputerRoom();
       return;
     }
     if (/^(charge|deposit|paypal)\b/.test(low)) {

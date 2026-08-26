@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260826154500-paypal" />
+<meta name="astranov-build" content="20260826155000-station" />
 <meta name="theme-color" content="#050608" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta name="astranov-law" content="grid-os-latest-no-ghost" />
@@ -75,11 +75,23 @@
   #sn-live{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px;min-height:0}
   #sn-live:empty{display:none;margin:0}
   #sn-live button{height:36px;padding:0 14px;border:1px solid rgba(126,233,255,.45);border-radius:2px;background:rgba(4,16,28,.55);color:#7ee9ff;font:600 12px "Space Grotesk",ui-sans-serif;letter-spacing:.08em;animation:mat .28s cubic-bezier(.2,.8,.2,1)}
+  #sn-station{position:fixed;inset:0;z-index:28;display:none;background:radial-gradient(ellipse at 50% 30%,rgba(8,28,48,.92),rgba(2,4,10,.96));color:#d8f6ff;padding:72px 14px 120px;overflow:auto}
+  #sn-station.on{display:block;animation:mat .35s cubic-bezier(.2,.8,.2,1)}
+  #sn-station h2{margin:0 0 8px;font:700 16px "Space Grotesk",ui-sans-serif;letter-spacing:.18em;color:#7ee9ff}
+  #sn-station .meta{font:500 11px "JetBrains Mono",ui-monospace,monospace;color:#6a8aa8;margin:0 0 14px}
+  #sn-station .rigs{display:flex;flex-direction:column;gap:8px;max-width:420px;margin:0 auto}
+  #sn-station .rig{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:10px 12px;border:1px solid rgba(126,233,255,.28);background:rgba(4,16,28,.7);border-radius:4px;box-shadow:0 0 18px rgba(80,220,255,.12)}
+  #sn-station .rig b{font:600 13px "Space Grotesk",ui-sans-serif}
+  #sn-station .rig .go{height:28px;padding:0 12px;border-radius:999px;border:1px solid rgba(126,233,255,.5);background:transparent;color:#7ee9ff;font:600 10px "Space Grotesk",ui-sans-serif;letter-spacing:.08em}
+  #sn-station .rig .go.on{background:rgba(126,233,255,.18);box-shadow:0 0 14px rgba(126,233,255,.45)}
+  #sn-station .bar{height:4px;background:rgba(126,233,255,.12);grid-column:1/-1}
+  #sn-station .bar i{display:block;height:100%;background:#7ee9ff;box-shadow:0 0 8px #7ee9ff;width:40%}
+  #sn-station .x{position:absolute;top:18px;right:16px;border:0;background:0;color:#7ee9ff;font:600 12px "Space Grotesk",ui-sans-serif}
   #sn-code-rain{position:fixed;inset:0;z-index:8;pointer-events:none;overflow:hidden}
 </style>
 <script>
 (function () {
-  var BUILD = "20260826154500-paypal";
+  var BUILD = "20260826155000-station";
   var KEY = "sn-heal-" + BUILD;
   var DEAD = /os-bootloader|guardian|chrome-fix|chrome-rib|chrome-radar|chrome-defend|chrome-helper|chrome-place-earth|chrome-mobile-alive|hud-law|relic-defend|mobile-life|phone-os|owner-softload|simple-ux|chrome-shell|chrome-phone/i;
   var JS = [
@@ -199,30 +211,18 @@
       })
       .catch(function () { note("ai-down"); });
   }
-  function wakeAi() {
-    var el = document.getElementById("line");
-    if (el && el.textContent && el.textContent !== "…" && el.textContent !== "JS" && el.textContent !== "AI") return;
-    fetch("/api/ai", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "One short sentence: Grok on Astranov SpaceNet is live.", gift: true, allow_paid: true, force_paid: true, fast: true })
-    })
-      .then(function (r) { return r.json(); })
-      .then(function (j) {
-        var t = String((j && (j.text || j.response)) || "").trim();
-        if (t) line(t);
-        else if (!el || !el.textContent) line("AI");
-      })
-      .catch(function () { line("AI"); });
-  }
+  function wakeAi() { /* wait for the human */ }
   function boot() {
-    var had = navigator.serviceWorker && navigator.serviceWorker.controller;
+    wipe();
     try {
-      if (had && sessionStorage.getItem(KEY) !== "1") {
+      var seen = localStorage.getItem("sn:seen-build");
+      if (seen !== BUILD && sessionStorage.getItem(KEY) !== "1") {
+        localStorage.setItem("sn:seen-build", BUILD);
         sessionStorage.setItem(KEY, "1");
-        location.replace(location.pathname + "?h=" + Date.now());
+        location.replace(location.pathname + "?h=" + encodeURIComponent(BUILD) + "&t=" + Date.now());
         return;
       }
+      localStorage.setItem("sn:seen-build", BUILD);
     } catch (e) {}
     try {
       var probe = document.createElement("canvas");
@@ -285,6 +285,7 @@
 <body>
 <canvas id="g"></canvas>
 <div id="city"></div>
+<div id="sn-station"></div>
 <div id="top"><div id="island">
   <span id="heal"></span>
   <b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b>
@@ -390,7 +391,7 @@
   else setTimeout(fallback, 900);
 })();
 </script>
-<script src="/js/spacenet/grid-os.js?v=20260826154500-paypal"></script>
+<script src="/js/spacenet/grid-os.js?v=20260826155000-station"></script>
 <script src="https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@89c27dcb598c6989e863c653be894fb6dd28bf82/js/spacenet/grid-os.js"></script>
 </body>
 </html>
