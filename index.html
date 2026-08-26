@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260826153000-gold" />
+<meta name="astranov-build" content="20260826154000-people" />
 <meta name="theme-color" content="#050608" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta name="astranov-law" content="grid-os-latest-no-ghost" />
@@ -59,6 +59,18 @@
   @keyframes mat{from{opacity:0;filter:blur(8px);transform:translateY(10px) scale(.96)}to{opacity:1;filter:none;transform:none}}
   @keyframes blink{50%{opacity:0}}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  #btn-google{min-width:120px;min-height:32px;display:flex;align-items:center}
+  #btn-google.gone{display:none!important}
+  #me-pill,#me-pill.pill{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px 0 3px;border-radius:999px;border:1px solid rgba(126,233,255,.4);background:rgba(4,12,24,.75);color:#e8fbff;font:600 11px "Space Grotesk",ui-sans-serif;letter-spacing:.06em;box-shadow:0 0 14px rgba(80,220,255,.28)}
+  #me-pill.gone{display:none!important}
+  #me-pill img,.pill img{width:26px;height:26px;border-radius:99px;object-fit:cover}
+  #me-pill .ph,.pill .ph{width:26px;height:26px;border-radius:99px;display:flex;align-items:center;justify-content:center;background:#0a2434;color:#7ee9ff;font:700 11px "Space Grotesk",ui-sans-serif}
+  .pill{display:flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 4px;border-radius:999px;border:1px solid rgba(126,233,255,.4);background:rgba(4,12,24,.88);color:#e8fbff;font:600 11px "Space Grotesk",ui-sans-serif;box-shadow:0 0 16px rgba(80,220,255,.3);white-space:nowrap}
+  .pill.on,.pill.live{box-shadow:0 0 22px rgba(126,233,255,.7);border-color:#7ee9ff}
+  .pill.role-vendor{border-color:rgba(255,229,102,.55);box-shadow:0 0 16px rgba(255,229,102,.28)}
+  .pill.role-driver{border-color:rgba(200,212,160,.55);box-shadow:0 0 16px rgba(200,212,160,.3)}
+  .sn-pill-icon{background:transparent!important;border:0!important}
   #sn-live{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px;min-height:0}
   #sn-live:empty{display:none;margin:0}
   #sn-live button{height:36px;padding:0 14px;border:1px solid rgba(126,233,255,.45);border-radius:2px;background:rgba(4,16,28,.55);color:#7ee9ff;font:600 12px "Space Grotesk",ui-sans-serif;letter-spacing:.08em;animation:mat .28s cubic-bezier(.2,.8,.2,1)}
@@ -66,7 +78,7 @@
 </style>
 <script>
 (function () {
-  var BUILD = "20260826153000-gold";
+  var BUILD = "20260826154000-people";
   var KEY = "sn-heal-" + BUILD;
   var DEAD = /os-bootloader|guardian|chrome-fix|chrome-rib|chrome-radar|chrome-defend|chrome-helper|chrome-place-earth|chrome-mobile-alive|hud-law|relic-defend|mobile-life|phone-os|owner-softload|simple-ux|chrome-shell|chrome-phone/i;
   var JS = [
@@ -276,6 +288,8 @@
   <span id="heal"></span>
   <b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b>
   <span id="bal">0</span>
+  <div id="btn-google" title="Google"></div>
+  <button id="me-pill" class="pill gone" type="button"></button>
   <button id="me" class="gone" type="button">ME</button>
   <button id="mapbtn" class="gone" type="button">MAP</button>
 </div></div>
@@ -374,7 +388,7 @@
   else setTimeout(fallback, 900);
 })();
 </script>
-<script src="/js/spacenet/grid-os.js?v=20260826153000-gold"></script>
+<script src="/js/spacenet/grid-os.js?v=20260826154000-people"></script>
 <script src="https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@89c27dcb598c6989e863c653be894fb6dd28bf82/js/spacenet/grid-os.js"></script>
 </body>
 </html>

@@ -249,6 +249,8 @@
     paintBal();
   }
   function menuOf(v) {
+    if (v && v.menu && v.menu.length) return v.menu;
+    if (meProf && meProf.role === "vendor" && meProf.menu && meProf.menu.length && v && (v.id === meProf.id || v.mine)) return meProf.menu;
     var key = (v && v.product) || "food";
     return MENUS[key] || MENUS.food;
   }
@@ -723,6 +725,7 @@
     }
   };
   window.SN.gold = window.SN;
+  window.SN.me = function () { return meProf; };
   function defend() {
     try { resize(); } catch (e) {}
     window.__SN_ALIVE = true;
@@ -814,36 +817,65 @@
   function syncMap() {
     if (!leaflet || !mapOn || !window.L) return;
     leaflet.eachLayer(function (l) {
-      if (l instanceof L.CircleMarker || l instanceof L.Polyline) leaflet.removeLayer(l);
+      if (l instanceof L.CircleMarker || l instanceof L.Polyline || (window.L && l instanceof L.Marker)) leaflet.removeLayer(l);
     });
     var pts = [];
-    function mark(lat, lng, color, r, label, extra) {
-      var m = L.circleMarker([lat, lng], {
-        radius: r,
-        color: color,
-        fillColor: color,
-        fillOpacity: 0.95,
-        weight: 2,
-      }).addTo(leaflet);
-      if (label) m.bindTooltip(label, { permanent: true, direction: "right", className: "sn-tip", offset: [8, 0] });
-      if (extra) extra(m);
-      pts.push([lat, lng]);
+    function pillMark(person, onClick) {
+      if (!person || person.lat == null) return;
+      var name = String(person.name || person.role || "?").slice(0, 16);
+      var photo = person.photo || person.avatar || "";
+      var role = person.role || "user";
+      var live = person.available !== false ? " live" : "";
+      var img = photo
+        ? '<img src="' + photo.replace(/"/g, "") + '" alt="">'
+        : '<span class="ph">' + name.charAt(0).toUpperCase() + "</span>";
+      var html = '<div class="pill role-' + role + live + '">' + img + "<b>" + name + "</b></div>";
+      var icon = L.divIcon({ className: "sn-pill-icon", html: html, iconSize: [148, 36], iconAnchor: [18, 18] });
+      var m = L.marker([person.lat, person.lng], { icon: icon }).addTo(leaflet);
+      if (onClick) m.on("click", onClick);
+      pts.push([person.lat, person.lng]);
       return m;
     }
-    if (here) mark(here.lat, here.lng, "#e8fbff", 8, "YOU");
+    if (here) {
+      pillMark({
+        name: (meProf && meProf.name) || "You",
+        photo: meProf && (meProf.photo || meProf.avatar),
+        role: (meProf && meProf.role) || "user",
+        lat: here.lat,
+        lng: here.lng,
+        available: true,
+      }, function () { openSelf(); });
+    }
     vendors.forEach(function (v) {
-      mark(v.lat, v.lng, v.id === selected ? "#7ee9ff" : "#3aa7c9", v.id === selected ? 9 : 6, v.name, function (m) {
-        m.on("click", function () {
-          selected = v.id;
-          flyTo(v.lat, v.lng, true);
-          renderList();
-          syncMap();
-          talk(v.name + " · " + v.km.toFixed(1) + " km");
+      pillMark({
+        name: v.name,
+        role: "vendor",
+        lat: v.lat,
+        lng: v.lng,
+        photo: v.photo,
+        available: true,
+      }, function () {
+        selected = v.id;
+        flyTo(v.lat, v.lng, true);
+        renderList();
+        renderMenu();
+        materialize({
+          kind: "panel",
+          id: "card-" + v.id,
+          title: v.name,
+          body: menuOf(v).map(function (r) { return r[0] + " · €" + r[1]; }).join("  ·  "),
         });
+        syncMap();
       });
     });
     drivers.forEach(function (d) {
-      mark(d.lat, d.lng, "#c8d4a0", 6, d.name || "driver");
+      pillMark({
+        name: d.name || "Driver",
+        role: "driver",
+        lat: d.lat,
+        lng: d.lng,
+        available: true,
+      }, function () { hailVendor({ lat: d.lat, lng: d.lng, name: d.name, phone: d.phone }); });
     });
     if (liveOrder && liveOrder.route && liveOrder.route.length) {
       L.polyline(liveOrder.route.map(function (p) { return [p.lat, p.lng]; }), { color: "#7ee9ff", weight: 3, opacity: 0.9 }).addTo(leaflet);
@@ -1533,8 +1565,172 @@
   });
   paintGo();
 
+  var ME_K = "sn:me-v1";
+  var meProf = null;
+  try { meProf = JSON.parse(localStorage.getItem(ME_K) || "null"); } catch (eM) { meProf = null; }
+  function saveMe() {
+    try { if (meProf) localStorage.setItem(ME_K, JSON.stringify(meProf)); } catch (eS) {}
+  }
+  function paintMePill() {
+    var chip = document.getElementById("me-pill");
+    if (!chip || !meProf) return;
+    chip.classList.remove("gone");
+    var photo = meProf.photo || meProf.avatar || "";
+    var name = (meProf.name || "You").slice(0, 14);
+    chip.innerHTML = (photo ? '<img src="' + photo.replace(/"/g, "") + '" alt="">' : '<span class="ph">' + name.charAt(0) + "</span>") + "<b>" + name + "</b>";
+    chip.onclick = openSelf;
+  }
+  function openSelf() {
+    if (!meProf) {
+      say("Google · then pick User, Vendor, or Driver");
+      return;
+    }
+    if (here) { meProf.lat = here.lat; meProf.lng = here.lng; saveMe(); }
+    materialize({
+      kind: "panel",
+      id: "self",
+      title: (meProf.name || "You") + " · " + (meProf.role || "guest"),
+      body: (meProf.available === false ? "away" : "live") + (meProf.menu && meProf.menu.length ? " · " + meProf.menu.length + " plates" : ""),
+    });
+    dematerialize("role-user");
+    dematerialize("role-vendor");
+    dematerialize("role-driver");
+    materialize({ kind: "button", id: "avail", label: meProf.available === false ? "Go live" : "Go away", js: "SN.eval('meProf.available = !meProf.available; saveMe();')" });
+    if (meProf.role === "vendor") {
+      materialize({ kind: "button", id: "edit-menu", label: "Menu", js: "SN.eval('editMenu()')" });
+    }
+    materialize({ kind: "button", id: "pin-here", label: "Pin here", js: "SN.eval('if(here){meProf.lat=here.lat;meProf.lng=here.lng;saveMe();openMap(true)}')" });
+  }
+  function offerRoles() {
+    ["user", "vendor", "driver"].forEach(function (r) {
+      materialize({
+        kind: "button",
+        id: "role-" + r,
+        label: r[0].toUpperCase() + r.slice(1),
+        js: "SN.eval('pickRole(\"" + r + "\")')",
+      });
+    });
+  }
+  function pickRole(r) {
+    if (!meProf) meProf = { id: "me", name: "You", role: r, available: true, menu: [] };
+    meProf.role = r;
+    if (r === "vendor" && (!meProf.menu || !meProf.menu.length)) meProf.menu = MENUS.pizza.slice();
+    saveMe();
+    ["user", "vendor", "driver"].forEach(function (x) { dematerialize("role-" + x); });
+    paintMePill();
+    if (here) enterCity(here.lat, here.lng, 15);
+    if (r === "vendor") renderOwnVendor();
+    say(r);
+  }
+  function renderOwnVendor() {
+    if (!meProf || meProf.role !== "vendor") return;
+    var v = {
+      id: meProf.id || "me",
+      name: meProf.name || "Kitchen",
+      lat: (meProf.lat != null ? meProf.lat : (here && here.lat) || RHODES.lat),
+      lng: (meProf.lng != null ? meProf.lng : (here && here.lng) || RHODES.lng),
+      product: "food",
+      price: (meProf.menu && meProf.menu[0] && meProf.menu[0][1]) || 12,
+      km: 0,
+      menu: meProf.menu,
+      photo: meProf.photo,
+      mine: true,
+    };
+    vendors = [v].concat(vendors.filter(function (x) { return x.id !== v.id; }));
+    selected = v.id;
+    renderList();
+    renderMenu();
+  }
+  function editMenu() {
+    if (!meProf) return;
+    var rows = (meProf.menu || []).map(function (r) { return r[0] + " €" + r[1]; }).join("\n");
+    var next = window.prompt("Menu · one plate per line: Name €price", rows || "Margherita €12");
+    if (next == null) return;
+    meProf.menu = next.split(/\n+/).map(function (line) {
+      var m = line.match(/(.+?)\s*[€eE]?\s*(\d+(?:\.\d+)?)/);
+      return m ? [m[1].trim(), Number(m[2])] : null;
+    }).filter(Boolean);
+    saveMe();
+    renderOwnVendor();
+  }
+  function adoptAuthUser(u) {
+    if (!u) return;
+    var meta = u.user_metadata || {};
+    meProf = meProf || { id: u.id || "me", available: true, menu: [], role: "" };
+    meProf.id = u.id || meProf.id;
+    meProf.email = u.email || meProf.email;
+    meProf.name = meta.full_name || meta.name || (u.email && u.email.split("@")[0]) || meProf.name || "You";
+    meProf.photo = meta.avatar_url || meta.picture || meProf.photo;
+    meProf.avatar = meProf.photo;
+    if (here) { meProf.lat = here.lat; meProf.lng = here.lng; }
+    saveMe();
+    paintMePill();
+    var g = document.getElementById("btn-google");
+    if (g) g.classList.add("gone");
+    if (!meProf.role) offerRoles();
+  }
+  function loadAuth() {
+    function paintGoogle() {
+      var mount = document.getElementById("btn-google");
+      var u = window.SNAuth && SNAuth.user;
+      if (u) { adoptAuthUser(u); return; }
+      if (!mount) return;
+      mount.classList.remove("gone");
+      if (window.SNAuth && SNAuth.renderGoogleButton) {
+        try { SNAuth.renderGoogleButton(mount, { theme: "filled_black", size: "medium", text: "signin_with", shape: "pill" }); }
+        catch (eR) {
+          mount.innerHTML = "";
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "pill live";
+          b.textContent = "Google";
+          b.onclick = function () { SNAuth.signInGoogle && SNAuth.signInGoogle(); };
+          mount.appendChild(b);
+        }
+      } else if (window.SNAuth && SNAuth.signInGoogle) {
+        mount.innerHTML = "";
+        var b2 = document.createElement("button");
+        b2.type = "button";
+        b2.className = "pill live";
+        b2.textContent = "Google";
+        b2.onclick = function () { SNAuth.signInGoogle(); };
+        mount.appendChild(b2);
+      }
+    }
+    function ready() {
+      try { if (window.SNAuth && SNAuth.init) SNAuth.init(); } catch (eI) {}
+      paintGoogle();
+      var n = 0;
+      var iv = setInterval(function () {
+        n += 1;
+        if ((window.SNAuth && SNAuth.user) || n > 40) {
+          clearInterval(iv);
+          paintGoogle();
+        }
+      }, 400);
+    }
+    if (window.SNAuth) { ready(); return; }
+    var s = document.createElement("script");
+    s.src = "/js/spacenet/auth.js?v=20260826154000-people";
+    s.onload = ready;
+    s.onerror = function () {
+      var mount = document.getElementById("btn-google");
+      if (mount) {
+        mount.innerHTML = "";
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "pill live";
+        b.textContent = "Google";
+        b.onclick = function () { say("Google sign-in is down"); };
+        mount.appendChild(b);
+      }
+    };
+    document.head.appendChild(s);
+  }
+
   try { paintBal(); } catch (eB) {}
   try {
-    locate().then(function (p) { here = p || RHODES; }).catch(function () { here = RHODES; });
+    locate().then(function (p) { here = p || RHODES; if (meProf && here) { meProf.lat = here.lat; meProf.lng = here.lng; saveMe(); } }).catch(function () { here = RHODES; });
   } catch (eL) { here = RHODES; }
+  try { loadAuth(); } catch (eA) {}
 })();
