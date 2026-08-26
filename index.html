@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260826174500-pwa" />
+<meta name="astranov-build" content="20260826181500-finish" />
 <meta name="theme-color" content="#050608" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta name="astranov-law" content="grid-os-latest-no-ghost" />
@@ -100,7 +100,7 @@
 </style>
 <script>
 (function () {
-  var BUILD = "20260826174500-pwa";
+  var BUILD = "20260826181500-finish";
   var KEY = "sn-heal-" + BUILD;
   var DEAD = /os-bootloader|guardian|chrome-fix|chrome-rib|chrome-radar|chrome-defend|chrome-helper|chrome-place-earth|chrome-mobile-alive|hud-law|relic-defend|mobile-life|phone-os|owner-softload|simple-ux|chrome-shell|chrome-phone/i;
   var JS = ["/js/spacenet/grid-os.js?v=" + BUILD];
@@ -110,7 +110,6 @@
   function dot(ok) { var el = document.getElementById("heal"); if (!el) return; el.className = ok ? "ok" : "bad"; }
   function line(t) { var el = document.getElementById("line"); if (!el || !t) return; el.textContent = t; el.classList.remove("gone"); }
   if (location.protocol === "http:" && location.hostname !== "localhost") { location.replace("https://" + location.host + location.pathname + location.search); return; }
-  /* PWA: real service worker — installable outside browser chrome */
   function registerSW() {
     if (!navigator.serviceWorker) return;
     navigator.serviceWorker.register("/sw.js", { scope: "/" }).then(function (reg) {
@@ -123,7 +122,6 @@
     });
   }
   registerSW();
-  /* Light cache hygiene only — never unregister the SW */
   function wipeCaches() {
     try {
       if (window.caches) caches.keys().then(function (ks) {
@@ -253,55 +251,6 @@
   </form>
   <div id="line">…</div>
 </div></div>
-<script>
-(function(){
-  function fallback(){
-    if (window.__SN_ALIVE) return;
-    var canvas = document.getElementById("g");
-    if (!canvas) return;
-    var ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    function size(){
-      var d = Math.min(2, window.devicePixelRatio||1);
-      canvas.width = Math.floor((innerWidth||320)*d);
-      canvas.height = Math.floor((innerHeight||480)*d);
-    }
-    size();
-    var yaw=0.55,pitch=0.12;
-    function ll(lat,lng){
-      var p=(90-lat)*Math.PI/180, t=(lng+180)*Math.PI/180;
-      return [-Math.sin(p)*Math.cos(t), Math.cos(p), Math.sin(p)*Math.sin(t)];
-    }
-    function pr(p){
-      var cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
-      var x1=p[0]*cy-p[2]*sy, z1=p[0]*sy+p[2]*cy, y2=p[1]*cp-z1*sp, z2=p[1]*sp+z1*cp;
-      var w=canvas.width,h=canvas.height,s=Math.min(w,h)*0.42/2.15,z=z2+2.15;
-      if(z<0.12) return null;
-      return [w*0.5+x1*s, h*0.48-y2*s, z2];
-    }
-    var segs=[];
-    for(var lng=-180;lng<180;lng+=20) for(var lat=-80;lat<80;lat+=10) segs.push([ll(lat,lng),ll(lat+10,lng)]);
-    for(var lat=-60;lat<=60;lat+=20) for(var lng=-180;lng<180;lng+=10) segs.push([ll(lat,lng),ll(lat,lng+10)]);
-    function tick(){
-      if (window.__SN_ALIVE && window.__SN_FULL) return;
-      ctx.fillStyle="#050608"; ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.strokeStyle="rgba(158,200,232,0.55)"; ctx.lineWidth=1; ctx.beginPath();
-      for(var i=0;i<segs.length;i++){
-        var a=pr(segs[i][0]), b=pr(segs[i][1]);
-        if(!a||!b) continue;
-        ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]);
-      }
-      ctx.stroke();
-      requestAnimationFrame(tick);
-    }
-    window.addEventListener("resize", size);
-    tick();
-    window.__SN_ALIVE = true;
-  }
-  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", function(){ setTimeout(fallback, 900); });
-  else setTimeout(fallback, 900);
-})();
-</script>
-<script src="/js/spacenet/grid-os.js?v=20260826174500-pwa"></script>
+<script src="/js/spacenet/grid-os.js?v=20260826181500-finish"></script>
 </body>
 </html>
