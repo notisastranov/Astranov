@@ -2,51 +2,14 @@
   "use strict";
   if (window.__SN_GRID_FINISH) return;
   window.__SN_GRID_FINISH = true;
-  var BUILD = "20260826171500-quiet";
+  var BUILD = "20260826173500-gold";
   var SRC = [
     "https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@1c4e3ea85800d7c74c5bf9a0d2a2d5a9b8e7a6e8/js/spacenet/grid-os.js"
   ];
-  var RHODES = { lat: 36.4341, lng: 28.2176, name: "Rhodes" };
-  var voiceOn = false;
-  var rec = null;
-  var wantVoice = false; /* never auto-loop — Android beeps on restart */
-  var lastSpoken = "";
 
-  function say(t) {
-    var el = document.getElementById("line");
-    if (el && t != null) {
-      el.textContent = String(t);
-      el.classList.remove("gone");
-    }
-    try {
-      if (window.SN && SN.say) SN.say(t);
-    } catch (e) {}
-  }
-
-  function speak(t) {
-    t = String(t || "").trim();
-    if (!t || t === lastSpoken) return;
-    if (t.length < 2) return;
-    lastSpoken = t;
-    try {
-      if (!window.speechSynthesis) return;
-      window.speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(t);
-      u.rate = 1.02;
-      u.pitch = 1;
-      window.speechSynthesis.speak(u);
-    } catch (e) {}
-  }
-
-  function muteBeeps() {
-    try {
-      if (navigator.vibrate) {
-        navigator.vibrate = function () {
-          return false;
-        };
-      }
-    } catch (e) {}
-  }
+  /* LAW: this file is a finish layer only.
+     Never overwrite SN.materialize / dematerialize / fly / run / gold / patch.
+     Kernel IS the developed Grok. No terminology training. */
 
   function ownerYes() {
     try {
@@ -65,6 +28,7 @@
   }
 
   function signInPill(mount) {
+    if (!mount) return;
     mount.innerHTML = "";
     var b = document.createElement("button");
     b.type = "button";
@@ -79,7 +43,7 @@
     mount.style.display = "flex";
   }
 
-  function stripJunk() {
+  function stripGhosts() {
     var inEl = document.getElementById("in");
     if (inEl) inEl.placeholder = "Talk to Astranov SpaceNet Grok";
     hide(document.getElementById("me"));
@@ -99,21 +63,14 @@
       if (window.SNAuth && SNAuth.user) hide(g);
       else {
         var txt = (g.textContent || "").replace(/\s+/g, " ").trim();
-        var bad =
-          /unavailable|google unavailable/i.test(txt) ||
-          txt === "Google" ||
-          !g.querySelector("button.pill");
-        if (bad) signInPill(g);
+        if (/unavailable|google unavailable/i.test(txt) || txt === "Google" || !g.querySelector("button.pill"))
+          signInPill(g);
       }
     }
     var line = document.getElementById("line");
     if (line) {
       var t = line.textContent || "";
-      if (
-        /don.?t have access to your accounts|grant location permission|private logins|I can only display/i.test(
-          t
-        )
-      ) {
+      if (/don.?t have access to your accounts|grant location permission|private logins|I can only display/i.test(t)) {
         line.textContent = "";
         line.classList.add("gone");
       }
@@ -127,85 +84,34 @@
 
   function centerGlobe() {
     try {
-      if (window.SN && SN.set) {
-        SN.set("yaw", 0.55);
-        SN.set("pitch", 0.12);
-        SN.set("dist", 2.15);
-      }
+      if (!window.SN || !SN.set) return;
+      SN.set("yaw", 0.55);
+      SN.set("pitch", 0.12);
+      SN.set("dist", 2.15);
     } catch (e) {}
   }
 
-  function liveSlot() {
-    var slot = document.getElementById("sn-live");
-    if (!slot) {
-      slot = document.createElement("div");
-      slot.id = "sn-live";
-      slot.setAttribute("data-slot", "controls");
-      var panel = document.getElementById("panel");
-      var form = document.getElementById("f");
-      if (panel && form) panel.insertBefore(slot, form);
-      else if (panel) panel.appendChild(slot);
-    }
-    return slot;
+  function muteNoise() {
+    try {
+      if (navigator.vibrate)
+        navigator.vibrate = function () {
+          return false;
+        };
+    } catch (e) {}
   }
 
-  function materialize(id, label, fn) {
-    var slot = liveSlot();
-    if (!slot) return null;
-    var b = document.getElementById(id);
-    if (!b) {
-      b = document.createElement("button");
-      b.id = id;
-      b.type = "button";
-      slot.appendChild(b);
-    }
-    b.textContent = label;
-    b.onclick = function (e) {
-      e.preventDefault();
-      fn();
-    };
-    return b;
-  }
-
-  function dematerialize(id) {
-    var b = document.getElementById(id);
-    if (b && b.parentNode) b.parentNode.removeChild(b);
-  }
-
+  /* one-shot mic only — never continuous restart (Android beeps) */
+  var rec = null;
+  var voiceOn = false;
   function paintMic(on) {
     var go = document.getElementById("go");
     if (!go) return;
     if (on) go.classList.add("listen");
     else go.classList.remove("listen");
   }
-
-  function runText(t) {
-    t = (t || "").trim();
-    if (!t) return;
-    var inEl = document.getElementById("in");
-    if (inEl) inEl.value = "";
-    try {
-      if (window.SN && typeof SN.run === "function") {
-        SN.run(t);
-        return;
-      }
-    } catch (e) {}
-    var form = document.getElementById("f");
-    if (form && inEl) {
-      inEl.value = t;
-      try {
-        form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
-      } catch (e2) {}
-    }
-  }
-
-  /* one-shot listen — NO continuous restart (that beeps on Android) */
-  function startListenOnce() {
+  function listenOnce() {
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      say("voice unavailable — type below");
-      return;
-    }
+    if (!SR) return;
     if (rec) {
       try {
         rec.onend = null;
@@ -217,23 +123,27 @@
     rec.lang = navigator.language || "en-US";
     rec.interimResults = true;
     rec.continuous = false;
-    rec.maxAlternatives = 1;
     voiceOn = true;
     paintMic(true);
     rec.onresult = function (ev) {
       var i,
         t = "",
-        final = false;
+        fin = false;
       for (i = ev.resultIndex; i < ev.results.length; i++) {
         t += ev.results[i][0].transcript;
-        if (ev.results[i].isFinal) final = true;
+        if (ev.results[i].isFinal) fin = true;
       }
       var inEl = document.getElementById("in");
       if (inEl) inEl.value = t;
-      if (final && t.trim()) {
+      if (fin && t.trim()) {
         voiceOn = false;
         paintMic(false);
-        runText(t);
+        if (window.SN && typeof SN.run === "function") SN.run(t.trim());
+        else if (inEl) {
+          inEl.value = t.trim();
+          var f = document.getElementById("f");
+          if (f) f.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+        }
       }
     };
     rec.onerror = function () {
@@ -243,87 +153,18 @@
     rec.onend = function () {
       voiceOn = false;
       paintMic(false);
-      /* deliberate: no auto-restart */
     };
     try {
       rec.start();
-    } catch (e3) {
+    } catch (e2) {
       voiceOn = false;
       paintMic(false);
     }
   }
-
-  function stopVoice() {
-    wantVoice = false;
-    voiceOn = false;
-    paintMic(false);
-    if (rec) {
-      try {
-        rec.onend = null;
-        rec.stop();
-      } catch (e) {}
-      rec = null;
-    }
-  }
-
-  function doLocate() {
-    if (!navigator.geolocation) {
-      try {
-        if (window.SN) {
-          if (SN.set) SN.set("here", RHODES);
-          if (SN.flyTo) SN.flyTo(RHODES.lat, RHODES.lng);
-        }
-      } catch (e) {}
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      function (pos) {
-        var p = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          name: "You"
-        };
-        try {
-          if (window.SN) {
-            if (SN.set) SN.set("here", p);
-            if (SN.flyTo) SN.flyTo(p.lat, p.lng);
-            if (SN.locate) SN.locate();
-          }
-        } catch (e) {}
-      },
-      function () {
-        try {
-          if (window.SN) {
-            if (SN.set) SN.set("here", RHODES);
-            if (SN.flyTo) SN.flyTo(RHODES.lat, RHODES.lng);
-          }
-        } catch (e2) {}
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 }
-    );
-  }
-
-  function doHunt(what) {
-    what = what || "pizza";
-    try {
-      if (window.SN && SN.hunt) {
-        SN.hunt(what);
-        return;
-      }
-      if (window.SN && SN.eval) {
-        SN.eval(
-          "huntAround('" +
-            String(what).replace(/'/g, "") +
-            "', here || {lat:36.4341,lng:28.2176})"
-        );
-      }
-    } catch (e) {}
-  }
-
-  function armGo() {
+  function armMic() {
     var go = document.getElementById("go");
-    if (!go || go.__snVoice) return;
-    go.__snVoice = true;
+    if (!go || go.__snGoldMic) return;
+    go.__snGoldMic = true;
     go.addEventListener(
       "click",
       function (ev) {
@@ -332,108 +173,54 @@
         ev.preventDefault();
         ev.stopPropagation();
         if (voiceOn) {
-          stopVoice();
-        } else {
-          startListenOnce();
-        }
+          try {
+            if (rec) rec.stop();
+          } catch (e) {}
+          voiceOn = false;
+          paintMic(false);
+        } else listenOnce();
       },
       true
     );
   }
 
-  function watchLineSpeak() {
-    var line = document.getElementById("line");
-    if (!line || line.__snSpeakWatch) return;
-    line.__snSpeakWatch = true;
-    var last = line.textContent || "";
-    setInterval(function () {
-      var t = (line.textContent || "").trim();
-      if (!t || t === last || t === "…" || t === "...") return;
-      if (/^listening$|^voice off$|^Rhodes$/i.test(t)) {
-        last = t;
-        return;
-      }
-      last = t;
-      speak(t);
-    }, 700);
-  }
-
-  function bootTalk() {
-    if (window.__SN_BOOTED_TALK) return;
-    window.__SN_BOOTED_TALK = true;
-    muteBeeps();
-    var msg =
-      "Astranov SpaceNet Grok online. Sign in when you want. Spin the globe. Tell me what to do.";
-    say(msg);
-    speak(msg);
-    /* NO auto continuous mic — that beeps on Android Chrome */
-    setTimeout(doLocate, 900);
-  }
-
-  function arm() {
-    materialize("sn-btn-locate", "LOCATE", doLocate);
-    materialize("sn-btn-pizza", "PIZZA", function () {
-      doHunt("pizza");
-    });
-    armGo();
-    centerGlobe();
-    watchLineSpeak();
-
-    if (!window.SN) window.SN = {};
-    window.SN.materialize = materialize;
-    window.SN.dematerialize = dematerialize;
-    window.SN.doLocate = doLocate;
-    window.SN.doHunt = doHunt;
-    window.SN.startVoice = startListenOnce;
-    window.SN.stopVoice = stopVoice;
-
-    var form = document.getElementById("f");
-    if (form && !form.__snAct) {
-      form.__snAct = true;
-      form.addEventListener(
-        "submit",
-        function (ev) {
-          var inEl = document.getElementById("in");
-          var raw = ((inEl && inEl.value) || "").trim();
-          var q = raw.toLowerCase();
-          if (!q) return;
-          if (/^(locate|me|here|gps)$/.test(q)) {
-            ev.preventDefault();
-            ev.stopPropagation();
-            if (inEl) inEl.value = "";
-            doLocate();
-            return false;
-          }
-          if (/^pizza$/.test(q) || /^order pizza$/.test(q)) {
-            ev.preventDefault();
-            ev.stopPropagation();
-            if (inEl) inEl.value = "";
-            doHunt("pizza");
-            return false;
-          }
-          setTimeout(stripJunk, 600);
-          setTimeout(stripJunk, 1600);
-        },
-        true
-      );
-    }
+  function armKernelControls() {
+    /* use KERNEL materialize only — never replace SN.materialize */
+    if (!window.SN || typeof SN.materialize !== "function") return;
+    if (window.__SN_GOLD_ARMED) return;
+    window.__SN_GOLD_ARMED = true;
+    try {
+      SN.materialize({
+        id: "locate",
+        kind: "button",
+        label: "LOCATE",
+        run: "locate"
+      });
+      SN.materialize({
+        id: "fly-rhodes",
+        kind: "button",
+        label: "RHODES",
+        run: "go Rhodes Greece"
+      });
+    } catch (e) {}
   }
 
   function afterKernel() {
     window.__SN_ALIVE = true;
     window.__SN_FULL = true;
-    muteBeeps();
-    stripJunk();
-    arm();
+    muteNoise();
+    stripGhosts();
     centerGlobe();
-    setTimeout(centerGlobe, 400);
-    setTimeout(centerGlobe, 1200);
-    setTimeout(bootTalk, 900);
+    armMic();
+    armKernelControls();
+    setTimeout(centerGlobe, 500);
+    setTimeout(centerGlobe, 1500);
+    setTimeout(armKernelControls, 800);
     setInterval(function () {
-      stripJunk();
-      arm();
+      stripGhosts();
       centerGlobe();
-    }, 2500);
+      armMic();
+    }, 3000);
   }
 
   function load(i) {
@@ -452,11 +239,11 @@
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
-      stripJunk();
+      stripGhosts();
       load(0);
     });
   } else {
-    stripJunk();
+    stripGhosts();
     load(0);
   }
 })();
