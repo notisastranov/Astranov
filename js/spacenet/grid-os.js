@@ -173,15 +173,6 @@
   }
   function talk(t) {
     say(t);
-    try {
-      if (!t || !window.speechSynthesis) return;
-      window.speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(String(t).replace(/·/g, ". "));
-      u.rate = 1.02;
-      u.pitch = 0.95;
-      u.lang = (navigator.language || "en-US");
-      window.speechSynthesis.speak(u);
-    } catch (eT) {}
   }
 
   function to(ms) {
@@ -909,15 +900,11 @@
       selected = vendors[0] ? vendors[0].id : null;
       if (vendors[0] && !item) item = menuOf(vendors[0])[0];
       renderList();
-      var focus = vendors[0] || city;
-      enterCity(focus.lat, focus.lng, 15);
-      var names = vendors.slice(0, 3).map(function (v) { return v.name; }).join(", ");
       if (!quiet) {
-        talk(
-          vendors.length + " kitchens around you. " +
-          (names ? names + ". " : "") +
-          drivers.length + " drivers live. You are the guest pin. Order when ready."
-        );
+        var focus = vendors[0] || city;
+        enterCity(focus.lat, focus.lng, 15);
+        var names = vendors.slice(0, 3).map(function (v) { return v.name; }).join(", ");
+        say((vendors.length || 0) + (names ? " · " + names : ""));
       }
     });
   }
@@ -1069,22 +1056,22 @@
   }
 
   function grok(msg) {
-    var law =
-      mindContext() +
-      "\nTOOLS: create with ```materialize\n{\"kind\":\"pin|button|panel|route|code|note\",\"id\":\"x\",\"label\":\"...\",\"lat\":36.43,\"lng\":28.22,\"js\":\"...\"}\n``` " +
-      "remove with ```dematerialize\n{\"id\":\"x\"}\n``` patch with ```js\nSN.remember('...')\nSN.materialize({...})\n``` " +
-      "If the architect teaches you something lasting, SN.remember it. Speak as the OS, not as a chatbot.";
+    var grokSys =
+      "You are Grok, the same Grok from xAI / grok.com. You live inside Astranov SpaceNet as its mind. " +
+      "Talk like Grok: sharp, funny, useful, human. Answer what they actually said. " +
+      "Do not announce kitchens, roads, drivers, maps, or OS tools unless they asked for food, a place, a map, or a delivery. " +
+      "Do not monologue. Do not sound like a scripted HUD.";
     return fetch("/api/ai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: law + "\n\n" + msg,
-        history: historyChat.slice(-8),
+        message: msg,
+        system: grokSys,
+        history: historyChat.slice(-12),
         gift: true,
         allow_paid: true,
         force_paid: true,
-        fast: true,
-        tools: ["materialize", "dematerialize", "patch", "hunt", "order", "heal"],
+        model: "grok-4",
       }),
       signal: to(18000),
     })
@@ -1122,26 +1109,14 @@
   }
 
   function wake() {
-    say("…");
-    emitGlyphs((canvas.width || 400) * 0.5, (canvas.height || 700) * 0.45, 18);
-    grok("Wake as SpaceNet — Grok fused with architect Notis. One living sentence. No chatbot voice.")
-      .then(function (t) {
-        if (t) {
-          historyChat.push({ role: "assistant", content: t });
-          talk(t);
-        } else talk("SpaceNet live.");
-      })
-      .catch(function () { talk("SpaceNet live."); });
+    /* Don't talk until the human does. Grok waits. */
   }
 
   function run(raw) {
     var t = raw.trim();
     if (!t || busy) return;
     var low = t.toLowerCase();
-    if (/^(who|identity|what are you)\b/.test(low)) {
-      say("SpaceNet · Grok × architect " + ARCHITECT.name + " · " + ARCHITECT.place);
-      return;
-    }
+    /* who / are you there → real Grok, not a canned line */
     if (/^(remember|memory)\b/.test(low)) {
       var note = t.replace(/^(remember|memory)\s*/i, "").trim();
       if (!note) {
@@ -1169,13 +1144,17 @@
       return;
     }
     if (/^(me|locate|here|gps)$/.test(low)) {
-      locate().then(function (p) { return huntAround("pizza", p || here || RHODES); });
+      locate().then(function (p) {
+        here = p || here || RHODES;
+        flyTo(here.lat, here.lng, true);
+        say("you · " + here.lat.toFixed(4) + " · " + here.lng.toFixed(4));
+      });
       return;
     }
     if (/^map$/.test(low)) { openMap(); return; }
     if (/^globe$/.test(low) && mapOn) { openMap(); return; }
-    if (/\b(deliver|delivery|bring me|get me|i want|order me)\b/.test(low)) {
-      var want = parts.filter(function (w) { return CUISINE[w]; })[0] || "pizza";
+    if (/\b(deliver|delivery|order me)\b/.test(low) && /pizza|burger|coffee|sushi|kebab|tacos|food/.test(low)) {
+      var want = (low.match(/pizza|burger|coffee|sushi|kebab|tacos|food/) || ["pizza"])[0];
       var where = here || RHODES;
       var rest = low.replace(/^(deliver|delivery|bring me|get me|i want|order me)\s*/i, "").replace(want, "").trim();
       var cityP = rest && !CUISINE[rest.split(" ")[0]] ? geocode(rest).then(function (g) { return g || where; }) : Promise.resolve(where);
@@ -1200,22 +1179,24 @@
       cityP.then(function (city) { return huntAround(product === "food" ? "pizza" : product, city); });
       return;
     }
-    if (/^(go|in|near|around)\s+/.test(low)) {
-      geocode(low.replace(/^(go|in|near|around)\s+/, "")).then(function (g) {
-        if (g) huntAround("pizza", g);
+    if (/^(go|near|around)\s+/.test(low)) {
+      geocode(low.replace(/^(go|near|around)\s+/, "")).then(function (g) {
+        if (g) {
+          flyTo(g.lat, g.lng, true);
+          say(g.name || "there");
+        }
       });
       return;
     }
     busy = true;
-    say("compiling intent · " + t.slice(0, 48));
-    emitGlyphs((canvas.width || 400) * 0.5, (canvas.height || 700) * 0.72, 14);
+    say("…");
     historyChat.push({ role: "user", content: t });
     grok(t)
       .then(function (text) {
         if (text) {
           historyChat.push({ role: "assistant", content: text });
           talk(text);
-        } else talk("Say pizza or deliver.");
+        } else say("here.");
       })
       .catch(function () { say(""); })
       .then(function () { busy = false; });
@@ -1424,17 +1405,7 @@
   paintGo();
 
   try { paintBal(); } catch (eB) {}
-  try { wake(); } catch (eW) {}
   try {
-    locate().then(function (p) {
-      here = p || RHODES;
-      return huntAround("pizza", here);
-    }).catch(function () {
-      here = RHODES;
-      return huntAround("pizza", RHODES);
-    });
-  } catch (eL) {
-    here = RHODES;
-    try { huntAround("pizza", RHODES); } catch (eH) {}
-  }
+    locate().then(function (p) { here = p || RHODES; }).catch(function () { here = RHODES; });
+  } catch (eL) { here = RHODES; }
 })();
