@@ -2,14 +2,15 @@
   "use strict";
   if (window.__SN_GRID_FINISH) return;
   window.__SN_GRID_FINISH = true;
-  var BUILD = "20260826165500-voice";
+  var BUILD = "20260826171500-quiet";
   var SRC = [
     "https://cdn.jsdelivr.net/gh/notisastranov/astranov.eu@1c4e3ea85800d7c74c5bf9a0d2a2d5a9b8e7a6e8/js/spacenet/grid-os.js"
   ];
   var RHODES = { lat: 36.4341, lng: 28.2176, name: "Rhodes" };
   var voiceOn = false;
   var rec = null;
-  var wantVoice = true;
+  var wantVoice = false; /* never auto-loop — Android beeps on restart */
+  var lastSpoken = "";
 
   function say(t) {
     var el = document.getElementById("line");
@@ -23,13 +24,27 @@
   }
 
   function speak(t) {
+    t = String(t || "").trim();
+    if (!t || t === lastSpoken) return;
+    if (t.length < 2) return;
+    lastSpoken = t;
     try {
       if (!window.speechSynthesis) return;
       window.speechSynthesis.cancel();
-      var u = new SpeechSynthesisUtterance(String(t));
+      var u = new SpeechSynthesisUtterance(t);
       u.rate = 1.02;
       u.pitch = 1;
       window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
+  function muteBeeps() {
+    try {
+      if (navigator.vibrate) {
+        navigator.vibrate = function () {
+          return false;
+        };
+      }
     } catch (e) {}
   }
 
@@ -184,9 +199,13 @@
     }
   }
 
-  function startContinuousVoice() {
+  /* one-shot listen — NO continuous restart (that beeps on Android) */
+  function startListenOnce() {
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) return;
+    if (!SR) {
+      say("voice unavailable — type below");
+      return;
+    }
     if (rec) {
       try {
         rec.onend = null;
@@ -197,7 +216,8 @@
     rec = new SR();
     rec.lang = navigator.language || "en-US";
     rec.interimResults = true;
-    rec.continuous = true;
+    rec.continuous = false;
+    rec.maxAlternatives = 1;
     voiceOn = true;
     paintMic(true);
     rec.onresult = function (ev) {
@@ -211,43 +231,25 @@
       var inEl = document.getElementById("in");
       if (inEl) inEl.value = t;
       if (final && t.trim()) {
+        voiceOn = false;
+        paintMic(false);
         runText(t);
       }
     };
-    rec.onerror = function (ev) {
-      if (ev && (ev.error === "not-allowed" || ev.error === "service-not-allowed")) {
-        wantVoice = false;
-        voiceOn = false;
-        paintMic(false);
-        say("mic blocked — type below");
-        return;
-      }
-      /* restart unless user stopped */
-      if (wantVoice) {
-        setTimeout(function () {
-          if (wantVoice) startContinuousVoice();
-        }, 400);
-      }
+    rec.onerror = function () {
+      voiceOn = false;
+      paintMic(false);
     };
     rec.onend = function () {
       voiceOn = false;
       paintMic(false);
-      if (wantVoice) {
-        setTimeout(function () {
-          if (wantVoice) startContinuousVoice();
-        }, 250);
-      }
+      /* deliberate: no auto-restart */
     };
     try {
       rec.start();
-      voiceOn = true;
-      paintMic(true);
     } catch (e3) {
       voiceOn = false;
       paintMic(false);
-      setTimeout(function () {
-        if (wantVoice) startContinuousVoice();
-      }, 800);
     }
   }
 
@@ -326,56 +328,46 @@
       "click",
       function (ev) {
         var inEl = document.getElementById("in");
-        if (inEl && inEl.value.trim()) return; /* send path */
+        if (inEl && inEl.value.trim()) return;
         ev.preventDefault();
         ev.stopPropagation();
-        if (wantVoice && voiceOn) {
+        if (voiceOn) {
           stopVoice();
-          say("voice off");
         } else {
-          wantVoice = true;
-          startContinuousVoice();
-          say("listening");
+          startListenOnce();
         }
       },
       true
     );
   }
 
+  function watchLineSpeak() {
+    var line = document.getElementById("line");
+    if (!line || line.__snSpeakWatch) return;
+    line.__snSpeakWatch = true;
+    var last = line.textContent || "";
+    setInterval(function () {
+      var t = (line.textContent || "").trim();
+      if (!t || t === last || t === "…" || t === "...") return;
+      if (/^listening$|^voice off$|^Rhodes$/i.test(t)) {
+        last = t;
+        return;
+      }
+      last = t;
+      speak(t);
+    }, 700);
+  }
+
   function bootTalk() {
     if (window.__SN_BOOTED_TALK) return;
     window.__SN_BOOTED_TALK = true;
+    muteBeeps();
     var msg =
-      "Astranov SpaceNet Grok online. Sign in when you want. Spin the globe. Say what you need.";
+      "Astranov SpaceNet Grok online. Sign in when you want. Spin the globe. Tell me what to do.";
     say(msg);
     speak(msg);
-    /* permissions without blocking the UI */
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices
-          .getUserMedia({ audio: true })
-          .then(function (stream) {
-            try {
-              stream.getTracks().forEach(function (t) {
-                t.stop();
-              });
-            } catch (e) {}
-            wantVoice = true;
-            startContinuousVoice();
-          })
-          .catch(function () {
-            wantVoice = true;
-            startContinuousVoice();
-          });
-      } else {
-        wantVoice = true;
-        startContinuousVoice();
-      }
-    } catch (e2) {
-      wantVoice = true;
-      setTimeout(startContinuousVoice, 500);
-    }
-    setTimeout(doLocate, 700);
+    /* NO auto continuous mic — that beeps on Android Chrome */
+    setTimeout(doLocate, 900);
   }
 
   function arm() {
@@ -385,16 +377,14 @@
     });
     armGo();
     centerGlobe();
+    watchLineSpeak();
 
     if (!window.SN) window.SN = {};
     window.SN.materialize = materialize;
     window.SN.dematerialize = dematerialize;
     window.SN.doLocate = doLocate;
     window.SN.doHunt = doHunt;
-    window.SN.startVoice = function () {
-      wantVoice = true;
-      startContinuousVoice();
-    };
+    window.SN.startVoice = startListenOnce;
     window.SN.stopVoice = stopVoice;
 
     var form = document.getElementById("f");
@@ -432,6 +422,7 @@
   function afterKernel() {
     window.__SN_ALIVE = true;
     window.__SN_FULL = true;
+    muteBeeps();
     stripJunk();
     arm();
     centerGlobe();
@@ -442,7 +433,7 @@
       stripJunk();
       arm();
       centerGlobe();
-    }, 2000);
+    }, 2500);
   }
 
   function load(i) {
