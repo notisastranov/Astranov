@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="3703" />
+<meta name="astranov-build" content="3704" />
 <meta name="theme-color" content="#02040a" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -25,7 +25,7 @@ html,body{margin:0;height:100%;background:#02040a;color:#d8f6ff;overflow:hidden;
 #island .a{color:#4df0ff;text-shadow:0 0 6px #4df0ff,0 0 16px #1ad0ff,0 0 28px #0aa}
 #island .s{color:#7ee9ff;text-shadow:0 0 8px rgba(126,233,255,.55)}
 #island .k{color:#4a7a94;letter-spacing:.12em}
-#ver{font:700 10px/1 ui-monospace,monospace;color:#4df0ff;text-shadow:0 0 8px #4df0ff;letter-spacing:.06em}
+#ver{font:800 11px/1 system-ui;color:#4df0ff;text-shadow:0 0 8px #4df0ff;letter-spacing:.12em}
 #heal{width:7px;height:7px;border-radius:99px;background:#4df0ff;box-shadow:0 0 10px #4df0ff,0 0 18px #1ad0ff;flex-shrink:0;animation:pulse 1.6s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
 #panel{width:min(520px,100%);padding:8px 6px 4px;background:linear-gradient(180deg,transparent,rgba(2,8,18,.92))}
@@ -44,7 +44,7 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
 <div id="top"><div id="island" title="Tap brand to reboot">
   <span id="heal"></span>
   <b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b>
-  <span id="ver">3703</span>
+  <span id="ver">V1</span>
 </div></div>
 <div id="dock"><div id="panel">
   <div id="sn-live"></div>
@@ -57,8 +57,7 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
 </div></div>
 <script>
 (function(){
-  var VER="3703";
-  var BUILD=VER;
+  var VER="3704";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   function nuclear(){
@@ -124,7 +123,6 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
     if(n&&n.parentNode) n.parentNode.removeChild(n);
     if(liveEl && !liveEl.querySelector("button")) liveEl.style.display="none";
   }
-  function done(msg){ if(msg) talk(msg); lastBeat=Date.now(); }
 
   function size(){
     if(!canvas) return;
@@ -387,7 +385,7 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
     if(low.indexOf("pay")>=0||low.indexOf("deposit")>=0) return payDeposit(10);
     return grok(t);
   }
-  window.SN={gold:true,ver:VER,run:run,locate:locate,need:need,clear:clearNeed,listen:listen};
+  window.SN={gold:true,ver:"V1",run:run,locate:locate,need:need,clear:clearNeed,listen:listen};
 
   function boot(){
     if(permsTried) return;
