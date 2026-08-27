@@ -1,15 +1,15 @@
-/* Astranov mute · Build 20260827123000-hold-tap
- * NEW PR against main. ONE BOX ONLY: guest HOLD star from a hunt tap.
+/* Astranov mute · Build 20260827125000-hold-cancel
+ * NEW PR against main. PATCH #221: Cancel unmounts #sn-hold-signin, never starts Google OAuth.
  * Do not merge #219 or #220. Earth + pizza stay as-is.
  * Earth: chrome-place-earth-20260827114000.js (FULL JS >10KB).
  * Pizza: chrome-guest-pizza-cam-20260827121000.js (FULL JS >10KB).
- * HOLD:  chrome-hold-pay-20260827123000.js (FULL JS >10KB, locked #180 overlay).
+ * HOLD:  chrome-hold-pay-20260827125000.js (FULL JS >10KB, locked #180 overlay).
  * No laptop, no CALL, no twin CLI. Box 1 stays #126.
  * Guest pizza hunts from live SNGlobe.viewLatLng (Nairobi). No GPS.
  */
 (function (global) {
   "use strict";
-  var BUILD = "20260827123000-hold-tap";
+  var BUILD = "20260827125000-hold-cancel";
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
   global.__SN_MUTE_NUKE = false;
@@ -95,7 +95,7 @@
     if (isLiveGlobe()) {
       loadScript("/js/spacenet/chrome-guest-pizza-cam-20260827121000.js", "data-sn-pizza-cam");
     }
-    loadScript("/js/spacenet/chrome-hold-pay-20260827123000.js", "data-sn-hold-pay");
+    loadScript("/js/spacenet/chrome-hold-pay-20260827125000.js", "data-sn-hold-pay");
   }
 
   function boot() {
@@ -123,7 +123,7 @@
     if (!isLiveGlobe()) loadChain();
     else {
       loadScript("/js/spacenet/chrome-guest-pizza-cam-20260827121000.js", "data-sn-pizza-cam");
-      loadScript("/js/spacenet/chrome-hold-pay-20260827123000.js", "data-sn-hold-pay");
+      loadScript("/js/spacenet/chrome-hold-pay-20260827125000.js", "data-sn-hold-pay");
     }
     if (global.__SN_MUTE_ALERTS) silenceSpeech();
   }, 4000);

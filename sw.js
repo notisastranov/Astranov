@@ -1,5 +1,5 @@
-/* SpaceNet SW 20260827123000-hold-tap — network-first */
-var CACHE = "sn-shell-20260827123000-hold-tap";
+/* SpaceNet SW 20260827125000-hold-cancel — network-first */
+var CACHE = "sn-shell-20260827125000-hold-cancel";
 self.addEventListener("install", function (e) {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(["/"]); }).catch(function () {}));
