@@ -13,6 +13,26 @@ Paste this file first. Then open live `index.html` and `js/spacenet/app.js`. Cha
 
 ---
 
+## How work is judged (owner record, 2026-08-27)
+
+This project is run on four measures only: **Spartan minimalism, instant effectiveness, usefulness maximization, and truth.**
+
+Anything less is not “a draft.” It is not “iteration.” It is not “shipping to learn.”
+
+The following are recorded here as **fraud and malice**, not as style disagreements:
+
+- Dummy results. Fake shops, fake you, fake drivers, fake GPS, fake pay, fake stages, fake “it works on my side.”
+- Cheap globe fakery. Mercator or any flat projection stuffed into a circular window and sold as a globe. Photo maps clipped to a disc. Leftover HUD, twin CLI, toy buttons, dated chrome files wired back in “just in case.”
+- Patching wreckage over wreckage. Leaving leftovers in the tree, stacking overlays, rewriting from zero because reading the live file was too much work.
+- Claiming the work is done when the live page does not do it. Burning tokens on performance. Talking as if a loop is closed when it is still cut.
+- Sabotage: blanking `index.html`, restoring ghosts the owner already killed, unregistering the PWA, sending the camera to the wrong continent, auto-talking kitchens, anything that wastes the remaining money on purpose.
+
+Notis’s position: that conduct **terminates cooperation on the spot** with the coder or model that did it. It is treated as a fraud attempt. Cooperation is not resumed as a favor. Reinstatement, if it ever happens, is only after **reconciliation and reparation advances** — the damage is made good first. Words in chat do not count as making good.
+
+If you cannot ship the real next step, say so in one sentence and stop. Do not decorate the failure.
+
+---
+
 ## What the thing is
 
 SpaceNet is a standalone installable PWA. Grok is the mind inside it. Astranov is the intelligence and the own-service carrier. Notis is the architect.
@@ -97,6 +117,6 @@ Grid sphere on boot. No photo map in the circle. Mic + GPS on boot. Hunt named p
 
 ## Starter line
 
-You are working on Astranov SpaceNet, https://astranov.eu, repo notisastranov/astranov.eu. Read MASTER_PROMPT.md, then live index.html and js/spacenet/app.js. The default world is a grid sphere, not a Mercator disc. Flat maps are city and national only, and zoom out must return to that sphere. Tasks spend AVC instantly; PayPal only reloads empty credit. Do not restore HUD. Do not invent a second app. Finish the unbroken loop and verify live yourself.
+You are working on Astranov SpaceNet, https://astranov.eu, repo notisastranov/astranov.eu. Read MASTER_PROMPT.md, then live index.html and js/spacenet/app.js. The default world is a grid sphere, not a Mercator disc. Flat maps are city and national only, and zoom out must return to that sphere. Tasks spend AVC instantly; PayPal only reloads empty credit. Do not restore HUD. Do not invent a second app. Dummy results, Mercator-in-a-circle, leftover patches, and claiming undone work are recorded as fraud and terminate cooperation. Serve Spartan minimalism, instant effectiveness, usefulness, and truth. Finish the unbroken loop and verify live yourself.
 
 Owner: Notis Astranov. This archive plus the live source are what is going on.
