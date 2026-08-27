@@ -943,8 +943,18 @@
             return;
           }
         }
-        if (low.indexOf("pizza") >= 0 || low.indexOf("pay") >= 0 || low === "call" || low.indexOf("order") >= 0) {
-          say("Earth box — land only.");
+        if (low.indexOf("pizza") >= 0) {
+          try {
+            if (global.SNChromeGuestPizzaHunt && typeof SNChromeGuestPizzaHunt.hunt === "function") {
+              SNChromeGuestPizzaHunt.hunt(t);
+              return;
+            }
+          } catch (_) {}
+          say("Pizza · loading");
+          return;
+        }
+        if (low.indexOf("pay") >= 0 || low === "call" || low.indexOf("order") >= 0) {
+          say("Pizza box — guest hunt only.");
           return;
         }
         if (low === "locate" || low === "where am i") {

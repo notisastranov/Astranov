@@ -1,17 +1,16 @@
-/* Astranov mute · Build 20260827114000-earth
- * NEW PR against main. Do not merge. Does not edit locked #175-#182.
- * Box 1 stays #126. No pizza, no call, no pay.
+/* Astranov mute · Build 20260827121000-pizza-cam
+ * NEW PR against main. ONE BOX ONLY: guest pizza. Do not merge #219.
+ * Earth stays (NASA/Esri land fill + SNGlobe.viewLatLng + hideLeaflet).
+ * Pizza added: chrome-guest-pizza-cam-20260827121000.js after live SNGlobe.
+ * No laptop, no CALL, no HOLD, no twin CLI. Box 1 stays #126.
  *
- * MUST load chrome-place-earth-20260827114000.js (FULL JS >10KB, ported
- * from locked #174 380a563 place-fill + #176 75bbb1c SNGlobe adapter).
- * This file is NOT the 61-byte nuke.
- *
- * Guest / sits the camera on land with NO GPS. Leaflet #city stays hidden.
- * Street/satellite is a zoom-in of the same NASA/Esri globe tiles.
+ * MUST load chrome-place-earth-20260827114000.js (FULL JS >10KB).
+ * MUST load chrome-guest-pizza-cam-20260827121000.js (FULL JS >10KB).
+ * Guest pizza hunts from live SNGlobe.viewLatLng (Nairobi). No GPS.
  */
 (function (global) {
   "use strict";
-  var BUILD = "20260827114000-earth";
+  var BUILD = "20260827121000-pizza-cam";
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
   global.__SN_MUTE_NUKE = false;
@@ -94,6 +93,9 @@
     try {
       if (global.SNPlaceEarth && typeof SNPlaceEarth.ensure === "function") SNPlaceEarth.ensure();
     } catch (_) {}
+    if (isLiveGlobe()) {
+      loadScript("/js/spacenet/chrome-guest-pizza-cam-20260827121000.js", "data-sn-pizza-cam");
+    }
   }
 
   function boot() {
@@ -119,6 +121,7 @@
     patchAudio();
     hideLeaflet();
     if (!isLiveGlobe()) loadChain();
+    else loadScript("/js/spacenet/chrome-guest-pizza-cam-20260827121000.js", "data-sn-pizza-cam");
     if (global.__SN_MUTE_ALERTS) silenceSpeech();
   }, 4000);
 
