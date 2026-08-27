@@ -6,7 +6,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar text:** `ASTRANOV SPACENET GROK V1`
-**Internal stamp at this rewrite:** 3723
+**Internal stamp at this rewrite:** 3724
 **Today’s bar:** this product either works as a closed task-to-credit loop or we stop spending money on it.
 
 Paste this file first. Then open live `index.html` and `js/spacenet/app.js`. Chat history is junk next to those two files plus this archive.
@@ -23,6 +23,7 @@ The following are recorded here as **fraud and malice**, not as style disagreeme
 
 - Dummy results. Fake shops, fake you, fake drivers, fake GPS, fake pay, fake stages, fake “it works on my side.”
 - Cheap globe fakery. Mercator or any flat projection stuffed into a circular window and sold as a globe. Photo maps clipped to a disc. Leftover HUD, twin CLI, toy buttons, dated chrome files wired back in “just in case.”
+- Keyword routers and other mechanical thinking bolted in front of Grok. If the person has to hit a magic word for the OS to understand them, the mind is fake.
 - Patching wreckage over wreckage. Leaving leftovers in the tree, stacking overlays, rewriting from zero because reading the live file was too much work.
 - Claiming the work is done when the live page does not do it. Burning tokens on performance. Talking as if a loop is closed when it is still cut.
 - Sabotage: blanking `index.html`, restoring ghosts the owner already killed, unregistering the PWA, sending the camera to the wrong continent, auto-talking kitchens, anything that wastes the remaining money on purpose.
@@ -41,6 +42,30 @@ It is not a chatbot page. It is not HUD. It is not twin CLI.
 What the person sees: brand strip `ASTRANOV SPACENET GROK V1` (tap = wipe caches + unregister SW + reload); a **grid globe** on `#g`; one talk line, one mic, a `+`; buttons only when the next step needs them; `#city` hidden until a street or national job needs a flat map.
 
 AVC = internal credit. Tasking spends AVC instantly. PayPal exists only to reload AVC when the balance is empty.
+
+---
+
+## How thinking works — no keyword router
+
+Nobody ordered a command table. Do not add one.
+
+The person talks or types in ordinary language. That text goes to Grok (`/api/ai`). Grok understands the request. If work on the world is needed, Grok returns a short act (`hunt`, `locate`, `now`, `mail`, `pickup`, `pay`, `reload`, `map`, `globe`, or just talk). The page then runs the matching tool. That is Grok deciding. That is not the page sniffing the user’s sentence for `pizza` / `locate` / `city` and short-circuiting the mind.
+
+What the page may match without Grok:
+
+- The word `reboot` (wipes cache).
+- The exact name of a shop or carrier **already on screen**, so saying the name is the same as tapping the button.
+
+What the page must not do:
+
+- A dictionary of user phrases mapped to functions.
+- “If the sentence contains food, hunt pizza.”
+- Blocking conversation until GPS is granted. Hunt needs a point. Talking does not.
+- Inventing a second parser, intent engine, CLI grammar, or “hard intent” table.
+
+`goodsOf` and Overpass tag filters are not a mind. They only translate a hunt string into OSM tags after Grok (or a tap) already decided to hunt. Keep them small. Do not grow them into a language.
+
+Hands path is separate and allowed: tap the globe, tap `+`, tap NOW / MAIL / PICK UP / PAY / RELOAD. Hands never require talking. Talking never requires a keyword.
 
 ---
 
@@ -65,7 +90,7 @@ Pins on the grid globe use the same sphere math (front face only). You = this se
 ## The task cycle — one rope, no cut
 
 boot → mic + GPS → short status → listen. GPS denied → ALLOW LOCATION.
-Person says what they want → hunt named places (Nominatim + Overpass) → list name · km.
+Person says what they want → Grok hears it → if it is a find, hunt named places (Nominatim + Overpass) → list name · km.
 Pick a place → stay on grid globe → NOW | MAIL | PICK UP.
 NOW: Astranov first (own associates), then named local partner, then DoorDash / Instacart / Walmart as last-mile portals only where that country uses them.
 MAIL: only if goods survive days with no heat hold.
@@ -98,6 +123,8 @@ Boot dock = input + mic + +. No toy buttons. Voice and hands are the same tools.
 
 Tap or long-press the grid sphere. A place menu must open on that spot (FOOD HERE / BEER HERE / SHOPS HERE / THIS PLACE) and ask what you want there. + opens the same task list without voice. Hunt uses the tapped point, not a silent default city. Do not wait on Grok to show the menu.
 
+---
+
 ## Files that are actually the app
 
 index.html = shell. js/spacenet/app.js = boot, grid globe, voice, hunt, fulfill, AVC, PayPal reload. sw.js network-first. VERSION = V1 + push NNNN. MASTER_PROMPT.md = this archive. /api/ai = Grok. /api/paypal/* = reload tap.
@@ -109,18 +136,18 @@ Ship: read live main, patch smallest surface, bump stamp, curl live yourself, gi
 
 ## Already failed — do not replay
 
-Twin CLI, HUD, chrome-fix, white chrome, long stamps, auto marina, fake Rhodes, Silver Wings, kitchen TTS, mic beep loop, healer killing SW, placeholder index, idle toys, Mercator-in-a-circle, NASA JPEG clipped to a circle, auto flat map on locate or shop pick, GPS deny with no ALLOW LOCATION, “PayPal keys missing” when they sit in Supabase.
+Twin CLI, HUD, chrome-fix, white chrome, long stamps, auto marina, fake Rhodes, Silver Wings, kitchen TTS, mic beep loop, healer killing SW, placeholder index, idle toys, Mercator-in-a-circle, NASA JPEG clipped to a circle, auto flat map on locate or shop pick, GPS deny with no ALLOW LOCATION, “PayPal keys missing” when they sit in Supabase, keyword routers / hard-intent tables in front of Grok.
 
 ---
 
 ## Closed loop checklist (today)
 
-Grid sphere on boot. No photo map in the circle. Mic + GPS on boot. Hunt named places. NOW / MAIL / PICK UP. Astranov first. AVC debit if balance is enough. RELOAD → PayPal → AVC → same debit if not. Stage paid only after AVC moved. Zoom out of streets returns to the grid sphere. No dead end.
+Grid sphere on boot. No photo map in the circle. Mic + GPS on boot. Speech goes to Grok, not a word list. Hunt named places. NOW / MAIL / PICK UP. Astranov first. AVC debit if balance is enough. RELOAD → PayPal → AVC → same debit if not. Stage paid only after AVC moved. Zoom out of streets returns to the grid sphere. No dead end.
 
 ---
 
 ## Starter line
 
-You are working on Astranov SpaceNet, https://astranov.eu, repo notisastranov/astranov.eu. Read MASTER_PROMPT.md, then live index.html and js/spacenet/app.js. The default world is a grid sphere, not a Mercator disc. Flat maps are city and national only, and zoom out must return to that sphere. Tasks spend AVC instantly; PayPal only reloads empty credit. Do not restore HUD. Do not invent a second app. Dummy results, Mercator-in-a-circle, leftover patches, and claiming undone work are recorded as fraud and terminate cooperation. Serve Spartan minimalism, instant effectiveness, usefulness, and truth. Finish the unbroken loop and verify live yourself.
+You are working on Astranov SpaceNet, https://astranov.eu, repo notisastranov/astranov.eu. Read MASTER_PROMPT.md, then live index.html and js/spacenet/app.js. The default world is a grid sphere, not a Mercator disc. Flat maps are city and national only, and zoom out must return to that sphere. The person talks in ordinary language; Grok is the mind; the page does not sniff keywords to decide the job. Tasks spend AVC instantly; PayPal only reloads empty credit. Do not restore HUD. Do not invent a second app. Dummy results, Mercator-in-a-circle, leftover patches, keyword routers, and claiming undone work are recorded as fraud and terminate cooperation. Serve Spartan minimalism, instant effectiveness, usefulness, and truth. Finish the unbroken loop and verify live yourself.
 
 Owner: Notis Astranov. This archive plus the live source are what is going on.
