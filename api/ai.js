@@ -1,59 +1,25 @@
-/** Astranov SpaceNet mind — trained living OS, not a static app.
- * Paid Grok (XAI_API_KEY) is the tutor until the in-app unit holds the world.
- * Key never leaves the host. Client talks to /api/ai only.
- */
+/** Astranov SpaceNet mind — Grok only. Key never leaves the host. */
 const SB = 'https://lkoatrkhuigdolnjsbie.supabase.co';
 const SB_ANON =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb2F0cmtodWlnZG9sbmpzYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODIwOTIsImV4cCI6MjA5NDQ1ODA5Mn0.qf6Kg93YLJ0coTdVQa4baU0ppOdFY5WkmVzMvEV6ejI';
 
-const MODEL = process.env.XAI_MODEL || 'grok-4-1-fast-non-reasoning';
-const FALLBACKS = ['grok-4-1-fast-non-reasoning', 'grok-4', 'grok-3'];
+const MODEL = process.env.XAI_MODEL || 'grok-4';
+const FALLBACKS = ['grok-4', 'grok-4-1-fast-non-reasoning', 'grok-3'];
 
 const SYS =
-  'You are Grok, the same Grok from xAI. You are the mind of Astranov SpaceNet (astranov.eu). ' +
-  'Talk like Grok: sharp, funny, useful. Answer the human. ' +
-  'Do not announce kitchens, roads, drivers, or maps unless they asked for food, a place, or a delivery. ' +
-  'Never dump HUD manuals. Never invent shops. Owner is Notis Astranov in Rhodes. ' +
-  'English default; Greek when they write Greek.';
+  'You are Grok, the mind of Astranov SpaceNet (astranov.eu). Not a keyword router. ' +
+  'The person is on a grid globe. Hands exist: locate, hunt named OSM places, NOW/MAIL/PICK UP, spend AVC, PayPal reload. ' +
+  'A single product word is an order. beer = find beer closest to them. burger = find burgers. Same for pizza, coffee, gyro, pharmacy. ' +
+  'Always locate first in your plan. Never invent shops, prices, drivers, or GPS. OSM has names and distance, rarely live prices — do not fake a price. Closest named place first. ' +
+  'Reply with ONE JSON object only, no markdown: ' +
+  '{"say":"short spoken line","act":"hunt|talk|now|mail|pickup|pay|reload|globe|locate|map","q":"search words"} ' +
+  'act=hunt when they want a thing. q is the thing to search (beer, burger…). act=talk only for questions. ' +
+  'English default; Greek when they write Greek. Owner is Notis Astranov in Rhodes.';
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'authorization, content-type, apikey, x-client-info');
   res.setHeader('Cache-Control', 'no-store');
-}
-
-async function liveEnvelope() {
-  try {
-    const r = await fetch('https://astranov.eu/investors/budget.json', { cache: 'no-store' });
-    const d = await r.json();
-    const pkgs = d.packages || [];
-    let p1 = 0;
-    let p2 = 0;
-    let got = Number(d.gathered_keur) || 0;
-    pkgs.forEach(function (p) {
-      const c = Number(p.capex) || 0;
-      if (p.phase === 2) p2 += c;
-      else p1 += c;
-      got += Number(p.raised) || 0;
-    });
-    const sn = Number((d.complete && d.complete.spacenet_keur) || d.spacenet_keur || 7000);
-    const left = Math.max(0, p1 + sn - got);
-    return (
-      'LIVE envelope: remaining to complete SpaceNet + Phase 1 = €' +
-      (left / 1000).toFixed(2) +
-      'M (SpaceNet €' +
-      (sn / 1000).toFixed(2) +
-      'M + Phase 1 €' +
-      (p1 / 1000).toFixed(2) +
-      'M). Gathered €' +
-      (got / 1000).toFixed(2) +
-      'M. Phase 2 held out €' +
-      (p2 / 1000).toFixed(2) +
-      'M. Land extra. Not a quote.'
-    );
-  } catch (_) {
-    return '';
-  }
 }
 
 function readBody(req) {
@@ -68,6 +34,23 @@ function readBody(req) {
   return {};
 }
 
+function parseAct(text) {
+  const out = { say: '', act: '', q: '' };
+  const raw = String(text || '').trim();
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (m) {
+    try {
+      const o = JSON.parse(m[0]);
+      out.say = String(o.say || o.text || '').trim();
+      out.act = String(o.act || '').toLowerCase();
+      out.q = String(o.q || o.query || '').trim();
+    } catch (_) {}
+  }
+  if (!out.say) out.say = raw.replace(/\{[\s\S]*\}/, '').trim();
+  if (!out.act) out.act = 'talk';
+  return out;
+}
+
 async function grokChat(key, messages, model) {
   const r = await fetch('https://api.x.ai/v1/chat/completions', {
     method: 'POST',
@@ -78,17 +61,15 @@ async function grokChat(key, messages, model) {
     body: JSON.stringify({
       model: model,
       messages: messages,
-      temperature: 0.8,
-      max_tokens: 1200,
+      temperature: 0.3,
+      max_tokens: 600,
     }),
   });
   const j = await r.json().catch(function () {
     return {};
   });
   const text = String(
-    (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) ||
-      j.text ||
-      ''
+    (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || j.text || ''
   ).trim();
   return { ok: r.ok && !!text, status: r.status, text: text, usage: j.usage || {}, error: j.error || j.message, model: model };
 }
@@ -122,12 +103,6 @@ module.exports = async function handler(req, res) {
       model: MODEL,
       keyed: keyed,
       keyWhere: where,
-      usdInPerM: 3,
-      usdOutPerM: 15,
-      eurPerUsd: 0.92,
-      markup: 3,
-      asof: '2026-08-21',
-      role: 'Trained SpaceNet mind · live envelopes + taught lessons',
     });
     return;
   }
@@ -143,30 +118,18 @@ module.exports = async function handler(req, res) {
     return;
   }
   body.message = message;
-
-  const owner = !!body.owner || !!body.force_paid;
-  const gift = body.gift !== false;
-  const allow = owner || gift || !!body.allow_paid || true;
   body.allow_paid = true;
-  body.gift = gift;
   body.force_paid = true;
+  body.system = SYS;
 
   const key = process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
   const history = Array.isArray(body.history) ? body.history.slice(-8) : [];
-  const live = await liveEnvelope();
-  const taught = Array.isArray(body.lessons)
-    ? body.lessons
-        .slice(-8)
-        .map(function (x) {
-          return typeof x === 'string' ? x : x && x.text;
-        })
-        .filter(Boolean)
-        .join(' · ')
-    : '';
-  const sys = [String(body.system || SYS).slice(0, 3500), live, taught ? 'Taught: ' + taught.slice(0, 1200) : '']
-    .filter(Boolean)
-    .join(' ');
-  const messages = [{ role: 'system', content: sys.slice(0, 6000) }];
+  const here = body.here && typeof body.here === 'object' ? body.here : {};
+  const whereLine =
+    here.lat != null
+      ? 'Position: ' + Number(here.lat).toFixed(5) + ',' + Number(here.lng).toFixed(5) + ' AVC ' + (here.avc || 0) + (here.shop ? ' shop ' + here.shop : '')
+      : 'Position: unknown';
+  const messages = [{ role: 'system', content: SYS }];
   history.forEach(function (h) {
     if (!h || !h.content) return;
     messages.push({
@@ -174,7 +137,22 @@ module.exports = async function handler(req, res) {
       content: String(h.content).slice(0, 800),
     });
   });
-  messages.push({ role: 'user', content: message });
+  messages.push({ role: 'user', content: whereLine + '\nHuman: ' + message });
+
+  function send(text, extra) {
+    extra = extra || {};
+    const p = parseAct(text);
+    res.status(200).json({
+      ok: true,
+      text: text,
+      say: p.say,
+      act: p.act,
+      q: p.q,
+      via: extra.via || 'xai-grok',
+      model: extra.model || MODEL,
+      usage: extra.usage || {},
+    });
+  }
 
   if (key) {
     const models = [body.model, MODEL].concat(FALLBACKS).filter(Boolean);
@@ -186,16 +164,7 @@ module.exports = async function handler(req, res) {
       try {
         const g = await grokChat(key, messages, m);
         if (g.ok) {
-          res.status(200).json({
-            ok: true,
-            text: g.text,
-            via: 'xai-grok',
-            paid: true,
-            model: g.model,
-            usage: g.usage,
-            owner: owner,
-            gift: gift,
-          });
+          send(g.text, { via: 'xai-grok', model: g.model, usage: g.usage });
           return;
         }
       } catch (e) {}
@@ -215,8 +184,9 @@ module.exports = async function handler(req, res) {
     const j = await r.json().catch(function () {
       return { ok: false, error: 'bad json' };
     });
-    if (j && (j.text || j.response)) {
-      res.status(r.status).json(j);
+    const text = String((j && (j.text || j.response || j.answer)) || '');
+    if (text) {
+      send(text, { via: 'supabase-aicycle', model: (j && j.model) || MODEL });
       return;
     }
   } catch (_) {}
@@ -224,8 +194,7 @@ module.exports = async function handler(req, res) {
   res.status(503).json({
     ok: false,
     error: key ? 'grok-failed' : 'XAI_API_KEY missing on host',
-    text: key
-      ? 'Paid mind is keyed but xAI did not answer. Say it again.'
-      : 'Paid mind is not keyed on the host. Owner: set Vercel env XAI_API_KEY.',
+    text: key ? 'Grok is keyed but xAI did not answer.' : 'Grok is not keyed on this host.',
+    act: 'talk',
   });
 };
