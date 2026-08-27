@@ -6,7 +6,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar text:** `ASTRANOV SPACENET GROK V1`
-**Internal stamp at this rewrite:** 3719
+**Internal stamp at this rewrite:** 3723
 **Today’s bar:** this product either works as a closed task-to-credit loop or we stop spending money on it.
 
 Paste this file first. Then open live `index.html` and `js/spacenet/app.js`. Chat history is junk next to those two files plus this archive.
@@ -93,6 +93,10 @@ PayPal keys are in Supabase Custom secrets. If create-order says paypal_not_conf
 Boot dock = input + mic + +. No toy buttons. Voice and hands are the same tools. No kitchen monologue. No fake YOU / fake drivers / silent Rhodes. No beeps. Greek + English. After speak, listen. Do not tight-loop the mic.
 
 ---
+
+## Hands on the globe
+
+Tap or long-press the grid sphere. A place menu must open on that spot (FOOD HERE / BEER HERE / SHOPS HERE / THIS PLACE) and ask what you want there. + opens the same task list without voice. Hunt uses the tapped point, not a silent default city. Do not wait on Grok to show the menu.
 
 ## Files that are actually the app
 
