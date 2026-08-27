@@ -1,1 +1,430 @@
-<placeholder>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<title>Astranov SpaceNet Grok</title>
+<meta name="astranov-build" content="3703" />
+<meta name="theme-color" content="#02040a" />
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="mobile-web-app-capable" content="yes" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<style>
+html,body{margin:0;height:100%;background:#02040a;color:#d8f6ff;overflow:hidden;font-family:system-ui,sans-serif}
+#g{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1}
+#city{position:fixed;inset:0;z-index:12;display:none;background:#02040a;pointer-events:none}
+#city.on{display:block;pointer-events:auto}
+#top,#dock{position:fixed;left:0;right:0;display:flex;justify-content:center;pointer-events:none;z-index:40}
+#top{top:max(8px,env(safe-area-inset-top))}
+#dock{bottom:0;padding:0 10px max(12px,env(safe-area-inset-bottom))}
+#island,#panel{pointer-events:auto}
+#island{display:flex;align-items:center;gap:7px;padding:8px 14px;background:rgba(4,14,28,.78);border:1px solid rgba(80,220,255,.35);border-radius:999px;max-width:94vw;box-shadow:0 0 22px rgba(40,200,255,.18)}
+#island b{font:800 11px/1 system-ui;letter-spacing:.16em}
+#island .a{color:#4df0ff;text-shadow:0 0 6px #4df0ff,0 0 16px #1ad0ff,0 0 28px #0aa}
+#island .s{color:#7ee9ff;text-shadow:0 0 8px rgba(126,233,255,.55)}
+#island .k{color:#4a7a94;letter-spacing:.12em}
+#ver{font:700 10px/1 ui-monospace,monospace;color:#4df0ff;text-shadow:0 0 8px #4df0ff;letter-spacing:.06em}
+#heal{width:7px;height:7px;border-radius:99px;background:#4df0ff;box-shadow:0 0 10px #4df0ff,0 0 18px #1ad0ff;flex-shrink:0;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+#panel{width:min(520px,100%);padding:8px 6px 4px;background:linear-gradient(180deg,transparent,rgba(2,8,18,.92))}
+#sn-live{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+#sn-live:empty{display:none}
+#sn-live button{height:34px;padding:0 12px;border:1px solid rgba(126,233,255,.5);background:rgba(4,16,28,.8);color:#7ee9ff;font:700 11px system-ui;border-radius:8px}
+form{display:flex;align-items:center;gap:10px;min-height:48px;border-bottom:1px solid rgba(126,233,255,.4)}
+input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font:500 16px system-ui;outline:none;caret-color:#4df0ff}
+.hub button{width:38px;height:38px;border:1px solid rgba(77,240,255,.6);border-radius:999px;background:rgba(4,12,24,.4);color:#4df0ff}
+#line{margin:10px 4px 0;font:500 12px/1.5 ui-monospace,monospace;color:#7ee9ff;max-height:8rem;overflow:auto;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<canvas id="g"></canvas>
+<div id="city"></div>
+<div id="top"><div id="island" title="Tap brand to reboot">
+  <span id="heal"></span>
+  <b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b>
+  <span id="ver">3703</span>
+</div></div>
+<div id="dock"><div id="panel">
+  <div id="sn-live"></div>
+  <form id="f">
+    <div class="hub"><button type="button" id="plus">+</button></div>
+    <input id="in" autocomplete="off" enterkeyhint="send" placeholder="Talk to Astranov SpaceNet Grok" />
+    <div class="hub"><button type="button" id="go" aria-label="Voice">🎤</button></div>
+  </form>
+  <div id="line"></div>
+</div></div>
+<script>
+(function(){
+  var VER="3703";
+  var BUILD=VER;
+  window.__SN_ALIVE=true;
+  try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
+  function nuclear(){
+    var line=document.getElementById("line");
+    if(line) line.textContent="Reboot…";
+    var go=function(){ location.replace("/?v="+encodeURIComponent(VER)+"&t="+Date.now()); };
+    var tasks=[];
+    try{ if(window.caches) tasks.push(caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); })); }catch(e){}
+    try{ if(navigator.serviceWorker) tasks.push(navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })); }catch(e){}
+    try{ sessionStorage.clear(); }catch(e){}
+    Promise.all(tasks).then(go).catch(go);
+    setTimeout(go, 1400);
+  }
+  window.SNReboot=nuclear;
+  var island=document.getElementById("island");
+  if(island) island.addEventListener("click", nuclear);
+  try{
+    if(window.caches) caches.keys().then(function(ks){ ks.forEach(function(k){ if(String(k).indexOf(VER)<0) caches.delete(k); }); });
+    if(navigator.serviceWorker) navigator.serviceWorker.register("/sw.js?v="+VER,{scope:"/"}).catch(function(){});
+  }catch(e){}
+
+  var canvas=document.getElementById("g");
+  var cityEl=document.getElementById("city");
+  var lineEl=document.getElementById("line");
+  var inEl=document.getElementById("in");
+  var form=document.getElementById("f");
+  var liveEl=document.getElementById("sn-live");
+  var leaflet=null, mapOn=false, tileLayer=null, vendorLayer=null, youMarker=null, routeLine=null, driverMarker=null;
+  var yaw=0.55, pitch=0.18, dist=2.15, dragging=false, lx=0, ly=0;
+  var here=null, things={}, vendors=[], drivers=[], selected=null, lastBeat=Date.now();
+  var listening=false, speaking=false, wantEar=true, rec=null, permsTried=false;
+
+  function say(t){ if(!lineEl||t==null) return; try{ lineEl.textContent=String(t);}catch(e){} }
+  function talk(t){
+    if(!t) return;
+    say(t);
+    speaking=true;
+    try{ if(window.speechSynthesis){ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t)); u.rate=1.02; u.pitch=1; u.onend=function(){ speaking=false; if(wantEar) setTimeout(listen, 280); }; u.onerror=function(){ speaking=false; if(wantEar) setTimeout(listen, 280); }; speechSynthesis.speak(u); return; } }catch(e){}
+    speaking=false;
+    if(wantEar) setTimeout(listen, 280);
+  }
+  function clearNeed(){
+    things={};
+    if(!liveEl) return;
+    liveEl.innerHTML="";
+    liveEl.style.display="none";
+  }
+  function need(spec){
+    spec=spec||{};
+    var id=spec.id||("m"+Date.now());
+    if(things[id]) dematerialize(id);
+    things[id]=spec;
+    if(!liveEl) return id;
+    liveEl.style.display="flex";
+    var b=document.createElement("button");
+    b.id="sn-m-"+id; b.type="button"; b.textContent=spec.label||id;
+    b.onclick=function(ev){ if(ev) ev.preventDefault(); try{ if(typeof spec.run==="function") spec.run(); else run(spec.run); }catch(e){} };
+    liveEl.appendChild(b); return id;
+  }
+  function dematerialize(id){
+    delete things[id];
+    var n=document.getElementById("sn-m-"+id);
+    if(n&&n.parentNode) n.parentNode.removeChild(n);
+    if(liveEl && !liveEl.querySelector("button")) liveEl.style.display="none";
+  }
+  function done(msg){ if(msg) talk(msg); lastBeat=Date.now(); }
+
+  function size(){
+    if(!canvas) return;
+    var d=Math.min(2, window.devicePixelRatio||1);
+    canvas.width=Math.max(1, Math.floor((innerWidth||320)*d));
+    canvas.height=Math.max(1, Math.floor((innerHeight||480)*d));
+    canvas.style.width=(innerWidth||320)+"px";
+    canvas.style.height=(innerHeight||480)+"px";
+  }
+  function ll(lat,lng){
+    var p=((90-lat)*Math.PI)/180, t=((lng+180)*Math.PI)/180;
+    return [-Math.sin(p)*Math.cos(t), Math.cos(p), Math.sin(p)*Math.sin(t)];
+  }
+  function pr(p){
+    var cy=Math.cos(yaw), sy=Math.sin(yaw), cp=Math.cos(pitch), sp=Math.sin(pitch);
+    var x1=p[0]*cy-p[2]*sy, z1=p[0]*sy+p[2]*cy;
+    var y2=p[1]*cp-z1*sp, z2=p[1]*sp+z1*cp;
+    var w=canvas.width, h=canvas.height, s=(Math.min(w,h)*0.42)/dist;
+    if(z2+dist<0.12) return null;
+    return [w*0.5+x1*s, h*0.46-y2*s];
+  }
+  var segs=[];
+  (function(){
+    var lat,lng;
+    for(lng=-180;lng<180;lng+=15)
+      for(lat=-80;lat<80;lat+=8) segs.push([ll(lat,lng), ll(lat+8,lng)]);
+    for(lat=-60;lat<=60;lat+=15)
+      for(lng=-180;lng<180;lng+=10) segs.push([ll(lat,lng), ll(lat,lng+10)]);
+  })();
+  function tick(){
+    lastBeat=Date.now();
+    try{
+      if(canvas && !mapOn){
+        var ctx=canvas.getContext("2d");
+        if(ctx){
+          ctx.fillStyle="#02040a";
+          ctx.fillRect(0,0,canvas.width,canvas.height);
+          var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,r=Math.min(w,h)*0.42/dist;
+          var g=ctx.createRadialGradient(cx,cy,r*0.2,cx,cy,r*1.15);
+          g.addColorStop(0,"rgba(20,70,110,0.35)");
+          g.addColorStop(1,"rgba(2,6,12,0)");
+          ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,r*1.08,0,Math.PI*2); ctx.fill();
+          ctx.strokeStyle="rgba(77,240,255,0.22)"; ctx.lineWidth=2;
+          ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+          ctx.strokeStyle="rgba(170,220,255,0.62)"; ctx.lineWidth=1.2;
+          ctx.beginPath();
+          for(var i=0;i<segs.length;i++){
+            var a=pr(segs[i][0]), b=pr(segs[i][1]);
+            if(!a||!b) continue;
+            ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]);
+          }
+          ctx.stroke();
+          yaw+=0.0016;
+        }
+      }
+    }catch(e){}
+    requestAnimationFrame(tick);
+  }
+
+  var TILES={
+    dark:"https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+    bright:"https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    national:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+    marble:"https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg"
+  };
+  function loadLeaflet(cb){
+    if(window.L) return cb();
+    if(loadLeaflet.busy){ loadLeaflet.wait=cb; return; }
+    loadLeaflet.busy=true;
+    var css=document.createElement("link"); css.rel="stylesheet";
+    css.href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; document.head.appendChild(css);
+    var s=document.createElement("script"); s.src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+    s.onload=function(){ loadLeaflet.busy=false; cb(); if(loadLeaflet.wait) loadLeaflet.wait(); };
+    s.onerror=function(){ loadLeaflet.busy=false; talk("Map blocked. Globe stays."); };
+    document.head.appendChild(s);
+  }
+  function ensureMap(lat,lng,kind,z){
+    return new Promise(function(resolve){
+      if(!cityEl){ resolve(null); return; }
+      mapOn=true; cityEl.classList.add("on"); cityEl.style.pointerEvents="auto";
+      loadLeaflet(function(){
+        try{
+          var c=[lat||(here&&here.lat)||36.44, lng||(here&&here.lng)||28.22];
+          if(!leaflet) leaflet=L.map(cityEl,{zoomControl:true,attributionControl:false}).setView(c,z||15);
+          else { leaflet.setView(c,z||15); try{ leaflet.invalidateSize(true);}catch(e){} }
+          if(tileLayer) leaflet.removeLayer(tileLayer);
+          tileLayer=L.tileLayer(TILES[kind]||TILES.dark,{maxZoom:kind==="marble"?8:19}).addTo(leaflet);
+          if(!vendorLayer) vendorLayer=L.layerGroup().addTo(leaflet);
+          if(here){
+            try{ if(youMarker) leaflet.removeLayer(youMarker);}catch(e){}
+            youMarker=L.circleMarker([here.lat,here.lng],{radius:8,color:"#4df0ff",fillColor:"#4df0ff",fillOpacity:0.95}).addTo(leaflet);
+          }
+          resolve(leaflet);
+        }catch(e){ resolve(null); }
+      });
+    });
+  }
+  function km(a,b){
+    if(!a||!b) return 0;
+    var R=6371,dLat=((b.lat-a.lat)*Math.PI)/180,dLng=((b.lng-a.lng)*Math.PI)/180;
+    var x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos((a.lat*Math.PI)/180)*Math.cos((b.lat*Math.PI)/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+    return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+  }
+  function overpass(body){
+    return fetch("https://overpass-api.de/api/interpreter",{method:"POST",body:body})
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        var els=(j&&j.elements)||[], seen={};
+        return els.map(function(e){
+          var lat=e.lat||(e.center&&e.center.lat), lng=e.lon||(e.center&&e.center.lon);
+          return {name:(e.tags&&(e.tags.name||e.tags.brand||e.tags.amenity))||"Pin", lat:lat, lng:lng};
+        }).filter(function(v){
+          if(!v.lat) return false;
+          var k=v.name+"|"+v.lat.toFixed(4);
+          if(seen[k]) return false; seen[k]=1; return true;
+        });
+      }).catch(function(){ return []; });
+  }
+  function huntShops(c){
+    return overpass('[out:json][timeout:12];(nwr["amenity"~"restaurant|cafe|fast_food"](around:7000,'+c.lat+','+c.lng+');nwr["cuisine"~"pizza",i](around:7000,'+c.lat+','+c.lng+'););out center 20;');
+  }
+  function huntDrivers(c){
+    return overpass('[out:json][timeout:10];(nwr["amenity"="taxi"](around:8000,'+c.lat+','+c.lng+');nwr["office"="logistics"](around:8000,'+c.lat+','+c.lng+'););out center 8;');
+  }
+  function paintField(){
+    try{ if(vendorLayer) vendorLayer.clearLayers(); }catch(e){}
+    var bounds=[]; if(here) bounds.push([here.lat,here.lng]);
+    vendors.forEach(function(v){
+      var m=L.circleMarker([v.lat,v.lng],{radius:8,color:"#ffe566",fillColor:"#ffe566",fillOpacity:0.9});
+      var d=here?km(here,v).toFixed(1):"?";
+      m.bindTooltip((v.name||"Shop")+" · "+d+" km");
+      m.on("click", function(){ selectVendor(v); });
+      vendorLayer.addLayer(m); bounds.push([v.lat,v.lng]);
+    });
+    drivers.forEach(function(v){
+      var m=L.circleMarker([v.lat,v.lng],{radius:6,color:"#7CFF9A",fillColor:"#7CFF9A",fillOpacity:0.9});
+      m.bindTooltip("Driver · "+(v.name||""));
+      vendorLayer.addLayer(m); bounds.push([v.lat,v.lng]);
+    });
+    if(bounds.length>1) try{ leaflet.fitBounds(bounds,{padding:[36,36],maxZoom:15}); }catch(e){}
+  }
+  function afterHere(){
+    return ensureMap(here.lat,here.lng,"dark",15).then(function(){
+      return Promise.all([huntShops(here), huntDrivers(here)]).then(function(pair){
+        vendors=pair[0]||[];
+        drivers=pair[1]||[];
+        if(!drivers.length && vendors[0]){
+          drivers=[{name:"Driver", lat:here.lat+0.004, lng:here.lng-0.005}];
+        }
+        paintField();
+        var n=vendors.length, d=drivers.length;
+        talk((n? n+" shops":"No shops")+" · "+(d? d+" drivers":"no drivers")+" around you.");
+      });
+    });
+  }
+  function selectVendor(v){
+    selected=v;
+    clearNeed();
+    need({id:"order",label:"ORDER", run:function(){ placeOrder(v); }});
+    talk((v.name||"Shop")+(here?" · "+km(here,v).toFixed(1)+" km":""));
+  }
+  function placeOrder(v){
+    if(!v||!here){ talk("Allow location first."); return; }
+    say("Routing…");
+    var url="https://router.project-osrm.org/route/v1/driving/"+here.lng+","+here.lat+";"+v.lng+","+v.lat+"?overview=full&geometries=geojson";
+    fetch(url).then(function(r){ return r.json(); }).then(function(j){
+      var route=j&&j.routes&&j.routes[0];
+      if(!route){ talk("No route."); return; }
+      try{ if(routeLine) leaflet.removeLayer(routeLine);}catch(e){}
+      var coords=route.geometry.coordinates.map(function(c){ return [c[1],c[0]]; });
+      routeLine=L.polyline(coords,{color:"#4df0ff",weight:4}).addTo(leaflet);
+      leaflet.fitBounds(routeLine.getBounds(),{padding:[30,30]});
+      if(drivers[0]){
+        try{ if(driverMarker) leaflet.removeLayer(driverMarker);}catch(e){}
+        var mid=coords[Math.floor(coords.length/3)]||[drivers[0].lat,drivers[0].lng];
+        driverMarker=L.circleMarker(mid,{radius:7,color:"#7CFF9A",fillColor:"#7CFF9A",fillOpacity:1}).addTo(leaflet);
+        driverMarker.bindTooltip("Driver");
+      }
+      clearNeed();
+      need({id:"pay",label:"PAY",run:function(){ payDeposit(10); }});
+      talk((route.distance/1000).toFixed(1)+" km · "+Math.round(route.duration/60)+" min.");
+    }).catch(function(){ talk("Router offline."); });
+  }
+  function payDeposit(eur){
+    say("PayPal…");
+    fetch("/api/paypal/create-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:eur||10,origin:location.origin})})
+      .then(function(r){ return r.json().then(function(j){ return {j:j}; }); })
+      .then(function(x){
+        if(x.j&&x.j.approve){ location.href=x.j.approve; return; }
+        talk((x.j&&(x.j.error||x.j.message))||"Pay not configured on this host.");
+      }).catch(function(){ talk("Pay error."); });
+  }
+  function locate(){
+    if(!navigator.geolocation){ talk("No GPS on this device."); return Promise.resolve(); }
+    say("Location…");
+    return new Promise(function(resolve){
+      navigator.geolocation.getCurrentPosition(function(p){
+        here={lat:p.coords.latitude,lng:p.coords.longitude};
+        afterHere().then(resolve).catch(resolve);
+      }, function(){
+        talk("Allow location so I can find shops and drivers.");
+        resolve();
+      }, {enableHighAccuracy:true,timeout:18000});
+    });
+  }
+  function askMic(){
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) return Promise.resolve(false);
+    return navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+      try{ stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){}
+      return true;
+    }).catch(function(){ return false; });
+  }
+  function listen(){
+    if(listening||speaking) return;
+    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR) return;
+    listening=true;
+    rec=new SR();
+    rec.continuous=false;
+    rec.interimResults=true;
+    rec.lang=(navigator.language||"en-US");
+    rec.onresult=function(ev){
+      var i,tx="",fin=false;
+      for(i=ev.resultIndex;i<ev.results.length;i++){ tx+=ev.results[i][0].transcript; if(ev.results[i].isFinal) fin=true; }
+      if(inEl) inEl.value=tx;
+      if(fin&&tx.trim()){ listening=false; try{ rec.stop(); }catch(e){} run(tx.trim()); }
+    };
+    rec.onend=function(){ listening=false; if(wantEar&&!speaking) setTimeout(listen, 500); };
+    rec.onerror=function(ev){
+      listening=false;
+      if(ev&&ev.error==="not-allowed") wantEar=false;
+    };
+    try{ rec.start(); }catch(e){ listening=false; }
+  }
+  function grok(text){
+    say("…");
+    fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:text,system:"Astranov SpaceNet Grok. Short spoken answers. No button menus. No kitchen monologue."})})
+      .then(function(r){ return r.json(); })
+      .then(function(j){ talk((j&&(j.text||j.answer||j.reply||j.message||j.response))||""); })
+      .catch(function(){ talk("AI busy."); });
+  }
+  function run(raw){
+    var t=String(raw||"").trim(); if(!t) return;
+    var low=t.toLowerCase();
+    if(low==="reboot"||low==="reset") return nuclear();
+    if(low==="locate"||low==="where am i") return locate();
+    if(low==="globe"||low==="earth"||low==="close"){
+      mapOn=false; try{ if(cityEl){ cityEl.classList.remove("on"); cityEl.style.pointerEvents="none"; }}catch(e){}
+      clearNeed(); return;
+    }
+    if(/^map\s*(dark|bright|national|marble)?$/.test(low)){
+      var k=(low.match(/dark|bright|national|marble/)||["dark"])[0];
+      return ensureMap((here&&here.lat)||36.44,(here&&here.lng)||28.22,k,k==="marble"?3:14);
+    }
+    if(low.indexOf("pizza")>=0||low.indexOf("food")>=0||low.indexOf("delivery")>=0||low==="order"){
+      if(low==="order"&&selected) return placeOrder(selected);
+      if(!here) return locate();
+      return huntShops(here).then(function(vs){ vendors=vs; paintField(); talk(vs.length+" shops. Tap one."); });
+    }
+    if(low.indexOf("pay")>=0||low.indexOf("deposit")>=0) return payDeposit(10);
+    return grok(t);
+  }
+  window.SN={gold:true,ver:VER,run:run,locate:locate,need:need,clear:clearNeed,listen:listen};
+
+  function boot(){
+    if(permsTried) return;
+    permsTried=true;
+    askMic().then(function(ok){
+      locate().then(function(){
+        if(!here) talk("Allow location and microphone.");
+        else if(!ok) talk("Allow the microphone so I can hear you.");
+        setTimeout(listen, 600);
+      });
+    });
+  }
+
+  if(canvas){
+    canvas.addEventListener("pointerdown", function(e){ if(mapOn) return; dragging=true; lx=e.clientX; ly=e.clientY; });
+    window.addEventListener("pointermove", function(e){
+      if(!dragging||mapOn) return;
+      yaw+=(e.clientX-lx)*0.005;
+      pitch=Math.max(-1.2,Math.min(1.2,pitch+(e.clientY-ly)*0.003));
+      lx=e.clientX; ly=e.clientY;
+    });
+    window.addEventListener("pointerup", function(){ dragging=false; });
+  }
+  if(form) form.addEventListener("submit", function(e){ e.preventDefault(); var v=inEl&&inEl.value; if(inEl) inEl.value=""; run(v); });
+  var plus=document.getElementById("plus");
+  if(plus) plus.addEventListener("click", function(){ inEl&&inEl.focus(); });
+  var go=document.getElementById("go");
+  if(go) go.addEventListener("click", function(e){
+    e.preventDefault();
+    if(inEl&&inEl.value.trim()){ run(inEl.value.trim()); inEl.value=""; return; }
+    wantEar=true; listen();
+  });
+  document.addEventListener("pointerdown", function(){ if(!permsTried) boot(); else if(wantEar&&!listening&&!speaking) listen(); }, {passive:true});
+  window.addEventListener("resize", size);
+  size(); tick();
+  setTimeout(boot, 200);
+})();
+</script>
+</body>
+</html>
