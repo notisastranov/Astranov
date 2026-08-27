@@ -1255,12 +1255,8 @@
   }
 
   function bootAutoHunt() {
-    if (autoHuntTried) return;
-    autoHuntTried = true;
-    setTimeout(function () {
-      if (lastPins.length) return;
-      huntPizza('pizza');
-    }, 1400);
+    /* Manual mode: Login + Locate. Do not auto-hunt or prompt GPS. */
+    return;
   }
 
   function boot() {

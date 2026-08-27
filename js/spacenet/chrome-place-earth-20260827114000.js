@@ -945,6 +945,12 @@
         }
         if (low.indexOf("pizza") >= 0) {
           try {
+            if (global.SNCityManual && typeof SNCityManual.city === "function") {
+              SNCityManual.city();
+              return;
+            }
+          } catch (_) {}
+          try {
             if (global.SNChromeGuestPizzaHunt && typeof SNChromeGuestPizzaHunt.hunt === "function") {
               SNChromeGuestPizzaHunt.hunt(t);
               return;
@@ -953,9 +959,21 @@
           say("Pizza · loading");
           return;
         }
-        if (low.indexOf("pay") >= 0 || low === "call" || low.indexOf("order") >= 0) {
-          say("Pizza box — guest hunt only.");
-          return;
+        if (low === "login" || low === "sign in") {
+          try {
+            if (global.SNCityManual && typeof SNCityManual.login === "function") {
+              SNCityManual.login();
+              return;
+            }
+          } catch (_) {}
+        }
+        if (low === "locate" || low === "gps") {
+          try {
+            if (global.SNCityManual && typeof SNCityManual.locate === "function") {
+              SNCityManual.locate();
+              return;
+            }
+          } catch (_) {}
         }
         if (low === "locate" || low === "where am i") {
           var v = viewFromCamera();
