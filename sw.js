@@ -1,5 +1,5 @@
-/* SpaceNet SW 20260827132000-hold-mount — network-first */
-var CACHE = "sn-shell-20260827132000-hold-mount";
+/* SpaceNet SW 20260827133000-hold-chip — network-first */
+var CACHE = "sn-shell-20260827133000-hold-chip";
 self.addEventListener("install", function (e) {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(["/"]); }).catch(function () {}));
