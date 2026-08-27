@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260827104000-alive" />
+<meta name="astranov-build" content="20260827112000-need" />
 <meta name="theme-color" content="#02040a" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -57,9 +57,9 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
 </div></div>
 <script>
 (function(){
-  var BUILD="20260827104000-alive";
+  var BUILD="20260827112000-need";
   window.__SN_ALIVE=true;
-  function nuclear(reason){
+  function nuclear(){
     var line=document.getElementById("line");
     if(line) line.textContent="Reboot · wipe cache…";
     var go=function(){ location.replace("/?h="+encodeURIComponent(BUILD)+"&t="+Date.now()); };
@@ -73,7 +73,7 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
   }
   window.SNReboot=nuclear;
   var island=document.getElementById("island");
-  if(island) island.addEventListener("click", function(){ nuclear("brand"); });
+  if(island) island.addEventListener("click", function(){ nuclear(); });
   try{
     if(window.caches) caches.keys().then(function(ks){ ks.forEach(function(k){ if(k.indexOf(BUILD)<0) caches.delete(k); }); });
     if(navigator.serviceWorker) navigator.serviceWorker.register("/sw.js?v="+BUILD,{scope:"/"}).catch(function(){});
@@ -90,14 +90,35 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
   var here=null, things={}, vendors=[], selected=null, busy=false, lastBeat=Date.now();
 
   function say(t){ if(!lineEl||t==null) return; try{ lineEl.textContent=String(t);}catch(e){} }
-  function armCore(){
-    materialize({id:"locate",label:"LOCATE",run:"locate"});
-    materialize({id:"pizza",label:"PIZZA",run:"pizza"});
-    materialize({id:"marble",label:"MARBLE",run:"map marble"});
-    materialize({id:"dark",label:"CITY",run:"map dark"});
-    if(mapOn) materialize({id:"close",label:"GLOBE",run:"globe"});
+  function clearNeed(){
+    things={};
+    if(!liveEl) return;
+    liveEl.innerHTML="";
+    liveEl.style.display="none";
   }
-  function done(msg){ busy=false; if(msg) say(msg); armCore(); lastBeat=Date.now(); }
+  function need(spec){
+    spec=spec||{};
+    var id=spec.id||("m"+Date.now());
+    if(things[id]) dematerialize(id);
+    things[id]=spec;
+    if(!liveEl) return id;
+    liveEl.style.display="flex";
+    var b=document.createElement("button");
+    b.id="sn-m-"+id; b.type="button"; b.textContent=spec.label||id;
+    b.onclick=function(ev){
+      if(ev) ev.preventDefault();
+      try{ if(typeof spec.run==="function") spec.run(); else run(spec.run); }catch(e){ done(); }
+    };
+    liveEl.appendChild(b); return id;
+  }
+  function materialize(spec){ return need(spec); }
+  function dematerialize(id){
+    delete things[id];
+    var n=document.getElementById("sn-m-"+id);
+    if(n&&n.parentNode) n.parentNode.removeChild(n);
+    if(liveEl && !liveEl.querySelector("button")) liveEl.style.display="none";
+  }
+  function done(msg){ busy=false; if(msg) say(msg); lastBeat=Date.now(); }
 
   function size(){
     if(!canvas) return;
@@ -158,13 +179,10 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
   }
 
   setInterval(function(){
-    try{
-      if(Date.now()-lastBeat>8000){ busy=false; armCore(); say("Still running"); lastBeat=Date.now(); }
-      if(liveEl && !liveEl.querySelector("button")) armCore();
-    }catch(e){}
+    try{ if(Date.now()-lastBeat>8000){ busy=false; lastBeat=Date.now(); } }catch(e){}
   },4000);
-  window.addEventListener("error", function(){ busy=false; armCore(); });
-  window.addEventListener("unhandledrejection", function(){ busy=false; armCore(); });
+  window.addEventListener("error", function(){ busy=false; });
+  window.addEventListener("unhandledrejection", function(){ busy=false; });
 
   var TILES={
     dark:"https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
@@ -204,7 +222,12 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
       });
     });
   }
-  function closeCity(){ mapOn=false; try{ if(cityEl){ cityEl.classList.remove("on"); cityEl.style.pointerEvents="none"; }}catch(e){} done("Globe"); }
+  function closeCity(){
+    mapOn=false;
+    try{ if(cityEl){ cityEl.classList.remove("on"); cityEl.style.pointerEvents="none"; }}catch(e){}
+    clearNeed();
+    done("");
+  }
   function km(a,b){
     if(!a||!b) return 0;
     var R=6371,dLat=((b.lat-a.lat)*Math.PI)/180,dLng=((b.lng-a.lng)*Math.PI)/180;
@@ -229,39 +252,40 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
   }
   function paintVendors(list){
     vendors=list||[]; selected=null;
+    clearNeed();
     try{ if(vendorLayer) vendorLayer.clearLayers(); }catch(e){}
     var bounds=[]; if(here) bounds.push([here.lat,here.lng]);
-    vendors.forEach(function(v,i){
+    vendors.forEach(function(v){
       var m=L.circleMarker([v.lat,v.lng],{radius:8,color:"#ffe566",fillColor:"#ffe566",fillOpacity:0.9});
       var d=here?km(here,v).toFixed(1):"?";
       m.bindTooltip((v.name||"Shop")+" · "+d+" km");
       m.on("click", function(){ selectVendor(v); });
       vendorLayer.addLayer(m); bounds.push([v.lat,v.lng]);
-      materialize({id:"v"+i,label:((v.name||"Shop")+"").slice(0,14)+" "+d+"km", run:function(){ selectVendor(v); }});
     });
     if(bounds.length>1) try{ leaflet.fitBounds(bounds,{padding:[40,40],maxZoom:15}); }catch(e){}
-    done(vendors.length+" vendors · tap a pin then ORDER");
+    done(vendors.length+" nearby · tap a pin");
   }
   function selectVendor(v){
     selected=v;
-    materialize({id:"order",label:"ORDER",run:function(){ placeOrder(v); }});
-    armCore();
-    say((v.name||"Shop")+" · ORDER");
+    clearNeed();
+    need({id:"order",label:"ORDER "+((v.name||"Shop")+"").slice(0,16), run:function(){ placeOrder(v); }});
+    say((v.name||"Shop")+(here?" · "+km(here,v).toFixed(1)+" km":""));
   }
   function placeOrder(v){
-    if(!v||!here){ done("LOCATE then pick a shop"); return; }
+    if(!v||!here){ done("Say where you are first"); return; }
     say("Routing…");
     var url="https://router.project-osrm.org/route/v1/driving/"+here.lng+","+here.lat+";"+v.lng+","+v.lat+"?overview=full&geometries=geojson";
     fetch(url).then(function(r){ return r.json(); }).then(function(j){
       var route=j&&j.routes&&j.routes[0];
-      if(!route){ done("No route — pick another"); return; }
+      if(!route){ done("No route"); return; }
       try{ if(routeLine) leaflet.removeLayer(routeLine);}catch(e){}
       var coords=route.geometry.coordinates.map(function(c){ return [c[1],c[0]]; });
       routeLine=L.polyline(coords,{color:"#4df0ff",weight:4}).addTo(leaflet);
       leaflet.fitBounds(routeLine.getBounds(),{padding:[30,30]});
-      materialize({id:"pay",label:"PAY",run:function(){ payDeposit(10); }});
-      done("Route "+(route.distance/1000).toFixed(1)+" km · ~"+Math.round(route.duration/60)+" min · PAY");
-    }).catch(function(){ done("Router offline — still live"); });
+      clearNeed();
+      need({id:"pay",label:"PAY",run:function(){ payDeposit(10); }});
+      done((route.distance/1000).toFixed(1)+" km · ~"+Math.round(route.duration/60)+" min");
+    }).catch(function(){ done("Router offline"); });
   }
   function payDeposit(eur){
     say("PayPal…");
@@ -269,65 +293,45 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
       .then(function(r){ return r.json().then(function(j){ return {j:j}; }); })
       .then(function(x){
         if(x.j&&x.j.approve){ location.href=x.j.approve; return; }
-        done("Pay · "+((x.j&&(x.j.error||x.j.message))||"not configured")+" · still live");
-      }).catch(function(){ done("Pay error — still live"); });
+        done((x.j&&(x.j.error||x.j.message))||"Pay not configured");
+      }).catch(function(){ done("Pay error"); });
   }
   function locate(){
-    if(!navigator.geolocation){ done("No GPS — type go Athens"); return; }
+    if(!navigator.geolocation){ done("No GPS — say a city"); return; }
     say("Locate…");
     navigator.geolocation.getCurrentPosition(function(p){
       here={lat:p.coords.latitude,lng:p.coords.longitude};
       ensureMap(here.lat,here.lng,"dark",15).then(function(){
-        done("You · "+here.lat.toFixed(4)+","+here.lng.toFixed(4)+" · pizza");
+        done("You · "+here.lat.toFixed(4)+","+here.lng.toFixed(4));
       });
-    }, function(){ done("Allow location, tap LOCATE"); }, {enableHighAccuracy:true,timeout:15000});
+    }, function(){ done("Allow location"); }, {enableHighAccuracy:true,timeout:15000});
   }
   function runPizza(){
     if(!here){ locate(); return; }
     say("Hunting…");
     ensureMap(here.lat,here.lng,"dark",14).then(function(){
       hunt(here).then(function(vs){
-        if(!vs.length){ done("No shops — try again"); return; }
+        if(!vs.length){ done("No shops"); return; }
         paintVendors(vs);
       });
     });
   }
   function grok(text){
     say("…");
-    fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:text,system:"Astranov SpaceNet Grok. Short answers. No kitchens monologue."})})
+    fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:text,system:"Astranov SpaceNet Grok. Short. Do not invent button menus."})})
       .then(function(r){ return r.json(); })
-      .then(function(j){ done((j&&(j.text||j.answer||j.reply||j.message))||"Ready"); })
-      .catch(function(){ done("AI busy · still live"); });
-  }
-  function materialize(spec){
-    spec=spec||{};
-    var id=spec.id||("m"+Date.now());
-    if(things[id]) dematerialize(id);
-    things[id]=spec;
-    if(!liveEl) return id;
-    liveEl.style.display="flex";
-    var b=document.createElement("button");
-    b.id="sn-m-"+id; b.type="button"; b.textContent=spec.label||id;
-    b.onclick=function(ev){
-      if(ev) ev.preventDefault();
-      try{ if(typeof spec.run==="function") spec.run(); else run(spec.run); }catch(e){ done("still live"); }
-    };
-    liveEl.appendChild(b); return id;
-  }
-  function dematerialize(id){
-    delete things[id];
-    var n=document.getElementById("sn-m-"+id);
-    if(n&&n.parentNode) n.parentNode.removeChild(n);
+      .then(function(j){ done((j&&(j.text||j.answer||j.reply||j.message||j.response))||""); })
+      .catch(function(){ done("AI busy"); });
   }
   function run(raw){
     var t=String(raw||"").trim(); if(!t) return;
     var low=t.toLowerCase();
-    if(low==="reboot"||low==="reset"||low==="reload"){ if(window.SNReboot) return window.SNReboot("cli"); }
+    if(low==="reboot"||low==="reset"||low==="reload"){ if(window.SNReboot) return window.SNReboot(); }
     if(low==="locate"||low==="where am i") return locate();
     if(low==="globe"||low==="earth"||low==="close") return closeCity();
     if(/^map\s*(dark|bright|national|marble)?$/.test(low)){
       var k=(low.match(/dark|bright|national|marble/)||["dark"])[0];
-      return ensureMap((here&&here.lat)||37.98,(here&&here.lng)||23.72,k,k==="marble"?3:13).then(function(){ done("Map · "+k); });
+      return ensureMap((here&&here.lat)||37.98,(here&&here.lng)||23.72,k,k==="marble"?3:13).then(function(){ done(""); });
     }
     if(/^go\s+/.test(low)){
       var q=t.replace(/^go\s+/i,"");
@@ -347,7 +351,7 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
     if(low.indexOf("pay")>=0||low.indexOf("deposit")>=0) return payDeposit(10);
     return grok(t);
   }
-  window.SN={gold:true,build:BUILD,forever:true,run:run,locate:locate,materialize:materialize};
+  window.SN={gold:true,build:BUILD,forever:true,run:run,locate:locate,materialize:need,need:need,clear:clearNeed};
 
   if(canvas){
     canvas.addEventListener("pointerdown", function(e){ if(mapOn) return; dragging=true; lx=e.clientX; ly=e.clientY; });
@@ -362,13 +366,13 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
   }
   if(form) form.addEventListener("submit", function(e){ e.preventDefault(); var v=inEl&&inEl.value; if(inEl) inEl.value=""; run(v); });
   var plus=document.getElementById("plus");
-  if(plus) plus.addEventListener("click", function(){ armCore(); say("Locate · Pizza · City · Marble"); });
+  if(plus) plus.addEventListener("click", function(){ inEl && inEl.focus(); });
   var go=document.getElementById("go");
   if(go) go.addEventListener("click", function(e){
     if(inEl&&inEl.value.trim()){ run(inEl.value.trim()); inEl.value=""; return; }
     e.preventDefault();
     var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){ done("Type instead"); return; }
+    if(!SR){ done("Type"); return; }
     var rec=new SR(); rec.continuous=false; rec.interimResults=true;
     rec.onresult=function(ev){
       var i,tx="",fin=false;
@@ -378,8 +382,8 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
     try{ rec.start(); say("Listening…"); }catch(err){ done("Mic blocked"); }
   });
   window.addEventListener("resize", size);
-  size(); tick(); armCore();
-  say("Ready · tap ASTRANOV to reboot · LOCATE then PIZZA");
+  size(); tick();
+  say("");
 })();
 </script>
 </body>
