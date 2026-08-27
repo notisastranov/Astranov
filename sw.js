@@ -1,5 +1,5 @@
-/* SpaceNet SW 20260827104000-alive — network-first */
-var CACHE = "sn-shell-20260827104000-alive";
+/* SpaceNet SW 1.000 — network-first */
+var CACHE = "sn-shell-1.000";
 self.addEventListener("install", function (e) {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(["/"]); }).catch(function () {}));
