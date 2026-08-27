@@ -1,16 +1,15 @@
-/* Astranov mute · Build 20260827121000-pizza-cam
- * NEW PR against main. ONE BOX ONLY: guest pizza. Do not merge #219.
- * Earth stays (NASA/Esri land fill + SNGlobe.viewLatLng + hideLeaflet).
- * Pizza added: chrome-guest-pizza-cam-20260827121000.js after live SNGlobe.
- * No laptop, no CALL, no HOLD, no twin CLI. Box 1 stays #126.
- *
- * MUST load chrome-place-earth-20260827114000.js (FULL JS >10KB).
- * MUST load chrome-guest-pizza-cam-20260827121000.js (FULL JS >10KB).
+/* Astranov mute · Build 20260827123000-hold-tap
+ * NEW PR against main. ONE BOX ONLY: guest HOLD star from a hunt tap.
+ * Do not merge #219 or #220. Earth + pizza stay as-is.
+ * Earth: chrome-place-earth-20260827114000.js (FULL JS >10KB).
+ * Pizza: chrome-guest-pizza-cam-20260827121000.js (FULL JS >10KB).
+ * HOLD:  chrome-hold-pay-20260827123000.js (FULL JS >10KB, locked #180 overlay).
+ * No laptop, no CALL, no twin CLI. Box 1 stays #126.
  * Guest pizza hunts from live SNGlobe.viewLatLng (Nairobi). No GPS.
  */
 (function (global) {
   "use strict";
-  var BUILD = "20260827121000-pizza-cam";
+  var BUILD = "20260827123000-hold-tap";
   global.__SN_MUTE_ALERTS = true;
   global.__SN_MUTE_BEEPS = true;
   global.__SN_MUTE_NUKE = false;
@@ -96,6 +95,7 @@
     if (isLiveGlobe()) {
       loadScript("/js/spacenet/chrome-guest-pizza-cam-20260827121000.js", "data-sn-pizza-cam");
     }
+    loadScript("/js/spacenet/chrome-hold-pay-20260827123000.js", "data-sn-hold-pay");
   }
 
   function boot() {
@@ -121,7 +121,10 @@
     patchAudio();
     hideLeaflet();
     if (!isLiveGlobe()) loadChain();
-    else loadScript("/js/spacenet/chrome-guest-pizza-cam-20260827121000.js", "data-sn-pizza-cam");
+    else {
+      loadScript("/js/spacenet/chrome-guest-pizza-cam-20260827121000.js", "data-sn-pizza-cam");
+      loadScript("/js/spacenet/chrome-hold-pay-20260827123000.js", "data-sn-hold-pay");
+    }
     if (global.__SN_MUTE_ALERTS) silenceSpeech();
   }, 4000);
 

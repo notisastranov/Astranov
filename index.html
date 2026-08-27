@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="20260827121000-pizza-cam" />
+<meta name="astranov-build" content="20260827123000-hold-tap" />
 <meta name="theme-color" content="#02040a" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -17,9 +17,10 @@ html,body{margin:0;height:100%;background:#02040a;color:#d8f6ff;overflow:hidden;
 #city{position:fixed;inset:0;z-index:0;display:none!important;background:#02040a;pointer-events:none!important;opacity:0!important;visibility:hidden!important}
 #city.on{display:none!important;pointer-events:none!important}
 #top,#dock{position:fixed;left:0;right:0;display:flex;justify-content:center;pointer-events:none;z-index:40}
-#top{top:max(8px,env(safe-area-inset-top))}
+#top{top:max(8px,env(safe-area-inset-top));align-items:center;gap:8px}
 #dock{bottom:0;padding:0 10px max(12px,env(safe-area-inset-bottom))}
-#island,#panel{pointer-events:auto}
+#island,#panel,#fbh-s{pointer-events:auto}
+#fbh-s{font:700 11px ui-monospace,monospace;color:#ffd76a;text-shadow:0 0 8px rgba(255,215,106,.45);padding:6px 10px;border:1px solid rgba(255,215,106,.35);border-radius:999px;background:rgba(4,14,28,.78);cursor:pointer;letter-spacing:.04em}
 #island{display:flex;align-items:center;gap:7px;padding:8px 14px;background:rgba(4,14,28,.78);border:1px solid rgba(80,220,255,.35);border-radius:999px;max-width:94vw;box-shadow:0 0 22px rgba(40,200,255,.18)}
 #island b{font:800 11px/1 system-ui;letter-spacing:.16em}
 #island .a{color:#4df0ff;text-shadow:0 0 6px #4df0ff,0 0 16px #1ad0ff,0 0 28px #0aa}
@@ -45,8 +46,10 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
 <div id="top"><div id="island" title="Tap brand to reboot">
   <span id="heal"></span>
   <b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b>
-  <span id="ver">pizza-cam</span>
-</div></div>
+  <span id="ver">hold-tap</span>
+</div>
+<button type="button" id="fbh-s" data-sn-wallet="1" aria-label="HOLD ⭐ 0.00">⭐ 0.00</button>
+</div>
 <div id="dock"><div id="panel">
   <div id="sn-live"></div>
   <form id="f">
@@ -58,7 +61,7 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
 </div></div>
 <script>
 (function(){
-  var BUILD="20260827121000-pizza-cam";
+  var BUILD="20260827123000-hold-tap";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   function nuclear(){
@@ -147,8 +150,12 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
     if(/\bpizza\b/i.test(t)||low==="pizzeria"||low==="pizzas"){
       return pizza(t);
     }
-    if(low.indexOf("pay")>=0||low==="call"||low.indexOf("order")>=0||low==="deposit"||low==="hold"||low==="laptop"){
-      return say("Pizza box — guest hunt only.");
+    if(low==="hold"||low==="star"||low.indexOf("hold")===0||t==="⭐"||t==="⭐ 0.00"||/^hold\s*⭐/.test(t)){
+      if(window.SNHoldPay&&typeof SNHoldPay.hold==="function") return SNHoldPay.hold(t);
+      return say("HOLD ⭐ · Sign in with Google to pay");
+    }
+    if(low.indexOf("pay")>=0||low==="call"||low.indexOf("order")>=0||low==="deposit"||low==="laptop"){
+      return say("HOLD box — guest hunt + HOLD star only.");
     }
     if(low==="city"||low==="map"||low==="leaflet"){
       hideCity();
@@ -178,7 +185,8 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
   });
 })();
 </script>
-<script src="/js/spacenet/chrome-mute.js?v=20260827121000-pizza-cam"></script>
-<script src="/js/spacenet/chrome-guest-pizza-cam-20260827121000.js?v=20260827121000-pizza-cam"></script>
+<script src="/js/spacenet/chrome-mute.js?v=20260827123000-hold-tap"></script>
+<script src="/js/spacenet/chrome-guest-pizza-cam-20260827121000.js?v=20260827123000-hold-tap"></script>
+<script src="/js/spacenet/chrome-hold-pay-20260827123000.js?v=20260827123000-hold-tap" data-sn-hold-pay="1"></script>
 </body>
 </html>
