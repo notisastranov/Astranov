@@ -1,5 +1,5 @@
-/* SpaceNet SW 20260827102000-reboot — network-first, never pin a dead shell */
-var CACHE = "sn-shell-20260827102000-reboot";
+/* SpaceNet SW 20260827104000-alive — network-first */
+var CACHE = "sn-shell-20260827104000-alive";
 self.addEventListener("install", function (e) {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(["/"]); }).catch(function () {}));
@@ -15,9 +15,7 @@ self.addEventListener("fetch", function (e) {
   var req = e.request;
   if (req.method !== "GET") return;
   e.respondWith(
-    fetch(req, { cache: "no-store" }).then(function (res) {
-      return res;
-    }).catch(function () {
+    fetch(req, { cache: "no-store" }).then(function (res) { return res; }).catch(function () {
       return caches.match(req).then(function (hit) { return hit || caches.match("/"); });
     })
   );
