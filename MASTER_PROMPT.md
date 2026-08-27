@@ -4,7 +4,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · branch `main`
 **Display version on the bar:** `ASTRANOV SPACENET GROK V1`
-**Internal push stamp now:** 3716 (`VERSION` file = `V1` + `push 3716`)
+**Internal push stamp now:** 3717 (`VERSION` file = `V1` + `push 3717`)
 **Product:** a global operating system fused with Grok. Not a chatbot. Not a website with menus.
 
 Paste this whole file as system / first context before writing any code.
@@ -56,7 +56,7 @@ The top bar is a brand strip. Do not call it an island in speech to the owner.
 9. **Prototype cycle:** ship → if fail, fix once → if fail again, diagnose then replace that piece only. Do not nuke a working loop to treat a symptom.
 10. **Do not restore HUD / twin CLI / chrome-fix / os-bootloader UI.** Those are ghosts. Main is Grid OS only.
 11. **PayPal keys exist** in Supabase Custom secrets. Do not claim they are missing. Gap is Vercel env sync (`PAYPAL_CLIENT_ID` + `PAYPAL_CLIENT_SECRET`) and the live `/api/paypal/*` wire.
-12. **Versioning:** bar text is always `ASTRANOV SPACENET GROK V1` (then V2 after push 1999). Internal stamp = GitHub push count (3716 now). No “live”, no dated reboot stamps on the bar.
+12. **Versioning:** bar text is always `ASTRANOV SPACENET GROK V1` (then V2 after push 1999). Internal stamp = GitHub push count (3717 now). No “live”, no dated reboot stamps on the bar.
 13. **Features appear on globe / field / route**, not in room-code modals.
 14. **Dual mode:** full voice AND full hands. Never require talking. Never require Grok. Same tools.
 
@@ -88,7 +88,7 @@ Quality: ice cream 12 min frozen never with hot; cold 25; pizza/soup 35; coffee 
 
 ## 6. LIVE CODE MAP
 
-index.html = shell + reboot + loads /js/spacenet/app.js?v=3716
+index.html = shell + reboot + loads /js/spacenet/app.js?v=3717
 js/spacenet/app.js = boot, voice, locate, hunt, fulfill, pay, globe tick
 sw.js = network-first. VERSION = V1 + push NNNN
 /api/ai = Grok. /api/paypal/* = money.

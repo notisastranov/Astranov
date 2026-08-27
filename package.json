@@ -4,7 +4,8 @@
   "description": "",
   "main": "sw.js",
   "scripts": {
-    "test": "node scripts/user-scenarios.mjs",
+    "test": "node tests/spacenet-v1-unit.mjs && node tests/paypal-api-unit.mjs",
+    "test:legacy-ui": "node scripts/user-scenarios.mjs",
     "assemble": "node scripts/assemble.mjs",
     "bootstrap": "node scripts/bootstrap-index.mjs",
     "warm-auth": "node scripts/warm-github-auth.mjs",

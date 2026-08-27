@@ -12,6 +12,11 @@ function readBody(req) {
   return {};
 }
 
+function firstCapture(j) {
+  return j && j.purchase_units && j.purchase_units[0] && j.purchase_units[0].payments &&
+    j.purchase_units[0].payments.captures && j.purchase_units[0].payments.captures[0];
+}
+
 module.exports = async function handler(req, res) {
   cors(res);
   if (req.method === "OPTIONS") {
@@ -28,7 +33,7 @@ module.exports = async function handler(req, res) {
   }
   var body = readBody(req);
   var orderId = String(body.orderId || body.token || "").trim();
-  if (!orderId) {
+  if (!/^[a-z0-9-]{8,64}$/i.test(orderId)) {
     res.status(400).json({ error: "missing_order" });
     return;
   }
@@ -39,20 +44,25 @@ module.exports = async function handler(req, res) {
       headers: {
         Authorization: "Bearer " + t,
         "Content-Type": "application/json",
+        "PayPal-Request-Id": "capture-" + orderId,
       },
     });
     var j = await r.json().catch(function () {
       return {};
     });
-    var cap =
-      j.purchase_units &&
-      j.purchase_units[0] &&
-      j.purchase_units[0].payments &&
-      j.purchase_units[0].payments.captures &&
-      j.purchase_units[0].payments.captures[0];
+    var cap = firstCapture(j);
+    if (!cap && r.status === 422) {
+      var check = await fetch(base() + "/v2/checkout/orders/" + encodeURIComponent(orderId), {
+        headers: { Authorization: "Bearer " + t, "Content-Type": "application/json" },
+      });
+      if (check.ok) {
+        j = await check.json().catch(function () { return {}; });
+        cap = firstCapture(j);
+      }
+    }
     var value = cap && cap.amount && cap.amount.value;
     var eur = Math.round(Number(value || body.amount || 0) * 100) / 100;
-    if (!r.ok || !cap) {
+    if (!cap || String(cap.status || "").toUpperCase() !== "COMPLETED" || (cap.amount && cap.amount.currency_code !== "EUR")) {
       res.status(502).json({ error: j.message || "capture_failed", details: j });
       return;
     }

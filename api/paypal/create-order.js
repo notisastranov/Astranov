@@ -12,6 +12,16 @@ function readBody(req) {
   return {};
 }
 
+function returnOrigin(raw) {
+  try {
+    var u = new URL(String(raw || "https://astranov.eu"));
+    if (u.protocol === "https:" && (u.hostname === "astranov.eu" || u.hostname.endsWith(".astranov.eu"))) {
+      return u.origin;
+    }
+  } catch (_) {}
+  return "https://astranov.eu";
+}
+
 module.exports = async function handler(req, res) {
   cors(res);
   if (req.method === "OPTIONS") {
@@ -27,8 +37,14 @@ module.exports = async function handler(req, res) {
     return;
   }
   var body = readBody(req);
-  var amount = Math.max(1, Math.round(Number(body.amount || body.eur || 10) * 100) / 100);
-  var origin = String(body.origin || "https://astranov.eu").replace(/\/$/, "");
+  var requested = Number(body.amount || body.eur || 10);
+  if (!Number.isFinite(requested) || requested < 1 || requested > 50000) {
+    res.status(400).json({ error: "invalid_amount" });
+    return;
+  }
+  var amount = Math.round(requested * 100) / 100;
+  var origin = returnOrigin(body.origin);
+  var reference = String(body.reference || "AVC deposit").replace(/[\r\n]/g, " ").slice(0, 80);
   try {
     var t = await token();
     var r = await fetch(base() + "/v2/checkout/orders", {
@@ -36,13 +52,14 @@ module.exports = async function handler(req, res) {
       headers: {
         Authorization: "Bearer " + t,
         "Content-Type": "application/json",
+        "PayPal-Request-Id": "sn-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10),
       },
       body: JSON.stringify({
         intent: "CAPTURE",
         purchase_units: [
           {
             custom_id: "avc-deposit",
-            description: "Astranov AVC deposit · 1 EUR = 1 AVC · raises the pool",
+            description: "Astranov AVC deposit · " + reference,
             amount: { currency_code: "EUR", value: amount.toFixed(2) },
           },
         ],
