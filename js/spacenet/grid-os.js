@@ -2,7 +2,7 @@
   "use strict";
   if (window.__SN_GRID_OS) return;
   window.__SN_GRID_OS = true;
-  var BUILD = "20260826224500-paywire";
+  var BUILD = "20260827102000-reboot";
   var canvas = document.getElementById("g");
   var cityEl = document.getElementById("city");
   var lineEl = document.getElementById("line");
@@ -16,7 +16,6 @@
   var here = null, things = {}, dragging = false, lx = 0, ly = 0;
   var vendors = [], selected = null;
   var lastBeat = Date.now(), busy = false;
-
   function say(t) {
     if (!lineEl || t == null) return;
     try { lineEl.classList.remove("gone"); lineEl.textContent = String(t); } catch (e) {}
@@ -27,12 +26,7 @@
     materialize({ id: "marble", label: "MARBLE", run: "map marble" });
     if (mapOn) materialize({ id: "close", label: "GLOBE", run: "globe" });
   }
-  function done(msg) {
-    busy = false;
-    if (msg) say(msg);
-    armCore();
-    lastBeat = Date.now();
-  }
+  function done(msg) { busy = false; if (msg) say(msg); armCore(); lastBeat = Date.now(); }
   function size() {
     if (!canvas) return;
     try {
@@ -78,10 +72,6 @@
             ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]);
           }
           ctx.stroke();
-          if (here) {
-            var d = pr(ll(here.lat, here.lng));
-            if (d) { ctx.fillStyle = "#7ee9ff"; ctx.beginPath(); ctx.arc(d[0], d[1], 4, 0, 6.28); ctx.fill(); }
-          }
         }
       }
     } catch (e) {}
@@ -89,19 +79,12 @@
   }
   setInterval(function () {
     try {
-      if (Date.now() - lastBeat > 8000) {
-        busy = false; armCore(); say("Still running. locate · pizza · globe"); lastBeat = Date.now();
-      }
+      if (Date.now() - lastBeat > 8000) { busy = false; armCore(); say("Still running · " + BUILD); lastBeat = Date.now(); }
       if (liveEl && !liveEl.querySelector("button")) armCore();
     } catch (e) {}
   }, 4000);
   window.addEventListener("error", function () { busy = false; armCore(); });
   window.addEventListener("unhandledrejection", function () { busy = false; armCore(); });
-  function flyTo(lat, lng) {
-    look = { lat: +lat, lng: +lng };
-    yaw = ((lng + 180) * Math.PI) / 180 - Math.PI / 2;
-    pitch = ((lat * Math.PI) / 180) * 0.65;
-  }
   var TILES = {
     dark: "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
     bright: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -116,15 +99,7 @@
     css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"; document.head.appendChild(css);
     var s = document.createElement("script"); s.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
     s.onload = function () { loadLeaflet.busy = false; cb(); if (loadLeaflet.wait) loadLeaflet.wait(); };
-    s.onerror = function () { s.src = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"; };
     document.head.appendChild(s);
-  }
-  function setMap(kind) {
-    mapKind = TILES[kind] ? kind : "dark";
-    if (!leaflet || !window.L) return;
-    if (tileLayer) leaflet.removeLayer(tileLayer);
-    tileLayer = L.tileLayer(TILES[mapKind], { maxZoom: mapKind === "marble" ? 8 : 19, attribution: "" });
-    tileLayer.addTo(leaflet);
   }
   function ensureMap(lat, lng, kind, z) {
     return new Promise(function (resolve) {
@@ -132,22 +107,25 @@
       mapOn = true; cityEl.classList.add("on"); cityEl.style.pointerEvents = "auto";
       loadLeaflet(function () {
         try {
-          var c = [lat || (here && here.lat) || look.lat, lng || (here && here.lng) || look.lng];
+          var c = [lat || (here && here.lat) || 20, lng || (here && here.lng) || 15];
           if (!leaflet) leaflet = L.map(cityEl, { zoomControl: true, attributionControl: false }).setView(c, z || 14);
-          else { leaflet.setView(c, z || leaflet.getZoom() || 14); setTimeout(function () { try { leaflet.invalidateSize(true); } catch (e) {} }, 60); }
-          setMap(kind || mapKind || "dark");
+          else { leaflet.setView(c, z || 14); try { leaflet.invalidateSize(true); } catch (e) {} }
+          if (tileLayer) leaflet.removeLayer(tileLayer);
+          tileLayer = L.tileLayer(TILES[kind] || TILES.dark, { maxZoom: kind === "marble" ? 8 : 19 }).addTo(leaflet);
           if (!vendorLayer) vendorLayer = L.layerGroup().addTo(leaflet);
-          paintYou(); resolve(leaflet);
+          if (here) {
+            try { if (youMarker) leaflet.removeLayer(youMarker); } catch (e) {}
+            youMarker = L.circleMarker([here.lat, here.lng], { radius: 8, color: "#7ee9ff", fillColor: "#7ee9ff", fillOpacity: 0.95 }).addTo(leaflet);
+          }
+          resolve(leaflet);
         } catch (e) { resolve(null); }
       });
     });
   }
-  function paintYou() {
-    if (!leaflet || !window.L || !here) return;
-    try {
-      if (youMarker) leaflet.removeLayer(youMarker);
-      youMarker = L.circleMarker([here.lat, here.lng], { radius: 8, color: "#7ee9ff", fillColor: "#7ee9ff", fillOpacity: 0.95, weight: 2 }).addTo(leaflet);
-    } catch (e) {}
+  function closeCity() {
+    mapOn = false;
+    try { if (cityEl) { cityEl.classList.remove("on"); cityEl.style.pointerEvents = "none"; } } catch (e) {}
+    done("Globe · " + BUILD);
   }
   function km(a, b) {
     if (!a || !b) return 0;
@@ -155,76 +133,7 @@
     var x = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
     return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
   }
-  function clearVendors() {
-    vendors = []; selected = null;
-    try { if (vendorLayer) vendorLayer.clearLayers(); } catch (e) {}
-    Object.keys(things).forEach(function (k) { if (k.charAt(0) === "v" || k === "order" || k === "pay") dematerialize(k); });
-  }
-  function paintVendors(list) {
-    clearVendors(); vendors = list || [];
-    if (!leaflet || !window.L) { done("Map not ready — try pizza again."); return; }
-    var bounds = []; if (here) bounds.push([here.lat, here.lng]);
-    vendors.forEach(function (v) {
-      try {
-        var m = L.circleMarker([v.lat, v.lng], { radius: 8, color: "#ffe566", fillColor: "#ffe566", fillOpacity: 0.9, weight: 2 });
-        var distKm = here ? km(here, v).toFixed(1) : "?";
-        m.bindTooltip((v.name || "Shop") + " · " + distKm + " km", { direction: "top" });
-        m.on("click", function (e) { try { if (e && e.originalEvent) L.DomEvent.stopPropagation(e.originalEvent); } catch (err) {} selectVendor(v); });
-        vendorLayer.addLayer(m); bounds.push([v.lat, v.lng]);
-      } catch (e) {}
-    });
-    if (bounds.length > 1) try { leaflet.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 }); } catch (e) {}
-    vendors.slice(0, 6).forEach(function (v, i) {
-      var d = here ? km(here, v).toFixed(1) : "?";
-      materialize({ id: "v" + i, label: ((v.name || "Shop") + "").slice(0, 14) + " " + d + "km", run: function () { selectVendor(v); } });
-    });
-    done(vendors.length + " vendors · tap pin or name · ORDER next");
-  }
-  function selectVendor(v) {
-    selected = v;
-    materialize({ id: "order", label: "ORDER", run: function () { placeOrder(v); } });
-    armCore();
-    say((v.name || "Shop") + " selected · ORDER or pick another");
-    try { if (leaflet && v.lat) leaflet.panTo([v.lat, v.lng]); } catch (e) {}
-  }
-  function placeOrder(v) {
-    if (!v) { done("Pick a yellow pin first."); return; }
-    if (!here) { done("LOCATE first."); locate(); return; }
-    if (busy) return; busy = true;
-    say("Routing to " + (v.name || "shop") + "…");
-    var url = "https://router.project-osrm.org/route/v1/driving/" + here.lng + "," + here.lat + ";" + v.lng + "," + v.lat + "?overview=full&geometries=geojson";
-    var tmo = setTimeout(function () { done("Router slow — shop still selected. Try ORDER again or PAY."); }, 12000);
-    fetch(url).then(function (r) { return r.json(); }).then(function (j) {
-      clearTimeout(tmo);
-      var route = j && j.routes && j.routes[0];
-      if (!route) { done("No route. Shop held — try another or PAY."); return; }
-      try {
-        if (routeLine) leaflet.removeLayer(routeLine);
-        var coords = route.geometry.coordinates.map(function (c) { return [c[1], c[0]]; });
-        routeLine = L.polyline(coords, { color: "#7ee9ff", weight: 4, opacity: 0.85 }).addTo(leaflet);
-        leaflet.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
-      } catch (e) {}
-      var mins = Math.round(route.duration / 60), kmR = (route.distance / 1000).toFixed(1);
-      materialize({ id: "pay", label: "PAY", run: function () { payDeposit(10); } });
-      done("Route " + kmR + " km · ~" + mins + " min · PAY or pick another shop");
-    }).catch(function () { clearTimeout(tmo); done("Router offline. Shop selected — PAY or try again."); });
-  }
-  function closeCity() {
-    mapOn = false;
-    try { if (cityEl) { cityEl.classList.remove("on"); cityEl.style.pointerEvents = "none"; } } catch (e) {}
-    done("Globe. locate · pizza · marble");
-  }
-  function openCity(lat, lng, kind, z) {
-    ensureMap(lat, lng, kind, z).then(function () { done("Map · " + (kind || mapKind || "dark") + " · GLOBE to leave"); });
-  }
-  function geocode(q) {
-    return fetch("https://nominatim.openstreetmap.org/search?q=" + encodeURIComponent(q) + "&format=json&limit=1", { headers: { Accept: "application/json" } })
-      .then(function (r) { return r.json(); })
-      .then(function (j) { if (!j || !j[0]) return null; return { lat: +j[0].lat, lng: +j[0].lon, name: j[0].display_name }; })
-      .catch(function () { return null; });
-  }
-  function hunt(city) {
-    var c = city || here || look;
+  function hunt(c) {
     var body = '[out:json][timeout:12];(nwr["amenity"~"restaurant|cafe|fast_food"](around:8000,' + c.lat + "," + c.lng + ");nwr["cuisine"~"pizza",i](around:8000,' + c.lat + "," + c.lng + "););out center 25;';
     return fetch("https://overpass-api.de/api/interpreter", { method: "POST", body: body })
       .then(function (r) { return r.json(); })
@@ -232,8 +141,7 @@
         var els = (j && j.elements) || [], seen = {};
         return els.map(function (e) {
           var lat = e.lat || (e.center && e.center.lat), lng = e.lon || (e.center && e.center.lon);
-          var name = (e.tags && (e.tags.name || e.tags.brand)) || "Shop";
-          return { name: name, lat: lat, lng: lng };
+          return { name: (e.tags && (e.tags.name || e.tags.brand)) || "Shop", lat: lat, lng: lng };
         }).filter(function (v) {
           if (!v.lat) return false;
           var k = v.name + "|" + v.lat.toFixed(4);
@@ -241,20 +149,77 @@
         });
       }).catch(function () { return []; });
   }
+  function paintVendors(list) {
+    vendors = list || []; selected = null;
+    try { if (vendorLayer) vendorLayer.clearLayers(); } catch (e) {}
+    var bounds = []; if (here) bounds.push([here.lat, here.lng]);
+    vendors.forEach(function (v, i) {
+      var m = L.circleMarker([v.lat, v.lng], { radius: 8, color: "#ffe566", fillColor: "#ffe566", fillOpacity: 0.9 });
+      var d = here ? km(here, v).toFixed(1) : "?";
+      m.bindTooltip((v.name || "Shop") + " · " + d + " km");
+      m.on("click", function () { selectVendor(v); });
+      vendorLayer.addLayer(m); bounds.push([v.lat, v.lng]);
+      materialize({ id: "v" + i, label: ((v.name || "Shop") + "").slice(0, 14) + " " + d + "km", run: function () { selectVendor(v); } });
+    });
+    if (bounds.length > 1) try { leaflet.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 }); } catch (e) {}
+    done(vendors.length + " vendors · tap pin · ORDER · tap brand to reboot");
+  }
+  function selectVendor(v) {
+    selected = v;
+    materialize({ id: "order", label: "ORDER", run: function () { placeOrder(v); } });
+    armCore();
+    say((v.name || "Shop") + " · ORDER or pick another");
+  }
+  function placeOrder(v) {
+    if (!v || !here) { done("LOCATE then pick a shop"); return; }
+    say("Routing…");
+    var url = "https://router.project-osrm.org/route/v1/driving/" + here.lng + "," + here.lat + ";" + v.lng + "," + v.lat + "?overview=full&geometries=geojson";
+    fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+      var route = j && j.routes && j.routes[0];
+      if (!route) { done("No route — pick another"); return; }
+      try { if (routeLine) leaflet.removeLayer(routeLine); } catch (e) {}
+      var coords = route.geometry.coordinates.map(function (c) { return [c[1], c[0]]; });
+      routeLine = L.polyline(coords, { color: "#7ee9ff", weight: 4 }).addTo(leaflet);
+      leaflet.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
+      materialize({ id: "pay", label: "PAY", run: function () { payDeposit(10); } });
+      done("Route " + (route.distance / 1000).toFixed(1) + " km · ~" + Math.round(route.duration / 60) + " min · PAY");
+    }).catch(function () { done("Router offline — still live"); });
+  }
+  function payDeposit(eur) {
+    say("PayPal…");
+    fetch("/api/paypal/create-order", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amount: eur || 10, origin: location.origin }) })
+      .then(function (r) { return r.json().then(function (j) { return { j: j }; }); })
+      .then(function (x) {
+        if (x.j && x.j.approve) { location.href = x.j.approve; return; }
+        done("Pay · " + ((x.j && (x.j.error || x.j.message)) || "not configured") + " · still live");
+      }).catch(function () { done("Pay error — still live"); });
+  }
   function locate() {
-    if (!navigator.geolocation) { done("No GPS — type go City Name"); return; }
+    if (!navigator.geolocation) { done("No GPS — type go City"); return; }
     say("Locate…");
-    navigator.geolocation.getCurrentPosition(
-      function (p) {
-        here = { lat: p.coords.latitude, lng: p.coords.longitude };
-        flyTo(here.lat, here.lng);
-        ensureMap(here.lat, here.lng, "dark", 15).then(function () {
-          done("You · " + here.lat.toFixed(4) + "," + here.lng.toFixed(4) + " · try pizza");
-        });
-      },
-      function () { done("Allow location, then LOCATE again."); },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
-    );
+    navigator.geolocation.getCurrentPosition(function (p) {
+      here = { lat: p.coords.latitude, lng: p.coords.longitude };
+      ensureMap(here.lat, here.lng, "dark", 15).then(function () {
+        done("You · " + here.lat.toFixed(4) + "," + here.lng.toFixed(4) + " · pizza");
+      });
+    }, function () { done("Allow location, tap LOCATE"); }, { enableHighAccuracy: true, timeout: 15000 });
+  }
+  function runPizza() {
+    if (!here) { locate(); return; }
+    say("Hunting…");
+    ensureMap(here.lat, here.lng, "dark", 14).then(function () {
+      hunt(here).then(function (vs) {
+        if (!vs.length) { done("No shops — try again"); return; }
+        paintVendors(vs);
+      });
+    });
+  }
+  function grok(text) {
+    say("…");
+    fetch("/api/ai", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: text, system: "Astranov SpaceNet Grok. Short." }) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { done((j && (j.text || j.answer || j.reply || j.message)) || "Ready · " + BUILD); })
+      .catch(function () { done("AI busy · still live · " + BUILD); });
   }
   function materialize(spec) {
     spec = spec || {};
@@ -262,101 +227,40 @@
     if (things[id]) dematerialize(id);
     things[id] = spec;
     if (!liveEl) return id;
-    try {
-      liveEl.style.display = "flex";
-      var b = document.createElement("button");
-      b.id = "sn-m-" + id; b.type = "button"; b.textContent = spec.label || spec.title || id;
-      b.onclick = function (ev) {
-        if (ev) try { ev.preventDefault(); } catch (e) {}
-        try {
-          if (typeof spec.run === "function") spec.run();
-          else if (typeof spec.run === "string") run(spec.run);
-        } catch (err) { done("Action failed — still live."); }
-      };
-      liveEl.appendChild(b);
-    } catch (e) {}
-    return id;
+    liveEl.style.display = "flex";
+    var b = document.createElement("button");
+    b.id = "sn-m-" + id; b.type = "button"; b.textContent = spec.label || id;
+    b.onclick = function (ev) {
+      if (ev) ev.preventDefault();
+      try { if (typeof spec.run === "function") spec.run(); else run(spec.run); } catch (e) { done("still live"); }
+    };
+    liveEl.appendChild(b); return id;
   }
   function dematerialize(id) {
-    if (id === "all") { Object.keys(things).forEach(dematerialize); try { if (liveEl) liveEl.innerHTML = ""; } catch (e) {} return; }
     delete things[id];
-    try { var n = document.getElementById("sn-m-" + id); if (n && n.parentNode) n.parentNode.removeChild(n); } catch (e) {}
-  }
-  function grok(text) {
-    say("…");
-    var ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
-    var to = setTimeout(function () { if (ctrl) ctrl.abort(); }, 18000);
-    fetch("/api/ai", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: text, system: "Astranov SpaceNet Grok. Short. Act on Earth." }),
-      signal: ctrl && ctrl.signal
-    }).then(function (r) { clearTimeout(to); return r.json().catch(function () { return {}; }); })
-      .then(function (j) {
-        var t = (j && (j.text || j.answer || j.reply || j.message)) || "";
-        if (!t && j && j.error) t = String(j.error);
-        done(t || "Ready. locate · pizza · globe");
-      }).catch(function () { clearTimeout(to); done("AI busy — map still live. locate · pizza · globe"); });
-  }
-  function runPizza() {
-    if (!here) { done("LOCATE first."); locate(); return; }
-    if (busy) return; busy = true; say("Hunting…");
-    var tmo = setTimeout(function () { done("Hunt slow — try pizza again."); }, 15000);
-    ensureMap(here.lat, here.lng, "dark", 14).then(function () {
-      hunt(here).then(function (vs) {
-        clearTimeout(tmo);
-        if (!vs.length) { done("No shops in range. Move or try again."); return; }
-        paintVendors(vs);
-      });
-    });
-  }
-  function payDeposit(eur) {
-    say("PayPal deposit…");
-    fetch("/api/paypal/create-order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: eur || 10, origin: location.origin })
-    })
-      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-      .then(function (x) {
-        if (x.j && x.j.approve) { say("Approve PayPal…"); window.location.href = x.j.approve; return; }
-        if (x.j && x.j.error === "paypal_not_configured") {
-          done("PayPal keys not on Vercel yet — add PAYPAL_CLIENT_ID + SECRET in Vercel Project Settings → Environment Variables (they exist in Supabase). Map still live.");
-          return;
-        }
-        done("Pay failed · " + ((x.j && (x.j.error || x.j.message)) || "retry"));
-      })
-      .catch(function () { done("Pay network error — still live."); });
+    var n = document.getElementById("sn-m-" + id);
+    if (n && n.parentNode) n.parentNode.removeChild(n);
   }
   function run(raw) {
     var t = String(raw || "").trim(); if (!t) return;
-    var low = t.toLowerCase(); lastBeat = Date.now();
-    try {
-      if (low === "locate" || low === "where am i") return locate();
-      if (low === "globe" || low === "earth" || low === "close") return closeCity();
-      if (/^map\s*(dark|bright|national|marble)?$/.test(low)) {
-        var k = (low.match(/dark|bright|national|marble/) || ["dark"])[0];
-        return openCity((here && here.lat) || look.lat, (here && here.lng) || look.lng, k, k === "marble" ? 3 : 13);
-      }
-      if (low.indexOf("pizza") >= 0 || low === "order" || low.indexOf("delivery") >= 0) {
-        if (low === "order" && selected) return placeOrder(selected);
-        return runPizza();
-      }
-      if (/^(go |fly |show )/.test(low)) {
-        var q = t.replace(/^(go|fly|show)\s+/i, "");
-        return geocode(q).then(function (g) {
-          if (!g) return grok(t);
-          flyTo(g.lat, g.lng); look = g;
-          if (/map|street|city|order|pizza/.test(low)) openCity(g.lat, g.lng, "dark", 14);
-          else done(g.name);
-        });
-      }
-      if (low.indexOf("deposit") >= 0 || low.indexOf("paypal") >= 0 || low === "pay") {
-        return payDeposit(10);
-      }
-      return grok(t);
-    } catch (err) { done("Still running. locate · pizza · globe"); }
+    var low = t.toLowerCase();
+    if (low === "reboot" || low === "reset" || low === "reload") {
+      if (window.SNReboot) return window.SNReboot("cli");
+    }
+    if (low === "locate" || low === "where am i") return locate();
+    if (low === "globe" || low === "earth" || low === "close") return closeCity();
+    if (/^map\s*(dark|bright|national|marble)?$/.test(low)) {
+      var k = (low.match(/dark|bright|national|marble/) || ["dark"])[0];
+      return ensureMap((here && here.lat) || 20, (here && here.lng) || 15, k, k === "marble" ? 3 : 13).then(function () { done("Map · " + k + " · " + BUILD); });
+    }
+    if (low.indexOf("pizza") >= 0 || low === "order" || low.indexOf("delivery") >= 0) {
+      if (low === "order" && selected) return placeOrder(selected);
+      return runPizza();
+    }
+    if (low.indexOf("pay") >= 0 || low.indexOf("deposit") >= 0) return payDeposit(10);
+    return grok(t);
   }
-  window.SN = { gold: true, build: BUILD, forever: true, flyTo: flyTo, locate: locate, openCity: openCity, closeCity: closeCity, materialize: materialize, dematerialize: dematerialize, run: run, armCore: armCore, payDeposit: payDeposit };
+  window.SN = { gold: true, build: BUILD, forever: true, run: run, locate: locate };
   if (canvas) {
     canvas.addEventListener("pointerdown", function (e) { if (mapOn) return; dragging = true; lx = e.clientX; ly = e.clientY; });
     window.addEventListener("pointermove", function (e) {
@@ -372,18 +276,17 @@
   if (go) go.addEventListener("click", function (e) {
     if (inEl && inEl.value.trim()) return; e.preventDefault();
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { done("Type instead of mic."); return; }
+    if (!SR) { done("Type instead"); return; }
     var rec = new SR(); rec.continuous = false; rec.interimResults = true;
     rec.onresult = function (ev) {
       var i, tx = "", fin = false;
       for (i = ev.resultIndex; i < ev.results.length; i++) { tx += ev.results[i][0].transcript; if (ev.results[i].isFinal) fin = true; }
       if (inEl) inEl.value = tx; if (fin && tx.trim()) run(tx.trim());
     };
-    rec.onerror = function () { done("Mic error — type instead."); };
-    try { rec.start(); } catch (err) { done("Mic blocked — type."); }
+    try { rec.start(); } catch (err) { done("Mic blocked"); }
   });
   window.addEventListener("resize", size); size(); tick();
   window.__SN_ALIVE = true; window.__SN_FULL = true;
   armCore();
-  say("SpaceNet · " + BUILD + " · never stuck · locate → pizza → order → pay");
+  say("SpaceNet " + BUILD + " · tap ASTRANOV to wipe+reboot · locate then pizza");
 })();
