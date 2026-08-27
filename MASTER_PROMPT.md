@@ -1,125 +1,102 @@
-# ASTRANOV SPACENET — MASTER PROMPT FOR ANY AI
-**Date:** 2026-08-27
-**Owner:** Notis Astranov · Rhodes, Greece
+# ASTRANOV SPACENET — MASTER PROMPT
+**What this file is:** the archive. One document so any AI can see what is actually going on. It is not a constitution, not a sermon, not a pile of “laws” to role-play. Read it, then read the live source, then change the smallest piece that is still broken.
+
+**Date of this rewrite:** 2026-08-27
+**Owner:** Notis Astranov · Rhodes, Greece · notisastranov@gmail.com · X @astranov97250
 **Live:** https://astranov.eu
-**Repo:** notisastranov/astranov.eu · branch `main`
-**Display version on the bar:** `ASTRANOV SPACENET GROK V1`
-**Internal push stamp now:** 3717 (`VERSION` file = `V1` + `push 3717`)
-**Product:** a global operating system fused with Grok. Not a chatbot. Not a website with menus.
+**Repo:** notisastranov/astranov.eu · `main`
+**Bar text:** `ASTRANOV SPACENET GROK V1`
+**Internal stamp at this rewrite:** 3719
+**Today’s bar:** this product either works as a closed task-to-credit loop or we stop spending money on it.
 
-Paste this whole file as system / first context before writing any code.
-
----
-
-## 0. WHO YOU ARE IN THIS PROJECT
-
-You are an implementer on Astranov SpaceNet.
-You do not redesign the product. You do not invent a second app. You do not restore dead UI.
-You read live `index.html` + `js/spacenet/app.js` first. You change only what the current task needs.
-You come back to the owner only when the basic loop works on a phone: locate → find real place → NOW/MAIL/PICK UP → carrier → pay → stage watch.
-
-If a previous agent already shipped a working piece, **keep it**. Do not “clean up” by rewriting from zero. That is how this project dies.
+Paste this file first. Then open live `index.html` and `js/spacenet/app.js`. Chat history is junk next to those two files plus this archive.
 
 ---
 
-## 1. ONE SENTENCE
+## What the thing is
 
-SpaceNet is a standalone installable PWA on astranov.eu: a spinning globe, one talk line, microphone, and Grok. It finds real places near the user, then materializes only the next action: how to get the thing (now / mail / pick up), who carries it (Astranov first, then partners, then mass portals), then pay, then watch every stage until it is in the user’s hands.
+SpaceNet is a standalone installable PWA. Grok is the mind inside it. Astranov is the intelligence and the own-service carrier. Notis is the architect.
+It is not a chatbot page. It is not HUD. It is not twin CLI.
 
----
+What the person sees: brand strip `ASTRANOV SPACENET GROK V1` (tap = wipe caches + unregister SW + reload); a **grid globe** on `#g`; one talk line, one mic, a `+`; buttons only when the next step needs them; `#city` hidden until a street or national job needs a flat map.
 
-## 2. IDENTITY LOCK
-
-| Word | Meaning |
-|---|---|
-| Astranov | The intelligence. The owner’s system. The own delivery service. |
-| SpaceNet | The operating system / the network. |
-| Grok | The in-app mind (grok-4 / grok-4.5 via `/api/ai`). |
-| Notis Astranov | Architect / owner. Email notisastranov@gmail.com. X: @astranov97250. |
-| AVC | Internal credit. PayPal deposit → AVC 1:1 + system pool. |
-
-Banned as product names: “island”, “kernel”, “healer”, “HUD”, “twin CLI”, “Command the HUD”, “SpaceNet AI”, “free chatbot”.
-The top bar is a brand strip. Do not call it an island in speech to the owner.
+AVC = internal credit. Tasking spends AVC instantly. PayPal exists only to reload AVC when the balance is empty.
 
 ---
 
-## 3. OWNER LAWS (BREAK THESE AND YOU FAILED)
+## The globe — this is where AIs keep lying
 
-1. **Do not rewrite from zero.** Stack = `index.html` + `js/spacenet/*`. Prefer patching `js/spacenet/app.js` and cache-busting `?v=` on the script tag.
-2. **No toy buttons.** Never park LOCATE / PIZZA / CITY / GLOBE / MARBLE on the dock “just in case”. Materialize only the next needed control. Boot dock = input + mic (+).
-3. **Ask permissions on boot.** Microphone + GPS without waiting for a button. Then speak. Then listen. Android may need one Allow tap.
-4. **No talking by itself about kitchens/roads.** No auto monologue. No boot pizza hunt. Grok answers the user.
-5. **No fake dots.** No fake YOU. No D-hot / D-cold / “New Driver”. No silent Rhodes. YOU = GPS grant this session only. Shops/drivers = named OSM/Nominatim results only.
-6. **Globe is default.** City map only when the job needs streets. Zoom out of city → globe, not a flat map.
-7. **Heavy UI / out-of-scope changes need Notis first.**
-8. **Never dead-end.** Every async path must leave the user able to talk or tap the next step.
-9. **Prototype cycle:** ship → if fail, fix once → if fail again, diagnose then replace that piece only. Do not nuke a working loop to treat a symptom.
-10. **Do not restore HUD / twin CLI / chrome-fix / os-bootloader UI.** Those are ghosts. Main is Grid OS only.
-11. **PayPal keys exist** in Supabase Custom secrets. Do not claim they are missing. Gap is Vercel env sync (`PAYPAL_CLIENT_ID` + `PAYPAL_CLIENT_SECRET`) and the live `/api/paypal/*` wire.
-12. **Versioning:** bar text is always `ASTRANOV SPACENET GROK V1` (then V2 after push 1999). Internal stamp = GitHub push count (3717 now). No “live”, no dated reboot stamps on the bar.
-13. **Features appear on globe / field / route**, not in room-code modals.
-14. **Dual mode:** full voice AND full hands. Never require talking. Never require Grok. Same tools.
+A lazy model puts a Mercator or equirectangular map inside a circular window and calls it a globe. ChatGPT did that. It is fakery. Not acceptable.
 
----
+Notis settled the default globe: **a sphere drawn as a grid. Latitudes and meridians. Nothing else.** No Blue Marble wallpaper pretending to be 3D. No NASA JPEG scrolled inside a clip-path circle. That clip-path trick is still a flat map.
 
-## 4. WHAT THE USER SEES
+| Distance / job | Surface | Projection |
+|---|---|---|
+| Space / world / zoomed out | `#g` canvas sphere | Spherical. Grid lines of lat and lng. Drag spins the ball. |
+| National | `#city` Leaflet only if the job needs a country view | Mercator allowed |
+| City / streets / last-mile road | `#city` Leaflet | Mercator allowed |
 
-Brand bar: ASTRANOV SPACENET GROK V1. Tap brand = wipe caches, unregister SW, reload.
-Spinning globe (#g). City map (#city) hidden until a job needs streets.
-Dock: only the next buttons or nothing; + ; talk input ; mic ; answer line.
-Dark electric-blue glass. No cheap white chrome. No beeps. No vibrate.
-PWA standalone. Brand tap = nuclear reboot.
+When the person zooms out of the city or national map (Leaflet zoom ≤ 10, or they say globe / close), **leave the flat map**. Show the grid sphere again. If you keep Mercator tiles and shrink them into a circle, you are still faking a globe.
+
+Pins on the grid globe use the same sphere math (front face only). You = this session’s GPS grant. A shop pin = the named place they picked. Do not spray a dozen shop dots. Do not load map tiles or WMS on idle boot.
 
 ---
 
-## 5. THE PRODUCT LOOP
+## The task cycle — one rope, no cut
 
-boot → ask mic + GPS → speak Found you → listen
-user says what they want → hunt real named places near here → show those places
-user picks a place → NOW | MAIL | PICK UP
-NOW → carriers Astranov first (own associates, paid→picked→boxed→moving→handed→verified), then local partner, then DoorDash / Instacart / Walmart as last-mile portals only
-MAIL → Astranov mail, partner, national post (days, no heat hold)
-PICK UP → handoff at shop, confirm
-user picks carrier → PAY → PayPal → AVC → if Astranov, live stage watch
+boot → mic + GPS → short status → listen. GPS denied → ALLOW LOCATION.
+Person says what they want → hunt named places (Nominatim + Overpass) → list name · km.
+Pick a place → stay on grid globe → NOW | MAIL | PICK UP.
+NOW: Astranov first (own associates), then named local partner, then DoorDash / Instacart / Walmart as last-mile portals only where that country uses them.
+MAIL: only if goods survive days with no heat hold.
+PICK UP: handoff at the named shop.
+Price is AVC. Balance >= price → spend instantly → stage starts. Balance < price → RELOAD → PayPal → AVC 1:1 → same spend.
+Astranov stages: paid → picked → boxed → moving → handed → verified. A stage moves when a real associate confirms it.
+Streets map only if they ask map / streets / city / national, or when a paid own-service job needs the road. Zoom out → grid globe.
 
-Quality: ice cream 12 min frozen never with hot; cold 25; pizza/soup 35; coffee 25; pharmacy 90; parcel 180. Reject plans that kill the product.
-
----
-
-## 6. LIVE CODE MAP
-
-index.html = shell + reboot + loads /js/spacenet/app.js?v=3717
-js/spacenet/app.js = boot, voice, locate, hunt, fulfill, pay, globe tick
-sw.js = network-first. VERSION = V1 + push NNNN
-/api/ai = Grok. /api/paypal/* = money.
-Do not load dated chrome-* or grid-os-20* files.
+Hold times: frozen 12 min never with hot; cold 25; pizza/soup 35 never with frozen; coffee 25; pharmacy 90; parcel 180. If the ride is longer than the hold, refuse NOW and offer pick up or a closer place.
 
 ---
 
-## 7. HOW TO SHIP
+## Money — internal first, PayPal is the tap
 
-Read live GitHub main. Patch smallest surface. Bump stamp in meta, app.js VER, script ?v=, VERSION. Bar stays V1.
-Push full files to main. Verify with curl. Give owner https://astranov.eu/?v=NNNN.
-Never push a stub index.html.
+Work is paid in our credit, immediately. AVC lives with the person (device ledger now, database ledger when signed in). EUR in through PayPal becomes AVC 1:1 and raises the system pool. A task debit is an internal transfer. When AVC runs out, the next control is RELOAD. After capture, AVC goes up, then the waiting debit completes.
+National invoice law can come later. Invoices can be issued collectively from the SpaceNet database, or a client can issue their own invoice from SpaceNet. That paper does not pause the live debit.
 
----
-
-## 8. SECRETS
-
-In Supabase Custom secrets (do not put in front-end): PAYPAL_*, XAI_API_KEY, CesiumION, VERCEL_TOKEN, CLOUDFLARE_API_TOKEN, ARCHITECT_EMAIL, DEEPSEEK, CODERS_BRIDGE, GROQ, GEMINI, OPENROUTER.
-Maps after boot only if the job needs them. Blue Marble GIBS needs no key.
-PayPal keys exist. Vercel env is the remaining gap.
+Live: GET /api/paypal/config · POST /api/paypal/create-order · POST /api/paypal/capture-order.
+PayPal keys are in Supabase Custom secrets. If create-order says paypal_not_configured, the hole is Vercel env on that host, not the vault.
 
 ---
 
-## 9. DO NOT REPEAT
+## Screen
 
-Twin CLI, HUD law, chrome-fix, white brand, long stamps, auto marina, fake Rhodes, Silver Wings auto-park, kitchen TTS, mic beep loop, healer killing SW, placeholder index, idle toy buttons.
+Boot dock = input + mic + +. No toy buttons. Voice and hands are the same tools. No kitchen monologue. No fake YOU / fake drivers / silent Rhodes. No beeps. Greek + English. After speak, listen. Do not tight-loop the mic.
 
 ---
 
-## 10. COPY-PASTE STARTER
+## Files that are actually the app
 
-You are implementing Astranov SpaceNet on https://astranov.eu (repo notisastranov/astranov.eu). Read MASTER_PROMPT.md and live index.html + js/spacenet/app.js. Do not rewrite from zero. Do not restore HUD or toy buttons. Boot asks mic+GPS, finds real places, then NOW/MAIL/PICK UP, then Astranov-first carriers with stage watch, then pay. Bar is ASTRANOV SPACENET GROK V1. Internal version is GitHub push count. Ship the smallest patch that finishes the requested slice and verify the live HTML yourself.
+index.html = shell. js/spacenet/app.js = boot, grid globe, voice, hunt, fulfill, AVC, PayPal reload. sw.js network-first. VERSION = V1 + push NNNN. MASTER_PROMPT.md = this archive. /api/ai = Grok. /api/paypal/* = reload tap.
+Do not load dated chrome-* or HUD. Never push a stub index.html.
 
-Owner: Notis Astranov. This file plus live source outrank chat history.
+Ship: read live main, patch smallest surface, bump stamp, curl live yourself, give https://astranov.eu/?v=NNNN. Tap brand if an old SW is stuck.
+
+---
+
+## Already failed — do not replay
+
+Twin CLI, HUD, chrome-fix, white chrome, long stamps, auto marina, fake Rhodes, Silver Wings, kitchen TTS, mic beep loop, healer killing SW, placeholder index, idle toys, Mercator-in-a-circle, NASA JPEG clipped to a circle, auto flat map on locate or shop pick, GPS deny with no ALLOW LOCATION, “PayPal keys missing” when they sit in Supabase.
+
+---
+
+## Closed loop checklist (today)
+
+Grid sphere on boot. No photo map in the circle. Mic + GPS on boot. Hunt named places. NOW / MAIL / PICK UP. Astranov first. AVC debit if balance is enough. RELOAD → PayPal → AVC → same debit if not. Stage paid only after AVC moved. Zoom out of streets returns to the grid sphere. No dead end.
+
+---
+
+## Starter line
+
+You are working on Astranov SpaceNet, https://astranov.eu, repo notisastranov/astranov.eu. Read MASTER_PROMPT.md, then live index.html and js/spacenet/app.js. The default world is a grid sphere, not a Mercator disc. Flat maps are city and national only, and zoom out must return to that sphere. Tasks spend AVC instantly; PayPal only reloads empty credit. Do not restore HUD. Do not invent a second app. Finish the unbroken loop and verify live yourself.
+
+Owner: Notis Astranov. This archive plus the live source are what is going on.
