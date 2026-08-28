@@ -6,7 +6,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar text:** `ASTRANOV SPACENET GROK V1`
-**Internal stamp at this rewrite:** 4001
+**Internal stamp at this rewrite:** 4002
 **Today’s bar:** this product either works as a closed task-to-credit loop or we stop spending money on it.
 
 Paste this file first. Then open live `index.html` and `js/spacenet/app.js`. Chat history is junk next to those two files plus this archive.
@@ -65,7 +65,7 @@ What the page must not do:
 
 `goodsOf` and Overpass tag filters are not a mind. They only translate a hunt string into OSM tags after Grok (or a tap) already decided to hunt. Keep them small. Do not grow them into a language.
 
-Hands path is separate and allowed: tap the globe, tap `+`, tap NOW / MAIL / PICK UP / PAY / RELOAD. Hands never require talking. Talking never requires a keyword.
+Hands path is separate and allowed: tap flies, hold opens the level menu, `+` is the same menu. NOW / MAIL / PICK UP / PAY / RELOAD appear only after a real pick. Hands never require talking. Talking never requires a keyword.
 
 ---
 
@@ -81,17 +81,26 @@ Notis settled the default globe: **a sphere drawn as a grid. Latitudes and merid
 | National | `#city` Leaflet only if the job needs a country view | Mercator allowed |
 | City / streets / last-mile road | `#city` Leaflet | Mercator allowed |
 
-When the person zooms out of the city or national map (Leaflet zoom ≤ 10, or they say globe / close), **leave the flat map**. Show the grid sphere again. If you keep Mercator tiles and shrink them into a circle, you are still faking a globe.
+When the person zooms out of the city or national map (Leaflet zoom ≤ 4, or they say globe / close), **leave the flat map**. Show the grid sphere again. If you keep Mercator tiles and shrink them into a circle, you are still faking a globe.
 
-Pins on the grid globe use the same sphere math (front face only). You = this session’s GPS grant. A shop pin = the named place they picked. Do not spray a dozen shop dots. Do not load map tiles or WMS on idle boot.
+Pins on the grid globe use the same sphere math (front face only). You = this session’s GPS grant. Do not spray a dozen shop dots. Do not load map tiles on idle boot. Globe stays still unless they drag it. Never speak raw coordinates.
 
-The globe must stay still unless the person drags it. No idle spin. Pinch (phone) and wheel (desk) zoom the ball. After locate, the camera faces YOU and the spoken line is a place name (Rhodes), never raw coordinates. Tap-menu titles are names or “no named place”, never `1.42S 65.50E`.
+## Fly, hold, work — do not flood the screen
 
-Hands `+` must include LOCATE, CITY, NATIONAL, FOOD, BEER, SHOPS. CITY / NATIONAL open Leaflet. Zooming Leaflet out past country (zoom ≤ 4) or tapping GLOBE returns to the grid sphere. Do not auto-open the flat map on locate or on shop pick — the person taps CITY / STREETS / NATIONAL. Hunt uses Nominatim + Overpass + Photon; Photon is required because the public Overpass/Nominatim endpoints die.
+Idle dock is empty except ALLOW LOCATION until GPS is granted, and except real hunt/pay results. No FOOD/BEER/CITY/NATIONAL chrome sitting on the globe.
 
-The globe must stay still unless the person drags it. No idle spin. Pinch (phone) and wheel (desk) zoom the ball. After locate, the camera faces YOU and the spoken line is a place name (Rhodes), never raw coordinates. Tap-menu titles are names or “no named place”, never `1.42S 65.50E`.
+Ladder:
+- **Tap / point** = fly there. Globe tap flies to **national** at that point. National tap flies to **city**. City tap sets the work pin (name the place). Do not open a menu on tap.
+- **Hold** = context menu for the current level. Hold does not fly.
+- **Pinch** and **two-finger swipe up/down** = zoom. Zooming the globe in far enough descends to national. Zooming Leaflet out past country (≤ 4) returns to the globe.
+- **City map is where work happens** (tasks, find, pay). Globe and national are navigation plus high-level post/call/task.
 
-Hands `+` must include LOCATE, CITY, NATIONAL, FOOD, BEER, SHOPS. CITY / NATIONAL open Leaflet. Zooming Leaflet out past country (zoom ≤ 4) or tapping GLOBE returns to the grid sphere. Do not auto-open the flat map on locate or on shop pick — the person taps CITY / STREETS / NATIONAL. Hunt uses Nominatim + Overpass + Photon; Photon is required because the public Overpass/Nominatim endpoints die.
+Hold menus (enough, then stop):
+- Globe: WHAT IS HERE · GLOBAL POST · GLOBAL CALL · GLOBAL TASK · ADD
+- National: WHAT IS HERE · NATIONAL POST · NATIONAL CALL · NATIONAL TASK
+- City: WHAT IS HERE · CITY FIND · CITY CALL · CITY TASK · CITY POST
+
+Everything else is the search field / Grok, or the real result buttons after a hunt. `+` opens the same hold menu for the current view. Hunt uses Nominatim + Overpass + Photon.
 
 ---
 
@@ -129,7 +138,9 @@ Boot dock = input + mic + +. No toy buttons. Voice and hands are the same tools.
 
 ## Hands on the globe
 
-Tap or long-press the grid sphere. A place menu must open on that spot (FOOD HERE / BEER HERE / SHOPS HERE / THIS PLACE) and ask what you want there. + opens the same task list without voice. Hunt uses the tapped point, not a silent default city. Do not wait on Grok to show the menu.
+Tap flies. Hold is the menu. Do not open FOOD/BEER/SHOPS on a tap.
+
+Globe tap → fly to national at that point. National tap → fly to city. City tap → work pin, name the place. Hold on each level opens only that level’s menu (what is here / post / call / task / add). `+` opens the same menu for the current view. Hunt uses the pinned point. Do not wait on Grok to show the hold menu.
 
 ---
 
