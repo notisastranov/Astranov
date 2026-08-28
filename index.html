@@ -1,18 +1,73 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" /><title>Astranov SpaceNet Grok</title><meta name="astranov-build" content="4002" /><meta name="theme-color" content="#02040a" /><meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" /><meta name="apple-mobile-web-app-capable" content="yes" /><link rel="manifest" href="/manifest.webmanifest" />
-<style>html,body{margin:0;height:100%;background:#02040a;color:#d8f6ff;overflow:hidden;font-family:system-ui,sans-serif}#g{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1;touch-action:none}#city{position:fixed;inset:0;z-index:12;display:none;background:#02040a;pointer-events:none}#city.on{display:block;pointer-events:auto}#top,#dock{position:fixed;left:0;right:0;display:flex;justify-content:center;pointer-events:none;z-index:40}#top{top:max(8px,env(safe-area-inset-top))}#dock{bottom:0;padding:0 10px max(12px,env(safe-area-inset-bottom))}#island,#panel{pointer-events:auto}#island{display:flex;align-items:center;gap:7px;padding:8px 14px;background:rgba(4,14,28,.78);border:1px solid rgba(80,220,255,.35);border-radius:999px;max-width:94vw;box-shadow:0 0 22px rgba(40,200,255,.18)}#island b{font:800 11px/1 system-ui;letter-spacing:.16em}#island .a{color:#4df0ff;text-shadow:0 0 6px #4df0ff}#island .s{color:#7ee9ff}#island .k{color:#4a7a94}#ver{font:800 11px/1 system-ui;color:#4df0ff}#heal{width:7px;height:7px;border-radius:99px;background:#4df0ff;box-shadow:0 0 10px #4df0ff;animation:pulse 1.6s ease-in-out infinite}@keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}#panel{width:min(520px,100%);padding:8px 6px 4px;background:linear-gradient(180deg,transparent,rgba(2,8,18,.92))}#sn-live{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}#sn-live:empty{display:none}#sn-live button{height:34px;padding:0 12px;border:1px solid rgba(126,233,255,.5);background:rgba(4,16,28,.8);color:#7ee9ff;font:700 11px system-ui;border-radius:8px}#sn-place{position:fixed;z-index:80;display:none;min-width:168px;max-width:78vw;padding:8px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.5);border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.5);pointer-events:auto}#sn-place.on{display:block}#sn-place .ttl{font:700 11px/1.3 system-ui;color:#e8fbff;margin:0 4px 8px}#sn-place button{display:block;width:100%;text-align:left;height:34px;margin:0 0 4px;padding:0 10px;border:1px solid rgba(126,233,255,.4);background:rgba(4,16,28,.9);color:#7ee9ff;font:700 11px system-ui;border-radius:8px}form{display:flex;align-items:center;gap:10px;min-height:48px;border-bottom:1px solid rgba(126,233,255,.4)}input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font:500 16px system-ui;outline:none}#line{margin:10px 4px 0;font:500 12px/1.5 ui-monospace,monospace;color:#7ee9ff;max-height:8rem;overflow:auto;white-space:pre-wrap}.hub button{width:38px;height:38px;border:1px solid rgba(77,240,255,.6);border-radius:999px;background:rgba(4,12,24,.4);color:#4df0ff}</style></head>
-<body><canvas id="g"></canvas><div id="sn-place"></div><div id="city"></div><div id="top"><div id="island" title="Tap brand to reboot"><span id="heal"></span><b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b> <span id="ver">V1</span></div></div><div id="dock"><div id="panel"><div id="sn-live"></div><form id="f"><div class="hub"><button type="button" id="plus">+</button></div><input id="in" autocomplete="off" enterkeyhint="send" placeholder="Talk to Astranov SpaceNet Grok" /><div class="hub"><button type="button" id="go" aria-label="Voice">🎙</button></div></form><div id="line"></div></div></div>
-<script src="/js/spacenet/app.js?v=4002"></script>
+<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" /><title>Astranov SpaceNet Grok</title><meta name="astranov-build" content="4003" /><meta name="theme-color" content="#02040a" /><meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" /><meta name="apple-mobile-web-app-capable" content="yes" /><link rel="manifest" href="/manifest.webmanifest" />
+<style>
+html,body{margin:0;height:100%;background:#02040a;color:#d8f6ff;overflow:hidden;font-family:system-ui,sans-serif}
+#g{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1;touch-action:none}
+#city{position:fixed;inset:0;z-index:12;display:none;background:#02040a;pointer-events:none}
+#city.on{display:block;pointer-events:auto}
+#top,#dock{position:fixed;left:0;right:0;display:flex;justify-content:center;pointer-events:none;z-index:40}
+#top{top:max(8px,env(safe-area-inset-top))}
+#dock{bottom:0;padding:0 10px max(12px,env(safe-area-inset-bottom))}
+#island,#panel{pointer-events:auto}
+#island{display:flex;align-items:center;gap:7px;padding:8px 14px;background:rgba(4,14,28,.78);border:1px solid rgba(80,220,255,.35);border-radius:999px;max-width:94vw;box-shadow:0 0 22px rgba(40,200,255,.18)}
+#island b{font:800 11px/1 system-ui;letter-spacing:.16em}
+#island .a{color:#4df0ff;text-shadow:0 0 6px #4df0ff}
+#island .s{color:#7ee9ff}
+#island .k{color:#4a7a94}
+#ver{font:800 11px/1 system-ui;color:#4df0ff}
+#heal{width:7px;height:7px;border-radius:99px;background:#4df0ff;box-shadow:0 0 10px #4df0ff;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+#panel{width:min(520px,100%);padding:8px 6px 4px;background:linear-gradient(180deg,transparent,rgba(2,8,18,.92))}
+#sn-live{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+#sn-live:empty{display:none}
+#sn-live button{height:34px;padding:0 12px;border:1px solid rgba(126,233,255,.5);background:rgba(4,16,28,.8);color:#7ee9ff;font:700 11px system-ui;border-radius:8px}
+#sn-place{position:fixed;z-index:80;display:none;min-width:168px;max-width:78vw;padding:8px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.5);border-radius:12px;box-shadow:0 10px 28px rgba(0,0,0,.5);pointer-events:auto}
+#sn-place.on{display:block}
+#sn-place .ttl{font:700 11px/1.3 system-ui;color:#e8fbff;margin:0 4px 8px}
+#sn-place button{display:block;width:100%;text-align:left;height:34px;margin:0 0 4px;padding:0 10px;border:1px solid rgba(126,233,255,.4);background:rgba(4,16,28,.9);color:#7ee9ff;font:700 11px system-ui;border-radius:8px}
+form{display:flex;align-items:center;gap:10px;min-height:48px;border-bottom:1px solid rgba(126,233,255,.4)}
+input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font:500 16px system-ui;outline:none}
+#line{margin:10px 4px 0;font:500 12px/1.5 ui-monospace,monospace;color:#7ee9ff;max-height:8rem;overflow:auto;white-space:pre-wrap}
+.hub button{width:38px;height:38px;border:1px solid rgba(77,240,255,.6);border-radius:999px;background:rgba(4,12,24,.4);color:#4df0ff}
+#sn-sheet{position:fixed;inset:0;z-index:90;display:none;pointer-events:none}
+#sn-sheet.on{display:block;pointer-events:auto}
+#sn-sheet .bg{position:absolute;inset:0;background:rgba(1,6,14,.55)}
+#sn-sheet .card{position:absolute;left:0;right:0;bottom:0;max-height:86vh;overflow:auto;-webkit-overflow-scrolling:touch;padding:16px 16px max(18px,env(safe-area-inset-bottom));background:linear-gradient(180deg,#071422,#02080f);border-top:1px solid rgba(126,233,255,.45);border-radius:22px 22px 0 0;box-shadow:0 -18px 40px rgba(0,0,0,.55);color:#e8fbff}
+#sn-sheet .hd{margin:0 0 14px}
+#sn-sheet .ttl{font:650 22px/1.15 system-ui;letter-spacing:-.02em;color:#f4fdff;padding-right:88px}
+#sn-sheet .sub{margin-top:6px;font:500 13px/1.4 system-ui;color:#8ec8d8}
+#sn-sheet .x,#sn-sheet .back{position:absolute;top:12px;height:36px;padding:0 12px;border:1px solid rgba(126,233,255,.35);background:rgba(4,16,28,.9);color:#7ee9ff;font:650 12px system-ui;border-radius:10px}
+#sn-sheet .x{right:12px}
+#sn-sheet .back{right:88px}
+#sn-sheet .opt{display:block;width:100%;text-align:left;margin:0 0 8px;padding:14px 14px;min-height:56px;border:1px solid rgba(126,233,255,.28);background:rgba(6,20,34,.92);color:#e8fbff;border-radius:14px}
+#sn-sheet .opt b{display:block;font:650 16px/1.2 system-ui;color:#f4fdff}
+#sn-sheet .opt span{display:block;margin-top:4px;font:500 12px/1.35 system-ui;color:#8ec8d8}
+#sn-sheet form[data-kind]{display:block;border:0;min-height:0}
+#sn-sheet label{display:block;margin:0 0 10px;font:600 11px/1.2 system-ui;letter-spacing:.08em;text-transform:uppercase;color:#8ec8d8}
+#sn-sheet input,#sn-sheet textarea,#sn-sheet select{display:block;width:100%;margin-top:6px;box-sizing:border-box;border:1px solid rgba(126,233,255,.28);background:rgba(2,10,18,.85);color:#e8fbff;font:500 16px/1.35 system-ui;border-radius:10px;padding:12px 12px}
+#sn-sheet textarea{resize:vertical;min-height:96px}
+#sn-sheet .go{display:block;width:100%;height:52px;margin:8px 0 4px;border:0;border-radius:14px;background:#d8f6ff;color:#041018;font:700 15px system-ui}
+#sn-sheet .note,#sn-sheet .menu{white-space:pre-wrap;font:500 14px/1.45 system-ui;color:#c5eaf3;margin:0 0 12px}
+#sn-sheet .thumb,#sn-sheet .shot{display:block;width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin:0 0 12px;border:1px solid rgba(126,233,255,.25)}
+#sn-pick{position:fixed;top:max(52px,env(safe-area-inset-top));left:10px;right:10px;z-index:88;display:none;align-items:center;gap:10px;padding:10px 12px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.45);border-radius:14px;color:#e8fbff;font:650 13px system-ui;pointer-events:auto}
+#sn-pick.on{display:flex}
+#sn-pick .msg{flex:1}
+#sn-pick button{height:36px;padding:0 12px;border:1px solid rgba(126,233,255,.4);background:rgba(4,16,28,.9);color:#7ee9ff;font:700 11px system-ui;border-radius:10px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head>
+<body><canvas id="g"></canvas><div id="sn-place"></div><div id="sn-sheet"><div class="bg" data-act="close"></div><div class="card" role="dialog" aria-label="Place work"></div></div><div id="sn-pick"><span class="msg">Tap the other end, or search</span><button type="button" data-act="cancel-pick">CANCEL</button></div><div id="city"></div><div id="top"><div id="island" title="Tap brand to reboot"><span id="heal"></span><b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b> <span id="ver">V1</span></div></div><div id="dock"><div id="panel"><div id="sn-live"></div><form id="f"><div class="hub"><button type="button" id="plus">+</button></div><input id="in" autocomplete="off" enterkeyhint="send" placeholder="Talk to Astranov SpaceNet Grok" /><div class="hub"><button type="button" id="go" aria-label="Voice">🎙</button></div></form><div id="line"></div></div></div>
+<script src="/js/spacenet/work.js?v=4003"></script>
+<script src="/js/spacenet/app.js?v=4003"></script>
 <script>
 (function(){
-  var VER="4002";
+  var VER="4003";
   function nuclear(){ var go=function(){ location.replace("/?v="+VER+"&t="+Date.now()); }; var tasks=[]; try{ if(window.caches) tasks.push(caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); })); }catch(e){} try{ if(navigator.serviceWorker) tasks.push(navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })); }catch(e){} Promise.all(tasks).then(go).catch(go); setTimeout(go,1400); }
   window.SNReboot=nuclear;
   var brand=document.getElementById("island"); if(brand) brand.addEventListener("click", nuclear);
   try{ if(navigator.serviceWorker) navigator.serviceWorker.register("/sw.js?v="+VER,{scope:"/"}).catch(function(){}); }catch(e){}
   if(!window.SN || !window.SN.run){
     var s=document.createElement("script");
-    s.src="/js/spacenet/app.js?v=4002";
+    s.src="/js/spacenet/app.js?v=4003";
     document.body.appendChild(s);
   }
 })();
