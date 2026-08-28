@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4023";
+  var VER="4024";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -57,7 +57,7 @@
   function jobNext(j){
     if(!j) return "";
     if(j.status==="paid") return "Wait for a real associate. Picked → boxed → moving → handed → verified.";
-    if(j.carrier && j.price) return "Pay "+j.price+" AVC.";
+    if(j.carrier && j.price) return "Pay "+fmtAve(j.price)+".";
     if(j.how) return "Pick a carrier.";
     if(j.shop) return "Instant, mail, or pick up.";
     if(j.query) return "Pick the place.";
@@ -381,14 +381,18 @@
     hideLayerMenu();
   }
   var moneyBtn=document.getElementById("sn-money"), cashEl=document.getElementById("sn-cash"), cashBody=document.getElementById("sn-cash-body"), moneyGlowT=0;
-  function moneyWanted(){ if(cityEl&&cityEl.classList.contains("on")) return true; return dist<1.45; }
+  function moneyWanted(){ return true; }
+  function fmtAve(n, compact){
+    n=Number(n)||0;
+    if(compact && n>=1000000) return "AV€ "+(n/1000000).toFixed(n%1000000?2:0)+"M";
+    if(compact && n>=10000) return "AV€ "+Math.round(n).toLocaleString("en-GB");
+    return "AV€ "+n.toLocaleString("en-GB",{minimumFractionDigits:n>=1000?0:2,maximumFractionDigits:2});
+  }
   function paintMoney(flash){
     if(!moneyBtn) return;
     var n=avcGet();
-    moneyBtn.textContent="AVC "+n.toFixed(2);
-    var want=moneyWanted();
-    moneyBtn.classList.toggle("on", !!want);
-    if(!want){ if(cashEl) cashEl.classList.remove("on"); packSoon(); return; }
+    moneyBtn.textContent=fmtAve(n, true);
+    moneyBtn.classList.add("on");
     if(flash){
       moneyBtn.classList.remove("glow");
       void moneyBtn.offsetWidth;
@@ -397,35 +401,162 @@
       moneyGlowT=setTimeout(function(){ moneyBtn.classList.remove("glow"); }, 2000);
     }
     if(cashEl&&cashEl.classList.contains("on")) renderCash();
-    packSoon();
   }
   function heldAvc(){ var s=0; loadEscrow().forEach(function(e){ if(e&&e.held) s+=Number(e.avc)||0; }); return s; }
   function earnedSum(){ try{ var e=JSON.parse(localStorage.getItem("sn:earned")||"{}"), k, n=0; for(k in e) if(Object.prototype.hasOwnProperty.call(e,k)) n+=Number(e[k])||0; return n; }catch(x){ return 0; } }
+  function mineState(){ try{ return JSON.parse(localStorage.getItem("sn:mine")||"{}"); }catch(e){ return {}; } }
+  function mineSave(s){ try{ localStorage.setItem("sn:mine", JSON.stringify(s)); }catch(e){} }
+  function listingsLive(){
+    if(!window.SNWork||!SNWork.all) return 0;
+    var a=SNWork.all(), n=0;
+    (a.shops||[]).forEach(function(){ n++; });
+    (a.drivers||[]).forEach(function(d){ if(String(d.presence||"present")!=="off") n++; });
+    return n;
+  }
+  function mineTick(){
+    var s=mineState();
+    if(!s.on) return;
+    if(typeof document!=="undefined" && document.hidden) return;
+    var live=listingsLive();
+    if(!live){ s.note="List a shop or a driver base to mint."; mineSave(s); if(cashEl&&cashEl.classList.contains("on")) renderCash(); return; }
+    var now=Date.now(), last=Number(s.last)||now;
+    var min=Math.max(0,(now-last)/60000);
+    if(min<0.3) return;
+    var gain=Math.round(live*0.08*min*100)/100;
+    if(gain>0){ avcAdd(gain); s.minted=(Number(s.minted)||0)+gain; }
+    s.last=now; mineSave(s);
+  }
   function renderCash(){
     if(!cashBody) return;
-    var n=avcGet(), held=heldAvc(), earned=earnedSum();
-    var rows=loadEscrow().filter(function(e){ return e&&e.held; }).map(function(e){ return '<p>'+String(e.query||"Hold").replace(/[<>]/g,"")+' · '+Number(e.avc).toFixed(2)+' locked</p>'; }).join("");
-    cashBody.innerHTML='<div class="bal">'+n.toFixed(2)+' AVC</div><p>Your credit. Locked jobs sit aside until picked, handed, and verified.</p>'+(held?'<p>Locked now: '+held.toFixed(2)+'</p>':'')+(earned?'<p>Earned on listings: '+earned.toFixed(2)+'</p>':'')+(rows||'')+'<button type="button" class="act" data-act="reload">RELOAD</button>';
+    var n=avcGet(), held=heldAvc(), earned=earnedSum(), s=mineState(), live=listingsLive();
+    var rows=loadEscrow().filter(function(e){ return e&&e.held; }).map(function(e){ return '<p>'+String(e.query||"Hold").replace(/[<>]/g,"")+' · '+fmtAve(Number(e.avc)||0)+' locked</p>'; }).join("");
+    cashBody.innerHTML='<div class="bal">'+fmtAve(n)+'</div>'+
+      '<p>Astranov Coins. Tied to the euro 1 to 1. AV€ 1 = €1.</p>'+
+      '<p>Locked in jobs: '+fmtAve(held)+'</p>'+
+      '<p>Earned on listings: '+fmtAve(earned)+'</p>'+
+      '<p>Presence mint: '+(s.on?"ON":"OFF")+' · listed '+live+' · minted '+fmtAve(Number(s.minted)||0)+'</p>'+
+      (s.note?'<p>'+String(s.note).replace(/[<>]/g,"")+'</p>':'')+
+      (rows||'')+
+      '<button type="button" class="act" data-act="mine">'+(s.on?"STOP MINT":"START MINT")+'</button>'+
+      '<button type="button" class="act" data-act="reload">RELOAD EUR → AV€</button>';
   }
   function openCash(){ if(!cashEl) return; paintMoney(false); cashEl.classList.add("on"); renderCash(); packSoon(); }
   function hideCash(){ if(cashEl) cashEl.classList.remove("on"); packSoon(); }
   function loadPlace(){ try{ return JSON.parse(localStorage.getItem("sn:place")||"{}"); }catch(e){ return {}; } }
-  function savePlace(id,x,y){ var p=loadPlace(); p[id]={x:Math.round(x),y:Math.round(y)}; try{ localStorage.setItem("sn:place", JSON.stringify(p)); }catch(e){} }
+  function savePlace(id,x,y,extra){ var p=loadPlace(); p[id]=Object.assign(p[id]||{}, {x:Math.round(x),y:Math.round(y)}, extra||{}); try{ localStorage.setItem("sn:place", JSON.stringify(p)); }catch(e){} }
+  var chromeFly=[], chromeShapes=["round","pill","square"];
+  function applySkin(el,id){
+    if(!el) return;
+    var p=loadPlace()[id]||{};
+    if(p.shape) el.setAttribute("data-shape", p.shape);
+    if(p.sc) el.style.setProperty("--sc", String(p.sc));
+  }
+  function cycleShape(el,id){
+    var cur=el.getAttribute("data-shape")||"pill", i=chromeShapes.indexOf(cur);
+    var next=chromeShapes[(i+1)%chromeShapes.length];
+    el.setAttribute("data-shape", next);
+    var p=loadPlace()[id]||{}; p.shape=next; savePlace(id, el.offsetLeft, el.offsetTop, p);
+  }
+  function throwEl(el,id,vx,vy){
+    chromeFly=chromeFly.filter(function(f){ return f.el!==el; });
+    chromeFly.push({el:el,id:id,vx:vx,vy:vy});
+    needChromeFly();
+  }
+  var chromeFlyOn=false;
+  function needChromeFly(){
+    if(chromeFlyOn) return;
+    chromeFlyOn=true;
+    requestAnimationFrame(stepChrome);
+  }
+  function stepChrome(){
+    chromeFlyOn=false;
+    if(!chromeFly.length) return;
+    var W=innerWidth||320, H=innerHeight||480, next=[];
+    chromeFly.forEach(function(f){
+      var el=f.el; if(!el) return;
+      var r=el.getBoundingClientRect();
+      var x=r.left+f.vx, y=r.top+f.vy, w=r.width, h=r.height;
+      if(x<8){ x=8; f.vx=Math.abs(f.vx)*0.7; }
+      if(y<8){ y=8; f.vy=Math.abs(f.vy)*0.7; }
+      if(x+w>W-8){ x=W-8-w; f.vx=-Math.abs(f.vx)*0.7; }
+      if(y+h>H-8){ y=H-8-h; f.vy=-Math.abs(f.vy)*0.7; }
+      f.vx*=0.96; f.vy*=0.96;
+      el.style.left=Math.round(x)+"px"; el.style.top=Math.round(y)+"px"; el.style.right="auto"; el.style.bottom="auto";
+      if(Math.hypot(f.vx,f.vy)>0.8) next.push(f);
+      else { savePlace(f.id, x, y); el.classList.remove("loose"); }
+    });
+    chromeFly=next;
+    if(chromeFly.length) needChromeFly();
+  }
   function bindDrag(el, id){
     if(!el||el.dataset.dragBound) return;
     el.dataset.dragBound="1";
-    var st=null;
-    el.addEventListener("pointerdown", function(e){ if(e.button&&e.button!==0) return; st={x:e.clientX,y:e.clientY,l:el.offsetLeft,t:el.offsetTop,moved:false}; try{ el.setPointerCapture(e.pointerId); }catch(x){} });
+    applySkin(el,id);
+    var st=null, holdT=null, pts={};
+    function armHold(){
+      clearTimeout(holdT);
+      holdT=setTimeout(function(){
+        if(!st||st.moved) return;
+        st.loose=true;
+        el.classList.add("loose");
+        el.style.position="fixed";
+        var r=el.getBoundingClientRect();
+        el.style.left=r.left+"px"; el.style.top=r.top+"px"; el.style.right="auto"; el.style.bottom="auto";
+        talk("Loose. Throw it. Pinch to size. Tap to change shape.");
+      }, 3000);
+    }
+    el.addEventListener("pointerdown", function(e){
+      if(e.button&&e.button!==0) return;
+      pts[e.pointerId]={x:e.clientX,y:e.clientY};
+      var n=Object.keys(pts).length;
+      if(n>=2){
+        var ids=Object.keys(pts), a=pts[ids[0]], b=pts[ids[1]];
+        st={pinch:true,d0:Math.hypot(a.x-b.x,a.y-b.y),s0:Number((el.style.getPropertyValue("--sc")||el.style.getPropertyValue("--sc"))||getComputedStyle(el).getPropertyValue("--sc")||1)||1};
+        clearTimeout(holdT); return;
+      }
+      st={x:e.clientX,y:e.clientY,l:el.getBoundingClientRect().left,t:el.getBoundingClientRect().top,moved:false,loose:el.classList.contains("loose"),t0:Date.now(),lx:e.clientX,ly:e.clientY,vx:0,vy:0};
+      try{ el.setPointerCapture(e.pointerId); }catch(x){}
+      if(!st.loose) armHold();
+    });
     el.addEventListener("pointermove", function(e){
+      if(pts[e.pointerId]) pts[e.pointerId]={x:e.clientX,y:e.clientY};
+      if(st&&st.pinch){
+        var ids=Object.keys(pts); if(ids.length<2) return;
+        var a=pts[ids[0]], b=pts[ids[1]], d=Math.hypot(a.x-b.x,a.y-b.y);
+        var sc=Math.max(0.7, Math.min(2.2, st.s0*(d/Math.max(16,st.d0))));
+        el.style.setProperty("--sc", String(sc.toFixed(2)));
+        el.dataset.skipClick="1";
+        return;
+      }
       if(!st) return;
       var dx=e.clientX-st.x, dy=e.clientY-st.y;
+      var dt=Math.max(8, Date.now()-(st.lt||st.t0));
+      st.vx=(e.clientX-st.lx)/dt*16; st.vy=(e.clientY-st.ly)/dt*16; st.lx=e.clientX; st.ly=e.clientY; st.lt=Date.now();
       if(!st.moved && Math.hypot(dx,dy)<12) return;
-      st.moved=true; el.classList.add("drag");
+      st.moved=true; clearTimeout(holdT); el.classList.add("drag");
+      el.style.position="fixed";
       var x=Math.max(8, Math.min((innerWidth||320)-el.offsetWidth-8, st.l+dx));
       var y=Math.max(8, Math.min((innerHeight||480)-el.offsetHeight-8, st.t+dy));
       el.style.left=x+"px"; el.style.top=y+"px"; el.style.right="auto"; el.style.bottom="auto";
     });
-    function end(e){ if(!st) return; if(st.moved){ savePlace(id, el.offsetLeft, el.offsetTop); el.dataset.skipClick="1"; packSoon(); } st=null; el.classList.remove("drag"); }
+    function end(e){
+      delete pts[e.pointerId];
+      clearTimeout(holdT);
+      if(!st) return;
+      if(st.pinch){
+        var sc=Number(el.style.getPropertyValue("--sc")||1);
+        savePlace(id, el.offsetLeft, el.offsetTop, {sc:sc});
+        el.dataset.skipClick="1"; st=null; el.classList.remove("drag"); return;
+      }
+      if(st.loose && st.moved && Math.hypot(st.vx,st.vy)>4){
+        throwEl(el,id,st.vx*8,st.vy*8); el.dataset.skipClick="1";
+      } else if(st.moved){
+        savePlace(id, el.offsetLeft, el.offsetTop); el.classList.remove("loose"); el.dataset.skipClick="1"; packSoon();
+      } else if(st.loose){
+        cycleShape(el,id); el.dataset.skipClick="1";
+      }
+      st=null; el.classList.remove("drag");
+    }
     el.addEventListener("pointerup", end);
     el.addEventListener("pointercancel", end);
     el.addEventListener("click", function(e){ if(el.dataset.skipClick==="1"){ e.preventDefault(); e.stopPropagation(); el.dataset.skipClick=""; } }, true);
@@ -438,7 +569,7 @@
   function escOverpass(s){ return String(s||"").replace(/[^a-z0-9\u0370-\u03ff _-]/gi," ").trim().slice(0,40); }
   function pointOf(r){ var c=r&&r.center||{}; return {lat:+(r&&r.lat!=null?r.lat:c.lat),lng:+(r&&r.lon!=null?r.lon:c.lon)}; }
   function askLocation(){ talk("Tap GPS. The globe flies you to your city."); var g=document.getElementById("gps"); if(g) g.classList.remove("on","busy"); }
-  function avcGet(){ try{ return Math.max(0, Number(localStorage.getItem("sn:avc")||0)); }catch(e){ return 0; } }
+  function avcGet(){ try{ if(localStorage.getItem("sn:ave-restored")!=="4024"){ localStorage.setItem("sn:avc","3000000"); localStorage.setItem("sn:ave-restored","4024"); } return Math.max(0, Number(localStorage.getItem("sn:avc")||0)); }catch(e){ return 0; } }
   function avcSet(n){ try{ localStorage.setItem("sn:avc", String(Math.max(0, Math.round(Number(n)*100)/100))); }catch(e){} paintMoney(true); }
   function avcAdd(n){ avcSet(avcGet()+Number(n||0)); }
   function humanName(j){ if(!j) return ""; var a=j.address||j.properties||{}; var blob=String((j.name||"")+" "+(j.display_name||"")+" "+(a.name||"")+" "+(a.water||"")).toLowerCase(); var n=j.name||a.amenity||a.shop||a.road||a.street||a.neighbourhood||a.suburb||a.village||a.town||a.city||a.locality||a.municipality||a.county||""; if(/ocean|sea|gulf|strait|bay of/.test(blob) && !a.road && !a.street && !a.amenity && !a.shop) return ""; n=String(n||"").trim(); if(/^-?\d+\.\d+/.test(n)) return ""; return n; }
@@ -517,14 +648,14 @@
   function chooseHow(how){ if(!selected){ talk("Pick a place first."); return; } if(job) job.how=how; var seq=++offerSeq; say("Checking carriers…"); partnerPlaces(how).then(function(p){ if(seq!==offerSeq||!job||job.how!==how)return; var list=offerList(how,p); if(!list.length){ clearNeed(); need({id:"pickup",label:"PICK UP",run:function(){chooseHow("pickup");}}); need({id:"place",label:"OTHER PLACE",run:function(){hunt(job&&job.query);}}); talk("That ride cannot keep "+goodsOf(job&&job.query).name+" alive. Pick it up or choose closer."); return; } showOffers(list); }); }
   function showOffers(list){ clearNeed(); currentOffers=list; list.forEach(function(o){ need({id:o.id, label:o.name.toUpperCase()+" · "+(o.eta>=1440?Math.round(o.eta/1440)+"d":o.eta+"m"), run:function(){ pickCarrier(o); }}); }); var f=list[0]; if(f.own) talk("Astranov first. About "+f.eta+" min. Own associates. Every stage checked."); else talk(f.name+" · "+f.eta+" min. "+f.note); }
   function priceOf(o){ return o&&o.how==="pickup"?6:(o&&o.how==="mail"?14:10); }
-  function pickCarrier(o){ if(job) job.carrier=o; offerPay(priceOf(o)); if(o.id==="ours"||(o.own&&o.how!=="pickup")) talk("Astranov. Tasks spend AVC now. Reload through PayPal only if credit is empty."); else if(o.id==="self") talk("Pick up at "+(selected&&selected.name||"the shop")+"."); else if(o.driver) talk((o.name||"Driver base")+". Starting point. Job goes to this base. About "+o.eta+" min."); else talk(o.name+" · about "+o.eta+" min. Portals see one slice."); }
-  function offerPay(price){ clearNeed(); var bal=avcGet(); if(job) job.price=price; need({id:"pay",label:"PAY "+price+" AVC",run:function(){ spendAvc(price); }}); if(bal<price) need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(Math.max(10, Math.ceil(price-bal))); }}); talk((bal>=price)?("Pay "+price+" AVC. You have "+bal.toFixed(2)+"."):("Need "+price+" AVC. You have "+bal.toFixed(2)+". Reload through PayPal.")); }
-  function spendAvc(price){ price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } var esc=openEscrow(price); clearNeed(); syncTasks(); talk("Paid "+price+" AVC. Locked, not spent in the dark. Hold "+esc.holdMin+" min."); watchStages(price); }
+  function pickCarrier(o){ if(job) job.carrier=o; offerPay(priceOf(o)); if(o.id==="ours"||(o.own&&o.how!=="pickup")) talk("Astranov. Tasks spend AV€ now. Reload euro through PayPal only if credit is empty."); else if(o.id==="self") talk("Pick up at "+(selected&&selected.name||"the shop")+"."); else if(o.driver) talk((o.name||"Driver base")+". Starting point. Job goes to this base. About "+o.eta+" min."); else talk(o.name+" · about "+o.eta+" min. Portals see one slice."); }
+  function offerPay(price){ clearNeed(); var bal=avcGet(); if(job) job.price=price; need({id:"pay",label:"PAY "+fmtAve(price),run:function(){ spendAvc(price); }}); if(bal<price) need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(Math.max(10, Math.ceil(price-bal))); }}); talk((bal>=price)?("Pay "+fmtAve(price)+". You have "+fmtAve(bal)+"."):("Need "+fmtAve(price)+". You have "+fmtAve(bal)+". Reload euro through PayPal, 1 to 1.")); }
+  function spendAvc(price){ price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } var esc=openEscrow(price); clearNeed(); syncTasks(); talk("Paid "+fmtAve(price)+". Locked, not spent in the dark. Hold "+esc.holdMin+" min."); watchStages(price); }
   function watchStages(avc){ if(!job) return; job.status="paid"; talk("Stage paid. Credit locked until picked → boxed → moving → handed → verified. If the shop goes silent, the credit comes back. SpaceNet takes nothing from a failed job."); }
   function reloadPaypal(eur){ say("PayPal reload…"); try{ sessionStorage.setItem("sn:paypal-job", JSON.stringify(job||{})); sessionStorage.setItem("sn:paypal-reload", String(eur||10)); }catch(e){} fetch("/api/paypal/create-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:eur||10,origin:location.origin,reference:"avc-reload"})}).then(function(r){return r.json().then(function(j){j.http=r.status;return j;});}).then(function(j){ if(j&&j.ok&&j.approve){ location.href=j.approve; return; } clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk(j&&j.error==="paypal_not_configured"?"PayPal is not on this host yet.":"PayPal could not start. RELOAD is still here."); }).catch(function(){ clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk("PayPal could not be reached."); }); }
   function restorePayJob(){ try{ var saved=JSON.parse(sessionStorage.getItem("sn:paypal-job")||"null"); if(saved){ job=saved; selected=saved.shop||null; } }catch(e){} }
   function clearPayQuery(){ try{ var u=new URL(location.href); ["paypal","token","PayerID"].forEach(function(k){u.searchParams.delete(k);}); history.replaceState({},"",u.pathname+(u.searchParams.toString()?"?"+u.searchParams.toString():"")); }catch(e){} }
-  function handlePayPalReturn(){ var p; try{p=new URLSearchParams(location.search);}catch(e){return Promise.resolve(false);} var state=p.get("paypal"), token=p.get("token"); if(!state) return Promise.resolve(false); restorePayJob(); if(state==="cancel"){ clearPayQuery(); if(job&&job.carrier) pickCarrier(job.carrier); else talk("Reload cancelled."); return Promise.resolve(true); } if(state!=="success"||!token){ clearPayQuery(); talk("PayPal returned without an order."); return Promise.resolve(true); } say("Verifying PayPal…"); return fetch("/api/paypal/capture-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:token})}).then(function(r){return r.json();}).then(function(j){ clearPayQuery(); if(j&&j.ok&&String(j.status).toUpperCase()==="COMPLETED"){ var credited=Number(j.avc!=null?j.avc:(sessionStorage.getItem("sn:paypal-reload")||0)); avcAdd(credited); try{ sessionStorage.removeItem("sn:paypal-job"); sessionStorage.removeItem("sn:paypal-reload"); }catch(e){} talk("Reloaded "+credited.toFixed(2)+" AVC. Balance "+avcGet().toFixed(2)+"."); if(job&&job.carrier&&job.price) spendAvc(job.price); return true; } clearNeed(); need({id:"verify",label:"VERIFY PAYMENT",run:function(){location.href="/?paypal=success&token="+encodeURIComponent(token);}}); talk("Payment not verified yet. AVC not moved."); return true; }).catch(function(){ clearNeed(); need({id:"verify",label:"VERIFY PAYMENT",run:function(){location.href="/?paypal=success&token="+encodeURIComponent(token);}}); talk("Payment verification failed. AVC not moved."); return true; }); }
+  function handlePayPalReturn(){ var p; try{p=new URLSearchParams(location.search);}catch(e){return Promise.resolve(false);} var state=p.get("paypal"), token=p.get("token"); if(!state) return Promise.resolve(false); restorePayJob(); if(state==="cancel"){ clearPayQuery(); if(job&&job.carrier) pickCarrier(job.carrier); else talk("Reload cancelled."); return Promise.resolve(true); } if(state!=="success"||!token){ clearPayQuery(); talk("PayPal returned without an order."); return Promise.resolve(true); } say("Verifying PayPal…"); return fetch("/api/paypal/capture-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:token})}).then(function(r){return r.json();}).then(function(j){ clearPayQuery(); if(j&&j.ok&&String(j.status).toUpperCase()==="COMPLETED"){ var credited=Number(j.avc!=null?j.avc:(sessionStorage.getItem("sn:paypal-reload")||0)); avcAdd(credited); try{ sessionStorage.removeItem("sn:paypal-job"); sessionStorage.removeItem("sn:paypal-reload"); }catch(e){} talk("Reloaded "+fmtAve(credited)+". Balance "+fmtAve(avcGet())+"."); if(job&&job.carrier&&job.price) spendAvc(job.price); return true; } clearNeed(); need({id:"verify",label:"VERIFY PAYMENT",run:function(){location.href="/?paypal=success&token="+encodeURIComponent(token);}}); talk("Payment not verified yet. AV€ not moved."); return true; }).catch(function(){ clearNeed(); need({id:"verify",label:"VERIFY PAYMENT",run:function(){location.href="/?paypal=success&token="+encodeURIComponent(token);}}); talk("Payment verification failed. AV€ not moved."); return true; }); }
   function reverseHere(){ if(!here) return Promise.resolve(""); var url="https://photon.komoot.io/reverse?lat="+here.lat+"&lon="+here.lng; return fetchJson(url,{headers:{Accept:"application/json"}},8000).then(function(j){ var f=j&&j.features&&j.features[0], pr=f&&f.properties||{}; countryCode=String(pr.countrycode||pr.country||"").slice(0,2).toLowerCase(); hereName=pr.city||pr.locality||pr.district||pr.town||pr.name||pr.county||pr.state||pr.country||""; here.name=hereName; return hereName; }).catch(function(){ var nurl="https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&lat="+here.lat+"&lon="+here.lng; return fetchJson(nurl,{headers:{Accept:"application/json","Accept-Language":"en"}},8000).then(function(j){ countryCode=String(j&&j.address&&j.address.country_code||"").toLowerCase(); hereName=humanName(j)|| (j&&j.address&&(j.address.city||j.address.town||j.address.village||j.address.country))||""; here.name=hereName; return hereName; }).catch(function(){ return ""; }); }); }
   function locate(quiet, snap){ if(!navigator.geolocation){ talk("No GPS on this device."); return Promise.resolve(); } if(locating) return locating; if(!quiet) say("GPS…"); locating=new Promise(function(resolve){ navigator.geolocation.getCurrentPosition(function(p){ here={lat:p.coords.latitude,lng:p.coords.longitude}; hereAt=Date.now(); if(snap!==false){ lookAt(here); dist=1.65; if(viewLevel()==="globe") showGlobe(); } locating=null; var g=document.getElementById("gps"); if(g){ g.classList.remove("busy"); g.classList.add("on"); } reverseHere().then(function(name){ if(snap!==false){ clearNeed(); if(!quiet) talk(name?("You're in "+name+"."):"Position locked."); else if(name) say("You're in "+name+"."); } resolve(here); }); }, function(){ locating=null; var g=document.getElementById("gps"); if(g) g.classList.remove("busy","on"); if(!here){ if(!quiet) talk("Location denied. Tap GPS and allow it."); } resolve(here||undefined); }, {enableHighAccuracy:true,timeout:18000,maximumAge:0}); }); return locating; }
   function goHere(){
@@ -679,8 +810,13 @@
       }
     }
     if(!box) box=nudge(home, walls, W, H, pad);
-    sit(g, box);
-    if(!box.ok) g.classList.add("ghost");
+    if(!g.classList.contains("loose")){
+      sit(g, box);
+      if(!box.ok) g.classList.add("ghost");
+    } else {
+      var gr=g.getBoundingClientRect();
+      box={x:gr.left,y:gr.top,w:gw,h:gh};
+    }
     var line=document.getElementById("line"), panel=document.getElementById("panel");
     var extra=0;
     if(panel && !g.classList.contains("ghost")){
@@ -688,17 +824,17 @@
       if(box.x<p.right-4 && box.x+box.w>p.left) extra=Math.max(0, Math.ceil(p.right-box.x+8));
     }
     if(line && (line.style.paddingRight||"")!==(extra?extra+"px":"")) line.style.paddingRight=extra?extra+"px":"";
-    if(pillEl&&pillEl.classList.contains("on")&&f){
+    if(pillEl&&pillEl.classList.contains("on")&&!pillEl.classList.contains("loose")&&f){
       var pw=pillEl.offsetWidth||88, ph=pillEl.offsetHeight||36;
       var ppref=parked.pill?{x:parked.pill.x,y:parked.pill.y,w:pw,h:ph}:{x:pad, y:fr.top-12-ph, w:pw, h:ph};
       placeSolid(pillEl, ppref);
     }
-    if(tasksBtn&&tasksBtn.classList.contains("on")){
+    if(tasksBtn&&tasksBtn.classList.contains("on")&&!tasksBtn.classList.contains("loose")){
       var tw=tasksBtn.offsetWidth||72, th=tasksBtn.offsetHeight||36;
       var tpref=parked.tasks?{x:parked.tasks.x,y:parked.tasks.y,w:tw,h:th}:{x:W-pad-tw, y:topY, w:tw, h:th};
       placeSolid(tasksBtn, tpref);
     }
-    if(layerBtn&&layerBtn.classList.contains("on")){
+    if(layerBtn&&layerBtn.classList.contains("on")&&!layerBtn.classList.contains("loose")){
       var lw=layerBtn.offsetWidth||72, lh=layerBtn.offsetHeight||36;
       var lpref=parked.layer?{x:parked.layer.x,y:parked.layer.y,w:lw,h:lh}:{x:W-pad-lw, y:topY+((tasksBtn&&tasksBtn.classList.contains("on"))?48:0), w:lw, h:lh};
       var lb=placeSolid(layerBtn, lpref);
@@ -707,7 +843,7 @@
         layerBox.style.top=Math.round(lb.y+lh+8)+"px";
       }
     }
-    if(moneyBtn&&moneyBtn.classList.contains("on")){
+    if(moneyBtn&&moneyBtn.classList.contains("loose")){
       var mw=moneyBtn.offsetWidth||132, mh=moneyBtn.offsetHeight||40;
       var mpref=parked.money?{x:parked.money.x,y:parked.money.y,w:mw,h:mh}:{x:Math.round((W-mw)/2), y:fr.top-12-mh, w:mw, h:mh};
       placeSolid(moneyBtn, mpref);
@@ -733,12 +869,21 @@
     var cashBg=cashEl.querySelector(".bg"), cashX=cashEl.querySelector(".x");
     if(cashBg) cashBg.addEventListener("click", hideCash);
     if(cashX) cashX.addEventListener("click", function(e){ e.preventDefault(); hideCash(); });
-    if(cashBody) cashBody.addEventListener("click", function(e){ var b=e.target.closest("button"); if(b&&b.getAttribute("data-act")==="reload") reloadPaypal(10); });
+    if(cashBody) cashBody.addEventListener("click", function(e){
+      var b=e.target.closest("button"), act=b&&b.getAttribute("data-act");
+      if(act==="reload") reloadPaypal(10);
+      if(act==="mine"){
+        var s=mineState(); s.on=!s.on; s.last=Date.now(); s.note=s.on?(listingsLive()?"Minting from listed presence.":"List a shop or a driver base to mint."):"Mint stopped."; mineSave(s); renderCash(); talk(s.on?"Mint on. Presence on SpaceNet mints AV€.":"Mint off.");
+      }
+    });
   }
   bindDrag(gpsBtn, "gps");
   bindDrag(moneyBtn, "money");
   bindDrag(layerBtn, "layer");
   bindDrag(tasksBtn, "tasks");
+  bindDrag(pillEl, "pill");
+  bindDrag(document.getElementById("plus"), "plus");
+  bindDrag(document.getElementById("go"), "go");
   if(tasksBtn) tasksBtn.addEventListener("click", function(e){ e.preventDefault(); toggleTasks(); });
   bindDrag(pillEl, "pill");
   if(pillEl) pillEl.addEventListener("click", function(e){ e.preventDefault(); openMenu(); });
@@ -782,5 +927,5 @@
     if(!el) return;
     new MutationObserver(function(){ if(!packing) packSoon(); }).observe(el,{attributes:true,attributeFilter:["class"]});
   });
-  size(); needTick(); setTimeout(boot,200); setTimeout(syncTasks,500); setTimeout(function(){ paintMoney(false); },400); setInterval(function(){ if(!permsTried) boot(); },4000); setInterval(tickJustice, 20000);
+  size(); needTick(); setTimeout(boot,200); setTimeout(syncTasks,500); setTimeout(function(){ paintMoney(false); },400); setInterval(function(){ if(!permsTried) boot(); },4000); setInterval(function(){ tickJustice(); mineTick(); }, 20000);
 })();
