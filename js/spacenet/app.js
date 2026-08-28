@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4017";
+  var VER="4018";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -254,7 +254,7 @@
   var LAYER={
     dark:{url:"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", sub:"abc", attr:"© OpenStreetMap"},
     bright:{url:"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", sub:"abc", attr:"© OpenStreetMap"},
-    sat:{url:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", attr:"© Esri"},
+    sat:{url:"https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/GoogleMapsCompatible/{z}/{y}/{x}.jpg", attr:"© Sentinel-2 / EOX", fallback:"https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"},
     streets:{url:"https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", sub:"abc", attr:"© OpenStreetMap"}
   };
   try{ var savedL=localStorage.getItem("sn:layer"); if(savedL&&LAYER[savedL]) mapLayer=savedL; }catch(e){}
@@ -285,7 +285,16 @@
       var spec=LAYER[name], opt={maxZoom:19, attribution:spec.attr, keepBuffer:2, updateWhenIdle:true};
       if(spec.sub) opt.subdomains=spec.sub;
       if(tileLayer) try{ map.removeLayer(tileLayer); }catch(e){}
-      tileLayer=window.L.tileLayer(spec.url, opt).addTo(map);
+      tileLayer=window.L.tileLayer(spec.url, opt);
+      if(spec.fallback){
+        tileLayer.on("tileerror", function(){
+          if(spec._fell) return;
+          spec._fell=true;
+          try{ map.removeLayer(tileLayer); }catch(e){}
+          tileLayer=window.L.tileLayer(spec.fallback, {maxZoom:19, attribution:spec.attr, keepBuffer:2, updateWhenIdle:true}).addTo(map);
+        });
+      }
+      tileLayer.addTo(map);
     }
     hideLayerMenu();
   }

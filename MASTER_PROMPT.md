@@ -66,7 +66,7 @@ Boot view:
 - **TASKS** button top-right. Show / hide. Lists what a user, vendor, or driver has to do next, ranked by the system (spoiling and paid work first, unfinished listings after). **PROBLEM** asks Grok to move a task up. Grok says yes only for a real bind (breakdown, spoilage, medical, safety, no-show, weather). No for profit, preference, or queue-jumping. Empty list dematerializes the button.
 - One glowing **GPS target**. Home is bottom-right above the talk bar. The word **GPS** above it.
 - **Money** — when you **zoom down into the globe** (pinch the sphere in, GPS fly, or national/city map), a **wide** (not circular) **AVC balance** button materializes. Big enough to read `AVC 12.50`. It **glows on every balance change**. Tap it → a **big menu that does not cover the whole screen**. Balance, locked escrow, earned on listings, RELOAD. Tap **outside** or ✕ → it **minimizes** back to the wide button on the map. Drag it like the other solids.
-- City **LAYER** (city streets only): DARK / BRIGHT / SATELLITE (Esri, no key) / STREETS (OSM HOT). Default stays the dark globe-matched streets.
+- City **LAYER** (city streets only, **no API key**): DARK / BRIGHT = OSM we invert or not; SATELLITE = Sentinel-2 via EOX (Esri only if EOX fails); STREETS = OSM HOT. Never Mapbox, Google, MapTiler, Stadia, Thunderforest.
 - `#city` hidden until national or city is needed.
 - `#sn-sheet` hidden until city work.
 
@@ -106,7 +106,7 @@ Three distances. Three surfaces.
 |---|---|---|
 | Space / world | `#g` canvas **sphere**. Grid of lat and lng. Drag spins the ball. | Navigation. Hold for global menu. |
 | National | Leaflet `#city` at country zoom | Navigation. Hold for national menu. |
-| City / streets | Leaflet `#city` at street zoom. Default: OSM we darken ourselves. **LAYER** (city only): DARK / BRIGHT / SATELLITE (Esri, no key) / STREETS (OSM HOT, names and buildings). | **This is the work surface.** |
+| City / streets | Leaflet `#city` at street zoom. Default: OSM we darken ourselves. **LAYER** (city only, **no API key ever**): DARK / BRIGHT = OSM; SATELLITE = Sentinel-2 via EOX (Esri World Imagery only as silent fallback); STREETS = OSM HOT. Forbidden: Mapbox, Google, MapTiler, Stadia, Thunderforest, or any keyed tile. | **This is the work surface.** |
 
 Rules:
 
