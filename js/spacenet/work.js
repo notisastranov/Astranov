@@ -412,9 +412,9 @@
     else if(window.SN&&SN.showMap) SN.showMap(dest, 12);
     at=dest; view="calldone";
     ensure(); render(); sheet.classList.add("on");
-    if(other && phone) talk("Connected to "+placeName(dest)+". Video is here. You can also dial.");
-    else if(other) talk("Connected to "+placeName(dest)+". Start video if they are on SpaceNet.");
-    else if(phone) talk("Connected to "+placeName(dest)+". No SpaceNet video on that end — dial the listed phone.");
+    if(other && phone) talk("Arc to "+placeName(dest)+". Video if they answer. You can also dial.");
+    else if(other) talk("Arc to "+placeName(dest)+". Video if they answer. They may be offline.");
+    else if(phone) talk("Arc to "+placeName(dest)+". No SpaceNet video on that end — dial the listed phone.");
     else talk("Arc to "+placeName(dest)+". No video peer and no phone listed. Search someone on SpaceNet, or add a number.");
   }
 
@@ -431,24 +431,29 @@
 
   function ensurePeer(){
     return loadPeerLib().then(function(Peer){
-      if(peer && !peer.destroyed) return peer;
-      peer=new Peer(peerId(), {debug:0});
-      peer.on("call", function(c){
-        if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-          talk("This device cannot open a camera.");
-          return;
-        }
-        navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(function(stream){
-          mediaStream=stream;
-          mediaCall=c;
-          c.answer(stream);
-          showVideo(stream);
-          c.on("stream", function(remote){ setRemote(remote); });
-          c.on("close", hang);
-          talk("Incoming video.");
-        }).catch(function(){ talk("Allow camera and mic for video."); });
+      if(peer && !peer.destroyed && peer.open) return peer;
+      if(!(peer && !peer.destroyed)){
+        peer=new Peer(peerId(), {debug:0});
+        peer.on("call", function(c){
+          if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+            talk("This device cannot open a camera.");
+            return;
+          }
+          navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(function(stream){
+            mediaStream=stream;
+            mediaCall=c;
+            c.answer(stream);
+            c.on("stream", function(remote){ showVideo(stream); setRemote(remote); talk("Incoming video."); });
+            c.on("close", hang);
+          }).catch(function(){ talk("Allow camera and mic for video."); });
+        });
+      }
+      return new Promise(function(resolve, reject){
+        if(peer.open){ resolve(peer); return; }
+        var t=setTimeout(function(){ reject(new Error("peer_timeout")); }, 8000);
+        peer.once("open", function(){ clearTimeout(t); resolve(peer); });
+        peer.once("error", function(){ clearTimeout(t); reject(new Error("peer")); });
       });
-      return peer;
     });
   }
 
@@ -504,11 +509,15 @@
     ensurePeer().then(function(p){
       return navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(function(stream){
         mediaStream=stream;
-        showVideo(stream);
         var c=p.call(id, stream);
         mediaCall=c;
-        c.on("stream", function(remote){ setRemote(remote); });
+        var wait=setTimeout(function(){
+          talk(tel?"They did not answer. Dial the listed phone.":"They did not answer. They may be offline.");
+          hang();
+        }, 12000);
+        c.on("stream", function(remote){ clearTimeout(wait); showVideo(stream); setRemote(remote); talk("They answered."); });
         c.on("error", function(){
+          clearTimeout(wait);
           if(tel) talk("Video did not connect. Dial the listed phone.");
           else talk("Video did not connect. They may be offline.");
         });
@@ -580,8 +589,8 @@
       var dest=c.to||{};
       var tel=String(c.phone||"").replace(/[^\d+]/g,"");
       var other=c.peer||destPeer(dest);
-      card.innerHTML=head("Connected", placeName(c.from)+" → "+placeName(dest))+
-        '<p class="note">'+(other?"They are on SpaceNet. Video uses this device camera. Keep the page open.":"No SpaceNet video on that end.")+(tel?" A phone is listed.":"")+'</p>'+
+      card.innerHTML=head("Call", placeName(c.from)+" → "+placeName(dest))+
+        '<p class="note">'+(other?"They list a SpaceNet video. It connects only if they answer.":"No SpaceNet video on that end.")+(tel?" A phone is listed.":"")+'</p>'+
         (other?'<button type="button" class="go" data-act="video" data-peer="'+esc(other)+'" data-tel="'+esc(tel)+'">VIDEO CALL</button>':'')+
         (tel?'<button type="button" class="go" data-act="video-dial" data-tel="'+esc(tel)+'">PHONE VIDEO</button>':'')+
         (tel?'<button type="button" class="go" data-act="dial" data-tel="'+esc(tel)+'">DIAL '+esc(tel)+'</button>':'')+
@@ -682,6 +691,7 @@
     picking:function(){ return picking; },
     takePoint:takePoint,
     searchDest:searchDest,
+    publish:publish,
     cancelPick:cancelPick,
     activeCall:function(){ return activeCall; },
     arcPts:arcPts,
