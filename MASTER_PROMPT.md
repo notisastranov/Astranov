@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4025
+**Stamp at this rewrite:** 4026
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -77,6 +77,12 @@ Idle dock is empty except real hunt or pay results. No FOOD. No BEER. No CITY. N
 AVC = **AV€ (Astranov Coins)**. Tied to the euro **1 to 1**. AV€ 1 = €1. The top row is brand + V1 + the live AV€ amount. Tap the amount → money panel: balance, locked jobs, earned, presence mint (START/STOP), RELOAD EUR. Owner treasury restored to **3,000,000 AV€**. Paying a job **locks** AV€ in escrow. It is not spent in the dark. PayPal exists only to reload AV€ when they want more euro in.
 
 Globe is a trackball. Finger follows the grid. Let go with speed and it keeps turning on yaw and pitch, then coasts. Grab it again and it stops. One island only: brand + V1 + AV€.
+
+Mic is **tap to talk**. It glows while it listens. Tap again to shut it. It does not loop. It does not listen while Grok is speaking. That loop was the Android beep. Chrome still chirps once per tap — that is the browser, not SpaceNet. We do not auto-listen after TTS (that made it hear itself).
+
+If they ask for the best among listed shops, Grok **picks** (`act=pick`). Do not tell them to pick. Tap a shop → that shop’s card (menu if listed or known, hours, call, NOW/MAIL/PICK UP), not a fresh list of other shops. In-flight hunt must not overwrite a chosen shop.
+
+After a shop (and after a driver), draw a **neon cyan route** YOU → shop → driver on the city map (OSRM, glow polyline). The you-dot says YOU, not a municipality name. Leaflet credit sits bottom-left, not on the island.
 
 Chrome (GPS, LAYER, TASKS, VENDORS, +, mic, money): **hold 3 seconds** → it bounces, goes loose. Then throw it (flick), pinch to resize, tap to cycle shape (round / pill / square). GPS still materializes bottom-right. Pack does not yank a loose solid.
 

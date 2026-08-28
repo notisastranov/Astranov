@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4025";
+  var VER="4026";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -14,11 +14,11 @@
   var menuScale=1;
   var yaw=0.49, pitch=0.63, dist=1.85, spin=0, pitchSpin=0, drag=null, pinch=null, pointers={}, fly=null, drawSig="", tickOn=false;
   var here=null, hereName="", hereAt=0, countryCode="", things={}, vendors=[], selected=null, job=null, currentOffers=[], huntSeq=0, offerSeq=0, locating=null, pendingHunt=null, aim=null, tapScreen=null, placeEl=null, awaiting=null, mapBound=false, mapHeld=false;
-  var map=null, mapReady=null, hereMark=null, vendorMark=null, routeLine=null, aimMark=null, callLine=null, tileLayer=null, mapLayer="dark";
-  var listening=false, speaking=false, wantEar=true, rec=null, permsTried=false, mindHist=[];
+  var map=null, mapReady=null, hereMark=null, vendorMark=null, routeLine=null, routeGlow=null, aimMark=null, callLine=null, tileLayer=null, mapLayer="dark", lastRoute=null;
+  var listening=false, speaking=false, wantEar=false, rec=null, permsTried=false, mindHist=[];
   function say(t){ if(lineEl&&t!=null) lineEl.textContent=String(t); packSoon(); }
   function noCoords(t){ return String(t||"").replace(/\b-?\d+\.\d+\s*[NS],?\s*-?\d+\.\d+\s*[EW]\b/gi,"").replace(/\b-?\d{1,3}\.\d+\s*,\s*-?\d{1,3}\.\d+\b/g,"").replace(/\s{2,}/g," ").trim(); }
-  function talk(t){ t=noCoords(t); if(!t) return; say(t); speaking=true; try{ if(window.speechSynthesis){ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t)); u.onend=function(){ speaking=false; if(wantEar) setTimeout(listen,280); }; u.onerror=function(){ speaking=false; if(wantEar) setTimeout(listen,280); }; speechSynthesis.speak(u); return; } }catch(e){} speaking=false; if(wantEar) setTimeout(listen,280); }
+  function talk(t){ t=noCoords(t); if(!t) return; say(t); stopListen(); speaking=true; try{ if(window.speechSynthesis){ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t)); u.onend=function(){ speaking=false; }; u.onerror=function(){ speaking=false; }; speechSynthesis.speak(u); return; } }catch(e){} speaking=false; }
   function menuTitle(){
     if(things.pay||things.reload||things.verify) return "PAY";
     if(currentOffers.length) return "CARRIERS";
@@ -580,12 +580,47 @@
   function photonPlaces(q,from){ from=from||here; if(!from) return Promise.resolve([]); var url="https://photon.komoot.io/api/?q="+encodeURIComponent(photonQuery(q))+"&lat="+from.lat+"&lon="+from.lng+"&limit=16"; return fetchJson(url,{headers:{Accept:"application/json"}},12000).then(function(j){ return (j.features||[]).map(function(f){ var c=f.geometry&&f.geometry.coordinates, pr=f.properties||{}; if(!c||!pr.name) return null; return {id:"osm-"+(pr.osm_type||"n")+"-"+(pr.osm_id||""), name:pr.name, lat:+c[1], lng:+c[0], raw:[pr.street,pr.city||pr.locality].filter(Boolean).join(", ")||"OpenStreetMap", tags:pr}; }).filter(Boolean); }).catch(function(){return [];}); }
   function hunt(query,at){ var raw=String(query||"").trim(),q=cleanQuery(raw); var from=at||aim||here; job={kind:"find",query:q,status:"hunt",at:from||null}; selected=null; if(!from){ pendingHunt=raw; talk("Need you on the map. Tap GPS."); goHere(); return; } say("Finding "+q+"…"); var seq=++huntSeq;
     function near(list){ var seen={}; return (list||[]).filter(function(v){ if(!v||!v.name||!isFinite(v.lat)) return false; var k=(v.name+"|"+(+v.lat).toFixed(4)+"|"+(+v.lng).toFixed(4)).toLowerCase(); if(seen[k]) return false; seen[k]=1; return km(from,v)<=25; }).sort(function(a,b){return km(from,a)-km(from,b);}); }
-    function showList(list, line){ if(seq!==huntSeq) return; vendors=list; clearNeed(); vendors.slice(0,6).forEach(function(v,i){ var d=km(from,v).toFixed(1); need({id:"v"+i,label:(v.kind==="driver"?((v.name||"Driver").toUpperCase()+" BASE"):v.name.toUpperCase())+" · "+d+" km",run:function(){selectVendor(v);}}); }); if(line) talk(line); }
+    function showList(list, line){ if(seq!==huntSeq) return; if(selected && job && job.status==="chosen") return; vendors=list; clearNeed(); vendors.slice(0,6).forEach(function(v,i){ var d=km(from,v).toFixed(1); need({id:"v"+i,label:(v.kind==="driver"?((v.name||"Driver").toUpperCase()+" BASE"):v.name.toUpperCase())+" · "+d+" km",run:function(){selectVendor(v);}}); }); if(line) talk(line); }
     var extra=near(window.SNWork&&SNWork.match?SNWork.match(q, from):[]);
     if(extra.length) showList(extra, extra.length+" on this device. Checking the net…");
-    Promise.all([nominatimPlaces(q,from),overpassPlaces(q,from),photonPlaces(q,from)]).then(function(groups){ if(seq!==huntSeq) return; var list=near(extra.concat(groups[0]).concat(groups[1]).concat(groups[2])); if(!list.length){ if(!extra.length){ clearNeed(); talk("No named place for "+q+" nearby. Say it another way."); } return; } showList(list, extra.length&&list.length<=extra.length?null:("Found "+list.length+". Pick one.")); }).catch(function(){ if(seq!==huntSeq)return; if(!extra.length){ clearNeed(); talk("Search failed. Try again."); } }); }
+    Promise.all([nominatimPlaces(q,from),overpassPlaces(q,from),photonPlaces(q,from)]).then(function(groups){ if(seq!==huntSeq) return; if(selected && job && job.status==="chosen") return; var list=near(extra.concat(groups[0]).concat(groups[1]).concat(groups[2])); if(!list.length){ if(!extra.length){ clearNeed(); talk("No named place for "+q+" nearby. Say it another way."); } return; } showList(list, extra.length&&list.length<=extra.length?null:("Found "+list.length+". Ask me for the best, or tap one.")); }).catch(function(){ if(seq!==huntSeq)return; if(!extra.length){ clearNeed(); talk("Search failed. Try again."); } }); }
   function loadMap(){ if(window.L) return Promise.resolve(window.L); if(mapReady) return mapReady; mapReady=new Promise(function(resolve,reject){ if(!document.querySelector('link[data-sn-map]')){ var css=document.createElement("link"); css.rel="stylesheet"; css.href="/js/vendor/leaflet.css?v="+VER; css.setAttribute("data-sn-map",""); document.head.appendChild(css); } var s=document.createElement("script"); s.src="/js/vendor/leaflet.js?v="+VER; s.onload=function(){resolve(window.L);}; s.onerror=reject; document.head.appendChild(s); }); return mapReady; }
-  function routeTo(v){ if(!here||!v) return Promise.resolve(null); var url="https://router.project-osrm.org/route/v1/driving/"+here.lng+","+here.lat+";"+v.lng+","+v.lat+"?overview=full&geometries=geojson"; return fetchJson(url,{headers:{Accept:"application/json"}},13000).then(function(j){ var r=j&&j.routes&&j.routes[0]; if(r&&selected===v&&job&&job.shop===v) job.routeMin=Math.max(1,Math.round(r.duration/60)); return r||null; }).catch(function(){return null;}); }
+  function routeTo(v){ return paintJobArc(); }
+  function driverRow(id){
+    if(!id||!window.SNWork) return null;
+    var list=(SNWork.all().drivers||[]), i;
+    for(i=0;i<list.length;i++) if(list[i]&&list[i].id===id) return list[i];
+    return null;
+  }
+  function osrmLine(stops){
+    if(!stops||stops.length<2) return Promise.resolve((stops||[]).map(function(p){ return [p.lat,p.lng]; }));
+    var path=stops.filter(function(p){ return p&&isFinite(p.lat); }).map(function(p){ return p.lng+","+p.lat; }).join(";");
+    if(path.split(";").length<2) return Promise.resolve(stops.map(function(p){ return [p.lat,p.lng]; }));
+    var url="https://router.project-osrm.org/route/v1/driving/"+path+"?overview=full&geometries=geojson";
+    return fetchJson(url,{headers:{Accept:"application/json"}},13000).then(function(j){
+      var r=j&&j.routes&&j.routes[0], c=r&&r.geometry&&r.geometry.coordinates;
+      if(r&&job) job.routeMin=Math.max(1,Math.round(r.duration/60));
+      if(!c||!c.length) throw new Error("no_geom");
+      return c.map(function(x){ return [x[1],x[0]]; });
+    }).catch(function(){ return stops.map(function(p){ return [p.lat,p.lng]; }); });
+  }
+  function drawGlowLine(latlngs){
+    lastRoute=latlngs||null;
+    if(!map||!window.L||!latlngs||latlngs.length<2) return;
+    try{ if(routeGlow) map.removeLayer(routeGlow); }catch(e){}
+    try{ if(routeLine) map.removeLayer(routeLine); }catch(e){}
+    routeGlow=window.L.polyline(latlngs,{color:"#4df0ff",weight:14,opacity:0.2,lineCap:"round",interactive:false}).addTo(map);
+    routeLine=window.L.polyline(latlngs,{color:"#7ee9ff",weight:3,opacity:1,lineCap:"round",interactive:false}).addTo(map);
+    try{ map.fitBounds(routeLine.getBounds(),{padding:[56,56],maxZoom:16}); }catch(e){}
+  }
+  function paintJobArc(){
+    var stops=[], d;
+    if(here) stops.push(here);
+    if(selected) stops.push(selected);
+    if(job&&job.carrier&&job.carrier.driver){ d=driverRow(job.carrier.id); if(d&&isFinite(d.lat)) stops.push(d); }
+    if(stops.length<2) return Promise.resolve(null);
+    return osrmLine(stops).then(function(line){ drawGlowLine(line); return line; });
+  }
   var listMarks=[], globeMarks=[];
   function spaceAround(from){
     if(!window.SNWork) return [];
@@ -616,7 +651,7 @@
     talk("You're in "+n+". Marks on the map. Search for the rest.");
     if(window.SNWork&&SNWork.pull) SNWork.pull(from||here);
   }
-  function paintMapMarks(L, v){ if(hereMark) hereMark.remove(); if(vendorMark) vendorMark.remove(); if(aimMark) aimMark.remove(); if(routeLine) routeLine.remove(); if(callLine) callLine.remove(); listMarks.forEach(function(m){ try{m.remove();}catch(e){} }); listMarks=[]; if(here) hereMark=L.circleMarker([here.lat,here.lng],{radius:6,color:"#4df0ff",fillColor:"#4df0ff",fillOpacity:.9}).addTo(map).bindTooltip(hereName||"YOU",{permanent:true,direction:"top"}); if(aim && (!here || km(here,aim)>0.05)) aimMark=L.circleMarker([aim.lat,aim.lng],{radius:6,color:"#ff8ad4",fillColor:"#ff8ad4",fillOpacity:.9}).addTo(map); if(v) vendorMark=L.circleMarker([v.lat,v.lng],{radius:7,color:"#ffd85a",fillColor:"#ffd85a",fillOpacity:.9}).addTo(map).bindTooltip(v.name||"Place",{permanent:true,direction:"top"});
+  function paintMapMarks(L, v){ if(hereMark) hereMark.remove(); if(vendorMark) vendorMark.remove(); if(aimMark) aimMark.remove(); if(routeLine) try{map.removeLayer(routeLine);}catch(e){} if(routeGlow) try{map.removeLayer(routeGlow);}catch(e){} if(callLine) callLine.remove(); listMarks.forEach(function(m){ try{m.remove();}catch(e){} }); listMarks=[]; if(here) hereMark=L.circleMarker([here.lat,here.lng],{radius:7,color:"#4df0ff",fillColor:"#4df0ff",fillOpacity:.95}).addTo(map).bindTooltip("YOU",{permanent:true,direction:"top",className:"sn-tip",opacity:1}); if(aim && (!here || km(here,aim)>0.05)) aimMark=L.circleMarker([aim.lat,aim.lng],{radius:6,color:"#ff8ad4",fillColor:"#ff8ad4",fillOpacity:.9}).addTo(map); if(v) vendorMark=L.circleMarker([v.lat,v.lng],{radius:7,color:"#ffd85a",fillColor:"#ffd85a",fillOpacity:.9}).addTo(map).bindTooltip(v.name||"Place",{permanent:false,direction:"top",className:"sn-tip"});
     if(window.SNWork && map){
       var colors={shop:"#ffd85a",driver:"#4df0ff",drop:"#ff8ad4",post:"#9dffb0"};
       function pin(row,color,label){ if(!row||!isFinite(row.lat)) return; var m=L.circleMarker([row.lat,row.lng],{radius:7,color:color,fillColor:color,fillOpacity:.9}).addTo(map).bindTooltip(label,{permanent:false,direction:"top"}); m.on("click", function(e){ try{ L.DomEvent.stopPropagation(e); }catch(_){} mapHeld=true; if(window.SNWork) SNWork.open(row); }); listMarks.push(m); }
@@ -630,9 +665,11 @@
         var pts=(SNWork.arcPts&&SNWork.arcPts(call.from,call.to))||[[call.from.lat,call.from.lng],[call.to.lat,call.to.lng]];
         callLine=L.polyline(pts,{color:"#4df0ff",weight:3,opacity:.9}).addTo(map);
       }
-    } }
+    }
+    if(lastRoute&&lastRoute.length>=2) drawGlowLine(lastRoute);
+  }
   function cityWork(p){ if(!p) return; aim=p; hidePlace(); if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; if(window.SNWork) SNWork.open(p); nameAim(p).then(function(n){ aim=n; if(window.SNWork&&SNWork.rename) SNWork.rename(n); else if(!window.SNWork) say(n.water?"No named place on that water.":(n.name||"This place")); }); }
-  function bindMap(L){ if(mapBound||!map||!cityEl) return; mapBound=true; try{ map.attributionControl.setPosition("topleft"); }catch(e){} var lp=null; cityEl.addEventListener("pointerdown", function(e){ if(!cityEl.classList.contains("on")) return; if(e.target && e.target.closest && e.target.closest(".leaflet-control")) return; if(e.isPrimary===false) return; lp={x:e.clientX,y:e.clientY,id:e.pointerId,held:false}; lp.t=setTimeout(function(){ if(!lp) return; lp.held=true; mapHeld=true; var ll=map.mouseEventToLatLng({clientX:lp.x,clientY:lp.y}); var p={lat:ll.lat,lng:ll.lng}; if(viewLevel()==="city") cityWork(p); else openLevelMenu(p,{x:lp.x,y:lp.y}, "national"); },420); }, true); cityEl.addEventListener("pointermove", function(e){ if(!lp||lp.held) return; if(Math.hypot(e.clientX-lp.x,e.clientY-lp.y)>16){ clearTimeout(lp.t); lp=null; } }, true); function endLp(){ if(!lp) return; clearTimeout(lp.t); lp=null; } cityEl.addEventListener("pointerup", endLp, true); cityEl.addEventListener("pointercancel", endLp, true); map.on("click", function(e){ if(mapHeld){ mapHeld=false; return; } var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; if(map.getZoom()>=10){ cityWork(p); } else { flyTap(p); } }); map.on("zoomend", function(){ if(!map) return; if(map.getZoom()<=4) showGlobe(); paintLayerBtn(); packSoon(); }); map.on("contextmenu", function(e){ try{ L.DomEvent.preventDefault(e); }catch(_){} mapHeld=true; var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(viewLevel()==="city") cityWork(p); else openLevelMenu(p, null, "national"); }); }
+  function bindMap(L){ if(mapBound||!map||!cityEl) return; mapBound=true; try{ map.attributionControl.setPosition("bottomleft"); }catch(e){} var lp=null; cityEl.addEventListener("pointerdown", function(e){ if(!cityEl.classList.contains("on")) return; if(e.target && e.target.closest && e.target.closest(".leaflet-control")) return; if(e.isPrimary===false) return; lp={x:e.clientX,y:e.clientY,id:e.pointerId,held:false}; lp.t=setTimeout(function(){ if(!lp) return; lp.held=true; mapHeld=true; var ll=map.mouseEventToLatLng({clientX:lp.x,clientY:lp.y}); var p={lat:ll.lat,lng:ll.lng}; if(viewLevel()==="city") cityWork(p); else openLevelMenu(p,{x:lp.x,y:lp.y}, "national"); },420); }, true); cityEl.addEventListener("pointermove", function(e){ if(!lp||lp.held) return; if(Math.hypot(e.clientX-lp.x,e.clientY-lp.y)>16){ clearTimeout(lp.t); lp=null; } }, true); function endLp(){ if(!lp) return; clearTimeout(lp.t); lp=null; } cityEl.addEventListener("pointerup", endLp, true); cityEl.addEventListener("pointercancel", endLp, true); map.on("click", function(e){ if(mapHeld){ mapHeld=false; return; } var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; if(map.getZoom()>=10){ cityWork(p); } else { flyTap(p); } }); map.on("zoomend", function(){ if(!map) return; if(map.getZoom()<=4) showGlobe(); paintLayerBtn(); packSoon(); }); map.on("contextmenu", function(e){ try{ L.DomEvent.preventDefault(e); }catch(_){} mapHeld=true; var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(viewLevel()==="city") cityWork(p); else openLevelMenu(p, null, "national"); }); }
   function showMap(p, z){ if(!cityEl||!p||!isFinite(p.lat)) return; loadMap().then(function(L){ cityEl.classList.add("on"); cityEl.style.pointerEvents="auto"; if(!map){ map=L.map(cityEl,{zoomControl:false,attributionControl:true,tap:true,preferCanvas:true}).setView([p.lat,p.lng], z); setLayer(mapLayer||"dark"); bindMap(L); } else if(map.flyTo) map.flyTo([p.lat,p.lng], z, {duration:0.7}); else map.setView([p.lat,p.lng], z); paintMapMarks(L, selected); setTimeout(function(){ try{ map.invalidateSize(); }catch(e){} paintLayerBtn(); paintMoney(false); packSoon(); },40); }).catch(function(){ mapReady=null; showGlobe(); talk("Map failed to load."); }); }
   function showCity(v){ var p=v||selected||aim||here; if(!p){ talk("Point at a place first."); return; } aim=p; showMap(p, 14); }
   function showNational(p){ p=p||aim||here||facingPoint(); aim=p; showMap(p, 6); }
@@ -640,7 +677,55 @@
   function startFly(p, then, ms, toDist){ if(!p) return; spin=0; var toYaw=p.lng*Math.PI/180, toPitch=Math.max(-1.15, Math.min(1.15, p.lat*Math.PI/180)); fly={fromYaw:yaw, fromPitch:pitch, toYaw:toYaw, toPitch:toPitch, fromDist:dist, toDist:toDist!=null?toDist:dist, t0:Date.now(), ms:ms||520, then:then||null}; needTick(); }
   function flyTap(p){ if(!p) return; if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; aim=p; hidePlace(); var lvl=viewLevel(); nameAim(p).then(function(n){ if(aim&&Math.abs(aim.lat-p.lat)<0.3) aim=n; }); if(lvl==="globe"){ startFly(p, function(){ showNational(p); }); } else if(lvl==="national"){ showMap(p, 14); } else { cityWork(p); } }
   function startOrder(v){ if(!v) return; job={kind:"find", query:v.name||"order", status:"chosen", shop:v, t:Date.now()}; selectVendor(v); }
-  function selectVendor(v){ selected=v; if(job){ job.shop=v; job.status="chosen"; } if(v&&v.id&&window.SNWork&&SNWork.hit) SNWork.hit(v.id); routeTo(v); if(viewLevel()==="globe") showGlobe(); clearNeed(); syncTasks(); if(v&&v.kind==="driver"){ need({id:"now",label:"NOW",run:function(){ chooseHow("now"); }}); talk((v.name||"Driver base")+". Starting point. Send a job to this base."); return; } need({id:"now",label:"NOW",run:function(){ chooseHow("now"); }}); need({id:"mail",label:"MAIL",run:function(){ chooseHow("mail"); }}); need({id:"pickup",label:"PICK UP",run:function(){ chooseHow("pickup"); }}); talk((v.name||"Shop")+". Instant, mail, or pick up."); }
+  function selectVendor(v){
+    if(!v) return;
+    huntSeq++;
+    selected=v;
+    if(job){ job.shop=v; job.status="chosen"; }
+    if(v&&v.id&&window.SNWork&&SNWork.hit) SNWork.hit(v.id);
+    if(viewLevel()==="globe") showGlobe(); else if(window.L) paintMapMarks(window.L, v);
+    clearNeed();
+    syncTasks();
+    paintJobArc();
+    showShopCard(v);
+  }
+  function shopBits(v){
+    var t=(v&&(v.tags||v))||{}, listed=null;
+    if(window.SNWork&&SNWork.all){
+      (SNWork.all().shops||[]).forEach(function(s){
+        if(!s) return;
+        if(v.id&&s.id===v.id) listed=s;
+        else if(s.name&&v.name&&String(s.name).toLowerCase()===String(v.name).toLowerCase() && isFinite(s.lat) && km(s,v)<0.08) listed=s;
+      });
+    }
+    return {
+      listed:listed,
+      menu:(listed&&listed.menu)||"",
+      hours:t.opening_hours||(listed&&listed.hours)||"",
+      phone:t.phone||t["contact:phone"]||t.tel||(listed&&listed.phone)||"",
+      web:t.website||t["contact:website"]||"",
+      cuisine:t.cuisine||""
+    };
+  }
+  function showShopCard(v){
+    var b=shopBits(v), n=v.name||"Shop";
+    if(menuEl){ var ttl=menuEl.querySelector(".ttl"); if(ttl) ttl.textContent=String(n).toUpperCase().slice(0,22); }
+    if(v.kind==="driver"){
+      need({id:"now",label:"NOW",run:function(){ chooseHow("now"); }});
+      talk((n||"Driver base")+". Starting point. Send a job to this base.");
+      return;
+    }
+    if(b.menu) need({id:"menu",label:"MENU",run:function(){ talk(b.menu.slice(0,280)); }});
+    if(b.phone) need({id:"callshop",label:"CALL",run:function(){ location.href="tel:"+String(b.phone).replace(/[^\d+]/g,""); }});
+    need({id:"now",label:"NOW",run:function(){ chooseHow("now"); }});
+    need({id:"mail",label:"MAIL",run:function(){ chooseHow("mail"); }});
+    need({id:"pickup",label:"PICK UP",run:function(){ chooseHow("pickup"); }});
+    if(b.menu) talk(n+". Menu is here. Instant, mail, or pick up.");
+    else {
+      talk(n+(b.hours?". "+b.hours:"")+". Getting the menu.");
+      grok("MENU for "+n+(hereName?" in "+hereName:"")+". Public menu only. act=menu. No invented prices.");
+    }
+  }
   function partnerPlaces(how){ if(!selected||how==="pickup") return Promise.resolve([]); var f=how==="mail"?'["amenity"="post_office"]':'["office"~"courier|logistics",i]'; var q='[out:json][timeout:12];nwr(around:25000,'+selected.lat+','+selected.lng+')["name"]'+f+';out center tags 12;'; return fetchJson("https://overpass-api.de/api/interpreter?data="+encodeURIComponent(q),{headers:{Accept:"application/json"}},15000).then(function(j){ return (j.elements||[]).map(function(r){var p=pointOf(r),t=r.tags||{};return {id:"carrier-"+r.type+"-"+r.id,name:t.name,how:how,own:false,real:true,eta:how==="mail"?1440:Math.max(12,(job&&job.routeMin)||travelMin(here,selected)+10),note:how==="mail"?"Named post. Days. No heat hold.":"Named local courier."};}).filter(function(o){return o.name;}); }).catch(function(){return [];}); }
   function portalOffers(){ return []; }
   function listedDriverBases(how){ if(how!=="now"||!window.SNWork) return []; var all=SNWork.all(), from=here||selected; var rows=(all.drivers||[]).filter(function(d){ if(!d||!isFinite(d.lat)) return false; if(String(d.presence||"present")==="off") return false; var range=Number(d.range)||25; return !from || km(from,d)<=range; }).map(function(d){ var eta=Math.max(8, (here?travelMin(d,here):10)+(selected&&selected.kind!=="driver"&&selected!==d?travelMin(d,selected):0)); return {id:d.id,name:(d.name||"Driver")+" base",how:"now",own:false,driver:true,eta:eta,note:"Driver base. Starting point. "+(d.routes?("Routes: "+d.routes+". "):"")+"Receives jobs from SpaceNet users."}; }); if(selected&&selected.kind==="driver") rows.sort(function(a,b){ return a.id===selected.id?-1:b.id===selected.id?1:0; }); return rows; }
@@ -648,7 +733,7 @@
   function chooseHow(how){ if(!selected){ talk("Pick a place first."); return; } if(job) job.how=how; var seq=++offerSeq; say("Checking carriers…"); partnerPlaces(how).then(function(p){ if(seq!==offerSeq||!job||job.how!==how)return; var list=offerList(how,p); if(!list.length){ clearNeed(); need({id:"pickup",label:"PICK UP",run:function(){chooseHow("pickup");}}); need({id:"place",label:"OTHER PLACE",run:function(){hunt(job&&job.query);}}); talk("That ride cannot keep "+goodsOf(job&&job.query).name+" alive. Pick it up or choose closer."); return; } showOffers(list); }); }
   function showOffers(list){ clearNeed(); currentOffers=list; list.forEach(function(o){ need({id:o.id, label:o.name.toUpperCase()+" · "+(o.eta>=1440?Math.round(o.eta/1440)+"d":o.eta+"m"), run:function(){ pickCarrier(o); }}); }); var f=list[0]; if(f.own) talk("Astranov first. About "+f.eta+" min. Own associates. Every stage checked."); else talk(f.name+" · "+f.eta+" min. "+f.note); }
   function priceOf(o){ return o&&o.how==="pickup"?6:(o&&o.how==="mail"?14:10); }
-  function pickCarrier(o){ if(job) job.carrier=o; offerPay(priceOf(o)); if(o.id==="ours"||(o.own&&o.how!=="pickup")) talk("Astranov. Tasks spend AV€ now. Reload euro through PayPal only if credit is empty."); else if(o.id==="self") talk("Pick up at "+(selected&&selected.name||"the shop")+"."); else if(o.driver) talk((o.name||"Driver base")+". Starting point. Job goes to this base. About "+o.eta+" min."); else talk(o.name+" · about "+o.eta+" min. Portals see one slice."); }
+  function pickCarrier(o){ if(job) job.carrier=o; offerPay(priceOf(o)); paintJobArc(); if(o.id==="ours"||(o.own&&o.how!=="pickup")) talk("Astranov. Tasks spend AV€ now. Reload euro through PayPal only if credit is empty."); else if(o.id==="self") talk("Pick up at "+(selected&&selected.name||"the shop")+"."); else if(o.driver) talk((o.name||"Driver base")+". Starting point. Job goes to this base. About "+o.eta+" min."); else talk(o.name+" · about "+o.eta+" min. Portals see one slice."); }
   function offerPay(price){ clearNeed(); var bal=avcGet(); if(job) job.price=price; need({id:"pay",label:"PAY "+fmtAve(price),run:function(){ spendAvc(price); }}); if(bal<price) need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(Math.max(10, Math.ceil(price-bal))); }}); talk((bal>=price)?("Pay "+fmtAve(price)+". You have "+fmtAve(bal)+"."):("Need "+fmtAve(price)+". You have "+fmtAve(bal)+". Reload euro through PayPal, 1 to 1.")); }
   function spendAvc(price){ price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } var esc=openEscrow(price); clearNeed(); syncTasks(); talk("Paid "+fmtAve(price)+". Locked, not spent in the dark. Hold "+esc.holdMin+" min."); watchStages(price); }
   function watchStages(avc){ if(!job) return; job.status="paid"; talk("Stage paid. Credit locked until picked → boxed → moving → handed → verified. If the shop goes silent, the credit comes back. SpaceNet takes nothing from a failed job."); }
@@ -674,10 +759,36 @@
     });
   }
   function askMic(){ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) return Promise.resolve(false); var gum=navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){ try{s.getTracks().forEach(function(t){t.stop();});}catch(e){} return true; }).catch(function(){ return false; }); return Promise.race([gum,new Promise(function(resolve){setTimeout(function(){resolve(false);},15000);})]); }
-  function listen(){ if(listening||speaking) return; var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) return; listening=true; rec=new SR(); rec.continuous=false; rec.lang=navigator.language||"en-US"; rec.onresult=function(ev){ var i,tx="",fin=false; for(i=ev.resultIndex;i<ev.results.length;i++){ tx+=ev.results[i][0].transcript; if(ev.results[i].isFinal) fin=true; } if(inEl) inEl.value=tx; if(fin&&tx.trim()){ listening=false; try{rec.stop();}catch(e){} run(tx.trim()); } }; rec.onend=function(){ listening=false; if(wantEar&&!speaking) setTimeout(listen,500); }; rec.onerror=function(ev){ listening=false; if(ev&&ev.error==="not-allowed") wantEar=false; }; try{ rec.start(); }catch(e){ listening=false; } }
+  function paintEar(){ var go=document.getElementById("go"); if(go) go.classList.toggle("ear", !!listening); }
+  function stopListen(){
+    wantEar=false; listening=false;
+    try{ if(rec) rec.stop(); }catch(e){}
+    rec=null; paintEar();
+  }
+  function listen(){
+    if(speaking) return;
+    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){ talk("This browser has no voice. Type it."); return; }
+    if(listening){ stopListen(); return; }
+    wantEar=true;
+    try{ if(rec) rec.stop(); }catch(e){}
+    rec=new SR();
+    rec.continuous=false;
+    rec.interimResults=true;
+    rec.lang=navigator.language||"en-US";
+    rec.onresult=function(ev){
+      var i,tx="",fin=false;
+      for(i=ev.resultIndex;i<ev.results.length;i++){ tx+=ev.results[i][0].transcript; if(ev.results[i].isFinal) fin=true; }
+      if(inEl) inEl.value=tx;
+      if(fin&&tx.trim()){ var said=tx.trim(); stopListen(); run(said); }
+    };
+    rec.onend=function(){ listening=false; rec=null; paintEar(); };
+    rec.onerror=function(ev){ listening=false; rec=null; paintEar(); if(ev&&ev.error==="not-allowed") wantEar=false; };
+    try{ rec.start(); listening=true; paintEar(); }catch(e){ listening=false; paintEar(); }
+  }
   function parseMind(j, raw){ var text=String((j&&(j.text||j.response||j.answer||j.say))||""); var act=String((j&&j.act)||"").toLowerCase(), q=(j&&j.q)||"", s=(j&&j.say)||"", ok=j&&j.priority_ok, id=(j&&(j.task_id||j.id))||"", split=j&&j.split; var m=text.match(/\{[\s\S]*\}/); if(m){ try{ var o=JSON.parse(m[0]); if(o){ if(o.act) act=String(o.act).toLowerCase(); if(o.q) q=String(o.q); if(o.say) s=String(o.say); if(!s && o.text) s=String(o.text); if(o.ok!=null) ok=o.ok; if(o.id) id=String(o.id); if(o.split) split=o.split; } }catch(e){} } if(!s) s=text.replace(/\{[\s\S]*\}/,"").trim(); return {act:act||"talk", q:q||raw, say:s||"", ok:ok, id:id, split:split}; }
-  function applyMind(m, raw){ if(!m) return; var a=String(m.act||"talk").toLowerCase(); if(m.say && a!=="hunt" && a!=="order" && a!=="find" && a!=="priority") talk(m.say); else if(m.say && a!=="priority") say(m.say); if(a==="talk"||!a) return; if(a==="priority"){ var ok=m.ok===true||m.ok==="true"||m.ok===1; bumpTask(m.id||(awaiting&&awaiting.id), ok, m.say); awaiting=null; return; } if(a==="justice"){ applyJustice(m); awaiting=null; return; } if(a==="locate") return goHere(); if(a==="globe"){ showGlobe(); return; } if(a==="national") return showNational(aim||here||facingPoint()); if(a==="map"||a==="city"||a==="streets") return showCity(selected||aim||here); if(a==="now") return chooseHow("now"); if(a==="mail") return chooseHow("mail"); if(a==="pickup"||a==="pick up") return chooseHow("pickup"); if(a==="pay") return spendAvc(priceOf(job&&job.carrier)); if(a==="reload") return reloadPaypal(10); if(a==="post"||a==="call"||a==="shop"||a==="drop"||a==="driver"||a==="base"){ if(window.SNWork) return SNWork.open(aim||here, a==="base"?"driver":a); return; } if(a==="hunt"||a==="order"||a==="find") return hunt(m.q||raw, aim||here); }
-  function grok(text){ var raw=String(text||"").trim(); if(!raw) return; say("Grok…"); var origin=aim||here; var ctx={ place:(aim&&aim.name)||hereName||"", avc:avcGet(), shop:selected&&selected.name||"", query:job&&job.query||"", level:viewLevel(), vendors:(vendors||[]).slice(0,6).map(function(v){return v.name+(origin?" "+km(origin,v).toFixed(1)+"km":"");}), tasks:loadTasks().filter(function(t){return t.status!=="done";}).slice(0,8).map(function(t){return {id:t.id,title:t.title,pri:t.pri,role:t.role,next:t.next};}), escrow:loadEscrow().filter(function(e){return e&&e.held;}).slice(0,4) }; if(awaiting&&awaiting.kind==="priority") ctx.priority_request={id:awaiting.id, reason:raw}; if(awaiting&&awaiting.kind==="justice") ctx.justice_request={id:awaiting.id, reason:raw}; fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:raw, message:raw, here:ctx, history:mindHist, spacenet:true, fast:true, force_paid:true, allow_paid:true})}).then(function(r){return r.json().then(function(j){ j.http=r.status; return j; });}).then(function(j){ var m=parseMind(j, raw); mindHist.push({role:"user",content:raw}); mindHist.push({role:"assistant",content:m.say||m.act||""}); if(mindHist.length>16) mindHist=mindHist.slice(-16); applyMind(m, raw); }).catch(function(){ talk("Grok did not answer. Say it again."); }); }
+  function applyMind(m, raw){ if(!m) return; var a=String(m.act||"talk").toLowerCase(); if(m.say && a!=="hunt" && a!=="order" && a!=="find" && a!=="priority") talk(m.say); else if(m.say && a!=="priority") say(m.say); if(a==="talk"||!a) return; if(a==="priority"){ var ok=m.ok===true||m.ok==="true"||m.ok===1; bumpTask(m.id||(awaiting&&awaiting.id), ok, m.say); awaiting=null; return; } if(a==="justice"){ applyJustice(m); awaiting=null; return; } if(a==="pick"){ var q=String(m.q||m.id||"").toLowerCase(); var v=(vendors||[]).find(function(x){ var n=String(x.name||"").toLowerCase(); return n && q && (n===q || n.indexOf(q)>=0 || q.indexOf(n)>=0); }); if(v) return selectVendor(v); return; } if(a==="menu") return; if(a==="locate") return goHere(); if(a==="globe"){ showGlobe(); return; } if(a==="national") return showNational(aim||here||facingPoint()); if(a==="map"||a==="city"||a==="streets") return showCity(selected||aim||here); if(a==="now") return chooseHow("now"); if(a==="mail") return chooseHow("mail"); if(a==="pickup"||a==="pick up") return chooseHow("pickup"); if(a==="pay") return spendAvc(priceOf(job&&job.carrier)); if(a==="reload") return reloadPaypal(10); if(a==="post"||a==="call"||a==="shop"||a==="drop"||a==="driver"||a==="base"){ if(window.SNWork) return SNWork.open(aim||here, a==="base"?"driver":a); return; } if(a==="hunt"||a==="order"||a==="find") return hunt(m.q||raw, aim||here); }
+  function grok(text){ var raw=String(text||"").trim(); if(!raw) return; say("Grok…"); var origin=aim||here; var ctx={ place:(aim&&aim.name)||hereName||"", avc:avcGet(), shop:selected&&selected.name||"", query:job&&job.query||"", level:viewLevel(), vendors:(vendors||[]).slice(0,6).map(function(v){ var b=shopBits(v); return {id:v.id,name:v.name,km:origin?Math.round(km(origin,v)*10)/10:null,cuisine:b.cuisine,hours:b.hours,phone:!!b.phone,listed:!!b.menu}; }), tasks:loadTasks().filter(function(t){return t.status!=="done";}).slice(0,8).map(function(t){return {id:t.id,title:t.title,pri:t.pri,role:t.role,next:t.next};}), escrow:loadEscrow().filter(function(e){return e&&e.held;}).slice(0,4) }; if(awaiting&&awaiting.kind==="priority") ctx.priority_request={id:awaiting.id, reason:raw}; if(awaiting&&awaiting.kind==="justice") ctx.justice_request={id:awaiting.id, reason:raw}; fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:raw, message:raw, here:ctx, history:mindHist, spacenet:true, fast:true, force_paid:true, allow_paid:true})}).then(function(r){return r.json().then(function(j){ j.http=r.status; return j; });}).then(function(j){ var m=parseMind(j, raw); mindHist.push({role:"user",content:raw}); mindHist.push({role:"assistant",content:m.say||m.act||""}); if(mindHist.length>16) mindHist=mindHist.slice(-16); applyMind(m, raw); }).catch(function(){ talk("Grok did not answer. Say it again."); }); }
   function savePost(a, text){ var row={level:a.level, lat:a.at&&a.at.lat, lng:a.at&&a.at.lng, name:(a.at&&a.at.name)||"", text:String(text||"").trim(), t:Date.now(), kind:"post", id:"p"+Date.now().toString(36)}; try{ var list=JSON.parse(localStorage.getItem("sn:posts")||"[]"); list.unshift(row); localStorage.setItem("sn:posts", JSON.stringify(list.slice(0,80))); }catch(e){} if(window.SNWork&&SNWork.publish) SNWork.publish(row); talk("Posted at "+(row.name||a.level)+"."); if(window.SN&&SN.repaint) SN.repaint(); }
   function startAwait(kind, level, p){ awaiting={kind:kind, level:level, at:p}; if(inEl){ inEl.value=""; inEl.placeholder= kind==="post"?"Post at this place": kind==="add"?"Name what you add":"Task at this place"; try{ inEl.focus(); }catch(e){} } var n=(p&&p.name)||level; if(kind==="post") talk("Post at "+n+". Write it."); else if(kind==="add") talk("Add at "+n+". Name it."); else talk("Task at "+n+". Say what you want."); }
   function doCall(p){ if(window.SNWork){ SNWork.open(p,"call"); return; } nameAim(p).then(function(n){ var t=n.tags||{}; var phone=t.phone||t["contact:phone"]||t.tel||""; if(phone){ talk("Calling "+(n.name||"place")+"."); location.href="tel:"+String(phone).replace(/[^\d+]/g,""); } else talk("No phone listed for "+(n.name||"this place")+"."); }); }
@@ -857,11 +968,11 @@
   function tickFly(){ if(!fly) return; var u=(Date.now()-fly.t0)/fly.ms; if(u>=1){ yaw=fly.toYaw; pitch=fly.toPitch; if(fly.toDist!=null) dist=fly.toDist; var fn=fly.then; fly=null; if(fn) fn(); return; } u=u*u*(3-2*u); var dy=fly.toYaw-fly.fromYaw; while(dy>Math.PI) dy-=Math.PI*2; while(dy<-Math.PI) dy+=Math.PI*2; yaw=fly.fromYaw+dy*u; pitch=fly.fromPitch+(fly.toPitch-fly.fromPitch)*u; if(fly.toDist!=null) dist=fly.fromDist+(fly.toDist-fly.fromDist)*u; }
   function needTick(){ if(tickOn) return; tickOn=true; requestAnimationFrame(tick); }
   function tick(){ tickOn=false; try{ tickFly(); if(!drag && !pinch && !fly){ yaw+=spin; pitch=Math.max(-1.15,Math.min(1.15,pitch+pitchSpin)); spin*=0.988; pitchSpin*=0.988; if(Math.abs(spin)<0.00018) spin=0; if(Math.abs(pitchSpin)<0.00018) pitchSpin=0; } var moving=!!(drag||pinch||fly||Math.abs(spin)>0.00018||Math.abs(pitchSpin)>0.00018); var sig=yaw.toFixed(4)+"|"+pitch.toFixed(4)+"|"+dist.toFixed(3)+"|"+(here&&here.lat)+"|"+(aim&&aim.lat)+"|"+(selected&&selected.id)+"|"+globeMarks.length; if(moving || sig!==drawSig){ drawSig=sig; if(canvas){ var ctx=canvas.getContext("2d"); if(ctx){ ctx.fillStyle="#02040a"; ctx.fillRect(0,0,canvas.width,canvas.height); var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,R=Math.min(w,h)*0.42/dist; drawGrid(ctx,cx,cy,R); drawPin(ctx,here,hereName||"YOU","#4df0ff",cx,cy,R); if(aim) drawPin(ctx,aim,aim.name||"PIN","#ff8ad4",cx,cy,R); if(selected) drawPin(ctx,selected,selected.name,"#ffd85a",cx,cy,R); globeMarks.slice(0,8).forEach(function(x){ var r=x.row, col=x.kind==="driver"?"#4df0ff":x.kind==="post"?"#9dffb0":x.kind==="drop"?"#ff8ad4":"#ffd85a"; drawPin(ctx,r,x.kind==="driver"?((r.name||"")+" base"):(r.name||r.label||x.kind),col,cx,cy,R); }); } } } }catch(e){} if(drag||pinch||fly||Math.abs(spin)>0.00018||Math.abs(pitchSpin)>0.00018) needTick(); }
-  function boot(){ if(permsTried) return; permsTried=true; var returning=/[?&]paypal=/.test(location.search||""); handlePayPalReturn().then(function(){ if(returning) return locate(true); }); askMic(); setTimeout(listen,600); if(window.SNWork&&SNWork.listenPeer) setTimeout(function(){ SNWork.listenPeer(); },800); }
+  function boot(){ if(permsTried) return; permsTried=true; var returning=/[?&]paypal=/.test(location.search||""); handlePayPalReturn().then(function(){ if(returning) return locate(true); }); askMic(); if(window.SNWork&&SNWork.listenPeer) setTimeout(function(){ SNWork.listenPeer(); },800); }
   function repaint(){ if(map&&window.L) paintMapMarks(window.L, selected); }
   window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,startOrder:startOrder,pack:pack,openMenu:openMenu,minMenu:minMenu,syncTasks:syncTasks,toggleTasks:toggleTasks,openTasks:openTasks,tickJustice:tickJustice,settle:settle,setLayer:setLayer,openCash:openCash,paintMoney:paintMoney,markStage:markStage,ingestJobs:ingestJobs};
   if(form) form.addEventListener("submit", function(e){ e.preventDefault(); var v=inEl&&inEl.value; if(inEl) inEl.value=""; run(v); });
-  var go=document.getElementById("go"); if(go) go.addEventListener("click", function(e){ e.preventDefault(); if(inEl&&inEl.value.trim()){ run(inEl.value.trim()); inEl.value=""; return; } wantEar=true; listen(); });
+  var go=document.getElementById("go"); if(go) go.addEventListener("click", function(e){ e.preventDefault(); if(inEl&&inEl.value.trim() && !listening){ run(inEl.value.trim()); inEl.value=""; return; } if(speaking){ try{ speechSynthesis.cancel(); }catch(x){} speaking=false; } listen(); });
   var plus=document.getElementById("plus"); if(plus) plus.addEventListener("click", function(){ hands(); });
   var gpsBtn=document.getElementById("gps"); if(gpsBtn) gpsBtn.addEventListener("click", function(e){ e.preventDefault(); goHere(); });
   if(moneyBtn) moneyBtn.addEventListener("click", function(e){ e.preventDefault(); if(cashEl&&cashEl.classList.contains("on")) hideCash(); else openCash(); });
