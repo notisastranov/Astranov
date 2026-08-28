@@ -22,14 +22,15 @@
       (list||[]).forEach(function(row){
         if(!row||!isFinite(row.lat)) return;
         if(from && km(from,row)>25) return;
-        var blob=((row.name||row.label||"")+" "+(row.text||"")+" "+(row.menu||"")+" "+(row.vehicles||"")+" "+(row.carry||"")+" "+kind+" "+(extra||"")).toLowerCase();
+        var blob=((row.name||row.label||"")+" "+(row.text||"")+" "+(row.menu||"")+" "+(row.vehicles||"")+" "+(row.carry||"")+" "+(row.routes||"")+" "+kind+" "+(extra||"")).toLowerCase();
         if(l && blob.indexOf(l)<0 && l.indexOf(kind)<0) return;
-        out.push({id:row.id,name:row.name||row.label||(kind==="post"?(String(row.text||"Post").slice(0,28)) : kind),lat:row.lat,lng:row.lng,raw:"SpaceNet",tags:row,kind:kind,sn:true,phone:row.phone||""});
+        var nm=row.name||row.label||(kind==="post"?String(row.text||"Post").slice(0,28):kind==="driver"?"Driver base":kind);
+        out.push({id:row.id,name:nm,lat:row.lat,lng:row.lng,raw:"SpaceNet",tags:row,kind:kind,sn:true,phone:row.phone||""});
       });
     }
     add(a.shops,"shop","store menu");
     add(a.drops,"drop","delivery address home");
-    add(a.drivers,"driver","delivery courier ride");
+    add(a.drivers,"driver","delivery courier ride driver base starting point presence routes");
     add(a.posts,"post","news note");
     return out;
   }
@@ -135,7 +136,7 @@
     if(act==="post"||act==="call"||act==="shop"||act==="drop"||act==="driver"){ view=act; photoData=""; render(); return; }
     if(act==="pick-map"){ startPick(); return; }
     if(act==="dial"){ var tel=b.getAttribute("data-tel")||""; if(tel) location.href="tel:"+tel.replace(/[^\d+]/g,""); return; }
-    if(act==="order"){ close(); if(window.SN&&SN.selectVendor) SN.selectVendor({id:at.id,name:placeName(at),lat:at.lat,lng:at.lng,raw:"SpaceNet",tags:at.tags||at}); return; }
+    if(act==="order"){ close(); if(window.SN&&SN.selectVendor) SN.selectVendor({id:at.id,name:placeName(at),lat:at.lat,lng:at.lng,raw:"SpaceNet",tags:at.tags||at,kind:at.kind||"shop"}); return; }
     if(act==="remove"){ removeCurrent(); return; }
   }
 
@@ -231,13 +232,15 @@
   function saveDriver(fd){
     var row=baseRow();
     row.id=uid("r"); row.kind="driver";
-    row.name=val(fd,"name")||"Driver";
+    row.name=val(fd,"name")||"Driver base";
+    row.presence=val(fd,"presence")||"present";
+    row.routes=val(fd,"routes");
     row.vehicles=val(fd,"vehicles"); row.hours=val(fd,"hours");
     row.range=val(fd,"range"); row.carry=val(fd,"carry");
     row.pref=val(fd,"pref"); row.phone=val(fd,"phone");
-    if(!row.vehicles && !row.hours){ talk("Add a vehicle or a working time."); return; }
+    if(!row.vehicles && !row.hours && !row.routes){ talk("Add a vehicle, a working time, or the routes you work."); return; }
     var list=load(KEYS.drivers); list.unshift(row); save(KEYS.drivers,list);
-    close(); paint(); talk("Driver start listed.");
+    close(); paint(); talk("Delivery driver base listed. Starting point. Presence and routes declared. Users can send jobs here.");
   }
 
   function removeCurrent(){
@@ -344,7 +347,7 @@
         '<button type="button" class="opt" data-act="call"><b>Start a call from here</b><span>Tap another point, or search a name.</span></button>'+
         '<button type="button" class="opt" data-act="shop"><b>List your shop</b><span>Menu, prices, hours, availability.</span></button>'+
         '<button type="button" class="opt" data-act="drop"><b>List a delivery location</b><span>Entrance photo, floor, doorbell, phone.</span></button>'+
-        '<button type="button" class="opt" data-act="driver"><b>List a driver start</b><span>Vehicles, hours, range, what you carry.</span></button>';
+        '<button type="button" class="opt" data-act="driver"><b>List a delivery driver base</b><span>Starting point. Declare presence and routes. Receive jobs from SpaceNet users.</span></button>';
       return;
     }
     if(view==="post"){
@@ -419,22 +422,26 @@
     if(view==="driver"){
       if(at&&at.kind==="driver"&&at.id){
         var r=at.tags||at;
-        card.innerHTML=head(r.name||"Driver", r.vehicles||"")+
-          '<p class="note">'+(r.hours?esc(r.hours)+"\n":"")+(r.range?"Range "+esc(r.range)+" km\n":"")+(r.carry?esc(r.carry)+"\n":"")+esc(r.pref||"")+'</p>'+
+        var pres=r.presence==="off"?"Off":r.presence==="route"?"On a route":"Present at this base";
+        card.innerHTML=head((r.name||"Driver base")+" · starting point", pres)+
+          '<p class="note">'+(r.routes?"Routes: "+esc(r.routes)+"\n":"")+(r.vehicles?esc(r.vehicles)+"\n":"")+(r.hours?esc(r.hours)+"\n":"")+(r.range?"Range "+esc(r.range)+" km\n":"")+(r.carry?esc(r.carry)+"\n":"")+esc(r.pref||"")+"\nReceives jobs from SpaceNet users."+'</p>'+
+          '<button type="button" class="go" data-act="order">SEND A JOB HERE</button>'+
           (r.phone?'<button type="button" class="go" data-act="dial" data-tel="'+esc(r.phone)+'">DIAL '+esc(r.phone)+'</button>':'')+
           '<button type="button" class="opt" data-act="remove"><b>Remove listing</b><span>Off this device.</span></button>';
         return;
       }
-      card.innerHTML=head("Driver start", title)+
+      card.innerHTML=head("Delivery driver base", "Starting point. Declare presence and routes. Receive jobs from users.")+
         '<form data-kind="driver">'+
-        field("name","Your name",{ph:"How you want to be called"})+
+        field("name","Name on the base",{ph:"How you want to be called"})+
+        field("presence","Presence",{select:[["present","Present at this base"],["route","On a route"],["off","Off"]]})+
+        field("routes","Routes you work",{area:true,rows:3,ph:"Rhodes town — airport. Kalithea. Faliraki. What you like to run."})+
         field("vehicles","Vehicles",{ph:"Bike, car, van"})+
         field("hours","Working time",{ph:"Everyday 9–21"})+
-        field("range","How far (km)",{ph:"12",inputmode:"numeric"})+
+        field("range","How far from this base (km)",{ph:"12",inputmode:"numeric"})+
         field("carry","What you carry",{ph:"Food, parcels, no frozen"})+
         field("pref","Preferences",{area:true,rows:3,ph:"Cash, AVC, stairs ok, no stairs"})+
         field("phone","Telephone",{type:"tel",inputmode:"tel"})+
-        '<button type="submit" class="go">LIST DRIVER</button></form>';
+        '<button type="submit" class="go">LIST DRIVER BASE</button></form>';
       return;
     }
     view="home"; render();

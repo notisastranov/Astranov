@@ -6,7 +6,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar text:** `ASTRANOV SPACENET GROK V1`
-**Internal stamp at this rewrite:** 4003
+**Internal stamp at this rewrite:** 4004
 **Today’s bar:** this product either works as a closed task-to-credit loop or we stop spending money on it.
 
 Paste this file first. Then open live `index.html` and `js/spacenet/app.js`. Chat history is junk next to those two files plus this archive.
@@ -91,10 +91,10 @@ Idle dock is empty except ALLOW LOCATION until GPS is granted, and except real h
 
 Ladder:
 - **Tap / point** = fly there on globe and national. Globe tap flies to **national** at that point. National tap flies to **city**.
-- **City tap** = the work sheet for that place (not a tiny dock). Post, call, list shop, list delivery location, list driver start.
+- **City tap** = the work sheet for that place (not a tiny dock). Post, call, list shop, list delivery location, list a delivery driver base.
 - **Hold** = context menu for globe/national. Hold does not fly. City hold opens the same work sheet.
 - **Pinch** and **two-finger swipe up/down** = zoom. Zooming the globe in far enough descends to national. Zooming Leaflet out past country (≤ 4) returns to the globe.
-- **City map is where work happens** (post, call, shop, drop, driver, find, pay). Globe and national are navigation plus high-level post/call/task.
+- **City map is where work happens** (post, call, shop, drop, driver base, find, pay). Globe and national are navigation plus high-level post/call/task.
 
 Hold menus (enough, then stop):
 - Globe: WHAT IS HERE · GLOBAL POST · GLOBAL CALL · GLOBAL TASK · ADD
@@ -106,7 +106,7 @@ City work engines (`js/spacenet/work.js`, `#sn-sheet`):
 - Call: pick another globe/national/city point, or search a name. Arc is drawn. If a phone is listed, dial it. Do not fake live WebRTC.
 - Shop: name, menu and prices, availability, schedule, phone. Listed shops join hunts.
 - Delivery location: entrance photo, floor, street, number, telephone, doorbell number/name, contact preferences.
-- Driver start: vehicles, hours, range, what to carry, preferences.
+- Delivery driver base: the starting point. Drivers declare presence and the routes they work. They receive jobs from SpaceNet users. Vehicles, hours, range, what they carry. Pin label is “name base”, not a mystery “driver start”.
 
 Everything else is the search field / Grok, or the real result buttons after a hunt. `+` opens the hold menu on globe/national, the work sheet on city. Hunt uses Nominatim + Overpass + Photon, plus listed shops/drops/drivers/posts.
 
@@ -117,7 +117,7 @@ Everything else is the search field / Grok, or the real result buttons after a h
 boot → mic + GPS → short status → listen. GPS denied → ALLOW LOCATION.
 Person says what they want → Grok hears it → if it is a find, hunt named places (Nominatim + Overpass) → list name · km.
 Pick a place → stay on grid globe → NOW | MAIL | PICK UP.
-NOW: Astranov first (own associates), then named local partner, then DoorDash / Instacart / Walmart as last-mile portals only where that country uses them.
+NOW: Astranov first (own associates), then named **delivery driver bases** that declared presence (starting point + routes, they receive jobs from our users), then named local partner, then DoorDash / Instacart / Walmart as last-mile portals only where that country uses them.
 MAIL: only if goods survive days with no heat hold.
 PICK UP: handoff at the named shop.
 Price is AVC. Balance >= price → spend instantly → stage starts. Balance < price → RELOAD → PayPal → AVC 1:1 → same spend.
@@ -154,7 +154,7 @@ Globe tap → fly to national at that point. National tap → fly to city. City 
 
 ## Files that are actually the app
 
-index.html = shell. js/spacenet/app.js = boot, grid globe, voice, hunt, fulfill, AVC, PayPal reload. js/spacenet/work.js = city work sheet (post/call/shop/drop/driver). sw.js network-first. VERSION = V1 + push NNNN. MASTER_PROMPT.md = this archive. /api/ai = Grok. /api/paypal/* = reload tap.
+index.html = shell. js/spacenet/app.js = boot, grid globe, voice, hunt, fulfill, AVC, PayPal reload. js/spacenet/work.js = city work sheet (post/call/shop/drop/delivery-driver-base). sw.js network-first. VERSION = V1 + push NNNN. MASTER_PROMPT.md = this archive. /api/ai = Grok. /api/paypal/* = reload tap.
 Do not load dated chrome-* or HUD. Never push a stub index.html.
 
 Ship: read live main, patch smallest surface, bump stamp, curl live yourself, give https://astranov.eu/?v=NNNN. Tap brand if an old SW is stuck.
