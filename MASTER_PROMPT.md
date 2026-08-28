@@ -1,12 +1,12 @@
 # ASTRANOV SPACENET — MASTER PROMPT
 **What this file is:** the archive. One document so any AI can see what is actually going on. It is not a constitution, not a sermon, not a pile of “laws” to role-play. Read it, then read the live source, then change the smallest piece that is still broken.
 
-**Date of this rewrite:** 2026-08-27
+**Date of this rewrite:** 2026-08-28
 **Owner:** Notis Astranov · Rhodes, Greece · notisastranov@gmail.com · X @astranov97250
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar text:** `ASTRANOV SPACENET GROK V1`
-**Internal stamp at this rewrite:** 3724
+**Internal stamp at this rewrite:** 4001
 **Today’s bar:** this product either works as a closed task-to-credit loop or we stop spending money on it.
 
 Paste this file first. Then open live `index.html` and `js/spacenet/app.js`. Chat history is junk next to those two files plus this archive.
@@ -84,6 +84,14 @@ Notis settled the default globe: **a sphere drawn as a grid. Latitudes and merid
 When the person zooms out of the city or national map (Leaflet zoom ≤ 10, or they say globe / close), **leave the flat map**. Show the grid sphere again. If you keep Mercator tiles and shrink them into a circle, you are still faking a globe.
 
 Pins on the grid globe use the same sphere math (front face only). You = this session’s GPS grant. A shop pin = the named place they picked. Do not spray a dozen shop dots. Do not load map tiles or WMS on idle boot.
+
+The globe must stay still unless the person drags it. No idle spin. Pinch (phone) and wheel (desk) zoom the ball. After locate, the camera faces YOU and the spoken line is a place name (Rhodes), never raw coordinates. Tap-menu titles are names or “no named place”, never `1.42S 65.50E`.
+
+Hands `+` must include LOCATE, CITY, NATIONAL, FOOD, BEER, SHOPS. CITY / NATIONAL open Leaflet. Zooming Leaflet out past country (zoom ≤ 4) or tapping GLOBE returns to the grid sphere. Do not auto-open the flat map on locate or on shop pick — the person taps CITY / STREETS / NATIONAL. Hunt uses Nominatim + Overpass + Photon; Photon is required because the public Overpass/Nominatim endpoints die.
+
+The globe must stay still unless the person drags it. No idle spin. Pinch (phone) and wheel (desk) zoom the ball. After locate, the camera faces YOU and the spoken line is a place name (Rhodes), never raw coordinates. Tap-menu titles are names or “no named place”, never `1.42S 65.50E`.
+
+Hands `+` must include LOCATE, CITY, NATIONAL, FOOD, BEER, SHOPS. CITY / NATIONAL open Leaflet. Zooming Leaflet out past country (zoom ≤ 4) or tapping GLOBE returns to the grid sphere. Do not auto-open the flat map on locate or on shop pick — the person taps CITY / STREETS / NATIONAL. Hunt uses Nominatim + Overpass + Photon; Photon is required because the public Overpass/Nominatim endpoints die.
 
 ---
 

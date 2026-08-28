@@ -1,5 +1,5 @@
-/* SpaceNet SW 4000 — network-first */
-var CACHE = "sn-shell-4000";
+/* SpaceNet SW 4001 — network-first */
+var CACHE = "sn-shell-4001";
 self.addEventListener("install", function (e) {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(["/"]); }).catch(function () {}));
