@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4008";
+  var VER="4009";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -150,9 +150,17 @@
   function hands(){ hidePlace(); var p=aim||here|| (map&&map.getCenter()?{lat:map.getCenter().lat,lng:map.getCenter().lng}:facingPoint()); var screen={x:innerWidth/2,y:innerHeight*0.4}; if(!here && viewLevel()==="globe"){ talk("Tap GPS to land on your city."); } if(viewLevel()==="city"){ cityWork(p); return; } openLevelMenu(p, screen, viewLevel()); }
   function placeGps(){
     var g=document.getElementById("gps"), f=document.getElementById("f");
+    var line=document.getElementById("line"), live=document.getElementById("sn-live"), panel=document.getElementById("panel");
     if(!g||!f) return;
     var r=f.getBoundingClientRect();
     g.style.bottom=Math.max(8, Math.round(innerHeight-r.top+12))+"px";
+    var gr=g.getBoundingClientRect(), pad=0;
+    if(panel){
+      var p=panel.getBoundingClientRect();
+      if(gr.left < p.right-6) pad=Math.ceil(p.right-gr.left+10);
+    }
+    if(line) line.style.paddingRight=pad?pad+"px":"";
+    if(live) live.style.paddingRight=pad?pad+"px":"";
   }
   function size(){ if(!canvas) return; var d=Math.min(2,devicePixelRatio||1); canvas.width=Math.max(1,Math.floor((innerWidth||320)*d)); canvas.height=Math.max(1,Math.floor((innerHeight||480)*d)); placeGps(); }
   function sph(latDeg,lngDeg,cx,cy,R){ var la=latDeg*Math.PI/180, ln=lngDeg*Math.PI/180-yaw; var x=Math.cos(la)*Math.sin(ln); var y=Math.sin(la); var z=Math.cos(la)*Math.cos(ln); var y2=y*Math.cos(pitch)-z*Math.sin(pitch); var z2=y*Math.sin(pitch)+z*Math.cos(pitch); if(z2<=0.02) return null; return {x:cx+R*x, y:cy-R*y2, z:z2}; }
