@@ -37,7 +37,7 @@ If you cannot ship the real next step, say so in one sentence and stop. Do not d
 
 Coding is the agent's job. The owner specifies the world. Do not wait for a human to babysit trivial UI, overlap, missing buttons, stub files, or a dark map. If a grok-bot or a screenshot would catch it, you catch it first.
 
-- **See it.** Phone viewport (390 and 720). Playwright. Screenshot. Stamp on the live HTML. If you did not look, you did not ship.
+- **Device first.** The phone does the work. Hunt local listings immediately, then the net. Cache map tiles on the device. Idle globe does not burn the GPU. Server is Grok, pay, and `/api/space` — not a replacement for their CPU.
 - **Solids.** Buttons are objects on one surface. They size to the screen. They do not overlap. A menu pushes them. A sheet can dematerialize them. Drag parks them. That is nature, not a CSS afterthought.
 - **Do not flood.** Globe is space. City is work. A few verified marks. Search for the rest.
 - **Truth.** No dummy shops, drivers, GPS, pay, or stages. Locked AVC, not spent in the dark. Justice without a support desk.
