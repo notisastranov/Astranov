@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4021";
+  var VER="4022";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -215,14 +215,36 @@
     var row={id:e.id,kind:"job",lat:Number(e.lat)||(e.shop&&e.shop.lat)||(here&&here.lat)||0,lng:Number(e.lng)||(e.shop&&e.shop.lng)||(here&&here.lng)||0,name:e.query||"job",query:e.query,avc:e.avc,held:e.held,status:e.status,how:e.how,shop:e.shop,driver:e.driver,holdMin:e.holdMin,flag:e.flag,strict:e.strict,t:e.at};
     fetch("/api/space",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({row:row})}).catch(function(){});
   }
+  function myListingIds(){
+    var ids={}, all=window.SNWork&&SNWork.all&&SNWork.all();
+    if(!all) return ids;
+    (all.shops||[]).forEach(function(s){ if(s&&s.id) ids[s.id]="shop"; });
+    (all.drivers||[]).forEach(function(d){ if(d&&d.id) ids[d.id]="driver"; });
+    return ids;
+  }
+  function payRole(e, role, n){
+    if(!e||!n) return;
+    e.paidOut=e.paidOut||{};
+    if(e.paidOut[role]) return;
+    e.paidOut[role]=true;
+    avcAdd(n);
+    creditEarned(role==="vendor"?(e.shop&&e.shop.id)||"vendor":(e.driver&&e.driver.id)||"driver", n);
+  }
+  function payoutIfMine(e){
+    if(!e||!e.split) return;
+    var ids=myListingIds();
+    if(e.shop&&e.shop.id&&ids[e.shop.id]==="shop") payRole(e,"vendor", Number(e.split.vendor)||0);
+    if(e.driver&&e.driver.id&&ids[e.driver.id]==="driver") payRole(e,"driver", Number(e.split.driver)||0);
+  }
   function ingestJobs(list){
     var dirty=false;
     var order={paid:0,picked:1,boxed:2,moving:3,handed:4,released:5,done:5};
     (list||[]).forEach(function(j){
       if(!j||!j.id) return;
       var cur=escrowOf(j.id);
-      if(!cur){ putEscrow(j, true); dirty=true; return; }
-      if((order[j.status]||0)>(order[cur.status]||0)){ putEscrow(Object.assign({}, cur, j), true); dirty=true; }
+      if(!cur){ putEscrow(j, true); dirty=true; cur=j; }
+      else if((order[j.status]||0)>(order[cur.status]||0)){ cur=Object.assign({}, cur, j); putEscrow(cur, true); dirty=true; }
+      if(cur && (cur.status==="released"||cur.status==="done") && cur.split){ payoutIfMine(cur); putEscrow(cur, true); }
     });
     if(dirty) syncTasks();
   }
@@ -238,9 +260,9 @@
     split=split||{}; var c=Math.max(0, Number(split.customer)||0), v=Math.max(0, Number(split.vendor)||0), d=Math.max(0, Number(split.driver)||0);
     var sum=c+v+d; if(sum<e.avc) c+=(e.avc-sum);
     if(c) avcAdd(c);
-    if(v) creditEarned(e.shop&&e.shop.id||"vendor", v);
-    if(d) creditEarned(e.driver&&e.driver.id||"driver", d);
-    e.held=false; e.status="released"; e.split={customer:c,vendor:v,driver:d,platform:0}; e.reason=reason||""; e.flag=""; putEscrow(e);
+    e.held=false; e.status="released"; e.split={customer:c,vendor:v,driver:d,platform:0}; e.reason=reason||""; e.flag="";
+    payoutIfMine(e);
+    putEscrow(e);
     if(job&&job.escrowId===id) job.status="done";
     syncTasks();
     talk(reason||("Settled. You "+c.toFixed(2)+", shop "+v.toFixed(2)+", driver "+d.toFixed(2)+". SpaceNet takes none of a failed job."));
@@ -303,6 +325,7 @@
       }
     });
     if(dirty) syncTasks(); else paintTasksBtn();
+    if(window.SNWork&&SNWork.pull) SNWork.pull(here||aim);
   }
   function lookAt(p){ if(!p||!isFinite(p.lat)||!isFinite(p.lng)) return; yaw=p.lng*Math.PI/180; pitch=Math.max(-1.15, Math.min(1.15, p.lat*Math.PI/180)); spin=0; }
   function facingPoint(){ var lat=pitch*180/Math.PI, lng=yaw*180/Math.PI; while(lng>180) lng-=360; while(lng<-180) lng+=360; return {lat:lat,lng:lng}; }

@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4021
+**Stamp at this rewrite:** 4022
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -259,7 +259,7 @@ Zoom out of streets → grid globe.
 
 ### 9. Money
 
-Work is paid in our credit, immediately. AVC lives with the person (device ledger now, database ledger when signed in). EUR in through PayPal becomes AVC 1:1 and raises the system pool. A task debit is an internal transfer. When AVC runs out, the next control is RELOAD. After capture, AVC goes up, then the waiting debit completes.
+Work is paid in our credit, immediately. AVC lives with the person (device ledger now, database ledger when signed in). On settle: customer refund hits the payer’s AVC. Shop and driver shares hit AVC **on the device that listed that shop or base**, when that phone pulls the released job. Same share is never paid twice (`paidOut`). EUR in through PayPal becomes AVC 1:1 and raises the system pool.
 
 National invoice law can come later. Invoices can be issued collectively from the SpaceNet database, or a client can issue their own invoice from SpaceNet. That paper does not pause the live debit.
 
