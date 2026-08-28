@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4006";
+  var VER="4007";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -72,6 +72,7 @@
       need({id:"a"+i,label:lab.toUpperCase()+" · "+x.d.toFixed(1)+" km",run:function(){ selectVendor({id:x.row.id,name:x.row.name||x.row.label||lab,lat:x.row.lat,lng:x.row.lng,raw:"SpaceNet",tags:x.row,kind:x.kind,sn:true,phone:x.row.phone||""}); }});
     });
     talk("You're in "+n+". SpaceNet around you. Search for the rest.");
+    if(window.SNWork&&SNWork.pull) SNWork.pull(from||here);
   }
   function paintMapMarks(L, v){ if(hereMark) hereMark.remove(); if(vendorMark) vendorMark.remove(); if(aimMark) aimMark.remove(); if(routeLine) routeLine.remove(); if(callLine) callLine.remove(); listMarks.forEach(function(m){ try{m.remove();}catch(e){} }); listMarks=[]; if(here) hereMark=L.circleMarker([here.lat,here.lng],{radius:6,color:"#4df0ff",fillColor:"#4df0ff",fillOpacity:.9}).addTo(map).bindTooltip(hereName||"YOU",{permanent:true,direction:"top"}); if(aim && (!here || km(here,aim)>0.05)) aimMark=L.circleMarker([aim.lat,aim.lng],{radius:6,color:"#ff8ad4",fillColor:"#ff8ad4",fillOpacity:.9}).addTo(map); if(v) vendorMark=L.circleMarker([v.lat,v.lng],{radius:7,color:"#ffd85a",fillColor:"#ffd85a",fillOpacity:.9}).addTo(map).bindTooltip(v.name||"Place",{permanent:true,direction:"top"});
     if(window.SNWork && map){

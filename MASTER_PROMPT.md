@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4006
+**Stamp at this rewrite:** 4007
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -54,7 +54,7 @@ Idle dock is empty except real hunt or pay results. No FOOD. No BEER. No CITY. N
 
 AVC = internal credit. Tasking spends AVC instantly. PayPal exists only to reload AVC when the balance is empty.
 
-Listings (posts, shops, delivery locations, delivery driver bases, calls) live on the device now (`localStorage`). They join hunts and map pins. A signed-in SpaceNet database is the later home. Do not invent a cloud of fake listings to look busy.
+Listings (posts, shops, delivery locations, delivery driver bases) save on the device (`localStorage`) and also publish to `/api/space` so other SpaceNet users can hunt them. If the net table is down, the device listing still works — never invent a cloud of fake shops to look busy. Calls stay on the device.
 
 Greek and English. Named places only. **Never speak raw coordinates.**
 
@@ -133,8 +133,8 @@ Selecting a place on the city map opens a **big sheet** (`#sn-sheet`). Not a flo
 
 2. **Start a call from here**  
    Then pick the other end: tap another globe / national / city point, **or** search for a person / company / thing. Draw the **arc** between the two points.  
-   **Video** if the other end is a SpaceNet listing (shop, driver base, drop, user) with a live peer on the app — real camera + mic, WebRTC. Keep the page open. END CALL hangs up.  
-   If they are not on SpaceNet video, **dial** the listed phone. Do not fake a connected call when the other person is offline. That is the calling engine.
+   **Video** if the other end is a SpaceNet listing with a live peer — real camera + mic, WebRTC. Keep the page open. END CALL hangs up.  
+   If they are not on SpaceNet video, **PHONE VIDEO** (FaceTime on Apple, the phone app otherwise) or **DIAL** the listed number. Do not fake a connected call when the other person is offline.
 
 3. **List your shop**  
    Big form. Name, **cover picture**, **profile picture**, menu text with prices, **menu photos**, availability, schedule, telephone, notes. Listed shops join hunts and the around-you map.
@@ -306,7 +306,7 @@ Shop fields: name, cover picture, profile picture, menu text (prices), menu phot
 Drop fields: label, entrance photo (canvas-compressed JPEG), street, number, floor, phone, doorbell number, doorbell name, contact preferences.  
 Driver-base fields: name, photo of the starting point, presence (present / route / off), routes, vehicles, hours, range km, carry, preferences, phone. Submit button **LIST DRIVER BASE**. Existing view: **SEND A JOB HERE**.
 
-Call: `picking` mode. Banner “Tap the other end, or search”. Next map tap or a hunt name is the destination. Draw great-circle `arcPts` as a Leaflet polyline. `VIDEO CALL` if the dest has a SpaceNet `peer` (WebRTC via PeerJS + camera/mic). `tel:` if a phone exists. Never mark a call live when the other person is offline.
+Call: `picking` mode. Banner “Tap the other end, or search”. Next map tap or a hunt name is the destination. Draw great-circle `arcPts` as a Leaflet polyline. `VIDEO CALL` if the dest has a SpaceNet `peer` (WebRTC via PeerJS + camera/mic). `PHONE VIDEO` / `tel:` if a phone exists. Publish listings through `/api/space`. Never mark a call live when the other person is offline.
 
 `SNWork` exports: `open, close, rename, all, hit, match, picking, takePoint, searchDest, cancelPick, activeCall, arcPts`.
 

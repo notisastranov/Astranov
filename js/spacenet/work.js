@@ -4,6 +4,7 @@
   var picking=null, activeCall=null, sheet=null, card=null, pickBar=null, at=null, view="home";
   var photos={profile:"",cover:"",menu:[],shot:""};
   var peer=null, mediaStream=null, mediaCall=null, videoEl=null;
+  var netCache={shops:[],drops:[],drivers:[],posts:[]};
 
   function load(k){ try{ return JSON.parse(localStorage.getItem(k)||"[]")||[]; }catch(e){ return []; } }
   function save(k, list){ try{ localStorage.setItem(k, JSON.stringify((list||[]).slice(0,40))); }catch(e){} }
@@ -13,7 +14,37 @@
   function uid(p){ return p+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
   function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){ if(c==="&") return "&"+ "amp;"; if(c==="<") return "&"+"lt;"; if(c===">") return "&"+"gt;"; if(c==='"') return "&"+"quot;"; return "&#39;"; }); }
   function km(a,b){ if(window.SN&&SN.km) return SN.km(a,b); if(!a||!b) return 0; var R=6371,dLat=((b.lat-a.lat)*Math.PI)/180,dLng=((b.lng-a.lng)*Math.PI)/180; var x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos((a.lat*Math.PI)/180)*Math.cos((b.lat*Math.PI)/180)*Math.sin(dLng/2)*Math.sin(dLng/2); return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
-  function all(){ return {posts:load(KEYS.posts),shops:load(KEYS.shops),drops:load(KEYS.drops),drivers:load(KEYS.drivers),calls:load(KEYS.calls)}; }
+  function all(){
+    function merge(a,b){
+      var seen={}, out=[];
+      (a||[]).concat(b||[]).forEach(function(r){
+        if(!r||!r.id||seen[r.id]) return;
+        seen[r.id]=1; out.push(r);
+      });
+      return out;
+    }
+    return {
+      posts:merge(load(KEYS.posts), netCache.posts),
+      shops:merge(load(KEYS.shops), netCache.shops),
+      drops:merge(load(KEYS.drops), netCache.drops),
+      drivers:merge(load(KEYS.drivers), netCache.drivers),
+      calls:load(KEYS.calls)
+    };
+  }
+  function publish(row){
+    if(!row||!row.id) return;
+    fetch("/api/space",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({row:row})}).catch(function(){});
+  }
+  function pull(from){
+    var q="";
+    if(from&&isFinite(from.lat)) q="?lat="+from.lat+"&lng="+from.lng;
+    return fetch("/api/space"+q,{headers:{Accept:"application/json"}}).then(function(r){return r.json();}).then(function(j){
+      if(!j||j.ok===false) return j;
+      netCache={shops:j.shops||[],drops:j.drops||[],drivers:j.drivers||[],posts:j.posts||[]};
+      paint();
+      return j;
+    }).catch(function(){ return null; });
+  }
   function hit(id){
     if(!id) return;
     ["shops","drops","drivers","posts"].forEach(function(k){
@@ -173,8 +204,9 @@
     if(act==="home"){ view="home"; resetPhotos(); render(); return; }
     if(act==="post"||act==="call"||act==="shop"||act==="drop"||act==="driver"){ view=act; resetPhotos(); render(); return; }
     if(act==="pick-map"){ startPick(); return; }
-    if(act==="dial"){ var tel=b.getAttribute("data-tel")||""; if(tel) location.href="tel:"+tel.replace(/[^\d+]/g,""); return; }
-    if(act==="video"){ startVideo(b.getAttribute("data-peer")||""); return; }
+    if(act==="dial"){ nativeCall(b.getAttribute("data-tel")||"", false); return; }
+    if(act==="video-dial"){ nativeCall(b.getAttribute("data-tel")||"", true); return; }
+    if(act==="video"){ startVideo(b.getAttribute("data-peer")||"", b.getAttribute("data-tel")||""); return; }
     if(act==="order"){ close(); if(window.SN&&SN.selectVendor) SN.selectVendor({id:at.id,name:placeName(at),lat:at.lat,lng:at.lng,raw:"SpaceNet",tags:at.tags||at,kind:at.kind||"shop"}); return; }
     if(act==="remove"){ removeCurrent(); return; }
   }
@@ -252,7 +284,7 @@
     row.id=uid("p"); row.kind="post"; row.text=text; row.name=placeName(at);
     row.photo=photos.shot||"";
     var list=load(KEYS.posts); list.unshift(row); save(KEYS.posts,list);
-    close(); paint(); talk("Posted at "+placeName(at)+".");
+    close(); paint(); publish(row); talk("Posted at "+placeName(at)+".");
   }
 
   function saveShop(fd){
@@ -267,7 +299,7 @@
     row.profile=photos.profile||"";
     row.menuPhotos=(photos.menu||[]).slice();
     var list=load(KEYS.shops); list.unshift(row); save(KEYS.shops,list);
-    close(); paint(); talk(name+" is listed. Cover, profile, and menu are on SpaceNet.");
+    close(); paint(); publish(row); talk(name+" is listed. Cover, profile, and menu are on SpaceNet.");
   }
 
   function saveDrop(fd){
@@ -281,7 +313,7 @@
     row.pref=val(fd,"pref"); row.photo=photos.shot||"";
     if(!row.street && !row.number && !row.phone && !row.photo){ talk("Add a street, number, phone, or entrance photo."); return; }
     var list=load(KEYS.drops); list.unshift(row); save(KEYS.drops,list);
-    close(); paint(); talk("Delivery location listed at "+row.label+".");
+    close(); paint(); publish(row); talk("Delivery location listed at "+row.label+".");
   }
 
   function saveDriver(fd){
@@ -296,7 +328,7 @@
     row.photo=photos.shot||"";
     if(!row.vehicles && !row.hours && !row.routes){ talk("Add a vehicle, a working time, or the routes you work."); return; }
     var list=load(KEYS.drivers); list.unshift(row); save(KEYS.drivers,list);
-    close(); paint(); talk("Delivery driver base listed. Starting point. Presence and routes declared. Users can send jobs here.");
+    close(); paint(); publish(row); talk("Delivery driver base listed. Starting point. Presence and routes declared. Users can send jobs here.");
   }
 
   function removeCurrent(){
@@ -441,11 +473,30 @@
     talk("Call ended.");
   }
 
-  function startVideo(id){
+  function nativeCall(tel, video){
+    var n=String(tel||"").replace(/[^\d+]/g,"");
+    if(!n) return false;
+    var ua=navigator.userAgent||"";
+    if(video && /iPhone|iPad|Macintosh/.test(ua)){ location.href="facetime:"+n; return true; }
+    location.href="tel:"+n;
+    return true;
+  }
+
+  function startVideo(id, tel){
     id=String(id||"").trim();
-    if(!id){ talk("The other end is not on SpaceNet video. Dial if a phone is listed."); return; }
-    if(id===peerId()){ talk("That's this device. Call someone else on SpaceNet."); return; }
+    tel=String(tel||(activeCall&&activeCall.phone)||"").replace(/[^\d+]/g,"");
+    if(!id){
+      if(tel){ nativeCall(tel, true); return; }
+      talk("The other end is not on SpaceNet video and no phone is listed.");
+      return;
+    }
+    if(id===peerId()){
+      if(tel){ nativeCall(tel, true); return; }
+      talk("That's this device. Call someone else on SpaceNet.");
+      return;
+    }
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+      if(tel){ nativeCall(tel, true); return; }
       talk("This device cannot open a camera. Dial if a phone is listed.");
       return;
     }
@@ -456,16 +507,20 @@
         var c=p.call(id, stream);
         mediaCall=c;
         c.on("stream", function(remote){ setRemote(remote); });
-        c.on("error", function(){ talk("Video did not connect. They may be offline. Dial if a phone is listed."); });
+        c.on("error", function(){
+          if(tel) talk("Video did not connect. Dial the listed phone.");
+          else talk("Video did not connect. They may be offline.");
+        });
         c.on("close", hang);
         talk("Calling… keep this screen open.");
       });
     }).catch(function(){
-      talk("Video needs camera, mic, and the other person on SpaceNet. Dial if a phone is listed.");
+      if(tel) nativeCall(tel, true);
+      else talk("Video needs camera, mic, and the other person on SpaceNet.");
     });
   }
 
-  function listenPeer(){ ensurePeer().catch(function(){}); }
+  function listenPeer(){ ensurePeer().catch(function(){}); pull(); }
 
   function field(name, label, opts){
     opts=opts||{};
@@ -526,7 +581,8 @@
       var other=c.peer||destPeer(dest);
       card.innerHTML=head("Connected", placeName(c.from)+" → "+placeName(dest))+
         '<p class="note">'+(other?"They are on SpaceNet. Video uses this device camera. Keep the page open.":"No SpaceNet video on that end.")+(tel?" A phone is listed.":"")+'</p>'+
-        (other?'<button type="button" class="go" data-act="video" data-peer="'+esc(other)+'">VIDEO CALL</button>':'')+
+        (other?'<button type="button" class="go" data-act="video" data-peer="'+esc(other)+'" data-tel="'+esc(tel)+'">VIDEO CALL</button>':'')+
+        (tel?'<button type="button" class="go" data-act="video-dial" data-tel="'+esc(tel)+'">PHONE VIDEO</button>':'')+
         (tel?'<button type="button" class="go" data-act="dial" data-tel="'+esc(tel)+'">DIAL '+esc(tel)+'</button>':'')+
         '<button type="button" class="opt" data-act="close"><b>Done</b><span>Arc stays on the map.</span></button>';
       return;
@@ -540,7 +596,7 @@
           gallery(s.menuPhotos)+
           (s.menu?'<pre class="menu">'+esc(s.menu)+'</pre>':'')+
           (s.phone?'<button type="button" class="go" data-act="dial" data-tel="'+esc(s.phone)+'">DIAL '+esc(s.phone)+'</button>':'')+
-          (s.peer?'<button type="button" class="go" data-act="video" data-peer="'+esc(s.peer)+'">VIDEO CALL</button>':'')+
+          (s.peer?'<button type="button" class="go" data-act="video" data-peer="'+esc(s.peer)+'" data-tel="'+esc(s.phone||"")+'">VIDEO CALL</button>':'')+
           '<button type="button" class="go" data-act="order">ORDER FROM HERE</button>'+
           '<button type="button" class="opt" data-act="remove"><b>Remove listing</b><span>Off this device.</span></button>';
         return;
@@ -630,7 +686,9 @@
     arcPts:arcPts,
     listenPeer:listenPeer,
     hang:hang,
-    peerId:peerId
+    peerId:peerId,
+    pull:pull,
+    publish:publish
   };
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", ensure);
   else ensure();
