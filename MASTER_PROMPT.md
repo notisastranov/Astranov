@@ -1,5 +1,5 @@
 # ASTRANOV SPACENET — MASTER PROMPT
-**What this file is:** the archive. One document so any AI can see what is actually going on. It is not a constitution, not a sermon, not a pile of “laws” to role-play. Read it, then read the live source, then change the smallest piece that is still broken.
+**What this file is:** the only instruction document in this repository. Update this file whenever rebuild law changes. Do not add SPECS, LAW, AGENTS, escalation, living-truth, or log markdown. Chat history is junk next to this file plus live source.
 
 **Date of this rewrite:** 2026-08-28
 **Owner:** Notis Astranov · Rhodes, Greece · notisastranov@gmail.com · X @astranov97250
@@ -9,7 +9,7 @@
 **Internal stamp at this rewrite:** 4005
 **Today’s bar:** this product either works as a closed task-to-credit loop or we stop spending money on it.
 
-Paste this file first. Then open live `index.html`, `js/spacenet/app.js`, and `js/spacenet/work.js`. Chat history is junk next to those files plus this archive.
+Paste this file first. Then open live `index.html`, `js/spacenet/app.js`, and `js/spacenet/work.js`.
 
 ---
 
