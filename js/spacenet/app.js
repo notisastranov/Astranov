@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4018";
+  var VER="4019";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -89,13 +89,24 @@
     loadEscrow().forEach(function(e){
       if(!e||!e.held) return;
       var age=Math.max(0, Math.round((Date.now()-e.at)/60000));
-      if(e.flag==="hold"){
-        out.push({id:"just-"+e.id+"-user", role:"user", title:e.query||"Order", next:"Hold is up. Take the credit back or wait.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
-        out.push({id:"just-"+e.id+"-vendor", role:"vendor", title:(e.shop&&e.shop.name)||"Shop", next:"Mark picked, or release the order.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
-      } else if(e.flag==="handed"){
-        out.push({id:"just-"+e.id+"-verify", role:"user", title:e.query||"Order", next:"Confirm you have it, or dispute.", status:"open", escrowId:e.id, t:e.at, auto:1});
-      } else {
-        out.push({id:"escrow-"+e.id, role:"user", title:e.query||"Held order", next:"Paid. Hold "+e.holdMin+" min. "+age+" min in. Credit is locked, not spent in the dark.", status:"open", escrowId:e.id, perish:!!e.strict, hold:e.holdMin, t:e.at, auto:1});
+      var title=e.query||"Order";
+      var shop=(e.shop&&e.shop.name)||"Shop";
+      var base=(e.driver&&e.driver.name)||"Driver base";
+      if(e.flag==="hold" && e.status==="paid"){
+        out.push({id:"just-"+e.id+"-user", role:"user", title:title, next:"Hold is up. Take the credit back or wait.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
+      }
+      if(e.status==="paid"){
+        out.push({id:"stg-"+e.id+"-pick", role:"vendor", title:shop, next:"Mark picked.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
+        out.push({id:"stg-"+e.id+"-wait", role:"user", title:title, next:"Paid. Hold "+e.holdMin+" min. "+age+" min in. Waiting on the shop.", status:"open", escrowId:e.id, perish:!!e.strict, hold:e.holdMin, t:e.at, auto:1});
+      } else if(e.status==="picked"){
+        out.push({id:"stg-"+e.id+"-box", role:"vendor", title:shop, next:"Mark boxed.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
+      } else if(e.status==="boxed"){
+        if(e.how==="pickup" || e.how==="mail") out.push({id:"stg-"+e.id+"-hand", role:"vendor", title:shop, next:e.how==="mail"?"Posted. Mark handed when it left.":"Hand it over. Mark handed.", status:"open", escrowId:e.id, t:e.at, auto:1});
+        else out.push({id:"stg-"+e.id+"-move", role:"driver", title:base, next:"Mark moving.", status:"open", escrowId:e.id, t:e.at, auto:1});
+      } else if(e.status==="moving"){
+        out.push({id:"stg-"+e.id+"-hand", role:"driver", title:base, next:"Mark handed.", status:"open", escrowId:e.id, t:e.at, auto:1});
+      } else if(e.status==="handed" || e.flag==="handed"){
+        out.push({id:"stg-"+e.id+"-verify", role:"user", title:title, next:"Confirm you have it, or dispute.", status:"open", escrowId:e.id, t:e.at, auto:1});
       }
     });
     return out;
@@ -148,9 +159,13 @@
     }
     if(t.listing && window.SNWork) return SNWork.open(t.listing);
     if(t.escrowId){
-      if(/-vendor$/.test(t.id)) return markPicked(t.escrowId);
+      if(/-pick$/.test(t.id) || /-vendor$/.test(t.id)) return markStage(t.escrowId, "picked");
+      if(/-box$/.test(t.id)) return markStage(t.escrowId, "boxed");
+      if(/-move$/.test(t.id)) return markStage(t.escrowId, "moving");
+      if(/-hand$/.test(t.id)) return markHanded(t.escrowId);
       if(/-verify$/.test(t.id)) return settleVerify(t.escrowId);
       if(/-user$/.test(t.id)) return settleRefund(t.escrowId, "You asked for the credit back. Shop had not picked.");
+      if(/-wait$/.test(t.id)){ talk(t.next); return; }
       talk(t.next||t.title);
       return;
     }
@@ -214,11 +229,18 @@
     if(e.how==="mail"){ v=Math.round(e.avc*0.7*100)/100; d=Math.round((e.avc-v)*100)/100; }
     settle(id, {customer:0, vendor:v, driver:d}, "Verified. Shop and driver are credited. You kept the goods.");
   }
-  function markPicked(id){
+  function markStage(id, status){
     var e=escrowOf(id); if(!e||!e.held) return;
-    e.status="picked"; e.flag=""; e.evidence=e.evidence||{}; e.evidence.pickedAt=Date.now(); putEscrow(e);
-    syncTasks(); talk("Marked picked. Credit stays locked until it is handed and verified.");
+    e.status=status; e.evidence=e.evidence||{}; e.evidence[status+"At"]=Date.now();
+    if(status==="handed") e.flag="handed";
+    else if(e.flag!=="hold") e.flag="";
+    putEscrow(e); syncTasks();
+    if(status==="picked") talk("Picked. Credit still locked. Box it.");
+    else if(status==="boxed") talk(e.how==="now"?"Boxed. Driver: mark moving.":(e.how==="mail"?"Boxed. Mark handed when it is posted.":"Boxed. Hand it over at the shop."));
+    else if(status==="moving") talk("Moving. Mark handed when it is with them.");
+    else talk("Stage "+status+".");
   }
+  function markPicked(id){ markStage(id, "picked"); }
   function markHanded(id){
     var e=escrowOf(id); if(!e||!e.held) return;
     e.status="handed"; e.flag="handed"; e.evidence=e.evidence||{}; e.evidence.handedAt=Date.now(); putEscrow(e);
@@ -428,6 +450,7 @@
   function showCall(from, dest){ if(!from||!dest) return; var mid={lat:(from.lat+dest.lat)/2,lng:(from.lng+dest.lng)/2}; var d=km(from,dest); var z=d>80?6:d>8?10:14; showMap(mid, z); setTimeout(function(){ if(!map) return; try{ map.fitBounds([[from.lat,from.lng],[dest.lat,dest.lng]],{padding:[48,48],maxZoom:14}); }catch(e){} },500); }
   function startFly(p, then, ms, toDist){ if(!p) return; spin=0; var toYaw=p.lng*Math.PI/180, toPitch=Math.max(-1.15, Math.min(1.15, p.lat*Math.PI/180)); fly={fromYaw:yaw, fromPitch:pitch, toYaw:toYaw, toPitch:toPitch, fromDist:dist, toDist:toDist!=null?toDist:dist, t0:Date.now(), ms:ms||520, then:then||null}; }
   function flyTap(p){ if(!p) return; if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; aim=p; hidePlace(); var lvl=viewLevel(); nameAim(p).then(function(n){ if(aim&&Math.abs(aim.lat-p.lat)<0.3) aim=n; }); if(lvl==="globe"){ startFly(p, function(){ showNational(p); }); } else if(lvl==="national"){ showMap(p, 14); } else { cityWork(p); } }
+  function startOrder(v){ if(!v) return; job={kind:"find", query:v.name||"order", status:"chosen", shop:v, t:Date.now()}; selectVendor(v); }
   function selectVendor(v){ selected=v; if(job){ job.shop=v; job.status="chosen"; } if(v&&v.id&&window.SNWork&&SNWork.hit) SNWork.hit(v.id); routeTo(v); if(viewLevel()==="globe") showGlobe(); clearNeed(); syncTasks(); if(v&&v.kind==="driver"){ need({id:"now",label:"NOW",run:function(){ chooseHow("now"); }}); talk((v.name||"Driver base")+". Starting point. Send a job to this base."); return; } need({id:"now",label:"NOW",run:function(){ chooseHow("now"); }}); need({id:"mail",label:"MAIL",run:function(){ chooseHow("mail"); }}); need({id:"pickup",label:"PICK UP",run:function(){ chooseHow("pickup"); }}); talk((v.name||"Shop")+". Instant, mail, or pick up."); }
   function partnerPlaces(how){ if(!selected||how==="pickup") return Promise.resolve([]); var f=how==="mail"?'["amenity"="post_office"]':'["office"~"courier|logistics",i]'; var q='[out:json][timeout:12];nwr(around:25000,'+selected.lat+','+selected.lng+')["name"]'+f+';out center tags 12;'; return fetchJson("https://overpass-api.de/api/interpreter?data="+encodeURIComponent(q),{headers:{Accept:"application/json"}},15000).then(function(j){ return (j.elements||[]).map(function(r){var p=pointOf(r),t=r.tags||{};return {id:"carrier-"+r.type+"-"+r.id,name:t.name,how:how,own:false,real:true,eta:how==="mail"?1440:Math.max(12,(job&&job.routeMin)||travelMin(here,selected)+10),note:how==="mail"?"Named post. Days. No heat hold.":"Named local courier."};}).filter(function(o){return o.name;}); }).catch(function(){return [];}); }
   function portalOffers(){ return []; }
@@ -469,7 +492,7 @@
   function savePost(a, text){ var row={level:a.level, lat:a.at&&a.at.lat, lng:a.at&&a.at.lng, name:(a.at&&a.at.name)||"", text:String(text||"").trim(), t:Date.now(), kind:"post", id:"p"+Date.now().toString(36)}; try{ var list=JSON.parse(localStorage.getItem("sn:posts")||"[]"); list.unshift(row); localStorage.setItem("sn:posts", JSON.stringify(list.slice(0,80))); }catch(e){} talk("Saved on this device at "+(row.name||a.level)+"."); if(window.SN&&SN.repaint) SN.repaint(); }
   function startAwait(kind, level, p){ awaiting={kind:kind, level:level, at:p}; if(inEl){ inEl.value=""; inEl.placeholder= kind==="post"?"Post at this place": kind==="add"?"Name what you add":"Task at this place"; try{ inEl.focus(); }catch(e){} } var n=(p&&p.name)||level; if(kind==="post") talk("Post at "+n+". Write it."); else if(kind==="add") talk("Add at "+n+". Name it."); else talk("Task at "+n+". Say what you want."); }
   function doCall(p){ if(window.SNWork){ SNWork.open(p,"call"); return; } nameAim(p).then(function(n){ var t=n.tags||{}; var phone=t.phone||t["contact:phone"]||t.tel||""; if(phone){ talk("Calling "+(n.name||"place")+"."); location.href="tel:"+String(phone).replace(/[^\d+]/g,""); } else talk("No phone listed for "+(n.name||"this place")+"."); }); }
-  function whatIsHere(p, level){ say("Looking…"); nameAim(p).then(function(n){ aim=n; var line=n.water?"No named place on that water.":(n.name||"This place"); if(level==="city"){ showAround(n); return; } talk(line); }); }
+  function whatIsHere(p, level){ say("Looking…"); nameAim(p).then(function(n){ aim=n; showAround(n); if(level!=="city" && n.water) talk("No named place on that water."); }); }
   function run(raw){ var t=String(raw||"").trim(); if(!t) return; var low=t.toLowerCase(); if(low==="reboot") return (window.SNReboot&&SNReboot()); if(window.SNWork&&SNWork.picking&&SNWork.picking()){ SNWork.searchDest(t); return; } if(awaiting){ var a=awaiting; awaiting=null; if(inEl) inEl.placeholder="Talk to Astranov SpaceNet Grok"; if(a.kind==="priority") return grok("PRIORITY REQUEST id="+a.id+" reason: "+t); if(a.kind==="post"||a.kind==="add"){ savePost(a,t); return; } if(a.kind==="task"||a.kind==="find"){ aim=a.at||aim; return grok(t); } } var named=vendors.find(function(v){var n=(v.name||"").toLowerCase(); return n && (low===n || low.indexOf(n)>=0);}); if(named) return selectVendor(named); named=currentOffers.find(function(o){var n=(o.name||"").toLowerCase(); return n && (low===n || low.indexOf(n)>=0);}); if(named) return pickCarrier(named); return grok(t); }
   function globeHit(clientX, clientY){ if(!canvas) return null; var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,R=Math.min(w,h)*0.42/dist; var rect=canvas.getBoundingClientRect(); var px=(clientX-rect.left)*(w/Math.max(1,rect.width)); var py=(clientY-rect.top)*(h/Math.max(1,rect.height)); var x=(px-cx)/R, y2=(cy-py)/R, rr=x*x+y2*y2; if(rr>1) return null; var z2=Math.sqrt(Math.max(0,1-rr)); var cp=Math.cos(pitch), sp=Math.sin(pitch); var y=y2*cp+z2*sp; var z=-y2*sp+z2*cp; var lat=Math.asin(Math.max(-1,Math.min(1,y)))*180/Math.PI; var lng=Math.atan2(x,z)*180/Math.PI + yaw*180/Math.PI; while(lng>180) lng-=360; while(lng<-180) lng+=360; return {lat:lat,lng:lng}; }
   function nameAim(p){ if(!p) return Promise.resolve(p); var url="https://photon.komoot.io/reverse?lat="+p.lat+"&lon="+p.lng; return fetchJson(url,{headers:{Accept:"application/json"}},8000).then(function(j){ var f=j&&j.features&&j.features[0], pr=f&&f.properties||{}; var n=pr.name||pr.street||pr.city||pr.locality||pr.district||""; p.name=n||pr.county||pr.country||""; p.raw=[pr.street,pr.city||pr.locality,pr.country].filter(Boolean).join(", "); p.tags=pr; p.water=!p.name; if(!p.name) p.name="This place"; return p; }).catch(function(){ var nurl="https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=16&lat="+p.lat+"&lon="+p.lng; return fetchJson(nurl,{headers:{Accept:"application/json","Accept-Language":navigator.language||"en"}},8000).then(function(j){ p.name=humanName(j)||"This place"; p.raw=j&&j.display_name||p.name; p.tags=(j&&j.extratags)||{}; p.water=p.name==="This place"; return p; }).catch(function(){ p.name="This place"; p.water=true; p.tags={}; return p; }); }); }
@@ -650,7 +673,7 @@
   function tick(){ try{ tickFly(); if(!drag && !pinch && !fly){ yaw+=spin; spin*=0.96; if(Math.abs(spin)<0.00025) spin=0; } var moving=!!(drag||pinch||fly||Math.abs(spin)>0.00025); var sig=yaw.toFixed(4)+"|"+pitch.toFixed(4)+"|"+dist.toFixed(3)+"|"+(here&&here.lat)+"|"+(aim&&aim.lat)+"|"+(selected&&selected.id); if(!moving && sig===drawSig){ requestAnimationFrame(tick); return; } drawSig=sig; if(canvas){ var ctx=canvas.getContext("2d"); if(ctx){ ctx.fillStyle="#02040a"; ctx.fillRect(0,0,canvas.width,canvas.height); var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,R=Math.min(w,h)*0.42/dist; drawGrid(ctx,cx,cy,R); drawPin(ctx,here,hereName||"YOU","#4df0ff",cx,cy,R); if(aim) drawPin(ctx,aim,aim.name||"PIN","#ff8ad4",cx,cy,R); if(selected) drawPin(ctx,selected,selected.name,"#ffd85a",cx,cy,R); } } }catch(e){} requestAnimationFrame(tick); }
   function boot(){ if(permsTried) return; permsTried=true; var returning=/[?&]paypal=/.test(location.search||""); handlePayPalReturn().then(function(){ if(returning) return locate(true); }); askMic(); setTimeout(listen,600); if(window.SNWork&&SNWork.listenPeer) setTimeout(function(){ SNWork.listenPeer(); },800); }
   function repaint(){ if(map&&window.L) paintMapMarks(window.L, selected); }
-  window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,pack:pack,openMenu:openMenu,minMenu:minMenu,syncTasks:syncTasks,toggleTasks:toggleTasks,openTasks:openTasks,tickJustice:tickJustice,settle:settle,setLayer:setLayer,openCash:openCash,paintMoney:paintMoney};
+  window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,startOrder:startOrder,pack:pack,openMenu:openMenu,minMenu:minMenu,syncTasks:syncTasks,toggleTasks:toggleTasks,openTasks:openTasks,tickJustice:tickJustice,settle:settle,setLayer:setLayer,openCash:openCash,paintMoney:paintMoney,markStage:markStage};
   if(form) form.addEventListener("submit", function(e){ e.preventDefault(); var v=inEl&&inEl.value; if(inEl) inEl.value=""; run(v); });
   var go=document.getElementById("go"); if(go) go.addEventListener("click", function(e){ e.preventDefault(); if(inEl&&inEl.value.trim()){ run(inEl.value.trim()); inEl.value=""; return; } wantEar=true; listen(); });
   var plus=document.getElementById("plus"); if(plus) plus.addEventListener("click", function(){ hands(); });

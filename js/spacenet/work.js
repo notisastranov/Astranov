@@ -207,7 +207,7 @@
     if(act==="dial"){ nativeCall(b.getAttribute("data-tel")||"", false); return; }
     if(act==="video-dial"){ nativeCall(b.getAttribute("data-tel")||"", true); return; }
     if(act==="video"){ startVideo(b.getAttribute("data-peer")||"", b.getAttribute("data-tel")||""); return; }
-    if(act==="order"){ close(); if(window.SN&&SN.selectVendor) SN.selectVendor({id:at.id,name:placeName(at),lat:at.lat,lng:at.lng,raw:"SpaceNet",tags:at.tags||at,kind:at.kind||"shop"}); return; }
+    if(act==="order"){ close(); if(window.SN&&SN.startOrder) SN.startOrder({id:at.id,name:placeName(at),lat:at.lat,lng:at.lng,raw:"SpaceNet",tags:at.tags||at,kind:at.kind||"shop"}); else if(window.SN&&SN.selectVendor) SN.selectVendor({id:at.id,name:placeName(at),lat:at.lat,lng:at.lng,raw:"SpaceNet",tags:at.tags||at,kind:at.kind||"shop"}); return; }
     if(act==="remove"){ removeCurrent(); return; }
   }
 
