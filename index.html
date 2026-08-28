@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" /><title>Astranov SpaceNet Grok</title><meta name="astranov-build" content="4005" /><meta name="theme-color" content="#02040a" /><meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" /><meta name="apple-mobile-web-app-capable" content="yes" /><link rel="manifest" href="/manifest.webmanifest" />
+<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" /><title>Astranov SpaceNet Grok</title><meta name="astranov-build" content="4006" /><meta name="theme-color" content="#02040a" /><meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" /><meta name="apple-mobile-web-app-capable" content="yes" /><link rel="manifest" href="/manifest.webmanifest" />
 <style>
 html,body{margin:0;height:100%;background:#02040a;color:#d8f6ff;overflow:hidden;font-family:system-ui,sans-serif}
 #g{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1;touch-action:none}
@@ -59,25 +59,34 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
 #sn-sheet .go{display:block;width:100%;height:52px;margin:8px 0 4px;border:0;border-radius:14px;background:#d8f6ff;color:#041018;font:700 15px system-ui}
 #sn-sheet .note,#sn-sheet .menu{white-space:pre-wrap;font:500 14px/1.45 system-ui;color:#c5eaf3;margin:0 0 12px}
 #sn-sheet .thumb,#sn-sheet .shot{display:block;width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin:0 0 12px;border:1px solid rgba(126,233,255,.25)}
+#sn-sheet .cover{display:block;width:100%;height:140px;object-fit:cover;border-radius:14px;margin:0 0 10px;border:1px solid rgba(126,233,255,.25)}
+#sn-sheet .avatar{display:block;width:72px;height:72px;object-fit:cover;border-radius:999px;margin:0 0 12px;border:2px solid rgba(126,233,255,.45)}
+#sn-sheet .gallery{display:flex;gap:8px;overflow:auto;margin:0 0 12px}
+#sn-sheet .gallery img{height:88px;border-radius:10px;border:1px solid rgba(126,233,255,.25)}
+#sn-video{position:fixed;inset:0;z-index:96;display:none;background:#02040a}
+#sn-video.on{display:block}
+#sn-video #sn-remote{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#010308}
+#sn-video #sn-local{position:absolute;right:12px;top:max(12px,env(safe-area-inset-top));width:28vw;max-width:140px;aspect-ratio:3/4;object-fit:cover;border-radius:12px;border:1px solid rgba(126,233,255,.45);background:#041018}
+#sn-video .hang{position:absolute;left:50%;bottom:max(24px,env(safe-area-inset-bottom));transform:translateX(-50%);height:52px;padding:0 28px;border:0;border-radius:999px;background:#ff6b7a;color:#fff;font:700 15px system-ui}
 #sn-pick{position:fixed;top:max(52px,env(safe-area-inset-top));left:10px;right:10px;z-index:88;display:none;align-items:center;gap:10px;padding:10px 12px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.45);border-radius:14px;color:#e8fbff;font:650 13px system-ui;pointer-events:auto}
 #sn-pick.on{display:flex}
 #sn-pick .msg{flex:1}
 #sn-pick button{height:36px;padding:0 12px;border:1px solid rgba(126,233,255,.4);background:rgba(4,16,28,.9);color:#7ee9ff;font:700 11px system-ui;border-radius:10px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head>
-<body><canvas id="g"></canvas><div id="sn-place"></div><div id="sn-sheet"><div class="bg" data-act="close"></div><div class="card" role="dialog" aria-label="Place work"></div></div><div id="sn-pick"><span class="msg">Tap the other end, or search</span><button type="button" data-act="cancel-pick">CANCEL</button></div><div id="city"></div><button type="button" id="gps" aria-label="GPS"><span class="lbl">GPS</span><span class="tgt"><span class="dot"></span></span></button><div id="top"><div id="island" title="Tap brand to reboot"><span id="heal"></span><b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b> <span id="ver">V1</span></div></div><div id="dock"><div id="panel"><div id="sn-live"></div><form id="f"><div class="hub"><button type="button" id="plus">+</button></div><input id="in" autocomplete="off" enterkeyhint="send" placeholder="Talk to Astranov SpaceNet Grok" /><div class="hub"><button type="button" id="go" aria-label="Voice">🎙</button></div></form><div id="line"></div></div></div>
-<script src="/js/spacenet/work.js?v=4005"></script>
-<script src="/js/spacenet/app.js?v=4005"></script>
+<body><canvas id="g"></canvas><div id="sn-place"></div><div id="sn-sheet"><div class="bg" data-act="close"></div><div class="card" role="dialog" aria-label="Place work"></div></div><div id="sn-video"><video id="sn-remote" autoplay playsinline></video><video id="sn-local" autoplay muted playsinline></video><button type="button" class="hang" data-act="hang">END CALL</button></div><div id="sn-pick"><span class="msg">Tap the other end, or search</span><button type="button" data-act="cancel-pick">CANCEL</button></div><div id="city"></div><button type="button" id="gps" aria-label="GPS"><span class="lbl">GPS</span><span class="tgt"><span class="dot"></span></span></button><div id="top"><div id="island" title="Tap brand to reboot"><span id="heal"></span><b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b> <span id="ver">V1</span></div></div><div id="dock"><div id="panel"><div id="sn-live"></div><form id="f"><div class="hub"><button type="button" id="plus">+</button></div><input id="in" autocomplete="off" enterkeyhint="send" placeholder="Talk to Astranov SpaceNet Grok" /><div class="hub"><button type="button" id="go" aria-label="Voice">🎙</button></div></form><div id="line"></div></div></div>
+<script src="/js/spacenet/work.js?v=4006"></script>
+<script src="/js/spacenet/app.js?v=4006"></script>
 <script>
 (function(){
-  var VER="4005";
+  var VER="4006";
   function nuclear(){ var go=function(){ location.replace("/?v="+VER+"&t="+Date.now()); }; var tasks=[]; try{ if(window.caches) tasks.push(caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); })); }catch(e){} try{ if(navigator.serviceWorker) tasks.push(navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })); }catch(e){} Promise.all(tasks).then(go).catch(go); setTimeout(go,1400); }
   window.SNReboot=nuclear;
   var brand=document.getElementById("island"); if(brand) brand.addEventListener("click", nuclear);
   try{ if(navigator.serviceWorker) navigator.serviceWorker.register("/sw.js?v="+VER,{scope:"/"}).catch(function(){}); }catch(e){}
   if(!window.SN || !window.SN.run){
     var s=document.createElement("script");
-    s.src="/js/spacenet/app.js?v=4005";
+    s.src="/js/spacenet/app.js?v=4006";
     document.body.appendChild(s);
   }
 })();

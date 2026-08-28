@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4005
+**Stamp at this rewrite:** 4006
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -129,13 +129,15 @@ WHAT IS HERE on globe/national = SpaceNet around that point (capped), not an OSM
 Selecting a place on the city map opens a **big sheet** (`#sn-sheet`). Not a flood of chips.
 
 1. **Post something here**  
-   Write it. It pins on SpaceNet. That is the posting engine. No extra form. News lives here.
+   Write it. Optional photo. It pins on SpaceNet. That is the posting engine. News lives here.
 
 2. **Start a call from here**  
-   Then pick the other end: tap another globe / national / city point, **or** search for a person / company / thing. Draw the **arc** between the two points. If a phone is listed, dial it. Do not fake live WebRTC. There is no signaling server on this build. That is the calling engine.
+   Then pick the other end: tap another globe / national / city point, **or** search for a person / company / thing. Draw the **arc** between the two points.  
+   **Video** if the other end is a SpaceNet listing (shop, driver base, drop, user) with a live peer on the app — real camera + mic, WebRTC. Keep the page open. END CALL hangs up.  
+   If they are not on SpaceNet video, **dial** the listed phone. Do not fake a connected call when the other person is offline. That is the calling engine.
 
 3. **List your shop**  
-   Big form. Name, menu, prices, availability, schedule, telephone, notes. Listed shops join hunts and the around-you map.
+   Big form. Name, **cover picture**, **profile picture**, menu text with prices, **menu photos**, availability, schedule, telephone, notes. Listed shops join hunts and the around-you map.
 
 4. **List a delivery location**  
    Photo of the entrance, floor, street, number, telephone, doorbell number, doorbell name, contact preferences. This is where goods are handed.
@@ -300,11 +302,11 @@ Home tiles (exact labels the user sees):
 - List a delivery location
 - List a delivery driver base
 
-Shop fields: name, menu (prices), availability (open / by order / closed), schedule, phone, notes.  
+Shop fields: name, cover picture, profile picture, menu text (prices), menu photos, availability (open / by order / closed), schedule, phone, notes.  
 Drop fields: label, entrance photo (canvas-compressed JPEG), street, number, floor, phone, doorbell number, doorbell name, contact preferences.  
-Driver-base fields: name, presence (present / route / off), routes, vehicles, hours, range km, carry, preferences, phone. Submit button **LIST DRIVER BASE**. Existing view: **SEND A JOB HERE**.
+Driver-base fields: name, photo of the starting point, presence (present / route / off), routes, vehicles, hours, range km, carry, preferences, phone. Submit button **LIST DRIVER BASE**. Existing view: **SEND A JOB HERE**.
 
-Call: `picking` mode. Banner “Tap the other end, or search”. Next map tap or a hunt name is the destination. Draw great-circle `arcPts` as a Leaflet polyline. `tel:` if a phone exists.
+Call: `picking` mode. Banner “Tap the other end, or search”. Next map tap or a hunt name is the destination. Draw great-circle `arcPts` as a Leaflet polyline. `VIDEO CALL` if the dest has a SpaceNet `peer` (WebRTC via PeerJS + camera/mic). `tel:` if a phone exists. Never mark a call live when the other person is offline.
 
 `SNWork` exports: `open, close, rename, all, hit, match, picking, takePoint, searchDest, cancelPick, activeCall, arcPts`.
 
@@ -316,18 +318,20 @@ From `SNWork.all()`. Skip driver bases with presence `off`. Distance cap ~18 km.
 
 Key stays on the host (Supabase secret → Vercel env). Model grok-4 with fallbacks.
 
-Grok returns **one JSON object**, no markdown:
+Grok returns **one JSON object**, no markdown. The `say` field is human speech — one to three natural sentences, not a slogan:
 
-`{"say":"short spoken line","act":"hunt|talk|now|mail|pickup|pay|reload|globe|locate|map|city|national|post|call|shop|drop|driver","q":"search words"}`
+`{"say":"natural spoken reply","act":"hunt|talk|now|mail|pickup|pay|reload|globe|locate|map|city|national|post|call|shop|drop|driver","q":"search words"}`
+
+Live `/api/ai` must send `spacenet:true` and this SYS as `system` / `messages[0]`. The aicycle fallback **replaces** the old collective persona when `spacenet` is true. Do not bolt YouTube / fly_earth / imagine tools onto SpaceNet talk. Temperature ~0.7. Do not send raw coordinates in the user line — send the named place.
 
 - `locate` → `goHere()` (GPS cinematic). Never silent fake GPS.
 - `hunt` / `order` / `find` → hunt `q`.
 - `post` `call` `shop` `drop` `driver` / `base` → open the city sheet on `aim` or `here`.
 - `talk` → speak `say` only.
 - English default. Greek when they write Greek.
-- Never invent shops, prices, drivers, or GPS. OSM has names and distance, rarely live prices — do not fake a price.
+- Never invent shops, prices, drivers, or GPS.
 
-The page `applyMind` runs those acts. It does **not** parse the user’s sentence.
+NOW carriers: Astranov first, then present delivery driver bases, then **named** local OSM couriers. Do **not** list DoorDash / Instacart / Walmart as buttons that spend AVC without opening those apps. That is dummy fulfillment.
 
 ### Money in the page
 
@@ -341,7 +345,7 @@ Network-first. `skipWaiting` + `clients.claim`. Cache name `sn-shell-NNNN`. Bran
 
 ## Already failed — do not replay
 
-Twin CLI. HUD. chrome-fix. white chrome. long stamps. auto marina. fake Rhodes. Silver Wings. kitchen TTS. mic beep loop. healer killing SW. placeholder index. idle toys. Mercator-in-a-circle. NASA JPEG clipped to a circle. auto flat map on locate or shop pick. GPS deny with no path back. auto-locate on idle boot (GPS is a tap). “driver start” as the user-facing name (it is a **delivery driver base**). OSM emoji flood on the idle map. beer / pizza / city buttons sitting on the globe. “PayPal keys missing” when they sit in Supabase. keyword routers / hard-intent tables in front of Grok. fake live voice with no signaling server. a second markdown constitution.
+Twin CLI. HUD. chrome-fix. white chrome. long stamps. auto marina. fake Rhodes. Silver Wings. kitchen TTS. mic beep loop. healer killing SW. placeholder index. idle toys. Mercator-in-a-circle. NASA JPEG clipped to a circle. auto flat map on locate or shop pick. GPS deny with no path back. auto-locate on idle boot (GPS is a tap). “driver start” as the user-facing name (it is a **delivery driver base**). OSM emoji flood on the idle map. beer / pizza / city buttons sitting on the globe. “PayPal keys missing” when they sit in Supabase. keyword routers / hard-intent tables in front of Grok. slogan-bot “Hello.” from the old collective persona sitting in front of SpaceNet SYS. dummy DoorDash/Instacart/Walmart buttons that take AVC without delivering. fake live video with no camera and no other person.
 
 ---
 

@@ -22,7 +22,7 @@
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ],
   "shortcuts": [
-    { "name": "GPS", "short_name": "GPS", "url": "/?v=4005", "description": "Land on your city" }
+    { "name": "GPS", "short_name": "GPS", "url": "/?v=4006", "description": "Land on your city" }
   ],
   "prefer_related_applications": false
 }

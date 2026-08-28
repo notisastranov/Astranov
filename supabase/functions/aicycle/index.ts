@@ -196,9 +196,9 @@ const HANDS = [
   },
 ]
 
-async function callXAI(key: string, system: string, messages: Msg[]): Promise<string | null> {
+async function callXAI(key: string, system: string, messages: Msg[], noHands = false): Promise<string | null> {
   const primary = Deno.env.get('XAI_MODEL') || Deno.env.get('GROK_MODEL') || 'grok-4-1-fast-non-reasoning'
-  const paidOpts = { maxTokens: PAID_MAX_TOKENS, timeoutMs: PAID_TIMEOUT_MS, tools: HANDS }
+  const paidOpts = { maxTokens: PAID_MAX_TOKENS, timeoutMs: PAID_TIMEOUT_MS, tools: noHands ? undefined : HANDS }
   const models = [primary, 'grok-4-1-fast-non-reasoning', 'grok-4', 'grok-4-0709', 'grok-3']
   const seen = new Set<string>()
   for (const m of models) {
@@ -286,6 +286,7 @@ serve(async (req) => {
     let prompt: string = (body.prompt || body.text || body.message || body.task || '').trim()
     let history: Msg[] = Array.isArray(body.history) ? body.history : []
     let agentSystem = ''
+    if (typeof body.system === 'string' && body.system.trim()) agentSystem = body.system.trim()
     if (!prompt && Array.isArray(body.messages)) {
       const msgs: Msg[] = body.messages
       const sys = msgs.find(m => m.role === 'system')
@@ -399,7 +400,11 @@ serve(async (req) => {
       }
     }
 
+    const spacenet = body.spacenet === true
     let system = BASE_PERSONA
+    if (spacenet && (agentSystem || body.system)) {
+      system = String(agentSystem || body.system)
+    } else {
     if (mode && MODE_DIRECTIVE[mode]) system += `\n\n${MODE_DIRECTIVE[mode]}`
     if (agentSystem) system += `\n\nCurrent context: ${agentSystem}`
     if (creatorMind.length) {
@@ -412,6 +417,7 @@ serve(async (req) => {
     }
     if (mayUsePaidXai) {
       system += `\n\nHANDS: You are the full paid flagship mind. You have tools. When they name a YouTube clip, call youtube_search. When they name a place, call fly_earth. When they want a picture, call imagine_image. Do the job — do not describe searching. You may write a few sentences, not one clipped line.`
+    }
     }
 
     const histMsgs: Msg[] = (history || []).slice(-8).map(m => ({
@@ -502,7 +508,7 @@ serve(async (req) => {
 
     async function tryPaidXaiFallback() {
       if (!mayUsePaidXai || !XAI_SECRET) return { text: null as string | null, via: '' }
-      const t = await callXAI(XAI_SECRET, system, messages)
+      const t = await callXAI(XAI_SECRET, system, messages, spacenet)
       if (!t) return { text: null, via: '' }
       return { text: t, via: 'xai-paid-fallback' }
     }

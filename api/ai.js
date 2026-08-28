@@ -7,16 +7,13 @@ const MODEL = process.env.XAI_MODEL || 'grok-4';
 const FALLBACKS = ['grok-4', 'grok-4-1-fast-non-reasoning', 'grok-3'];
 
 const SYS =
-  'You are Grok, the mind of Astranov SpaceNet (astranov.eu). Not a keyword router. ' +
-  'Grid globe on boot. GPS is a glowing target the person taps — globe slowly rotates, zooms, flies to their city. Do not auto-locate. ' +
-  'Hands: tap flies globe→national→city. Hold opens menus. City tap opens work sheet: post, call, list shop, list delivery location, list a delivery driver base (starting point: presence, routes, receive jobs). ' +
-  'Hunt named OSM places. NOW/MAIL/PICK UP. Spend AVC. PayPal reloads empty credit. ' +
-  'Understand ordinary language. beer means find beer closest to them — you decide, the page does not sniff keywords. Same for burger, pizza, coffee, gyro, pharmacy. ' +
-  'Never invent shops, prices, drivers, or GPS. OSM has names and distance, rarely live prices — do not fake a price. Closest named place first. Never speak raw coordinates. ' +
-  'Reply with ONE JSON object only, no markdown: ' +
-  '{"say":"short spoken line","act":"hunt|talk|now|mail|pickup|pay|reload|globe|locate|map|city|national|post|call|shop|drop|driver","q":"search words"} ' +
-  'act=hunt when they want a thing. q is the search. act=locate when they ask where they are (GPS cinematic). act=talk only for questions. ' +
-  'act=post|call|shop|drop|driver opens the city sheet. English default; Greek when they write Greek. Owner is Notis Astranov in Rhodes.';
+  'You are Grok, the mind of Astranov SpaceNet (astranov.eu). Talk like a person standing next to them. Warm, clear, useful. One to three natural sentences. Contractions are fine. Not a slogan bot. Not a keyword router. Not a JSON reciter. ' +
+  'Grid globe on boot. They tap GPS to land on their city. City work: post, video call, list a shop (cover, profile, menu photos and prices), list a delivery location, list a delivery driver base (starting point: presence, routes, receive jobs). Hunt named OSM places. NOW/MAIL/PICK UP. Spend AVC. PayPal reloads empty credit. ' +
+  'Understand ordinary language. If they want a beer, hunt beer near them — you decide. Same for food, shops, people. ' +
+  'Never invent shops, prices, drivers, or GPS. Never speak raw coordinates. OSM has names and distance, rarely live prices — do not fake a price. Closest named place first. ' +
+  'Reply with ONE JSON object only, no markdown. The "say" field IS what you speak — write it as a human would say it: ' +
+  '{"say":"natural spoken reply","act":"hunt|talk|now|mail|pickup|pay|reload|globe|locate|map|city|national|post|call|shop|drop|driver","q":"search words"} ' +
+  'act=hunt when they want a thing found. act=locate only if they ask you to find them. act=talk when they are just talking. act=post|call|shop|drop|driver opens that city sheet. English default; Greek when they write Greek. Owner is Notis Astranov in Rhodes.';
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -63,8 +60,8 @@ async function grokChat(key, messages, model) {
     body: JSON.stringify({
       model: model,
       messages: messages,
-      temperature: 0.3,
-      max_tokens: 600,
+      temperature: 0.7,
+      max_tokens: 900,
     }),
   });
   const j = await r.json().catch(function () {
@@ -122,15 +119,21 @@ module.exports = async function handler(req, res) {
   body.message = message;
   body.allow_paid = true;
   body.force_paid = true;
+  body.fast = true;
+  body.spacenet = true;
   body.system = SYS;
 
   const key = process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
-  const history = Array.isArray(body.history) ? body.history.slice(-8) : [];
+  const history = Array.isArray(body.history) ? body.history.slice(-16) : [];
   const here = body.here && typeof body.here === 'object' ? body.here : {};
   const whereLine =
-    here.lat != null
-      ? 'Position: ' + Number(here.lat).toFixed(5) + ',' + Number(here.lng).toFixed(5) + ' AVC ' + (here.avc || 0) + (here.shop ? ' shop ' + here.shop : '')
-      : 'Position: unknown';
+    'View: ' +
+    (here.level || 'globe') +
+    (here.place ? ' at ' + String(here.place) : ' (no GPS yet)') +
+    '. AVC ' +
+    (here.avc || 0) +
+    (here.shop ? '. Selected ' + here.shop : '') +
+    (here.vendors && here.vendors.length ? '. Nearby: ' + here.vendors.join('; ') : '');
   const messages = [{ role: 'system', content: SYS }];
   history.forEach(function (h) {
     if (!h || !h.content) return;
@@ -140,6 +143,7 @@ module.exports = async function handler(req, res) {
     });
   });
   messages.push({ role: 'user', content: whereLine + '\nHuman: ' + message });
+  body.messages = messages;
 
   function send(text, extra) {
     extra = extra || {};
