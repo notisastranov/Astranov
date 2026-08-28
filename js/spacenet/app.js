@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4012";
+  var VER="4013";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -65,10 +65,10 @@
   }
   function derivedTasks(){
     var out=[], perish=job?goodsOf(job.query):null;
-    if(job && job.status && job.status!=="done"){
+    if(job && job.status && job.status!=="done" && job.status!=="paid"){
       out.push({id:"job-live", role:"user", title:job.query||"Order", next:jobNext(job), status:"open", perish:perish&&perish.strict, hold:perish&&perish.hold, t:job.t||Date.now(), auto:1});
     }
-    if(!window.SNWork) return out;
+    if(window.SNWork){
     var all=SNWork.all();
     (all.shops||[]).forEach(function(s){
       if(!s||!s.id) return;
@@ -85,6 +85,19 @@
       if(d.phone || d.doorbell) return;
       out.push({id:"list-drop-"+d.id, role:"user", title:d.label||"Drop", next:"Add phone or doorbell.", status:"open", listing:d, t:d.t||Date.now(), auto:1});
     });
+    }
+    loadEscrow().forEach(function(e){
+      if(!e||!e.held) return;
+      var age=Math.max(0, Math.round((Date.now()-e.at)/60000));
+      if(e.flag==="hold"){
+        out.push({id:"just-"+e.id+"-user", role:"user", title:e.query||"Order", next:"Hold is up. Take the credit back or wait.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
+        out.push({id:"just-"+e.id+"-vendor", role:"vendor", title:(e.shop&&e.shop.name)||"Shop", next:"Mark picked, or release the order.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
+      } else if(e.flag==="handed"){
+        out.push({id:"just-"+e.id+"-verify", role:"user", title:e.query||"Order", next:"Confirm you have it, or dispute.", status:"open", escrowId:e.id, t:e.at, auto:1});
+      } else {
+        out.push({id:"escrow-"+e.id, role:"user", title:e.query||"Held order", next:"Paid. Hold "+e.holdMin+" min. "+age+" min in. Credit is locked, not spent in the dark.", status:"open", escrowId:e.id, perish:!!e.strict, hold:e.holdMin, t:e.at, auto:1});
+      }
+    });
     return out;
   }
   function rankTasks(list){
@@ -93,7 +106,7 @@
       if(t.status==="done") p=90;
       if(t.role==="user" && /Pay |Wait for a real/.test(t.next||"")) p=12;
       if(t.perish) p=6;
-      if(t.hold && t.hold<=25) p=4;
+      if(t.id&&t.id.indexOf("just-")===0) p=2;
       if(t.role==="vendor") p=Math.min(p,28);
       if(t.role==="driver") p=Math.min(p,30);
       if(t.boost!=null) p=Math.min(p, Number(t.boost));
@@ -134,6 +147,13 @@
       return;
     }
     if(t.listing && window.SNWork) return SNWork.open(t.listing);
+    if(t.escrowId){
+      if(/-vendor$/.test(t.id)) return markPicked(t.escrowId);
+      if(/-verify$/.test(t.id)) return settleVerify(t.escrowId);
+      if(/-user$/.test(t.id)) return settleRefund(t.escrowId, "You asked for the credit back. Shop had not picked.");
+      talk(t.next||t.title);
+      return;
+    }
     talk(t.next||t.title);
   }
   function askProblem(id){
@@ -162,6 +182,70 @@
     });
     rankTasks(next); saveTasks(next); paintTasksBtn();
     if(tasksEl&&tasksEl.classList.contains("on")) renderTaskList();
+  }
+  function loadEscrow(){ try{ return JSON.parse(localStorage.getItem("sn:escrow")||"[]"); }catch(e){ return []; } }
+  function saveEscrow(list){ try{ localStorage.setItem("sn:escrow", JSON.stringify((list||[]).slice(0,40))); }catch(e){} }
+  function escrowOf(id){ var list=loadEscrow(), i; for(i=0;i<list.length;i++) if(list[i].id===id) return list[i]; return null; }
+  function putEscrow(row){ var list=loadEscrow(), i, found=false; for(i=0;i<list.length;i++) if(list[i].id===row.id){ list[i]=row; found=true; break; } if(!found) list.unshift(row); saveEscrow(list); }
+  function creditEarned(who, n){ if(!who||!n) return; try{ var e=JSON.parse(localStorage.getItem("sn:earned")||"{}"); e[who]=(Number(e[who])||0)+Number(n); localStorage.setItem("sn:earned", JSON.stringify(e)); }catch(x){} }
+  function holdMinOf(j){ var g=goodsOf(j&&j.query); return Math.max(8, Number(g&&g.hold)||40); }
+  function openEscrow(price){
+    var g=goodsOf(job&&job.query);
+    var row={id:"e"+(Date.now().toString(36)), avc:Number(price||0), held:true, status:"paid", at:Date.now(), holdMin:holdMinOf(job), strict:!!(g&&g.strict), query:(job&&job.query)||"", how:job&&job.how, shop:job&&job.shop?{id:job.shop.id,name:job.shop.name}:null, driver:job&&job.carrier&&job.carrier.driver?{id:job.carrier.id,name:job.carrier.name}:null, flag:"", evidence:{paidAt:Date.now()}};
+    putEscrow(row); if(job) job.escrowId=row.id; return row;
+  }
+  function settle(id, split, reason){
+    var e=escrowOf(id); if(!e||!e.held) return;
+    split=split||{}; var c=Math.max(0, Number(split.customer)||0), v=Math.max(0, Number(split.vendor)||0), d=Math.max(0, Number(split.driver)||0);
+    var sum=c+v+d; if(sum<e.avc) c+=(e.avc-sum);
+    if(c) avcAdd(c);
+    if(v) creditEarned(e.shop&&e.shop.id||"vendor", v);
+    if(d) creditEarned(e.driver&&e.driver.id||"driver", d);
+    e.held=false; e.status="released"; e.split={customer:c,vendor:v,driver:d,platform:0}; e.reason=reason||""; e.flag=""; putEscrow(e);
+    if(job&&job.escrowId===id) job.status="done";
+    syncTasks();
+    talk(reason||("Settled. You "+c.toFixed(2)+", shop "+v.toFixed(2)+", driver "+d.toFixed(2)+". SpaceNet takes none of a failed job."));
+  }
+  function settleRefund(id, reason){ var e=escrowOf(id); if(!e) return; settle(id, {customer:e.avc, vendor:0, driver:0}, reason||"Full credit back. Nothing was picked."); }
+  function settleVerify(id){
+    var e=escrowOf(id); if(!e) return;
+    var v=e.how==="pickup"?e.avc:Math.round(e.avc*0.5*100)/100;
+    var d=e.how==="now"?Math.round((e.avc-v)*100)/100:0;
+    if(e.how==="mail"){ v=Math.round(e.avc*0.7*100)/100; d=Math.round((e.avc-v)*100)/100; }
+    settle(id, {customer:0, vendor:v, driver:d}, "Verified. Shop and driver are credited. You kept the goods.");
+  }
+  function markPicked(id){
+    var e=escrowOf(id); if(!e||!e.held) return;
+    e.status="picked"; e.flag=""; e.evidence=e.evidence||{}; e.evidence.pickedAt=Date.now(); putEscrow(e);
+    syncTasks(); talk("Marked picked. Credit stays locked until it is handed and verified.");
+  }
+  function markHanded(id){
+    var e=escrowOf(id); if(!e||!e.held) return;
+    e.status="handed"; e.flag="handed"; e.evidence=e.evidence||{}; e.evidence.handedAt=Date.now(); putEscrow(e);
+    syncTasks(); talk("Handed. Confirm you have it. If you stay silent, we settle on the evidence we actually have.");
+  }
+  function applyJustice(m){
+    var id=(m&&m.id)||(awaiting&&awaiting.id); var e=escrowOf(id); if(!e){ talk((m&&m.say)||"That hold is gone."); return; }
+    var split=m.split||{};
+    if(m.ok===false){ talk(m.say||"No. That split would cheat someone."); return; }
+    settle(id, {customer:split.customer, vendor:split.vendor, driver:split.driver}, m.say||"Grok settled it.");
+  }
+  function tickJustice(){
+    var now=Date.now(), list=loadEscrow(), dirty=false;
+    list.forEach(function(e){
+      if(!e||!e.held) return;
+      var age=(now-e.at)/60000, hold=Number(e.holdMin)||40;
+      if(e.status==="paid" && age>=hold*2){ settle(e.id, {customer:e.avc, vendor:0, driver:0}, "Shop did not pick in twice the hold. Full credit back. SpaceNet takes nothing."); dirty=true; return; }
+      if(e.status==="paid" && age>=hold && e.flag!=="hold"){ e.flag="hold"; putEscrow(e); dirty=true; talk("Hold time is up on "+(e.query||"this order")+". Credit is still locked. Shop must pick or we give it back."); }
+      if(e.status==="handed" && e.evidence&&e.evidence.handedAt && (now-e.evidence.handedAt)>15*60000 && e.flag==="handed"){
+        var dropOk=false;
+        if(window.SNWork){ (SNWork.all().drops||[]).forEach(function(d){ if(d&& (d.phone||d.doorbell||d.shot)) dropOk=true; }); }
+        if(dropOk) settle(e.id, {customer:0, vendor:Math.round(e.avc*0.5*100)/100, driver:Math.round(e.avc*0.5*100)/100}, "No confirm after handoff, and a real drop was listed. Shop and driver are credited.");
+        else settle(e.id, {customer:e.avc, vendor:0, driver:0}, "No confirm, and no doorbell or photo on the drop. Credit back. We don't dump that on you.");
+        dirty=true;
+      }
+    });
+    if(dirty) syncTasks(); else paintTasksBtn();
   }
   function lookAt(p){ if(!p||!isFinite(p.lat)||!isFinite(p.lng)) return; yaw=p.lng*Math.PI/180; pitch=Math.max(-1.15, Math.min(1.15, p.lat*Math.PI/180)); spin=0; }
   function facingPoint(){ var lat=pitch*180/Math.PI, lng=yaw*180/Math.PI; while(lng>180) lng-=360; while(lng<-180) lng+=360; return {lat:lat,lng:lng}; }
@@ -252,8 +336,8 @@
   function priceOf(o){ return o&&o.how==="pickup"?6:(o&&o.how==="mail"?14:10); }
   function pickCarrier(o){ if(job) job.carrier=o; offerPay(priceOf(o)); if(o.id==="ours"||(o.own&&o.how!=="pickup")) talk("Astranov. Tasks spend AVC now. Reload through PayPal only if credit is empty."); else if(o.id==="self") talk("Pick up at "+(selected&&selected.name||"the shop")+"."); else if(o.driver) talk((o.name||"Driver base")+". Starting point. Job goes to this base. About "+o.eta+" min."); else talk(o.name+" · about "+o.eta+" min. Portals see one slice."); }
   function offerPay(price){ clearNeed(); var bal=avcGet(); if(job) job.price=price; need({id:"pay",label:"PAY "+price+" AVC",run:function(){ spendAvc(price); }}); if(bal<price) need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(Math.max(10, Math.ceil(price-bal))); }}); talk((bal>=price)?("Pay "+price+" AVC. You have "+bal.toFixed(2)+"."):("Need "+price+" AVC. You have "+bal.toFixed(2)+". Reload through PayPal.")); }
-  function spendAvc(price){ price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } clearNeed(); syncTasks(); talk("Paid "+price+" AVC. Remaining "+avcGet().toFixed(2)+". Stage: paid."); if(job&&job.carrier&&job.carrier.id==="ours") watchStages(price); }
-  function watchStages(avc){ if(!job) return; job.status="paid"; talk("Stage paid · "+Number(avc||job.paidAvc||0).toFixed(2)+" AVC moved. Waiting on a real associate for picked → boxed → moving → handed → verified."); }
+  function spendAvc(price){ price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } var esc=openEscrow(price); clearNeed(); syncTasks(); talk("Paid "+price+" AVC. Locked, not spent in the dark. Hold "+esc.holdMin+" min."); watchStages(price); }
+  function watchStages(avc){ if(!job) return; job.status="paid"; talk("Stage paid. Credit locked until picked → boxed → moving → handed → verified. If the shop goes silent, the credit comes back. SpaceNet takes nothing from a failed job."); }
   function reloadPaypal(eur){ say("PayPal reload…"); try{ sessionStorage.setItem("sn:paypal-job", JSON.stringify(job||{})); sessionStorage.setItem("sn:paypal-reload", String(eur||10)); }catch(e){} fetch("/api/paypal/create-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:eur||10,origin:location.origin,reference:"avc-reload"})}).then(function(r){return r.json().then(function(j){j.http=r.status;return j;});}).then(function(j){ if(j&&j.ok&&j.approve){ location.href=j.approve; return; } clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk(j&&j.error==="paypal_not_configured"?"PayPal is not on this host yet.":"PayPal could not start. RELOAD is still here."); }).catch(function(){ clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk("PayPal could not be reached."); }); }
   function restorePayJob(){ try{ var saved=JSON.parse(sessionStorage.getItem("sn:paypal-job")||"null"); if(saved){ job=saved; selected=saved.shop||null; } }catch(e){} }
   function clearPayQuery(){ try{ var u=new URL(location.href); ["paypal","token","PayerID"].forEach(function(k){u.searchParams.delete(k);}); history.replaceState({},"",u.pathname+(u.searchParams.toString()?"?"+u.searchParams.toString():"")); }catch(e){} }
@@ -277,9 +361,9 @@
   }
   function askMic(){ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) return Promise.resolve(false); var gum=navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){ try{s.getTracks().forEach(function(t){t.stop();});}catch(e){} return true; }).catch(function(){ return false; }); return Promise.race([gum,new Promise(function(resolve){setTimeout(function(){resolve(false);},15000);})]); }
   function listen(){ if(listening||speaking) return; var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) return; listening=true; rec=new SR(); rec.continuous=false; rec.lang=navigator.language||"en-US"; rec.onresult=function(ev){ var i,tx="",fin=false; for(i=ev.resultIndex;i<ev.results.length;i++){ tx+=ev.results[i][0].transcript; if(ev.results[i].isFinal) fin=true; } if(inEl) inEl.value=tx; if(fin&&tx.trim()){ listening=false; try{rec.stop();}catch(e){} run(tx.trim()); } }; rec.onend=function(){ listening=false; if(wantEar&&!speaking) setTimeout(listen,500); }; rec.onerror=function(ev){ listening=false; if(ev&&ev.error==="not-allowed") wantEar=false; }; try{ rec.start(); }catch(e){ listening=false; } }
-  function parseMind(j, raw){ var text=String((j&&(j.text||j.response||j.answer||j.say))||""); var act=String((j&&j.act)||"").toLowerCase(), q=(j&&j.q)||"", s=(j&&j.say)||"", ok=j&&j.priority_ok, id=(j&&(j.task_id||j.id))||""; var m=text.match(/\{[\s\S]*\}/); if(m){ try{ var o=JSON.parse(m[0]); if(o){ if(o.act) act=String(o.act).toLowerCase(); if(o.q) q=String(o.q); if(o.say) s=String(o.say); if(!s && o.text) s=String(o.text); if(o.ok!=null) ok=o.ok; if(o.id) id=String(o.id); } }catch(e){} } if(!s) s=text.replace(/\{[\s\S]*\}/,"").trim(); return {act:act||"talk", q:q||raw, say:s||"", ok:ok, id:id}; }
-  function applyMind(m, raw){ if(!m) return; var a=String(m.act||"talk").toLowerCase(); if(m.say && a!=="hunt" && a!=="order" && a!=="find" && a!=="priority") talk(m.say); else if(m.say && a!=="priority") say(m.say); if(a==="talk"||!a) return; if(a==="priority"){ var ok=m.ok===true||m.ok==="true"||m.ok===1; bumpTask(m.id||(awaiting&&awaiting.id), ok, m.say); awaiting=null; return; } if(a==="locate") return goHere(); if(a==="globe"){ showGlobe(); return; } if(a==="national") return showNational(aim||here||facingPoint()); if(a==="map"||a==="city"||a==="streets") return showCity(selected||aim||here); if(a==="now") return chooseHow("now"); if(a==="mail") return chooseHow("mail"); if(a==="pickup"||a==="pick up") return chooseHow("pickup"); if(a==="pay") return spendAvc(priceOf(job&&job.carrier)); if(a==="reload") return reloadPaypal(10); if(a==="post"||a==="call"||a==="shop"||a==="drop"||a==="driver"||a==="base"){ if(window.SNWork) return SNWork.open(aim||here, a==="base"?"driver":a); return; } if(a==="hunt"||a==="order"||a==="find") return hunt(m.q||raw, aim||here); }
-  function grok(text){ var raw=String(text||"").trim(); if(!raw) return; say("Grok…"); var origin=aim||here; var ctx={ place:(aim&&aim.name)||hereName||"", avc:avcGet(), shop:selected&&selected.name||"", query:job&&job.query||"", level:viewLevel(), vendors:(vendors||[]).slice(0,6).map(function(v){return v.name+(origin?" "+km(origin,v).toFixed(1)+"km":"");}), tasks:loadTasks().filter(function(t){return t.status!=="done";}).slice(0,8).map(function(t){return {id:t.id,title:t.title,pri:t.pri,role:t.role,next:t.next};}) }; if(awaiting&&awaiting.kind==="priority") ctx.priority_request={id:awaiting.id, reason:raw}; fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:raw, message:raw, here:ctx, history:mindHist, spacenet:true, fast:true, force_paid:true, allow_paid:true})}).then(function(r){return r.json().then(function(j){ j.http=r.status; return j; });}).then(function(j){ var m=parseMind(j, raw); mindHist.push({role:"user",content:raw}); mindHist.push({role:"assistant",content:m.say||m.act||""}); if(mindHist.length>16) mindHist=mindHist.slice(-16); applyMind(m, raw); }).catch(function(){ talk("Grok did not answer. Say it again."); }); }
+  function parseMind(j, raw){ var text=String((j&&(j.text||j.response||j.answer||j.say))||""); var act=String((j&&j.act)||"").toLowerCase(), q=(j&&j.q)||"", s=(j&&j.say)||"", ok=j&&j.priority_ok, id=(j&&(j.task_id||j.id))||"", split=j&&j.split; var m=text.match(/\{[\s\S]*\}/); if(m){ try{ var o=JSON.parse(m[0]); if(o){ if(o.act) act=String(o.act).toLowerCase(); if(o.q) q=String(o.q); if(o.say) s=String(o.say); if(!s && o.text) s=String(o.text); if(o.ok!=null) ok=o.ok; if(o.id) id=String(o.id); if(o.split) split=o.split; } }catch(e){} } if(!s) s=text.replace(/\{[\s\S]*\}/,"").trim(); return {act:act||"talk", q:q||raw, say:s||"", ok:ok, id:id, split:split}; }
+  function applyMind(m, raw){ if(!m) return; var a=String(m.act||"talk").toLowerCase(); if(m.say && a!=="hunt" && a!=="order" && a!=="find" && a!=="priority") talk(m.say); else if(m.say && a!=="priority") say(m.say); if(a==="talk"||!a) return; if(a==="priority"){ var ok=m.ok===true||m.ok==="true"||m.ok===1; bumpTask(m.id||(awaiting&&awaiting.id), ok, m.say); awaiting=null; return; } if(a==="justice"){ applyJustice(m); awaiting=null; return; } if(a==="locate") return goHere(); if(a==="globe"){ showGlobe(); return; } if(a==="national") return showNational(aim||here||facingPoint()); if(a==="map"||a==="city"||a==="streets") return showCity(selected||aim||here); if(a==="now") return chooseHow("now"); if(a==="mail") return chooseHow("mail"); if(a==="pickup"||a==="pick up") return chooseHow("pickup"); if(a==="pay") return spendAvc(priceOf(job&&job.carrier)); if(a==="reload") return reloadPaypal(10); if(a==="post"||a==="call"||a==="shop"||a==="drop"||a==="driver"||a==="base"){ if(window.SNWork) return SNWork.open(aim||here, a==="base"?"driver":a); return; } if(a==="hunt"||a==="order"||a==="find") return hunt(m.q||raw, aim||here); }
+  function grok(text){ var raw=String(text||"").trim(); if(!raw) return; say("Grok…"); var origin=aim||here; var ctx={ place:(aim&&aim.name)||hereName||"", avc:avcGet(), shop:selected&&selected.name||"", query:job&&job.query||"", level:viewLevel(), vendors:(vendors||[]).slice(0,6).map(function(v){return v.name+(origin?" "+km(origin,v).toFixed(1)+"km":"");}), tasks:loadTasks().filter(function(t){return t.status!=="done";}).slice(0,8).map(function(t){return {id:t.id,title:t.title,pri:t.pri,role:t.role,next:t.next};}), escrow:loadEscrow().filter(function(e){return e&&e.held;}).slice(0,4) }; if(awaiting&&awaiting.kind==="priority") ctx.priority_request={id:awaiting.id, reason:raw}; fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:raw, message:raw, here:ctx, history:mindHist, spacenet:true, fast:true, force_paid:true, allow_paid:true})}).then(function(r){return r.json().then(function(j){ j.http=r.status; return j; });}).then(function(j){ var m=parseMind(j, raw); mindHist.push({role:"user",content:raw}); mindHist.push({role:"assistant",content:m.say||m.act||""}); if(mindHist.length>16) mindHist=mindHist.slice(-16); applyMind(m, raw); }).catch(function(){ talk("Grok did not answer. Say it again."); }); }
   function savePost(a, text){ var row={level:a.level, lat:a.at&&a.at.lat, lng:a.at&&a.at.lng, name:(a.at&&a.at.name)||"", text:String(text||"").trim(), t:Date.now(), kind:"post", id:"p"+Date.now().toString(36)}; try{ var list=JSON.parse(localStorage.getItem("sn:posts")||"[]"); list.unshift(row); localStorage.setItem("sn:posts", JSON.stringify(list.slice(0,80))); }catch(e){} talk("Saved on this device at "+(row.name||a.level)+"."); if(window.SN&&SN.repaint) SN.repaint(); }
   function startAwait(kind, level, p){ awaiting={kind:kind, level:level, at:p}; if(inEl){ inEl.value=""; inEl.placeholder= kind==="post"?"Post at this place": kind==="add"?"Name what you add":"Task at this place"; try{ inEl.focus(); }catch(e){} } var n=(p&&p.name)||level; if(kind==="post") talk("Post at "+n+". Write it."); else if(kind==="add") talk("Add at "+n+". Name it."); else talk("Task at "+n+". Say what you want."); }
   function doCall(p){ if(window.SNWork){ SNWork.open(p,"call"); return; } nameAim(p).then(function(n){ var t=n.tags||{}; var phone=t.phone||t["contact:phone"]||t.tel||""; if(phone){ talk("Calling "+(n.name||"place")+"."); location.href="tel:"+String(phone).replace(/[^\d+]/g,""); } else talk("No phone listed for "+(n.name||"this place")+"."); }); }
@@ -430,7 +514,7 @@
   function tick(){ try{ tickFly(); if(canvas){ var ctx=canvas.getContext("2d"); if(ctx){ ctx.fillStyle="#02040a"; ctx.fillRect(0,0,canvas.width,canvas.height); var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,R=Math.min(w,h)*0.42/dist; drawGrid(ctx,cx,cy,R); drawPin(ctx,here,hereName||"YOU","#4df0ff",cx,cy,R); if(aim) drawPin(ctx,aim,aim.name||"PIN","#ff8ad4",cx,cy,R); if(selected) drawPin(ctx,selected,selected.name,"#ffd85a",cx,cy,R); if(!drag && !pinch && !fly){ yaw+=spin; spin*=0.96; if(Math.abs(spin)<0.00025) spin=0; } } } }catch(e){} requestAnimationFrame(tick); }
   function boot(){ if(permsTried) return; permsTried=true; var returning=/[?&]paypal=/.test(location.search||""); handlePayPalReturn().then(function(){ if(returning) return locate(true); }); askMic(); setTimeout(listen,600); if(window.SNWork&&SNWork.listenPeer) setTimeout(function(){ SNWork.listenPeer(); },800); }
   function repaint(){ if(map&&window.L) paintMapMarks(window.L, selected); }
-  window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,pack:pack,openMenu:openMenu,minMenu:minMenu,syncTasks:syncTasks,toggleTasks:toggleTasks,openTasks:openTasks};
+  window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,pack:pack,openMenu:openMenu,minMenu:minMenu,syncTasks:syncTasks,toggleTasks:toggleTasks,openTasks:openTasks,tickJustice:tickJustice,settle:settle};
   if(form) form.addEventListener("submit", function(e){ e.preventDefault(); var v=inEl&&inEl.value; if(inEl) inEl.value=""; run(v); });
   var go=document.getElementById("go"); if(go) go.addEventListener("click", function(e){ e.preventDefault(); if(inEl&&inEl.value.trim()){ run(inEl.value.trim()); inEl.value=""; return; } wantEar=true; listen(); });
   var plus=document.getElementById("plus"); if(plus) plus.addEventListener("click", function(){ hands(); });
@@ -473,5 +557,5 @@
     if(!el) return;
     new MutationObserver(packSoon).observe(el,{attributes:true,childList:true,subtree:true,characterData:true});
   });
-  size(); tick(); setTimeout(boot,200); setTimeout(syncTasks,500); setInterval(function(){ if(!permsTried) boot(); },4000);
+  size(); tick(); setTimeout(boot,200); setTimeout(syncTasks,500); setInterval(function(){ if(!permsTried) boot(); },4000); setInterval(tickJustice, 20000);
 })();

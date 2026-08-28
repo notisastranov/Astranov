@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4012
+**Stamp at this rewrite:** 4013
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -55,7 +55,19 @@ Boot view:
 
 Idle dock is empty except real hunt or pay results. No FOOD. No BEER. No CITY. No NATIONAL sitting on the globe. You are looking at space and the globe. You may not even know where you are yet. Do not flood the screen.
 
-AVC = internal credit. Tasking spends AVC instantly. PayPal exists only to reload AVC when the balance is empty.
+AVC = internal credit. Paying a job **locks** AVC in escrow. It is not spent in the dark. PayPal exists only to reload AVC when the balance is empty.
+
+### Justice for all — no human support desk
+
+This is where marketplaces fail. SpaceNet does it without a ticket queue.
+
+- **Clocks, not hope.** Every paid job has a hold from the goods (ice cream 12 min, pizza 35, ambient 180). At hold: TASKS lights for user and vendor. At 2× hold with no pick: **full credit back**. Shop earned nothing. SpaceNet takes **zero**.
+- **Work already done is paid.** If it was picked/boxed and then dies: vendor keeps a share, driver 0 if they never moved, rest back to the customer.
+- **Miles actually moved are paid.** Driver credit only after moving/handed. No-show: 0.
+- **Handoff.** User must verify. Silent 15 min after handed: if a real drop (doorbell/photo/phone) was listed, shop+driver are credited. If we sent someone into a hole with no drop details, credit back to the customer.
+- **Grok adjudicates** (`act:justice`) when someone disputes. Evidence = clocks, hold, listing completeness, drop photo. We do **not** invent a GPS trace we do not have.
+- **Nobody is the default loser.** Customer gets the goods or the credit. Vendor is not cooking for free. Driver is not running unpaid miles. The platform does not keep failed-job money.
+- **Proactive.** tickJustice every 20s raises TASKS before anyone has to shout at support.
 
 Listings (posts, shops, delivery locations, delivery driver bases) save on the device (`localStorage`) and also publish to `/api/space` so other SpaceNet users can hunt them. If the net table is down, the device listing still works — never invent a cloud of fake shops to look busy. Calls stay on the device.
 
