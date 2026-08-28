@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4009";
+  var VER="4010";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -13,7 +13,7 @@
   var here=null, hereName="", hereAt=0, countryCode="", things={}, vendors=[], selected=null, job=null, currentOffers=[], huntSeq=0, offerSeq=0, locating=null, pendingHunt=null, aim=null, tapScreen=null, placeEl=null, awaiting=null, mapBound=false, mapHeld=false;
   var map=null, mapReady=null, hereMark=null, vendorMark=null, routeLine=null, aimMark=null, callLine=null;
   var listening=false, speaking=false, wantEar=true, rec=null, permsTried=false, mindHist=[];
-  function say(t){ if(lineEl&&t!=null) lineEl.textContent=String(t); placeGps(); }
+  function say(t){ if(lineEl&&t!=null) lineEl.textContent=String(t); packSoon(); }
   function noCoords(t){ return String(t||"").replace(/\b-?\d+\.\d+\s*[NS],?\s*-?\d+\.\d+\s*[EW]\b/gi,"").replace(/\b-?\d{1,3}\.\d+\s*,\s*-?\d{1,3}\.\d+\b/g,"").replace(/\s{2,}/g," ").trim(); }
   function talk(t){ t=noCoords(t); if(!t) return; say(t); speaking=true; try{ if(window.speechSynthesis){ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t)); u.onend=function(){ speaking=false; if(wantEar) setTimeout(listen,280); }; u.onerror=function(){ speaking=false; if(wantEar) setTimeout(listen,280); }; speechSynthesis.speak(u); return; } }catch(e){} speaking=false; if(wantEar) setTimeout(listen,280); }
   function clearNeed(){ things={}; if(liveEl){ liveEl.innerHTML=""; liveEl.style.display="none"; } }
@@ -90,8 +90,8 @@
       }
     } }
   function cityWork(p){ if(!p) return; aim=p; hidePlace(); if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; if(window.SNWork) SNWork.open(p); nameAim(p).then(function(n){ aim=n; if(window.SNWork&&SNWork.rename) SNWork.rename(n); else if(!window.SNWork) say(n.water?"No named place on that water.":(n.name||"This place")); }); }
-  function bindMap(L){ if(mapBound||!map||!cityEl) return; mapBound=true; var lp=null; cityEl.addEventListener("pointerdown", function(e){ if(!cityEl.classList.contains("on")) return; if(e.target && e.target.closest && e.target.closest(".leaflet-control")) return; if(e.isPrimary===false) return; lp={x:e.clientX,y:e.clientY,id:e.pointerId,held:false}; lp.t=setTimeout(function(){ if(!lp) return; lp.held=true; mapHeld=true; var ll=map.mouseEventToLatLng({clientX:lp.x,clientY:lp.y}); var p={lat:ll.lat,lng:ll.lng}; if(viewLevel()==="city") cityWork(p); else openLevelMenu(p,{x:lp.x,y:lp.y}, "national"); },420); }, true); cityEl.addEventListener("pointermove", function(e){ if(!lp||lp.held) return; if(Math.hypot(e.clientX-lp.x,e.clientY-lp.y)>16){ clearTimeout(lp.t); lp=null; } }, true); function endLp(){ if(!lp) return; clearTimeout(lp.t); lp=null; } cityEl.addEventListener("pointerup", endLp, true); cityEl.addEventListener("pointercancel", endLp, true); map.on("click", function(e){ if(mapHeld){ mapHeld=false; return; } var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; if(map.getZoom()>=10){ cityWork(p); } else { flyTap(p); } }); map.on("zoomend", function(){ if(!map) return; if(map.getZoom()<=4) showGlobe(); }); map.on("contextmenu", function(e){ try{ L.DomEvent.preventDefault(e); }catch(_){} mapHeld=true; var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(viewLevel()==="city") cityWork(p); else openLevelMenu(p, null, "national"); }); }
-  function showMap(p, z){ if(!cityEl||!p||!isFinite(p.lat)) return; loadMap().then(function(L){ cityEl.classList.add("on"); cityEl.style.pointerEvents="auto"; if(!map){ map=L.map(cityEl,{zoomControl:true,attributionControl:true,tap:true}).setView([p.lat,p.lng], z); L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{subdomains:"abc",maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map); bindMap(L); } else if(map.flyTo) map.flyTo([p.lat,p.lng], z, {duration:0.7}); else map.setView([p.lat,p.lng], z); paintMapMarks(L, selected); setTimeout(function(){ try{ map.invalidateSize(); }catch(e){} placeGps(); },40); }).catch(function(){ mapReady=null; showGlobe(); talk("Map failed to load."); }); }
+  function bindMap(L){ if(mapBound||!map||!cityEl) return; mapBound=true; try{ map.attributionControl.setPosition("topleft"); }catch(e){} var lp=null; cityEl.addEventListener("pointerdown", function(e){ if(!cityEl.classList.contains("on")) return; if(e.target && e.target.closest && e.target.closest(".leaflet-control")) return; if(e.isPrimary===false) return; lp={x:e.clientX,y:e.clientY,id:e.pointerId,held:false}; lp.t=setTimeout(function(){ if(!lp) return; lp.held=true; mapHeld=true; var ll=map.mouseEventToLatLng({clientX:lp.x,clientY:lp.y}); var p={lat:ll.lat,lng:ll.lng}; if(viewLevel()==="city") cityWork(p); else openLevelMenu(p,{x:lp.x,y:lp.y}, "national"); },420); }, true); cityEl.addEventListener("pointermove", function(e){ if(!lp||lp.held) return; if(Math.hypot(e.clientX-lp.x,e.clientY-lp.y)>16){ clearTimeout(lp.t); lp=null; } }, true); function endLp(){ if(!lp) return; clearTimeout(lp.t); lp=null; } cityEl.addEventListener("pointerup", endLp, true); cityEl.addEventListener("pointercancel", endLp, true); map.on("click", function(e){ if(mapHeld){ mapHeld=false; return; } var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; if(map.getZoom()>=10){ cityWork(p); } else { flyTap(p); } }); map.on("zoomend", function(){ if(!map) return; if(map.getZoom()<=4) showGlobe(); }); map.on("contextmenu", function(e){ try{ L.DomEvent.preventDefault(e); }catch(_){} mapHeld=true; var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(viewLevel()==="city") cityWork(p); else openLevelMenu(p, null, "national"); }); }
+  function showMap(p, z){ if(!cityEl||!p||!isFinite(p.lat)) return; loadMap().then(function(L){ cityEl.classList.add("on"); cityEl.style.pointerEvents="auto"; if(!map){ map=L.map(cityEl,{zoomControl:false,attributionControl:true,tap:true}).setView([p.lat,p.lng], z); L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{subdomains:"abc",maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map); bindMap(L); } else if(map.flyTo) map.flyTo([p.lat,p.lng], z, {duration:0.7}); else map.setView([p.lat,p.lng], z); paintMapMarks(L, selected); setTimeout(function(){ try{ map.invalidateSize(); }catch(e){} packSoon(); },40); }).catch(function(){ mapReady=null; showGlobe(); talk("Map failed to load."); }); }
   function showCity(v){ var p=v||selected||aim||here; if(!p){ talk("Point at a place first."); return; } aim=p; showMap(p, 14); }
   function showNational(p){ p=p||aim||here||facingPoint(); aim=p; showMap(p, 6); }
   function showCall(from, dest){ if(!from||!dest) return; var mid={lat:(from.lat+dest.lat)/2,lng:(from.lng+dest.lng)/2}; var d=km(from,dest); var z=d>80?6:d>8?10:14; showMap(mid, z); setTimeout(function(){ if(!map) return; try{ map.fitBounds([[from.lat,from.lng],[dest.lat,dest.lng]],{padding:[48,48],maxZoom:14}); }catch(e){} },500); }
@@ -142,27 +142,113 @@
   function run(raw){ var t=String(raw||"").trim(); if(!t) return; var low=t.toLowerCase(); if(low==="reboot") return (window.SNReboot&&SNReboot()); if(window.SNWork&&SNWork.picking&&SNWork.picking()){ SNWork.searchDest(t); return; } if(awaiting){ var a=awaiting; awaiting=null; if(inEl) inEl.placeholder="Talk to Astranov SpaceNet Grok"; if(a.kind==="post"||a.kind==="add"){ savePost(a,t); return; } if(a.kind==="task"||a.kind==="find"){ aim=a.at||aim; return grok(t); } } var named=vendors.find(function(v){var n=(v.name||"").toLowerCase(); return n && (low===n || low.indexOf(n)>=0);}); if(named) return selectVendor(named); named=currentOffers.find(function(o){var n=(o.name||"").toLowerCase(); return n && (low===n || low.indexOf(n)>=0);}); if(named) return pickCarrier(named); return grok(t); }
   function globeHit(clientX, clientY){ if(!canvas) return null; var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,R=Math.min(w,h)*0.42/dist; var rect=canvas.getBoundingClientRect(); var px=(clientX-rect.left)*(w/Math.max(1,rect.width)); var py=(clientY-rect.top)*(h/Math.max(1,rect.height)); var x=(px-cx)/R, y2=(cy-py)/R, rr=x*x+y2*y2; if(rr>1) return null; var z2=Math.sqrt(Math.max(0,1-rr)); var cp=Math.cos(pitch), sp=Math.sin(pitch); var y=y2*cp+z2*sp; var z=-y2*sp+z2*cp; var lat=Math.asin(Math.max(-1,Math.min(1,y)))*180/Math.PI; var lng=Math.atan2(x,z)*180/Math.PI + yaw*180/Math.PI; while(lng>180) lng-=360; while(lng<-180) lng+=360; return {lat:lat,lng:lng}; }
   function nameAim(p){ if(!p) return Promise.resolve(p); var url="https://photon.komoot.io/reverse?lat="+p.lat+"&lon="+p.lng; return fetchJson(url,{headers:{Accept:"application/json"}},8000).then(function(j){ var f=j&&j.features&&j.features[0], pr=f&&f.properties||{}; var n=pr.name||pr.street||pr.city||pr.locality||pr.district||""; p.name=n||pr.county||pr.country||""; p.raw=[pr.street,pr.city||pr.locality,pr.country].filter(Boolean).join(", "); p.tags=pr; p.water=!p.name; if(!p.name) p.name="This place"; return p; }).catch(function(){ var nurl="https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=16&lat="+p.lat+"&lon="+p.lng; return fetchJson(nurl,{headers:{Accept:"application/json","Accept-Language":navigator.language||"en"}},8000).then(function(j){ p.name=humanName(j)||"This place"; p.raw=j&&j.display_name||p.name; p.tags=(j&&j.extratags)||{}; p.water=p.name==="This place"; return p; }).catch(function(){ p.name="This place"; p.water=true; p.tags={}; return p; }); }); }
-  function hidePlace(){ if(placeEl){ placeEl.classList.remove("on"); placeEl.innerHTML=""; } }
-  function placeMenuAt(sx,sy){ if(!placeEl) return; var w=Math.min(220, innerWidth-16), h=320; var x=Math.max(8, Math.min(innerWidth-w-8, (sx||innerWidth/2)-w/2)); var y=Math.max(8, Math.min(innerHeight-h-8, (sy||innerHeight/2)-20)); placeEl.style.left=x+"px"; placeEl.style.top=y+"px"; }
+  function hidePlace(){ if(placeEl){ placeEl.classList.remove("on"); placeEl.innerHTML=""; } packSoon(); }
+  function placeMenuAt(sx,sy){ if(!placeEl) return; var w=Math.min(220, innerWidth-16), h=Math.min(320, innerHeight*0.5); var x=Math.max(8, Math.min(innerWidth-w-8, (sx||innerWidth/2)-w/2)); var y=Math.max(8, Math.min(innerHeight-h-8, (sy||innerHeight/2)-20)); placeEl.style.left=x+"px"; placeEl.style.top=y+"px"; packSoon(); }
   function addPlaceBtn(label,fn){ if(!placeEl) return; var b=document.createElement("button"); b.type="button"; b.textContent=label; b.onclick=function(ev){ ev.preventDefault(); ev.stopPropagation(); hidePlace(); try{ fn(); }catch(e){ talk("That step failed."); } }; placeEl.appendChild(b); }
   function openLevelMenu(p, screen, level){ if(!p) return; level=level||viewLevel(); aim=p; if(screen) tapScreen=screen; if(level==="city"){ cityWork(p); return; } hidePlace(); if(!placeEl) placeEl=document.getElementById("sn-place"); if(!placeEl){ placeEl=document.createElement("div"); placeEl.id="sn-place"; document.body.appendChild(placeEl); } placeEl.classList.add("on"); placeMenuAt((tapScreen&&tapScreen.x)||(innerWidth/2), (tapScreen&&tapScreen.y)||(innerHeight*0.38)); var ttl=document.createElement("div"); ttl.className="ttl"; ttl.textContent=p.name&&p.name!=="This place"?p.name:(level==="globe"?"Global":"National"); placeEl.appendChild(ttl); addPlaceBtn("WHAT IS HERE", function(){ whatIsHere(p, level); }); if(level==="globe"){ addPlaceBtn("GLOBAL POST", function(){ startAwait("post","globe",p); }); addPlaceBtn("GLOBAL CALL", function(){ doCall(p); }); addPlaceBtn("GLOBAL TASK", function(){ startAwait("task","globe",p); }); addPlaceBtn("ADD", function(){ startAwait("add","globe",p); }); } else { addPlaceBtn("NATIONAL POST", function(){ startAwait("post","national",p); }); addPlaceBtn("NATIONAL CALL", function(){ doCall(p); }); addPlaceBtn("NATIONAL TASK", function(){ startAwait("task","national",p); }); } addPlaceBtn("CANCEL", function(){}); nameAim(p).then(function(n){ if(!placeEl||!placeEl.classList.contains("on")) return; if(aim&&Math.abs(aim.lat-p.lat)<0.3){ aim=n; var el=placeEl.querySelector(".ttl"); if(el && n.name) el.textContent=n.water?"No named place":n.name; } }); }
   function openPlace(p,screen){ openLevelMenu(p, screen, viewLevel()); }
   function hands(){ hidePlace(); var p=aim||here|| (map&&map.getCenter()?{lat:map.getCenter().lat,lng:map.getCenter().lng}:facingPoint()); var screen={x:innerWidth/2,y:innerHeight*0.4}; if(!here && viewLevel()==="globe"){ talk("Tap GPS to land on your city."); } if(viewLevel()==="city"){ cityWork(p); return; } openLevelMenu(p, screen, viewLevel()); }
-  function placeGps(){
-    var g=document.getElementById("gps"), f=document.getElementById("f");
-    var line=document.getElementById("line"), live=document.getElementById("sn-live"), panel=document.getElementById("panel");
-    if(!g||!f) return;
-    var r=f.getBoundingClientRect();
-    g.style.bottom=Math.max(8, Math.round(innerHeight-r.top+12))+"px";
-    var gr=g.getBoundingClientRect(), pad=0;
-    if(panel){
-      var p=panel.getBoundingClientRect();
-      if(gr.left < p.right-6) pad=Math.ceil(p.right-gr.left+10);
-    }
-    if(line) line.style.paddingRight=pad?pad+"px":"";
-    if(live) live.style.paddingRight=pad?pad+"px":"";
+  function placeGps(){ pack(); }
+  function shownRect(el){
+    if(!el) return null;
+    var s=getComputedStyle(el);
+    if(s.display==="none"||s.visibility==="hidden"||Number(s.opacity)===0) return null;
+    var r=el.getBoundingClientRect();
+    if(r.width<8||r.height<8) return null;
+    return {x:r.left,y:r.top,w:r.width,h:r.height};
   }
-  function size(){ if(!canvas) return; var d=Math.min(2,devicePixelRatio||1); canvas.width=Math.max(1,Math.floor((innerWidth||320)*d)); canvas.height=Math.max(1,Math.floor((innerHeight||480)*d)); placeGps(); }
+  function hits(a,b,g){ g=g||10; return a.x<b.x+b.w+g && a.x+a.w+g>b.x && a.y<b.y+b.h+g && a.y+a.h+g>b.y; }
+  function nudge(box, walls, W, H, pad){
+    var i,j;
+    for(i=0;i<18;i++){
+      var hit=null;
+      for(j=0;j<walls.length;j++) if(hits(box,walls[j],10)){ hit=walls[j]; break; }
+      if(!hit) break;
+      var left=box.x+box.w-hit.x, right=hit.x+hit.w-box.x, up=box.y+box.h-hit.y, down=hit.y+hit.h-box.y;
+      var opts=[
+        {x:box.x-left-12,y:box.y,d:left,side:1},
+        {x:box.x+right+12,y:box.y,d:right,side:1},
+        {x:box.x,y:box.y-up-12,d:up,side:0},
+        {x:box.x,y:box.y+down+12,d:down,side:0}
+      ];
+      opts.sort(function(a,b){ return (b.side-a.side)|| (a.d-b.d); });
+      var pick=null;
+      for(j=0;j<opts.length;j++){
+        var o=opts[j];
+        if(o.x>=pad && o.y>=pad && o.x+box.w<=W-pad && o.y+box.h<=H-pad){ pick=o; break; }
+      }
+      if(!pick) pick=opts[0];
+      box.x=Math.max(pad, Math.min(W-pad-box.w, pick.x));
+      box.y=Math.max(pad, Math.min(H-pad-box.h, pick.y));
+    }
+    box.ok=true;
+    for(j=0;j<walls.length;j++) if(hits(box,walls[j],6)) box.ok=false;
+    return box;
+  }
+  var packT=0;
+  function packSoon(){ if(packT) return; packT=requestAnimationFrame(function(){ packT=0; pack(); }); }
+  function pack(){
+    var W=innerWidth||320, H=innerHeight||480, pad=10;
+    var u=Math.round(Math.max(32, Math.min(42, Math.min(W,H)*0.055)));
+    document.documentElement.style.setProperty("--u", u+"px");
+    var g=document.getElementById("gps"), f=document.getElementById("f");
+    if(!g||!f) return;
+    var video=document.getElementById("sn-video"), sheet=document.getElementById("sn-sheet");
+    if((video&&video.classList.contains("on"))||(sheet&&sheet.classList.contains("on"))){
+      g.classList.add("ghost");
+      return;
+    }
+    g.classList.remove("ghost");
+    var fr=f.getBoundingClientRect();
+    var gw=g.offsetWidth||u, gh=g.offsetHeight||(u+14);
+    var walls=[], add=function(el){ var r=shownRect(el); if(r) walls.push(r); };
+    add(document.getElementById("island"));
+    add(f);
+    add(document.getElementById("sn-place"));
+    add(document.getElementById("sn-pick"));
+    add(sheet&&sheet.querySelector(".card"));
+    add(document.querySelector(".leaflet-control-zoom"));
+    add(document.querySelector(".leaflet-control-attribution"));
+    function free(c){
+      c.x=Math.max(pad, Math.min(W-pad-gw, c.x));
+      c.y=Math.max(pad, Math.min(H-pad-gh, c.y));
+      c.w=gw; c.h=gh; c.ok=true;
+      for(var j=0;j<walls.length;j++) if(hits(c,walls[j],10)) c.ok=false;
+      return c;
+    }
+    var home=free({x:W-pad-gw, y:fr.top-12-gh});
+    var box=home.ok?home:null;
+    if(!box){
+    var isl=shownRect(document.getElementById("island"));
+    var topY=isl?Math.round(isl.y+isl.h+12):pad+52;
+    var pockets=[
+      {x:home.x-Math.min(140,W*0.36), y:home.y},
+      {x:W-pad-gw, y:topY},
+      {x:pad, y:home.y},
+      {x:pad, y:topY},
+      {x:Math.round((W-gw)/2), y:home.y}
+    ];
+      for(var i=0;i<pockets.length;i++){
+        var c=free(pockets[i]);
+        if(c.ok){ box=c; break; }
+      }
+    }
+    if(!box) box=nudge(home, walls, W, H, pad);
+    g.style.left=Math.round(box.x)+"px";
+    g.style.top=Math.round(box.y)+"px";
+    g.style.right="auto";
+    g.style.bottom="auto";
+    if(!box.ok) g.classList.add("ghost");
+    var line=document.getElementById("line"), live=document.getElementById("sn-live"), panel=document.getElementById("panel");
+    var extra=0;
+    if(panel && !g.classList.contains("ghost")){
+      var p=panel.getBoundingClientRect();
+      if(box.x<p.right-4 && box.x+box.w>p.left) extra=Math.max(0, Math.ceil(p.right-box.x+8));
+    }
+    if(line) line.style.paddingRight=extra?extra+"px":"";
+    if(live) live.style.paddingRight=extra?extra+"px":"";
+  }
+  function size(){ if(!canvas) return; var d=Math.min(2,devicePixelRatio||1); canvas.width=Math.max(1,Math.floor((innerWidth||320)*d)); canvas.height=Math.max(1,Math.floor((innerHeight||480)*d)); pack(); }
   function sph(latDeg,lngDeg,cx,cy,R){ var la=latDeg*Math.PI/180, ln=lngDeg*Math.PI/180-yaw; var x=Math.cos(la)*Math.sin(ln); var y=Math.sin(la); var z=Math.cos(la)*Math.cos(ln); var y2=y*Math.cos(pitch)-z*Math.sin(pitch); var z2=y*Math.sin(pitch)+z*Math.cos(pitch); if(z2<=0.02) return null; return {x:cx+R*x, y:cy-R*y2, z:z2}; }
   function drawGrid(ctx,cx,cy,R){ var lat,lng,a,b,step=15; ctx.lineWidth=Math.max(1, (devicePixelRatio||1)*0.7); ctx.strokeStyle="rgba(77,240,255,0.22)"; for(lat=-75; lat<=75; lat+=step){ ctx.beginPath(); a=null; for(lng=-180; lng<=180; lng+=6){ b=sph(lat,lng,cx,cy,R); if(b&&a){ ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); } a=b; } ctx.stroke(); } ctx.strokeStyle="rgba(77,240,255,0.28)"; for(lng=-180; lng<180; lng+=step){ ctx.beginPath(); a=null; for(lat=-90; lat<=90; lat+=4){ b=sph(lat,lng,cx,cy,R); if(b&&a){ ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); } a=b; } ctx.stroke(); } ctx.strokeStyle="rgba(126,233,255,0.55)"; ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke(); }
   function pinLabel(p, fallback){ var n=String((p&&p.name)||fallback||""); if(!n || /^-?\d+\.\d+/.test(n) || /\d+\.\d+[NS]/.test(n)) return fallback||"PIN"; return n.slice(0,18); }
@@ -171,7 +257,7 @@
   function tick(){ try{ tickFly(); if(canvas){ var ctx=canvas.getContext("2d"); if(ctx){ ctx.fillStyle="#02040a"; ctx.fillRect(0,0,canvas.width,canvas.height); var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,R=Math.min(w,h)*0.42/dist; drawGrid(ctx,cx,cy,R); drawPin(ctx,here,hereName||"YOU","#4df0ff",cx,cy,R); if(aim) drawPin(ctx,aim,aim.name||"PIN","#ff8ad4",cx,cy,R); if(selected) drawPin(ctx,selected,selected.name,"#ffd85a",cx,cy,R); if(!drag && !pinch && !fly){ yaw+=spin; spin*=0.96; if(Math.abs(spin)<0.00025) spin=0; } } } }catch(e){} requestAnimationFrame(tick); }
   function boot(){ if(permsTried) return; permsTried=true; var returning=/[?&]paypal=/.test(location.search||""); handlePayPalReturn().then(function(){ if(returning) return locate(true); }); askMic(); setTimeout(listen,600); if(window.SNWork&&SNWork.listenPeer) setTimeout(function(){ SNWork.listenPeer(); },800); }
   function repaint(){ if(map&&window.L) paintMapMarks(window.L, selected); }
-  window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor};
+  window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,pack:pack};
   if(form) form.addEventListener("submit", function(e){ e.preventDefault(); var v=inEl&&inEl.value; if(inEl) inEl.value=""; run(v); });
   var go=document.getElementById("go"); if(go) go.addEventListener("click", function(e){ e.preventDefault(); if(inEl&&inEl.value.trim()){ run(inEl.value.trim()); inEl.value=""; return; } wantEar=true; listen(); });
   var plus=document.getElementById("plus"); if(plus) plus.addEventListener("click", function(){ hands(); });
@@ -180,5 +266,11 @@
   document.addEventListener("pointerdown", function(e){ if(!placeEl||!placeEl.classList.contains("on")) return; if(placeEl.contains(e.target)) return; if(e.target===canvas) return; hidePlace(); }, true);
   document.addEventListener("pointerdown", function(){ if(!permsTried) boot(); }, {passive:true});
   window.addEventListener("resize", size);
+  if(window.visualViewport) visualViewport.addEventListener("resize", packSoon);
+  ["sn-sheet","sn-place","sn-pick","sn-video","sn-live","line","island","dock"].forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el) return;
+    new MutationObserver(packSoon).observe(el,{attributes:true,childList:true,subtree:true,characterData:true});
+  });
   size(); tick(); setTimeout(boot,200); setInterval(function(){ if(!permsTried) boot(); },4000);
 })();

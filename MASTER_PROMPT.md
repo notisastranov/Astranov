@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4008
+**Stamp at this rewrite:** 4010
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -46,7 +46,8 @@ Boot view:
 - Brand strip `ASTRANOV SPACENET GROK V1` — tap = wipe caches + unregister service worker + reload.
 - A **still grid globe** on canvas `#g`. Latitudes and meridians. Nothing else.
 - One talk field, one mic, a `+`.
-- One glowing **GPS target** bottom-right, small, sitting **above** the talk/mic bar — never on the microphone. The word **GPS** above it.
+- Chrome is **solid objects on one surface**. GPS, mic, +, talk, brand, menus, sheets, video. They size to the screen (`--u` 32–42px). They never overlap. A popup **pushes** the others aside. A sheet or video **dematerializes** GPS. Close it and GPS comes back. `pack()` runs on resize and whenever a solid appears or vanishes.
+- One glowing **GPS target**. Home is bottom-right above the talk bar. The word **GPS** above it.
 - `#city` hidden until national or city is needed.
 - `#sn-sheet` hidden until city work.
 
