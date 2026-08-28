@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4015";
+  var VER="4016";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -250,7 +250,7 @@
   function lookAt(p){ if(!p||!isFinite(p.lat)||!isFinite(p.lng)) return; yaw=p.lng*Math.PI/180; pitch=Math.max(-1.15, Math.min(1.15, p.lat*Math.PI/180)); spin=0; }
   function facingPoint(){ var lat=pitch*180/Math.PI, lng=yaw*180/Math.PI; while(lng>180) lng-=360; while(lng<-180) lng+=360; return {lat:lat,lng:lng}; }
   function viewLevel(){ if(cityEl&&cityEl.classList.contains("on")&&map){ return map.getZoom()>=10?"city":"national"; } return "globe"; }
-  function showGlobe(){ if(cityEl){ cityEl.classList.remove("on"); cityEl.style.pointerEvents="none"; } hidePlace(); hideLayerMenu(); paintLayerBtn(); if(window.SNWork) SNWork.close(); }
+  function showGlobe(){ if(cityEl){ cityEl.classList.remove("on"); cityEl.style.pointerEvents="none"; } hidePlace(); hideLayerMenu(); hideCash(); paintLayerBtn(); paintMoney(false); if(window.SNWork) SNWork.close(); }
   var LAYER={
     dark:{url:"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", sub:"abc", attr:"© OpenStreetMap"},
     bright:{url:"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", sub:"abc", attr:"© OpenStreetMap"},
@@ -289,6 +289,56 @@
     }
     hideLayerMenu();
   }
+  var moneyBtn=document.getElementById("sn-money"), cashEl=document.getElementById("sn-cash"), cashBody=document.getElementById("sn-cash-body"), moneyGlowT=0;
+  function moneyWanted(){ if(cityEl&&cityEl.classList.contains("on")) return true; return dist<1.45; }
+  function paintMoney(flash){
+    if(!moneyBtn) return;
+    var n=avcGet();
+    moneyBtn.textContent="AVC "+n.toFixed(2);
+    var want=moneyWanted();
+    moneyBtn.classList.toggle("on", !!want);
+    if(!want){ if(cashEl) cashEl.classList.remove("on"); packSoon(); return; }
+    if(flash){
+      moneyBtn.classList.remove("glow");
+      void moneyBtn.offsetWidth;
+      moneyBtn.classList.add("glow");
+      clearTimeout(moneyGlowT);
+      moneyGlowT=setTimeout(function(){ moneyBtn.classList.remove("glow"); }, 2000);
+    }
+    if(cashEl&&cashEl.classList.contains("on")) renderCash();
+    packSoon();
+  }
+  function heldAvc(){ var s=0; loadEscrow().forEach(function(e){ if(e&&e.held) s+=Number(e.avc)||0; }); return s; }
+  function earnedSum(){ try{ var e=JSON.parse(localStorage.getItem("sn:earned")||"{}"), k, n=0; for(k in e) if(Object.prototype.hasOwnProperty.call(e,k)) n+=Number(e[k])||0; return n; }catch(x){ return 0; } }
+  function renderCash(){
+    if(!cashBody) return;
+    var n=avcGet(), held=heldAvc(), earned=earnedSum();
+    var rows=loadEscrow().filter(function(e){ return e&&e.held; }).map(function(e){ return '<p>'+String(e.query||"Hold").replace(/[<>]/g,"")+' · '+Number(e.avc).toFixed(2)+' locked</p>'; }).join("");
+    cashBody.innerHTML='<div class="bal">'+n.toFixed(2)+' AVC</div><p>Your credit. Locked jobs sit aside until picked, handed, and verified.</p>'+(held?'<p>Locked now: '+held.toFixed(2)+'</p>':'')+(earned?'<p>Earned on listings: '+earned.toFixed(2)+'</p>':'')+(rows||'')+'<button type="button" class="act" data-act="reload">RELOAD</button>';
+  }
+  function openCash(){ if(!cashEl) return; paintMoney(false); cashEl.classList.add("on"); renderCash(); packSoon(); }
+  function hideCash(){ if(cashEl) cashEl.classList.remove("on"); packSoon(); }
+  function loadPlace(){ try{ return JSON.parse(localStorage.getItem("sn:place")||"{}"); }catch(e){ return {}; } }
+  function savePlace(id,x,y){ var p=loadPlace(); p[id]={x:Math.round(x),y:Math.round(y)}; try{ localStorage.setItem("sn:place", JSON.stringify(p)); }catch(e){} }
+  function bindDrag(el, id){
+    if(!el||el.dataset.dragBound) return;
+    el.dataset.dragBound="1";
+    var st=null;
+    el.addEventListener("pointerdown", function(e){ if(e.button&&e.button!==0) return; st={x:e.clientX,y:e.clientY,l:el.offsetLeft,t:el.offsetTop,moved:false}; try{ el.setPointerCapture(e.pointerId); }catch(x){} });
+    el.addEventListener("pointermove", function(e){
+      if(!st) return;
+      var dx=e.clientX-st.x, dy=e.clientY-st.y;
+      if(!st.moved && Math.hypot(dx,dy)<12) return;
+      st.moved=true; el.classList.add("drag");
+      var x=Math.max(8, Math.min((innerWidth||320)-el.offsetWidth-8, st.l+dx));
+      var y=Math.max(8, Math.min((innerHeight||480)-el.offsetHeight-8, st.t+dy));
+      el.style.left=x+"px"; el.style.top=y+"px"; el.style.right="auto"; el.style.bottom="auto";
+    });
+    function end(e){ if(!st) return; if(st.moved){ savePlace(id, el.offsetLeft, el.offsetTop); el.dataset.skipClick="1"; packSoon(); } st=null; el.classList.remove("drag"); }
+    el.addEventListener("pointerup", end);
+    el.addEventListener("pointercancel", end);
+    el.addEventListener("click", function(e){ if(el.dataset.skipClick==="1"){ e.preventDefault(); e.stopPropagation(); el.dataset.skipClick=""; } }, true);
+  }
   function km(a,b){ if(!a||!b) return 0; var R=6371,dLat=((b.lat-a.lat)*Math.PI)/180,dLng=((b.lng-a.lng)*Math.PI)/180; var x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos((a.lat*Math.PI)/180)*Math.cos((b.lat*Math.PI)/180)*Math.sin(dLng/2)*Math.sin(dLng/2); return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
   function travelMin(a,b){ return Math.max(1, Math.round((km(a,b)/22)*60)); }
   function goodsOf(text){ var l=String(text||"").toLowerCase(); if(/ice|gelato|παγω/.test(l)) return {name:"ice cream",temp:"frozen",hold:12,strict:true}; if(/pizza|soup|πιτσ|σουπ/.test(l)) return {name:/soup|σουπ/.test(l)?"soup":"pizza",temp:"hot",hold:35,strict:true}; if(/beer|μπύρα|μπυρα|ale|lager/.test(l)) return {name:"beer",temp:"cold",hold:90,strict:false}; if(/burger|hamburger|cheeseburger|μπέργκερ|μπουργκερ/.test(l)) return {name:"burger",temp:"hot",hold:25,strict:true}; if(/gyro|gyros|souvlaki|kebab|shawarma|γυρο|σουβλ/.test(l)) return {name:"gyro",temp:"hot",hold:25,strict:true}; if(/coffee|καφ/.test(l)) return {name:"coffee",temp:"hot",hold:25,strict:true}; if(/sushi|salad|milk|γαλα/.test(l)) return {name:"cold food",temp:"cold",hold:25,strict:true}; if(/pharm|medicine|φαρμα/.test(l)) return {name:"pharmacy order",temp:"controlled",hold:90,strict:true}; return {name:/parcel|package|δεμα/.test(l)?"parcel":"order",temp:"ambient",hold:180,strict:false}; }
@@ -298,7 +348,7 @@
   function pointOf(r){ var c=r&&r.center||{}; return {lat:+(r&&r.lat!=null?r.lat:c.lat),lng:+(r&&r.lon!=null?r.lon:c.lon)}; }
   function askLocation(){ talk("Tap GPS. The globe flies you to your city."); var g=document.getElementById("gps"); if(g) g.classList.remove("on","busy"); }
   function avcGet(){ try{ return Math.max(0, Number(localStorage.getItem("sn:avc")||0)); }catch(e){ return 0; } }
-  function avcSet(n){ try{ localStorage.setItem("sn:avc", String(Math.max(0, Math.round(Number(n)*100)/100))); }catch(e){} }
+  function avcSet(n){ try{ localStorage.setItem("sn:avc", String(Math.max(0, Math.round(Number(n)*100)/100))); }catch(e){} paintMoney(true); }
   function avcAdd(n){ avcSet(avcGet()+Number(n||0)); }
   function humanName(j){ if(!j) return ""; var a=j.address||j.properties||{}; var blob=String((j.name||"")+" "+(j.display_name||"")+" "+(a.name||"")+" "+(a.water||"")).toLowerCase(); var n=j.name||a.amenity||a.shop||a.road||a.street||a.neighbourhood||a.suburb||a.village||a.town||a.city||a.locality||a.municipality||a.county||""; if(/ocean|sea|gulf|strait|bay of/.test(blob) && !a.road && !a.street && !a.amenity && !a.shop) return ""; n=String(n||"").trim(); if(/^-?\d+\.\d+/.test(n)) return ""; return n; }
   function overpassFilters(q){ var l=q.toLowerCase(); if(/beer|μπύρα|μπυρα|ale|lager|pub/.test(l)) return ['["amenity"~"pub|bar|biergarten",i]','["shop"~"alcohol|beverages",i]','["name"~"beer|pub|bar|μπύρα",i]']; if(/pizza|πιτσ/.test(l)) return ['["cuisine"~"pizza",i]','["name"~"pizza|pizzeria|πιτσ",i]']; if(/burger|hamburger|cheeseburger|μπέργκερ|μπουργκερ/.test(l)) return ['["cuisine"~"burger",i]','["name"~"burger|hamburger|goody|mcdonald|burger king",i]','["amenity"="fast_food"]']; if(/gyro|gyros|souvlaki|kebab|shawarma|γυρο|σουβλ/.test(l)) return ['["cuisine"~"kebab|greek|grill",i]','["name"~"gyro|gyros|souvlaki|kebab|γυρο|σουβλ",i]','["amenity"="fast_food"]']; if(/coffee|cafe|καφ/.test(l)) return ['["amenity"="cafe"]']; if(/pharm|medicine|φαρμα/.test(l)) return ['["amenity"="pharmacy"]']; if(/ice|gelato|παγω/.test(l)) return ['["amenity"="ice_cream"]','["cuisine"~"ice_cream",i]']; if(/food|restaurant|eat|φαγη|soup|salad|sushi/.test(l)) return ['["amenity"~"restaurant|fast_food|cafe"]']; if(/supermarket|grocery|market/.test(l)) return ['["shop"~"supermarket|convenience"]']; if(/shop|store/.test(l)) return ['["shop"]']; var e=escOverpass(q); return ['["name"~"'+e+'",i]','["cuisine"~"'+e+'",i]','["amenity"~"'+e+'",i]','["shop"~"'+e+'",i]']; }
@@ -358,7 +408,7 @@
     } }
   function cityWork(p){ if(!p) return; aim=p; hidePlace(); if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; if(window.SNWork) SNWork.open(p); nameAim(p).then(function(n){ aim=n; if(window.SNWork&&SNWork.rename) SNWork.rename(n); else if(!window.SNWork) say(n.water?"No named place on that water.":(n.name||"This place")); }); }
   function bindMap(L){ if(mapBound||!map||!cityEl) return; mapBound=true; try{ map.attributionControl.setPosition("topleft"); }catch(e){} var lp=null; cityEl.addEventListener("pointerdown", function(e){ if(!cityEl.classList.contains("on")) return; if(e.target && e.target.closest && e.target.closest(".leaflet-control")) return; if(e.isPrimary===false) return; lp={x:e.clientX,y:e.clientY,id:e.pointerId,held:false}; lp.t=setTimeout(function(){ if(!lp) return; lp.held=true; mapHeld=true; var ll=map.mouseEventToLatLng({clientX:lp.x,clientY:lp.y}); var p={lat:ll.lat,lng:ll.lng}; if(viewLevel()==="city") cityWork(p); else openLevelMenu(p,{x:lp.x,y:lp.y}, "national"); },420); }, true); cityEl.addEventListener("pointermove", function(e){ if(!lp||lp.held) return; if(Math.hypot(e.clientX-lp.x,e.clientY-lp.y)>16){ clearTimeout(lp.t); lp=null; } }, true); function endLp(){ if(!lp) return; clearTimeout(lp.t); lp=null; } cityEl.addEventListener("pointerup", endLp, true); cityEl.addEventListener("pointercancel", endLp, true); map.on("click", function(e){ if(mapHeld){ mapHeld=false; return; } var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; if(map.getZoom()>=10){ cityWork(p); } else { flyTap(p); } }); map.on("zoomend", function(){ if(!map) return; if(map.getZoom()<=4) showGlobe(); paintLayerBtn(); packSoon(); }); map.on("contextmenu", function(e){ try{ L.DomEvent.preventDefault(e); }catch(_){} mapHeld=true; var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(viewLevel()==="city") cityWork(p); else openLevelMenu(p, null, "national"); }); }
-  function showMap(p, z){ if(!cityEl||!p||!isFinite(p.lat)) return; loadMap().then(function(L){ cityEl.classList.add("on"); cityEl.style.pointerEvents="auto"; if(!map){ map=L.map(cityEl,{zoomControl:false,attributionControl:true,tap:true}).setView([p.lat,p.lng], z); setLayer(mapLayer||"dark"); bindMap(L); } else if(map.flyTo) map.flyTo([p.lat,p.lng], z, {duration:0.7}); else map.setView([p.lat,p.lng], z); paintMapMarks(L, selected); setTimeout(function(){ try{ map.invalidateSize(); }catch(e){} paintLayerBtn(); packSoon(); },40); }).catch(function(){ mapReady=null; showGlobe(); talk("Map failed to load."); }); }
+  function showMap(p, z){ if(!cityEl||!p||!isFinite(p.lat)) return; loadMap().then(function(L){ cityEl.classList.add("on"); cityEl.style.pointerEvents="auto"; if(!map){ map=L.map(cityEl,{zoomControl:false,attributionControl:true,tap:true}).setView([p.lat,p.lng], z); setLayer(mapLayer||"dark"); bindMap(L); } else if(map.flyTo) map.flyTo([p.lat,p.lng], z, {duration:0.7}); else map.setView([p.lat,p.lng], z); paintMapMarks(L, selected); setTimeout(function(){ try{ map.invalidateSize(); }catch(e){} paintLayerBtn(); paintMoney(false); packSoon(); },40); }).catch(function(){ mapReady=null; showGlobe(); talk("Map failed to load."); }); }
   function showCity(v){ var p=v||selected||aim||here; if(!p){ talk("Point at a place first."); return; } aim=p; showMap(p, 14); }
   function showNational(p){ p=p||aim||here||facingPoint(); aim=p; showMap(p, 6); }
   function showCall(from, dest){ if(!from||!dest) return; var mid={lat:(from.lat+dest.lat)/2,lng:(from.lng+dest.lng)/2}; var d=km(from,dest); var z=d>80?6:d>8?10:14; showMap(mid, z); setTimeout(function(){ if(!map) return; try{ map.fitBounds([[from.lat,from.lng],[dest.lat,dest.lng]],{padding:[48,48],maxZoom:14}); }catch(e){} },500); }
@@ -465,6 +515,7 @@
       g.classList.add("ghost");
       if(menuEl) menuEl.classList.remove("on");
       if(tasksEl) tasksEl.classList.remove("on");
+      if(cashEl) cashEl.classList.remove("on");
       return;
     }
     g.classList.remove("ghost");
@@ -481,6 +532,8 @@
     add(tasksEl&&tasksEl.querySelector(".card"));
     add(layerBtn&&layerBtn.classList.contains("on")?layerBtn:null);
     add(layerBox&&layerBox.classList.contains("on")?layerBox:null);
+    add(moneyBtn&&moneyBtn.classList.contains("on")?moneyBtn:null);
+    add(cashEl&&cashEl.querySelector(".card"));
     add(sheet&&sheet.querySelector(".card"));
     add(document.querySelector(".leaflet-control-zoom"));
     add(document.querySelector(".leaflet-control-attribution"));
@@ -494,7 +547,9 @@
     }
     var isl=shownRect(document.getElementById("island"));
     var topY=isl?Math.round(isl.y+isl.h+12):pad+52;
-    var home=free({x:W-pad-gw, y:fr.top-12-gh});
+    var parked=loadPlace();
+    var home=parked.gps?free({x:parked.gps.x, y:parked.gps.y, w:gw, h:gh}):free({x:W-pad-gw, y:fr.top-12-gh});
+    if(parked.gps && !home.ok) home=free({x:W-pad-gw, y:fr.top-12-gh});
     var box=home.ok?home:null;
     if(!box){
     var pockets=[
@@ -526,7 +581,9 @@
     if(live) live.style.paddingRight=extra?extra+"px":"";
     if(pillEl&&pillEl.classList.contains("on")&&f){
       var pw=pillEl.offsetWidth||88, ph=pillEl.offsetHeight||36;
-      var pb=free({x:pad, y:fr.top-12-ph, w:pw, h:ph});
+      var ppref=parked.pill?{x:parked.pill.x,y:parked.pill.y,w:pw,h:ph}:{x:pad, y:fr.top-12-ph, w:pw, h:ph};
+      var pb=free(ppref);
+      if(!pb.ok) pb=free({x:pad, y:topY, w:pw, h:ph});
       if(!pb.ok){
         pb=free({x:pad, y:topY, w:pw, h:ph});
       }
@@ -537,7 +594,8 @@
     }
     if(tasksBtn&&tasksBtn.classList.contains("on")){
       var tw=tasksBtn.offsetWidth||72, th=tasksBtn.offsetHeight||36;
-      var tb=free({x:W-pad-tw, y:topY, w:tw, h:th});
+      var tpref=parked.tasks?{x:parked.tasks.x,y:parked.tasks.y,w:tw,h:th}:{x:W-pad-tw, y:topY, w:tw, h:th};
+      var tb=free(tpref);
       if(!tb.ok) tb=free({x:pad, y:topY, w:tw, h:th});
       tasksBtn.style.left=Math.round(tb.x)+"px";
       tasksBtn.style.top=Math.round(tb.y)+"px";
@@ -546,7 +604,8 @@
     }
     if(layerBtn&&layerBtn.classList.contains("on")){
       var lw=layerBtn.offsetWidth||72, lh=layerBtn.offsetHeight||36;
-      var lb=free({x:pad, y:topY, w:lw, h:lh});
+      var lpref=parked.layer?{x:parked.layer.x,y:parked.layer.y,w:lw,h:lh}:{x:pad, y:topY, w:lw, h:lh};
+      var lb=free(lpref);
       if(!lb.ok) lb=free({x:pad, y:fr.top-12-lh, w:lw, h:lh});
       layerBtn.style.left=Math.round(lb.x)+"px";
       layerBtn.style.top=Math.round(lb.y)+"px";
@@ -556,6 +615,16 @@
         layerBox.style.left=Math.round(lb.x)+"px";
         layerBox.style.top=Math.round(lb.y+lh+8)+"px";
       }
+    }
+    if(moneyBtn&&moneyBtn.classList.contains("on")){
+      var mw=moneyBtn.offsetWidth||132, mh=moneyBtn.offsetHeight||40;
+      var mpref=parked.money?{x:parked.money.x,y:parked.money.y,w:mw,h:mh}:{x:pad, y:fr.top-12-mh, w:mw, h:mh};
+      var mb=free(mpref);
+      if(!mb.ok) mb=free({x:Math.round((W-mw)/2), y:topY, w:mw, h:mh});
+      moneyBtn.style.left=Math.round(mb.x)+"px";
+      moneyBtn.style.top=Math.round(mb.y)+"px";
+      moneyBtn.style.right="auto";
+      moneyBtn.style.bottom="auto";
     }
   }
   function size(){ if(!canvas) return; var d=Math.min(2,devicePixelRatio||1); canvas.width=Math.max(1,Math.floor((innerWidth||320)*d)); canvas.height=Math.max(1,Math.floor((innerHeight||480)*d)); pack(); }
@@ -567,11 +636,23 @@
   function tick(){ try{ tickFly(); if(canvas){ var ctx=canvas.getContext("2d"); if(ctx){ ctx.fillStyle="#02040a"; ctx.fillRect(0,0,canvas.width,canvas.height); var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,R=Math.min(w,h)*0.42/dist; drawGrid(ctx,cx,cy,R); drawPin(ctx,here,hereName||"YOU","#4df0ff",cx,cy,R); if(aim) drawPin(ctx,aim,aim.name||"PIN","#ff8ad4",cx,cy,R); if(selected) drawPin(ctx,selected,selected.name,"#ffd85a",cx,cy,R); if(!drag && !pinch && !fly){ yaw+=spin; spin*=0.96; if(Math.abs(spin)<0.00025) spin=0; } } } }catch(e){} requestAnimationFrame(tick); }
   function boot(){ if(permsTried) return; permsTried=true; var returning=/[?&]paypal=/.test(location.search||""); handlePayPalReturn().then(function(){ if(returning) return locate(true); }); askMic(); setTimeout(listen,600); if(window.SNWork&&SNWork.listenPeer) setTimeout(function(){ SNWork.listenPeer(); },800); }
   function repaint(){ if(map&&window.L) paintMapMarks(window.L, selected); }
-  window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,pack:pack,openMenu:openMenu,minMenu:minMenu,syncTasks:syncTasks,toggleTasks:toggleTasks,openTasks:openTasks,tickJustice:tickJustice,settle:settle,setLayer:setLayer};
+  window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,pack:pack,openMenu:openMenu,minMenu:minMenu,syncTasks:syncTasks,toggleTasks:toggleTasks,openTasks:openTasks,tickJustice:tickJustice,settle:settle,setLayer:setLayer,openCash:openCash,paintMoney:paintMoney};
   if(form) form.addEventListener("submit", function(e){ e.preventDefault(); var v=inEl&&inEl.value; if(inEl) inEl.value=""; run(v); });
   var go=document.getElementById("go"); if(go) go.addEventListener("click", function(e){ e.preventDefault(); if(inEl&&inEl.value.trim()){ run(inEl.value.trim()); inEl.value=""; return; } wantEar=true; listen(); });
   var plus=document.getElementById("plus"); if(plus) plus.addEventListener("click", function(){ hands(); });
   var gpsBtn=document.getElementById("gps"); if(gpsBtn) gpsBtn.addEventListener("click", function(e){ e.preventDefault(); goHere(); });
+  if(moneyBtn) moneyBtn.addEventListener("click", function(e){ e.preventDefault(); if(cashEl&&cashEl.classList.contains("on")) hideCash(); else openCash(); });
+  if(cashEl){
+    var cashBg=cashEl.querySelector(".bg"), cashX=cashEl.querySelector(".x");
+    if(cashBg) cashBg.addEventListener("click", hideCash);
+    if(cashX) cashX.addEventListener("click", function(e){ e.preventDefault(); hideCash(); });
+    if(cashBody) cashBody.addEventListener("click", function(e){ var b=e.target.closest("button"); if(b&&b.getAttribute("data-act")==="reload") reloadPaypal(10); });
+  }
+  bindDrag(gpsBtn, "gps");
+  bindDrag(moneyBtn, "money");
+  bindDrag(layerBtn, "layer");
+  bindDrag(tasksBtn, "tasks");
+  bindDrag(pillEl, "pill");
   if(pillEl) pillEl.addEventListener("click", function(e){ e.preventDefault(); openMenu(); });
   if(layerBtn) layerBtn.addEventListener("click", function(e){ e.preventDefault(); if(layerBox&&layerBox.classList.contains("on")) hideLayerMenu(); else openLayerMenu(); });
   if(layerBox) layerBox.addEventListener("click", function(e){ var b=e.target.closest("button"); if(b&&b.getAttribute("data-layer")) setLayer(b.getAttribute("data-layer")); });
@@ -602,15 +683,15 @@
       mCard.addEventListener("wheel", function(e){ e.preventDefault(); menuScale=Math.max(0.72, Math.min(1.38, menuScale+(e.deltaY>0?-0.06:0.06))); mCard.style.setProperty("--ms", String(menuScale)); }, {passive:false});
     }
   }
-  if(canvas){ var holdT=null; function lastXY(e,fallback){ var x=(e&&e.clientX)||(drag&&drag.lastX)||(fallback&&fallback.x)||0; var y=(e&&e.clientY)||(drag&&drag.lastY)||(fallback&&fallback.y)||0; return {x:x,y:y}; } function ptrCount(){ return Object.keys(pointers).length; } function applyGlobeZoom(next){ dist=Math.max(1.15, Math.min(3.2, next)); if(dist<=1.18 && pinch && !pinch.descended){ pinch.descended=true; flyTap(facingPoint()); } } canvas.addEventListener("pointerdown",function(e){ hidePlace(); pointers[e.pointerId]={x:e.clientX,y:e.clientY}; if(ptrCount()>=2){ var ids=Object.keys(pointers); var a=pointers[ids[0]], b=pointers[ids[1]]; pinch={d0:Math.hypot(a.x-b.x,a.y-b.y), dist0:dist, midY:(a.y+b.y)/2, gap:Math.hypot(a.x-b.x,a.y-b.y), descended:false}; if(holdT){ clearTimeout(holdT); holdT=null; } drag=null; spin=0; return; } drag={x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,yaw:yaw,pitch:pitch,t:Date.now(),t0:Date.now(),held:false}; spin=0; try{canvas.setPointerCapture(e.pointerId);}catch(_){} if(holdT) clearTimeout(holdT); holdT=setTimeout(function(){ holdT=null; if(!drag||pinch) return; var moved=Math.hypot(drag.lastX-drag.x, drag.lastY-drag.y); if(moved>28) return; drag.held=true; var pt=lastXY({clientX:drag.lastX,clientY:drag.lastY}); tapScreen=pt; var hit=globeHit(pt.x,pt.y); if(!hit){ say("Hold on the globe itself."); return; } if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(hit)) return; openLevelMenu(hit, pt, "globe"); },420);}); canvas.addEventListener("pointermove",function(e){ if(pointers[e.pointerId]) pointers[e.pointerId]={x:e.clientX,y:e.clientY}; if(pinch && ptrCount()>=2){ var ids=Object.keys(pointers); var a=pointers[ids[0]], b=pointers[ids[1]]; var gap=Math.hypot(a.x-b.x,a.y-b.y); var midY=(a.y+b.y)/2; var dGap=gap-(pinch.gap||pinch.d0); var dY=midY-(pinch.midY||midY); if(Math.abs(dGap)>Math.abs(dY)+4) applyGlobeZoom(pinch.dist0*(pinch.d0/Math.max(12,gap))); else if(Math.abs(dY)>6) applyGlobeZoom(dist + dY*0.01); pinch.midY=midY; pinch.gap=gap; return; } if(!drag) return; var now=Date.now(),dx=e.clientX-drag.lastX,w=Math.max(180,canvas.clientWidth||innerWidth); drag.lastX=e.clientX; drag.lastY=e.clientY; if(drag.held) return; var moved=Math.hypot(e.clientX-drag.x,e.clientY-drag.y); if(moved<10) return; yaw=drag.yaw-(e.clientX-drag.x)/w*Math.PI*2; pitch=Math.max(-1.15,Math.min(1.15, drag.pitch+(e.clientY-drag.y)/Math.max(180,canvas.clientHeight||innerHeight)*Math.PI)); spin=-(dx/w)*Math.PI*2/Math.max(1,now-drag.t)*16; drag.t=now;}); function release(e){ delete pointers[e.pointerId]; if(ptrCount()<2) pinch=null; if(holdT){ clearTimeout(holdT); holdT=null; } if(!drag)return; var pt=lastXY(e, {x:drag.lastX,y:drag.lastY}); var moved=Math.hypot(pt.x-drag.x, pt.y-drag.y); var held=drag.held; drag=null; if(Math.abs(spin)<0.0005) spin=0; if(held) return; if(moved<28){ var hit=globeHit(pt.x,pt.y); if(!hit){ say("Tap the globe itself."); return; } tapScreen=pt; flyTap(hit); } } canvas.addEventListener("pointerup",release); canvas.addEventListener("pointercancel",release); canvas.addEventListener("contextmenu",function(e){ e.preventDefault(); var hit=globeHit(e.clientX,e.clientY); if(hit) openLevelMenu(hit,{x:e.clientX,y:e.clientY},"globe"); }); canvas.addEventListener("wheel",function(e){ e.preventDefault(); applyGlobeZoom(dist+(e.deltaY>0?0.08:-0.08)); }, {passive:false}); }
+  if(canvas){ var holdT=null; function lastXY(e,fallback){ var x=(e&&e.clientX)||(drag&&drag.lastX)||(fallback&&fallback.x)||0; var y=(e&&e.clientY)||(drag&&drag.lastY)||(fallback&&fallback.y)||0; return {x:x,y:y}; } function ptrCount(){ return Object.keys(pointers).length; } function applyGlobeZoom(next){ dist=Math.max(1.15, Math.min(3.2, next)); paintMoney(false); if(dist<=1.18 && pinch && !pinch.descended){ pinch.descended=true; flyTap(facingPoint()); } } canvas.addEventListener("pointerdown",function(e){ hidePlace(); pointers[e.pointerId]={x:e.clientX,y:e.clientY}; if(ptrCount()>=2){ var ids=Object.keys(pointers); var a=pointers[ids[0]], b=pointers[ids[1]]; pinch={d0:Math.hypot(a.x-b.x,a.y-b.y), dist0:dist, midY:(a.y+b.y)/2, gap:Math.hypot(a.x-b.x,a.y-b.y), descended:false}; if(holdT){ clearTimeout(holdT); holdT=null; } drag=null; spin=0; return; } drag={x:e.clientX,y:e.clientY,lastX:e.clientX,lastY:e.clientY,yaw:yaw,pitch:pitch,t:Date.now(),t0:Date.now(),held:false}; spin=0; try{canvas.setPointerCapture(e.pointerId);}catch(_){} if(holdT) clearTimeout(holdT); holdT=setTimeout(function(){ holdT=null; if(!drag||pinch) return; var moved=Math.hypot(drag.lastX-drag.x, drag.lastY-drag.y); if(moved>28) return; drag.held=true; var pt=lastXY({clientX:drag.lastX,clientY:drag.lastY}); tapScreen=pt; var hit=globeHit(pt.x,pt.y); if(!hit){ say("Hold on the globe itself."); return; } if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(hit)) return; openLevelMenu(hit, pt, "globe"); },420);}); canvas.addEventListener("pointermove",function(e){ if(pointers[e.pointerId]) pointers[e.pointerId]={x:e.clientX,y:e.clientY}; if(pinch && ptrCount()>=2){ var ids=Object.keys(pointers); var a=pointers[ids[0]], b=pointers[ids[1]]; var gap=Math.hypot(a.x-b.x,a.y-b.y); var midY=(a.y+b.y)/2; var dGap=gap-(pinch.gap||pinch.d0); var dY=midY-(pinch.midY||midY); if(Math.abs(dGap)>Math.abs(dY)+4) applyGlobeZoom(pinch.dist0*(pinch.d0/Math.max(12,gap))); else if(Math.abs(dY)>6) applyGlobeZoom(dist + dY*0.01); pinch.midY=midY; pinch.gap=gap; return; } if(!drag) return; var now=Date.now(),dx=e.clientX-drag.lastX,w=Math.max(180,canvas.clientWidth||innerWidth); drag.lastX=e.clientX; drag.lastY=e.clientY; if(drag.held) return; var moved=Math.hypot(e.clientX-drag.x,e.clientY-drag.y); if(moved<10) return; yaw=drag.yaw-(e.clientX-drag.x)/w*Math.PI*2; pitch=Math.max(-1.15,Math.min(1.15, drag.pitch+(e.clientY-drag.y)/Math.max(180,canvas.clientHeight||innerHeight)*Math.PI)); spin=-(dx/w)*Math.PI*2/Math.max(1,now-drag.t)*16; drag.t=now;}); function release(e){ delete pointers[e.pointerId]; if(ptrCount()<2) pinch=null; if(holdT){ clearTimeout(holdT); holdT=null; } if(!drag)return; var pt=lastXY(e, {x:drag.lastX,y:drag.lastY}); var moved=Math.hypot(pt.x-drag.x, pt.y-drag.y); var held=drag.held; drag=null; if(Math.abs(spin)<0.0005) spin=0; if(held) return; if(moved<28){ var hit=globeHit(pt.x,pt.y); if(!hit){ say("Tap the globe itself."); return; } tapScreen=pt; flyTap(hit); } } canvas.addEventListener("pointerup",release); canvas.addEventListener("pointercancel",release); canvas.addEventListener("contextmenu",function(e){ e.preventDefault(); var hit=globeHit(e.clientX,e.clientY); if(hit) openLevelMenu(hit,{x:e.clientX,y:e.clientY},"globe"); }); canvas.addEventListener("wheel",function(e){ e.preventDefault(); applyGlobeZoom(dist+(e.deltaY>0?0.08:-0.08)); }, {passive:false}); }
   document.addEventListener("pointerdown", function(e){ if(!placeEl||!placeEl.classList.contains("on")) return; if(placeEl.contains(e.target)) return; if(e.target===canvas) return; hidePlace(); }, true);
   document.addEventListener("pointerdown", function(){ if(!permsTried) boot(); }, {passive:true});
   window.addEventListener("resize", size);
   if(window.visualViewport) visualViewport.addEventListener("resize", packSoon);
-  ["sn-sheet","sn-place","sn-pick","sn-video","sn-live","sn-menu","sn-pill","sn-tasks","sn-tasks-btn","sn-layer","sn-layers","line","island","dock"].forEach(function(id){
+  ["sn-sheet","sn-place","sn-pick","sn-video","sn-live","sn-menu","sn-pill","sn-tasks","sn-tasks-btn","sn-layer","sn-layers","sn-money","sn-cash","line","island","dock"].forEach(function(id){
     var el=document.getElementById(id);
     if(!el) return;
     new MutationObserver(packSoon).observe(el,{attributes:true,childList:true,subtree:true,characterData:true});
   });
-  size(); tick(); setTimeout(boot,200); setTimeout(syncTasks,500); setInterval(function(){ if(!permsTried) boot(); },4000); setInterval(tickJustice, 20000);
+  size(); tick(); setTimeout(boot,200); setTimeout(syncTasks,500); setTimeout(function(){ paintMoney(false); },400); setInterval(function(){ if(!permsTried) boot(); },4000); setInterval(tickJustice, 20000);
 })();

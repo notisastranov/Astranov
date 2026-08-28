@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4015
+**Stamp at this rewrite:** 4016
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -46,12 +46,17 @@ Boot view:
 - Brand strip `ASTRANOV SPACENET GROK V1` — tap = wipe caches + unregister service worker + reload.
 - A **still grid globe** on canvas `#g`. Latitudes and meridians. Nothing else.
 - One talk field, one mic, a `+`.
-- Chrome is **solid objects on one surface**. GPS, mic, +, talk, brand, menus, sheets, video. They size to the screen (`--u` 32–42px). They never overlap. A popup **pushes** the others aside. A sheet or video **dematerializes** GPS. Close it and GPS comes back. `pack()` runs on resize and whenever a solid appears or vanishes.
+- Chrome is **solid objects on one surface**. GPS, money, LAYER, TASKS, VENDORS pill, mic, +, talk, brand, menus, sheets, video. They size to the screen (`--u` 32–42px). They never overlap. A popup **pushes** the others aside. A sheet or video **dematerializes** GPS. Close it and GPS comes back. `pack()` runs on resize and whenever a solid appears or vanishes.
+- **Drag any chrome pill** (GPS, money, LAYER, TASKS, VENDORS) to park it. The park is remembered (`sn:place`). pack() still nudges if two solids collide. This overrides older fixed-corner-only placement.
 - Vendors, carriers, pay — one **card**, not chips in the talk bar. **✕** closes. Pinch or two-finger swipe zooms the card. Tap outside **minimizes** to a **VENDORS pill** on the map. If actions are still pending, the pill **glows**. Tap the pill to open the card again.
 - **TASKS** button top-right. Show / hide. Lists what a user, vendor, or driver has to do next, ranked by the system (spoiling and paid work first, unfinished listings after). **PROBLEM** asks Grok to move a task up. Grok says yes only for a real bind (breakdown, spoilage, medical, safety, no-show, weather). No for profit, preference, or queue-jumping. Empty list dematerializes the button.
 - One glowing **GPS target**. Home is bottom-right above the talk bar. The word **GPS** above it.
+- **Money** — when you **zoom down into the globe** (pinch the sphere in, GPS fly, or national/city map), a **wide** (not circular) **AVC balance** button materializes. Big enough to read `AVC 12.50`. It **glows on every balance change**. Tap it → a **big menu that does not cover the whole screen**. Balance, locked escrow, earned on listings, RELOAD. Tap **outside** or ✕ → it **minimizes** back to the wide button on the map. Drag it like the other solids.
+- City **LAYER** (city streets only): DARK / BRIGHT / SATELLITE (Esri, no key) / STREETS (OSM HOT). Default stays the dark globe-matched streets.
 - `#city` hidden until national or city is needed.
 - `#sn-sheet` hidden until city work.
+
+These chrome rules **override** older “fixed corner, no money, no drag, dark-only map” notes. Keep them. Do not lose them.
 
 Idle dock is empty except real hunt or pay results. No FOOD. No BEER. No CITY. No NATIONAL sitting on the globe. You are looking at space and the globe. You may not even know where you are yet. Do not flood the screen.
 
