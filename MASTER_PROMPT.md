@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4013
+**Stamp at this rewrite:** 4015
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -87,7 +87,7 @@ Three distances. Three surfaces.
 |---|---|---|
 | Space / world | `#g` canvas **sphere**. Grid of lat and lng. Drag spins the ball. | Navigation. Hold for global menu. |
 | National | Leaflet `#city` at country zoom | Navigation. Hold for national menu. |
-| City / streets | Leaflet `#city` at street zoom. OSM tiles, darkened by us (invert). No map API key. | **This is the work surface.** |
+| City / streets | Leaflet `#city` at street zoom. Default: OSM we darken ourselves. **LAYER** (city only): DARK / BRIGHT / SATELLITE (Esri, no key) / STREETS (OSM HOT, names and buildings). | **This is the work surface.** |
 
 Rules:
 
