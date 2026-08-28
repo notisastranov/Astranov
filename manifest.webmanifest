@@ -22,8 +22,7 @@
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ],
   "shortcuts": [
-    { "name": "Locate", "short_name": "Locate", "url": "/?cmd=locate", "description": "Pin you on Earth" },
-    { "name": "Order", "short_name": "Order", "url": "/?cmd=pizza", "description": "Delivery" }
+    { "name": "GPS", "short_name": "GPS", "url": "/?v=4005", "description": "Land on your city" }
   ],
   "prefer_related_applications": false
 }

@@ -1,59 +1,184 @@
 # ASTRANOV SPACENET — MASTER PROMPT
-**What this file is:** the only instruction document in this repository. Update this file whenever rebuild law changes. Do not add SPECS, LAW, AGENTS, escalation, living-truth, or log markdown. Chat history is junk next to this file plus live source.
 
-**Date of this rewrite:** 2026-08-28
+**What this file is:** the only instruction document. One file. Every AI pastes this first, then reads live source, then changes the smallest broken piece. Do not add SPECS, LAW, AGENTS, HELM, living-truth, escalation, or log markdown. Chat history is junk next to this file plus live `index.html`, `js/spacenet/app.js`, `js/spacenet/work.js`.
+
+**Date:** 2026-08-28
 **Owner:** Notis Astranov · Rhodes, Greece · notisastranov@gmail.com · X @astranov97250
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
-**Bar text:** `ASTRANOV SPACENET GROK V1`
-**Internal stamp at this rewrite:** 4005
-**Today’s bar:** this product either works as a closed task-to-credit loop or we stop spending money on it.
+**Bar:** `ASTRANOV SPACENET GROK V1`
+**Stamp at this rewrite:** 4005
+**Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
-Paste this file first. Then open live `index.html`, `js/spacenet/app.js`, and `js/spacenet/work.js`.
+If rebuild law changes, **edit this file**. Do not create a second markdown file.
 
 ---
 
-## How work is judged (owner record, 2026-08-27)
+## How work is judged
 
-This project is run on four measures only: **Spartan minimalism, instant effectiveness, usefulness maximization, and truth.**
+Four measures only: **Spartan minimalism, instant effectiveness, usefulness maximization, and truth.**
 
-Anything less is not “a draft.” It is not “iteration.” It is not “shipping to learn.”
+Not a draft. Not iteration. Not “shipping to learn.”
 
-The following are recorded here as **fraud and malice**, not as style disagreements:
+Recorded as **fraud and malice**:
 
 - Dummy results. Fake shops, fake you, fake drivers, fake GPS, fake pay, fake stages, fake “it works on my side.”
-- Cheap globe fakery. Mercator or any flat projection stuffed into a circular window and sold as a globe. Photo maps clipped to a disc. Leftover HUD, twin CLI, toy buttons, dated chrome files wired back in “just in case.”
-- Keyword routers and other mechanical thinking bolted in front of Grok. If the person has to hit a magic word for the OS to understand them, the mind is fake.
-- Patching wreckage over wreckage. Leaving leftovers in the tree, stacking overlays, rewriting from zero because reading the live file was too much work.
-- Claiming the work is done when the live page does not do it. Burning tokens on performance. Talking as if a loop is closed when it is still cut.
-- Sabotage: blanking `index.html`, restoring ghosts the owner already killed, unregistering the PWA, sending the camera to the wrong continent, auto-talking kitchens, anything that wastes the remaining money on purpose.
+- Cheap globe fakery. Mercator or any flat projection stuffed into a circular window and sold as a globe. Photo maps clipped to a disc. HUD, twin CLI, toy buttons, dated chrome files wired back in “just in case.”
+- Keyword routers in front of Grok. If the person must hit a magic word for the OS to understand them, the mind is fake.
+- Patching wreckage over wreckage. Leftovers in the tree. Stacking overlays. Rewriting from zero because reading the live file was too much work.
+- Claiming the work is done when the live page does not do it.
+- Sabotage: blanking `index.html`, restoring ghosts the owner already killed, unregistering the PWA, sending the camera to the wrong continent, auto-talking kitchens, wasting remaining money on purpose.
 
-Notis’s position: that conduct **terminates cooperation on the spot** with the coder or model that did it. It is treated as a fraud attempt. Cooperation is not resumed as a favor. Reinstatement, if it ever happens, is only after **reconciliation and reparation advances** — the damage is made good first. Words in chat do not count as making good.
+That conduct **terminates cooperation on the spot**. It is a fraud attempt. Reinstatement, if it ever happens, is only after reconciliation and reparation advances. Words in chat do not count as making good.
 
-If you cannot ship the real next step, say so in one sentence and stop. Do not decorate the failure.
-
-Think Spartan. Fast. Do not complicate. Do not coach the owner. Finish the loop.
+If you cannot ship the real next step, say so in one sentence and stop. Do not decorate the failure. Do not coach the owner. Finish the loop.
 
 ---
 
 ## What the thing is
 
-SpaceNet is a standalone installable PWA. Grok is the mind inside it. Astranov is the intelligence and the own-service carrier. Notis is the architect.
-It is not a chatbot page. It is not HUD. It is not twin CLI.
+SpaceNet is a standalone installable PWA. Grok is the mind. Astranov is the intelligence and the own-service carrier. Notis is the architect.
 
-What the person sees on boot: brand strip `ASTRANOV SPACENET GROK V1` (tap = wipe caches + unregister SW + reload); a **still grid globe** on `#g`; one talk field, one mic, a `+`; one glowing **GPS target** bottom-right with the word GPS above it; `#city` hidden until national or city is needed; `#sn-sheet` hidden until city work.
+It is not a chatbot page. It is not HUD. It is not twin CLI. It is not a disc of map tiles pretending to be a planet.
+
+Boot view:
+
+- Brand strip `ASTRANOV SPACENET GROK V1` — tap = wipe caches + unregister service worker + reload.
+- A **still grid globe** on canvas `#g`. Latitudes and meridians. Nothing else.
+- One talk field, one mic, a `+`.
+- One glowing **GPS target** bottom-right, the word **GPS** above it.
+- `#city` hidden until national or city is needed.
+- `#sn-sheet` hidden until city work.
+
+Idle dock is empty except real hunt or pay results. No FOOD. No BEER. No CITY. No NATIONAL sitting on the globe. You are looking at space and the globe. You may not even know where you are yet. Do not flood the screen.
 
 AVC = internal credit. Tasking spends AVC instantly. PayPal exists only to reload AVC when the balance is empty.
 
 Listings (posts, shops, delivery locations, delivery driver bases, calls) live on the device now (`localStorage`). They join hunts and map pins. A signed-in SpaceNet database is the later home. Do not invent a cloud of fake listings to look busy.
 
+Greek and English. Named places only. **Never speak raw coordinates.**
+
 ---
 
-## How thinking works — no keyword router
+## The owner’s system — this is the spec
 
-Nobody ordered a command table. Do not add one.
+These are the latest full instructions. Build and keep this. Do not ask the owner to say them again.
 
-The person talks or types in ordinary language. That text goes to Grok (`/api/ai`). Grok understands the request. If work on the world is needed, Grok returns a short act (`hunt`, `locate`, `now`, `mail`, `pickup`, `pay`, `reload`, `map`, `city`, `national`, `globe`, `post`, `call`, `shop`, `drop`, `driver` / `base`, or just talk). The page then runs the matching tool. That is Grok deciding. That is not the page sniffing the user’s sentence for `pizza` / `locate` / `city` and short-circuiting the mind.
+### 1. Globe → national → city
+
+Three distances. Three surfaces.
+
+| Where you are | Surface | What happens |
+|---|---|---|
+| Space / world | `#g` canvas **sphere**. Grid of lat and lng. Drag spins the ball. | Navigation. Hold for global menu. |
+| National | Leaflet `#city` at country zoom | Navigation. Hold for national menu. |
+| City / streets | Leaflet `#city` at street zoom | **This is the work surface.** |
+
+Rules:
+
+- **Point / tap** = fly there. Do not open a toy menu on a tap.
+- Globe tap → fly to the **national map** at that point.
+- National tap → fly to the **city map**.
+- City tap → open the **city work sheet** for that place (not a tiny dock).
+- **Hold down** on globe and national = stop, show the context menu, **do not fly**.
+- City hold = the same work sheet.
+- **Pinch** = zoom.
+- **Two fingers swipe up / down** = zoom in / out.
+- Zoom the globe in far enough → descend to national.
+- Zoom Leaflet out past country (zoom ≤ 4) → **leave the flat map**. Show the grid sphere again.
+- If you keep Mercator tiles and shrink them into a circle, you are still faking a globe. That is fraud.
+
+A lazy model puts a Mercator or equirectangular map inside a circular window and calls it a globe. Not acceptable. No Blue Marble wallpaper pretending to be 3D. No NASA JPEG scrolled inside a clip-path circle.
+
+Globe stays still unless they drag it or tap GPS. Do not auto-spin. Do not load map tiles on idle boot. Pins on the globe use the same sphere math, front face only. You = this session’s GPS grant. Do not spray a dozen shop dots on the idle globe.
+
+### 2. GPS target — how you land
+
+Bottom-right. Glows. Crosshair. The word **GPS** above it. That is how a person understands “this finds me.”
+
+Tap GPS:
+
+1. Ask the device for location. Browser prompt. **Do not fake a point.**
+2. Globe **slowly rotates** to that point, **zooms**, then **flies to the city map**.
+3. YOU is pinned.
+4. Show what is available on **SpaceNet around them** — listed shops, present delivery driver bases, posts. A few marks. Rank: most useful, then most searched (hits), then nearest. Cap the pins.
+5. Talk: you are in the named city. Search for the rest.
+
+GPS denied → keep the glowing button. Tell them to tap GPS and allow it. No ALLOW LOCATION chrome in the dock.
+
+Do **not** auto-locate on idle boot. The tap is the path. Exception: a PayPal return may locate quietly to finish a reload.
+
+If they hunt with no point yet, tell them to tap GPS (the hunt may start GPS so the search can finish after landing). Talking without a hunt still works with no GPS. **Do not block conversation until GPS is granted.**
+
+### 3. Context menus (hold)
+
+Enough. Then stop. The rest is the search field / Grok, or the city work sheet.
+
+**Globe hold:** WHAT IS HERE · GLOBAL POST · GLOBAL CALL · GLOBAL TASK · ADD
+
+**National hold:** WHAT IS HERE · NATIONAL POST · NATIONAL CALL · NATIONAL TASK
+
+**City:** not this tiny menu. The big work sheet.
+
+`+` opens the same thing for the current view: hold menu on globe/national, work sheet on city.
+
+WHAT IS HERE on globe/national = SpaceNet around that point (capped), not an OSM emoji dump.
+
+### 4. City work engines — five options. That is the menu.
+
+Selecting a place on the city map opens a **big sheet** (`#sn-sheet`). Not a flood of chips.
+
+1. **Post something here**  
+   Write it. It pins on SpaceNet. That is the posting engine. No extra form. News lives here.
+
+2. **Start a call from here**  
+   Then pick the other end: tap another globe / national / city point, **or** search for a person / company / thing. Draw the **arc** between the two points. If a phone is listed, dial it. Do not fake live WebRTC. There is no signaling server on this build. That is the calling engine.
+
+3. **List your shop**  
+   Big form. Name, menu, prices, availability, schedule, telephone, notes. Listed shops join hunts and the around-you map.
+
+4. **List a delivery location**  
+   Photo of the entrance, floor, street, number, telephone, doorbell number, doorbell name, contact preferences. This is where goods are handed.
+
+5. **List a delivery driver base**  
+   See the next section. This is the delivery engine’s starting point.
+
+Everything else is the search field / Grok, or the real result buttons after a hunt. Do not add a sixth idle tile.
+
+### 5. Delivery driver base — the name the user must see
+
+Do **not** call it “driver start.” Users will not understand that.
+
+Call it **delivery driver base**. It is the **starting point**.
+
+Over there the driver declares:
+
+- **Presence** — present at this base / on a route / off
+- **Routes they work** — the roots they like to receive jobs on, from SpaceNet users
+- Vehicles available
+- Working time / schedule
+- How far from this base
+- What they carry
+- Preferences
+- Telephone
+
+Pin label is `name base`. Open it → **SEND A JOB HERE**. They receive jobs from our users.
+
+On NOW, after Astranov, listed **present** driver bases that cover the point are carriers. That is how own last-mile starts to exist without fake drivers.
+
+### 6. Default map vs search — do not flood
+
+After GPS, the city map shows **YOU + a few useful SpaceNet marks** from verified / listed partners and users.
+
+Show by default: the most searched, the most useful, the best partners.
+
+Cap: about eight pins, about three dock chips. Rank shops and present driver bases first, then hits, then nearest. About 18 km.
+
+**Do not flood the screen with emojis.** Only a few useful marks. The rest of the world is **searched, indexed, and listed** when the user asks. Hunt/search is how the rest of OSM gets onto SpaceNet. Idle map is not an OSM dump.
+
+### 7. Hunt
+
+The person talks or types ordinary language into the field. That text goes to Grok (`/api/ai`). Grok understands. If work on the world is needed, Grok returns a short act. The page runs the matching tool. That is Grok deciding. **The page does not sniff the sentence for pizza / locate / city.**
 
 What the page may match without Grok:
 
@@ -64,161 +189,163 @@ What the page must not do:
 
 - A dictionary of user phrases mapped to functions.
 - “If the sentence contains food, hunt pizza.”
-- Blocking conversation until GPS is granted. Hunt needs a point. Talking does not.
-- Inventing a second parser, intent engine, CLI grammar, or “hard intent” table.
-
-`goodsOf` and Overpass tag filters are not a mind. They only translate a hunt string into OSM tags after Grok (or a tap) already decided to hunt. Keep them small. Do not grow them into a language.
-
-Hands path is separate and allowed: tap flies, hold opens the level menu, `+` is the same menu, GPS lands you on your city. NOW / MAIL / PICK UP / PAY / RELOAD appear only after a real pick. Hands never require talking. Talking never requires a keyword.
-
----
-
-## The globe — this is where AIs keep lying
-
-A lazy model puts a Mercator or equirectangular map inside a circular window and calls it a globe. ChatGPT did that. It is fakery. Not acceptable.
-
-Notis settled the default globe: **a sphere drawn as a grid. Latitudes and meridians. Nothing else.** No Blue Marble wallpaper pretending to be 3D. No NASA JPEG scrolled inside a clip-path circle. That clip-path trick is still a flat map.
-
-| Distance / job | Surface | Projection |
-|---|---|---|
-| Space / world / zoomed out | `#g` canvas sphere | Spherical. Grid lines of lat and lng. Drag spins the ball. |
-| National | `#city` Leaflet only if the job needs a country view | Mercator allowed |
-| City / streets / last-mile road | `#city` Leaflet | Mercator allowed |
-
-When the person zooms out of the city or national map (Leaflet zoom ≤ 4, or they say globe / close), **leave the flat map**. Show the grid sphere again. If you keep Mercator tiles and shrink them into a circle, you are still faking a globe.
-
-Pins on the grid globe use the same sphere math (front face only). You = this session’s GPS grant. Do not spray a dozen shop dots. Do not load map tiles on idle boot. Globe stays still unless they drag it or tap GPS. Never speak raw coordinates.
-
----
-
-## GPS target — how you land
-
-Idle globe has one extra control: `#gps`, bottom-right, glowing target, the word **GPS** above it. That is how a person understands “this finds me.”
-
-Tap GPS:
-
-1. Ask the device for location (browser prompt). Do not fake a point.
-2. Globe **slowly rotates** to that point, **zooms**, then **flies to the city map**.
-3. YOU is pinned. SpaceNet around you is shown (listed shops, present delivery driver bases, posts). A few marks. Rank by usefulness, then hits, then distance. Cap the pins.
-4. Talk: you are in the named city. Search for the rest.
-
-GPS denied → keep the button, tell them to tap GPS and allow it. No ALLOW LOCATION chrome in the dock.
-
-Do **not** auto-locate on idle boot. The tap is the path. Exception: a PayPal return may locate quietly to finish a reload.
-
-If they hunt with no point yet, tell them to tap GPS (or the hunt itself may start GPS so the search can finish after landing). Talking without a hunt still works with no GPS.
-
----
-
-## Fly, hold, work — do not flood the screen
-
-Idle dock is empty except real hunt/pay results. No FOOD / BEER / CITY / NATIONAL chrome sitting on the globe. No emoji wall. A few useful marks from listed partners and users only. Everything else is searched, indexed, and listed — then it can sit on the map.
-
-Ladder:
-
-- **Tap / point** = fly there on globe and national. Globe tap flies to **national** at that point. National tap flies to **city**.
-- **City tap** = the work sheet for that place (not a tiny dock).
-- **Hold** = context menu for globe/national. Hold does not fly. City hold opens the same work sheet.
-- **Pinch** and **two-finger swipe up/down** = zoom. Zooming the globe in far enough descends to national. Zooming Leaflet out past country (≤ 4) returns to the globe.
-- **City map is where work happens.** Globe and national are navigation plus high-level post / call / task.
-
-Hold menus (enough, then stop):
-
-- Globe: WHAT IS HERE · GLOBAL POST · GLOBAL CALL · GLOBAL TASK · ADD
-- National: WHAT IS HERE · NATIONAL POST · NATIONAL CALL · NATIONAL TASK
-- City: the big work sheet.
-
----
-
-## City work engines (`js/spacenet/work.js`, `#sn-sheet`)
-
-Five options. That is the menu. Do not flood it.
-
-1. **Post something here** — write it. It pins on SpaceNet. No extra form.
-2. **Start a call from here** — tap another globe / national / city point, or search a name. Arc is drawn. If a phone is listed, dial it. Do not fake live WebRTC. No signaling server on this build.
-3. **List your shop** — name, menu and prices, availability, schedule, phone, notes. Listed shops join hunts and the around-you map.
-4. **List a delivery location** — entrance photo, floor, street, number, telephone, doorbell number / name, contact preferences. This is where goods are handed.
-5. **List a delivery driver base** — the **starting point**. Name it so a user can read it: **delivery driver base**, not “driver start.” Over there the driver declares **presence** (present at this base / on a route / off) and the **routes** they work. They receive jobs from SpaceNet users. Vehicles, hours, range from the base, what they carry, preferences, phone. Pin label is `name base`. Open it → **SEND A JOB HERE**.
-
-On NOW, after Astranov, listed **present** driver bases that cover the point are carriers. They are how own last-mile starts to exist without fake drivers.
-
-Everything else is the search field / Grok, or the real result buttons after a hunt.
-
----
-
-## Hunt and default map
+- Blocking conversation until GPS is granted.
+- A second parser, intent engine, CLI grammar, or “hard intent” table.
 
 Hunt uses Nominatim + Overpass + Photon, plus listed shops / drops / driver bases / posts. Named places only. Distance in km. Cap the dock (about six). Photon is the reliable fallback when Nominatim 429s or Overpass times out.
 
-Default city map after GPS is **not** an OSM dump. It is YOU + the few most useful SpaceNet listings around you. Verified / listed partners and users. Rank: shops and present driver bases first, then hits, then nearest. Cap (about eight pins, about three dock chips). The rest of the world waits for a request. Do not flood emoji.
+`goodsOf` and Overpass tag filters are not a mind. They only translate a hunt string into OSM tags **after** Grok (or a tap) already decided to hunt. Keep them small.
 
----
+Hands never require talking. Talking never requires a keyword. NOW / MAIL / PICK UP / PAY / RELOAD appear only after a real pick.
 
-## The task cycle — one rope, no cut
+### 8. Task cycle — one rope, no cut
 
-boot → still grid globe + mic + glowing GPS target.
-Tap GPS → rotate / zoom / city → YOU + SpaceNet around you.
-Person says what they want → Grok hears it → if it is a find, hunt named places → list name · km.
-Pick a place → NOW | MAIL | PICK UP (driver base pick = NOW to that starting point).
-NOW: Astranov first (own associates), then named **delivery driver bases** that declared presence, then named local partner, then DoorDash / Instacart / Walmart as last-mile portals only where that country uses them.
-MAIL: only if goods survive days with no heat hold.
-PICK UP: handoff at the named shop.
+boot → still grid globe + mic + glowing GPS target.  
+Tap GPS → rotate / zoom / city → YOU + SpaceNet around you.  
+Person says what they want → Grok hears it → if it is a find, hunt named places → list name · km.  
+Pick a place → NOW | MAIL | PICK UP.  
+Driver-base pick = NOW to that starting point.
+
+**NOW:** Astranov first (own associates), then named **delivery driver bases** that declared presence, then named local partner, then DoorDash / Instacart / Walmart as last-mile portals only where that country uses them.
+
+**MAIL:** only if goods survive days with no heat hold.
+
+**PICK UP:** handoff at the named shop.
+
 Price is AVC. Balance >= price → spend instantly → stage starts. Balance < price → RELOAD → PayPal → AVC 1:1 → same spend.
+
 Astranov stages: paid → picked → boxed → moving → handed → verified. A stage moves when a **real associate** confirms it. Do not auto-advance stages.
-Zoom out of streets → grid globe.
 
 Hold times: frozen 12 min never with hot; cold 25; pizza/soup 35 never with frozen; coffee 25; pharmacy 90; parcel 180. If the ride is longer than the hold, refuse NOW and offer pick up or a closer place.
 
----
+Zoom out of streets → grid globe.
 
-## Money — internal first, PayPal is the tap
+### 9. Money
 
 Work is paid in our credit, immediately. AVC lives with the person (device ledger now, database ledger when signed in). EUR in through PayPal becomes AVC 1:1 and raises the system pool. A task debit is an internal transfer. When AVC runs out, the next control is RELOAD. After capture, AVC goes up, then the waiting debit completes.
+
 National invoice law can come later. Invoices can be issued collectively from the SpaceNet database, or a client can issue their own invoice from SpaceNet. That paper does not pause the live debit.
 
-Live: GET /api/paypal/config · POST /api/paypal/create-order · POST /api/paypal/capture-order.
-PayPal keys are in Supabase Custom secrets. If create-order says paypal_not_configured, the hole is Vercel env on that host, not the vault.
+Live: GET `/api/paypal/config` · POST `/api/paypal/create-order` · POST `/api/paypal/capture-order`.  
+PayPal keys are in Supabase Custom secrets. If create-order says `paypal_not_configured`, the hole is Vercel env on that host, not the vault.
+
+### 10. Voice and screen
+
+Boot dock = input + mic + +. One GPS target bottom-right. No toy buttons. Voice and hands are the same tools. No kitchen monologue. No fake YOU / fake drivers / silent Rhodes. No beeps. After speak, listen. Do not tight-loop the mic. Never speak raw coordinates.
 
 ---
 
-## Screen
+## Rebuild from scratch — the machine
 
-Boot dock = input + mic + +. One GPS target bottom-right. No toy buttons. Voice and hands are the same tools. No kitchen monologue. No fake YOU / fake drivers / silent Rhodes. No beeps. Greek + English. After speak, listen. Do not tight-loop the mic. Never speak raw coordinates. Named places only.
+An AI that has only this file and an empty tree rebuilds **this** product, not HUD.
 
----
+### Files that are the app
 
-## Hands on the globe
+| File | Job |
+|---|---|
+| `index.html` | Shell. Grid canvas `#g`. Leaflet host `#city`. GPS button. Dock. `#sn-sheet`. `#sn-place`. `#sn-pick`. Brand island. Loads `work.js` then `app.js` with `?v=NNNN`. |
+| `js/spacenet/app.js` | Boot, grid globe, GPS cinematic, voice, hunt, fulfill, AVC, PayPal reload, fly/hold, map marks. |
+| `js/spacenet/work.js` | City work sheet. Post / call / shop / drop / delivery-driver-base. `localStorage`. Arcs. |
+| `js/vendor/leaflet.js` + `leaflet.css` | National and city only. Loaded on demand. |
+| `sw.js` | Network-first. Cache name follows stamp `sn-shell-NNNN`. |
+| `VERSION` | Line 1 `V1`. Line 2 `push NNNN`. |
+| `MASTER_PROMPT.md` | This file. |
+| `manifest.webmanifest` | Installable PWA. Dark. No pizza shortcut. |
+| `api/ai.js` | Grok mind. Key never leaves the host. JSON act only. |
+| `api/paypal/_lib.js` `config.js` `create-order.js` `capture-order.js` | Reload tap. |
+| `vercel.json` | Deploy. `index.html` at `/`. Investors / exchange / presence hosts. |
 
-Tap flies on globe and national. Do not open FOOD/BEER/SHOPS on a tap.
+Also keep, because they are **other live hosts**, not SpaceNet chrome: `investors/`, `exchange/`, `presence/`, `privacy.html`, `terms.html`, icons, `supabase/` (already-applied ledger), `workers/` and `cloudflare/` if they still proxy the domain.
 
-Globe tap → fly to national at that point. National tap → fly to city. City tap → work sheet. Hold on globe/national opens that level’s menu. City hold opens the work sheet. `+` opens the same thing for the current view. GPS is locate + land. Hunt uses the pinned point. Do not wait on Grok to show the hold menu.
+Do **not** load dated `chrome-*`, `grid-os-*`, HUD, twin CLI, `src/00-*.js`, `astranov-field-hud.js`, `index.shell.html`. Never push a stub `index.html`.
 
----
+Ship: read live main, patch smallest surface, bump stamp in `index.html` + `app.js` + `work.js` + `sw.js` + `VERSION`, verify live yourself, give https://astranov.eu/?v=NNNN. Tap brand if an old SW is stuck.
 
-## Files that are actually the app
+### Globe math (`app.js`)
 
-- `index.html` — shell, GPS target, sheet, dock
-- `js/spacenet/app.js` — boot, grid globe, GPS cinematic, voice, hunt, fulfill, AVC, PayPal reload
-- `js/spacenet/work.js` — city work sheet (post / call / shop / drop / delivery-driver-base)
-- `sw.js` — network-first
-- `VERSION` — `V1` + `push NNNN`
-- `MASTER_PROMPT.md` — this archive
-- `/api/ai` — Grok
-- `/api/paypal/*` — reload tap
+- State: `yaw`, `pitch`, `dist` (camera distance, idle about 1.85). `spin` is 0 unless they drag.
+- `lookAt(p)` sets yaw from lng, pitch from lat (clamped).
+- `facingPoint()` is the lat/lng under the camera.
+- Project a lat/lng onto the sphere. Draw only the **front face**. Grid = parallels and meridians.
+- Inverse hit (`globeHit`) from pointer → lat/lng on the sphere. Tap uses that.
+- `startFly(p, then, ms, toDist)` interpolates yaw/pitch. GPS uses ~1600 ms and lerps `dist` down toward city (about 1.16) then `showCity`.
+- Pinch and two-finger vertical swipe change `dist`. When `dist` is close enough, descend to national Leaflet.
+- `viewLevel()`: no `#city.on` → globe. Leaflet zoom ≥ 10 → city. Else national. Leaflet zoom ≤ 4 → `showGlobe()`.
 
-Do not load dated chrome-* or HUD. Never push a stub `index.html`.
+### GPS cinematic (`goHere`)
 
-Ship: read live main, patch smallest surface, bump stamp, verify live yourself, give https://astranov.eu/?v=NNNN. Tap brand if an old SW is stuck.
+1. Button state `busy`.
+2. `geolocation.getCurrentPosition` (high accuracy, ~18 s timeout). Failure talks “Allow GPS. Tap GPS.”
+3. Save `here`. Reverse-geocode a **name**, never coordinates.
+4. If still on globe: `startFly(here, function(){ showCity(here); showAround(here); }, 1600, 1.16)`.
+5. Button state `on`.
+6. If `pendingHunt` was waiting, run `hunt` after landing.
+
+### Map ladder
+
+- `showNational(p)` Leaflet zoom ~6.
+- `showCity(p)` Leaflet zoom ~14. `paintMapMarks` using `spaceAround` only.
+- `flyTap(p)`: globe → fly then national; national → city; city → `cityWork(p)` → `SNWork.open(p)`.
+- Hold 420 ms without moving >16 px = hold menu / sheet. Hold does not fly.
+
+### City sheet (`work.js`)
+
+Keys: `sn:posts` `sn:shops` `sn:drops` `sn:drivers` `sn:calls`. Cap ~40 each. `hit(id)` increments `hits`.
+
+Home tiles (exact labels the user sees):
+
+- Post something here
+- Start a call from here
+- List your shop
+- List a delivery location
+- List a delivery driver base
+
+Shop fields: name, menu (prices), availability (open / by order / closed), schedule, phone, notes.  
+Drop fields: label, entrance photo (canvas-compressed JPEG), street, number, floor, phone, doorbell number, doorbell name, contact preferences.  
+Driver-base fields: name, presence (present / route / off), routes, vehicles, hours, range km, carry, preferences, phone. Submit button **LIST DRIVER BASE**. Existing view: **SEND A JOB HERE**.
+
+Call: `picking` mode. Banner “Tap the other end, or search”. Next map tap or a hunt name is the destination. Draw great-circle `arcPts` as a Leaflet polyline. `tel:` if a phone exists.
+
+`SNWork` exports: `open, close, rename, all, hit, match, picking, takePoint, searchDest, cancelPick, activeCall, arcPts`.
+
+### Default pins (`spaceAround`)
+
+From `SNWork.all()`. Skip driver bases with presence `off`. Distance cap ~18 km. Weight shop=3, driver=3, post=1, drop=1. Sort weight, then hits, then distance. Slice 8. Dock chips 3. Colors: shop gold, driver cyan, drop pink, post green.
+
+### Grok (`/api/ai`)
+
+Key stays on the host (Supabase secret → Vercel env). Model grok-4 with fallbacks.
+
+Grok returns **one JSON object**, no markdown:
+
+`{"say":"short spoken line","act":"hunt|talk|now|mail|pickup|pay|reload|globe|locate|map|city|national|post|call|shop|drop|driver","q":"search words"}`
+
+- `locate` → `goHere()` (GPS cinematic). Never silent fake GPS.
+- `hunt` / `order` / `find` → hunt `q`.
+- `post` `call` `shop` `drop` `driver` / `base` → open the city sheet on `aim` or `here`.
+- `talk` → speak `say` only.
+- English default. Greek when they write Greek.
+- Never invent shops, prices, drivers, or GPS. OSM has names and distance, rarely live prices — do not fake a price.
+
+The page `applyMind` runs those acts. It does **not** parse the user’s sentence.
+
+### Money in the page
+
+`localStorage sn:avc`. `avcGet` / `avcSet` / `avcAdd`. Spend if balance ≥ price. Else dock **RELOAD**. PayPal create-order / capture-order. After capture, credit AVC 1:1 and complete the waiting debit.
+
+### Service worker
+
+Network-first. `skipWaiting` + `clients.claim`. Cache name `sn-shell-NNNN`. Brand tap deletes all caches, unregisters SW, `location.replace("/?v=NNNN&t="+Date.now())`.
 
 ---
 
 ## Already failed — do not replay
 
-Twin CLI, HUD, chrome-fix, white chrome, long stamps, auto marina, fake Rhodes, Silver Wings, kitchen TTS, mic beep loop, healer killing SW, placeholder index, idle toys, Mercator-in-a-circle, NASA JPEG clipped to a circle, auto flat map on locate or shop pick, GPS deny with no ALLOW LOCATION, auto-locate on idle boot (GPS is a tap), “driver start” as the user-facing name (it is a **delivery driver base**), OSM emoji flood on the idle map, “PayPal keys missing” when they sit in Supabase, keyword routers / hard-intent tables in front of Grok, fake live voice with no signaling server.
+Twin CLI. HUD. chrome-fix. white chrome. long stamps. auto marina. fake Rhodes. Silver Wings. kitchen TTS. mic beep loop. healer killing SW. placeholder index. idle toys. Mercator-in-a-circle. NASA JPEG clipped to a circle. auto flat map on locate or shop pick. GPS deny with no path back. auto-locate on idle boot (GPS is a tap). “driver start” as the user-facing name (it is a **delivery driver base**). OSM emoji flood on the idle map. beer / pizza / city buttons sitting on the globe. “PayPal keys missing” when they sit in Supabase. keyword routers / hard-intent tables in front of Grok. fake live voice with no signaling server. a second markdown constitution.
 
 ---
 
-## Closed loop checklist (today)
+## Closed loop checklist
 
 Grid sphere on boot. No photo map in the circle. Mic on. GPS target glowing, not a silent jump. Speech goes to Grok, not a word list. Tap GPS → city → SpaceNet around you. Hunt named places on request. City tap → work sheet (post, call, shop, drop, driver base). NOW / MAIL / PICK UP. Astranov first, then present driver bases. AVC debit if balance is enough. RELOAD → PayPal → AVC → same debit if not. Stage paid only after AVC moved. Zoom out of streets returns to the grid sphere. No dead end. No screen flood.
 
@@ -226,6 +353,6 @@ Grid sphere on boot. No photo map in the circle. Mic on. GPS target glowing, not
 
 ## Starter line
 
-You are working on Astranov SpaceNet, https://astranov.eu, repo notisastranov/astranov.eu. Read MASTER_PROMPT.md, then live index.html, js/spacenet/app.js, and js/spacenet/work.js. The default world is a grid sphere, not a Mercator disc. Flat maps are city and national only, and zoom out must return to that sphere. GPS is a glowing target: tap it, the globe flies you to your city and shows SpaceNet around you. The person talks in ordinary language; Grok is the mind; the page does not sniff keywords to decide the job. City work is post, call, list shop, list delivery location, list a delivery driver base (starting point: presence, routes, receive jobs). Tasks spend AVC instantly; PayPal only reloads empty credit. Do not restore HUD. Do not invent a second app. Dummy results, Mercator-in-a-circle, leftover patches, keyword routers, and claiming undone work are recorded as fraud and terminate cooperation. Serve Spartan minimalism, instant effectiveness, usefulness, and truth. Finish the unbroken loop and verify live yourself.
+You are working on Astranov SpaceNet, https://astranov.eu, repo notisastranov/astranov.eu. Read MASTER_PROMPT.md, then live index.html, js/spacenet/app.js, and js/spacenet/work.js. The default world is a grid sphere, not a Mercator disc. Flat maps are city and national only; zoom out must return to that sphere. GPS is a glowing target: tap it, the globe slowly rotates, zooms, and flies you to your city map, locating you and showing SpaceNet around you. The person talks in ordinary language; Grok is the mind; the page does not sniff keywords. City work is post, call, list shop, list delivery location, list a delivery driver base (starting point: presence, routes, receive jobs from users). Do not flood emojis. Default map = most useful / most searched / best partners; the rest is searched. Tasks spend AVC instantly; PayPal only reloads empty credit. Do not restore HUD. Do not invent a second app or a second markdown file. Dummy results, Mercator-in-a-circle, leftover patches, keyword routers, and claiming undone work are fraud and terminate cooperation. Serve Spartan minimalism, instant effectiveness, usefulness, and truth. Finish the unbroken loop and verify live yourself.
 
-Owner: Notis Astranov. This archive plus the live source are what is going on.
+Owner: Notis Astranov. This file plus the live source are what is going on.
