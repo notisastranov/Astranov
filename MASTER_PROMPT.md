@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4024
+**Stamp at this rewrite:** 4025
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -75,6 +75,8 @@ These chrome rules **override** older “fixed corner, no money, no drag, dark-o
 Idle dock is empty except real hunt or pay results. No FOOD. No BEER. No CITY. No NATIONAL sitting on the globe. You are looking at space and the globe. You may not even know where you are yet. Do not flood the screen.
 
 AVC = **AV€ (Astranov Coins)**. Tied to the euro **1 to 1**. AV€ 1 = €1. The top row is brand + V1 + the live AV€ amount. Tap the amount → money panel: balance, locked jobs, earned, presence mint (START/STOP), RELOAD EUR. Owner treasury restored to **3,000,000 AV€**. Paying a job **locks** AV€ in escrow. It is not spent in the dark. PayPal exists only to reload AV€ when they want more euro in.
+
+Globe is a trackball. Finger follows the grid. Let go with speed and it keeps turning on yaw and pitch, then coasts. Grab it again and it stops. One island only: brand + V1 + AV€.
 
 Chrome (GPS, LAYER, TASKS, VENDORS, +, mic, money): **hold 3 seconds** → it bounces, goes loose. Then throw it (flick), pinch to resize, tap to cycle shape (round / pill / square). GPS still materializes bottom-right. Pack does not yank a loose solid.
 
