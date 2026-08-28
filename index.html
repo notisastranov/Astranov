@@ -1,10 +1,12 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" /><title>Astranov SpaceNet Grok</title><meta name="astranov-build" content="4007" /><meta name="theme-color" content="#02040a" /><meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" /><meta name="apple-mobile-web-app-capable" content="yes" /><link rel="manifest" href="/manifest.webmanifest" />
+<html lang="en"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" /><title>Astranov SpaceNet Grok</title><meta name="astranov-build" content="4008" /><meta name="theme-color" content="#02040a" /><meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" /><meta name="apple-mobile-web-app-capable" content="yes" /><link rel="manifest" href="/manifest.webmanifest" />
 <style>
 html,body{margin:0;height:100%;background:#02040a;color:#d8f6ff;overflow:hidden;font-family:system-ui,sans-serif}
 #g{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1;touch-action:none}
 #city{position:fixed;inset:0;z-index:12;display:none;background:#02040a;pointer-events:none}
 #city.on{display:block;pointer-events:auto}
+#city .leaflet-container{background:#02040a}
+#city .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.68) contrast(1.12) saturate(.18)}
 #top,#dock{position:fixed;left:0;right:0;display:flex;justify-content:center;pointer-events:none;z-index:40}
 #top{top:max(8px,env(safe-area-inset-top))}
 #dock{bottom:0;padding:0 10px max(12px,env(safe-area-inset-bottom))}
@@ -17,13 +19,13 @@ html,body{margin:0;height:100%;background:#02040a;color:#d8f6ff;overflow:hidden;
 #ver{font:800 11px/1 system-ui;color:#4df0ff}
 #heal{width:7px;height:7px;border-radius:99px;background:#4df0ff;box-shadow:0 0 10px #4df0ff;animation:pulse 1.6s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
-#gps{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(86px,calc(env(safe-area-inset-bottom) + 74px));z-index:45;width:58px;padding:0;border:0;background:transparent;color:#4df0ff;pointer-events:auto}
-#gps .lbl{display:block;font:800 10px/1 system-ui;letter-spacing:.22em;text-align:center;margin:0 0 6px;text-shadow:0 0 8px #4df0ff}
-#gps .tgt{position:relative;display:block;width:52px;height:52px;margin:0 auto;border-radius:999px;border:2px solid rgba(77,240,255,.95);background:radial-gradient(circle at 50% 50%,rgba(77,240,255,.28),rgba(2,10,18,.75) 70%);box-shadow:0 0 16px rgba(77,240,255,.55);animation:gpsglow 1.8s ease-in-out infinite}
-#gps .tgt:before,#gps .tgt:after{content:"";position:absolute;background:#4df0ff;box-shadow:0 0 6px #4df0ff}
-#gps .tgt:before{left:50%;top:7px;bottom:7px;width:2px;margin-left:-1px}
-#gps .tgt:after{top:50%;left:7px;right:7px;height:2px;margin-top:-1px}
-#gps .dot{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:99px;background:#4df0ff;box-shadow:0 0 10px #4df0ff}
+#gps{position:fixed;right:max(10px,env(safe-area-inset-right));bottom:calc(env(safe-area-inset-bottom) + 72px);z-index:45;width:40px;padding:0;border:0;background:transparent;color:#4df0ff;pointer-events:auto}
+#gps .lbl{display:block;font:800 8px/1 system-ui;letter-spacing:.2em;text-align:center;margin:0 0 4px;text-shadow:0 0 6px #4df0ff}
+#gps .tgt{position:relative;display:block;width:36px;height:36px;margin:0 auto;border-radius:999px;border:1.5px solid rgba(77,240,255,.95);background:radial-gradient(circle at 50% 50%,rgba(77,240,255,.22),rgba(2,10,18,.8) 70%);box-shadow:0 0 10px rgba(77,240,255,.4);animation:gpsglow 1.8s ease-in-out infinite}
+#gps .tgt:before,#gps .tgt:after{content:"";position:absolute;background:#4df0ff;box-shadow:0 0 4px #4df0ff}
+#gps .tgt:before{left:50%;top:6px;bottom:6px;width:1.5px;margin-left:-.75px}
+#gps .tgt:after{top:50%;left:6px;right:6px;height:1.5px;margin-top:-.75px}
+#gps .dot{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:99px;background:#4df0ff;box-shadow:0 0 8px #4df0ff}
 @keyframes gpsglow{0%,100%{box-shadow:0 0 12px rgba(77,240,255,.4)}50%{box-shadow:0 0 26px rgba(77,240,255,.95)}}
 #gps.busy .tgt{animation-duration:.65s}
 #gps.on .tgt{animation:none;opacity:.88;box-shadow:0 0 10px rgba(77,240,255,.35)}
@@ -37,7 +39,7 @@ html,body{margin:0;height:100%;background:#02040a;color:#d8f6ff;overflow:hidden;
 #sn-place button{display:block;width:100%;text-align:left;height:34px;margin:0 0 4px;padding:0 10px;border:1px solid rgba(126,233,255,.4);background:rgba(4,16,28,.9);color:#7ee9ff;font:700 11px system-ui;border-radius:8px}
 form{display:flex;align-items:center;gap:10px;min-height:48px;border-bottom:1px solid rgba(126,233,255,.4)}
 input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font:500 16px system-ui;outline:none}
-#line{margin:10px 4px 0;font:500 12px/1.5 ui-monospace,monospace;color:#7ee9ff;max-height:8rem;overflow:auto;white-space:pre-wrap}
+#line{margin:0 4px 8px;font:500 12px/1.5 ui-monospace,monospace;color:#7ee9ff;max-height:8rem;overflow:auto;white-space:pre-wrap}
 .hub button{width:38px;height:38px;border:1px solid rgba(77,240,255,.6);border-radius:999px;background:rgba(4,12,24,.4);color:#4df0ff}
 #sn-sheet{position:fixed;inset:0;z-index:90;display:none;pointer-events:none}
 #sn-sheet.on{display:block;pointer-events:auto}
@@ -74,19 +76,19 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
 #sn-pick button{height:36px;padding:0 12px;border:1px solid rgba(126,233,255,.4);background:rgba(4,16,28,.9);color:#7ee9ff;font:700 11px system-ui;border-radius:10px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head>
-<body><canvas id="g"></canvas><div id="sn-place"></div><div id="sn-sheet"><div class="bg" data-act="close"></div><div class="card" role="dialog" aria-label="Place work"></div></div><div id="sn-video"><video id="sn-remote" autoplay playsinline></video><video id="sn-local" autoplay muted playsinline></video><button type="button" class="hang" data-act="hang">END CALL</button></div><div id="sn-pick"><span class="msg">Tap the other end, or search</span><button type="button" data-act="cancel-pick">CANCEL</button></div><div id="city"></div><button type="button" id="gps" aria-label="GPS"><span class="lbl">GPS</span><span class="tgt"><span class="dot"></span></span></button><div id="top"><div id="island" title="Tap brand to reboot"><span id="heal"></span><b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b> <span id="ver">V1</span></div></div><div id="dock"><div id="panel"><div id="sn-live"></div><form id="f"><div class="hub"><button type="button" id="plus">+</button></div><input id="in" autocomplete="off" enterkeyhint="send" placeholder="Talk to Astranov SpaceNet Grok" /><div class="hub"><button type="button" id="go" aria-label="Voice">🎙</button></div></form><div id="line"></div></div></div>
-<script src="/js/spacenet/work.js?v=4007"></script>
-<script src="/js/spacenet/app.js?v=4007"></script>
+<body><canvas id="g"></canvas><div id="sn-place"></div><div id="sn-sheet"><div class="bg" data-act="close"></div><div class="card" role="dialog" aria-label="Place work"></div></div><div id="sn-video"><video id="sn-remote" autoplay playsinline></video><video id="sn-local" autoplay muted playsinline></video><button type="button" class="hang" data-act="hang">END CALL</button></div><div id="sn-pick"><span class="msg">Tap the other end, or search</span><button type="button" data-act="cancel-pick">CANCEL</button></div><div id="city"></div><button type="button" id="gps" aria-label="GPS"><span class="lbl">GPS</span><span class="tgt"><span class="dot"></span></span></button><div id="top"><div id="island" title="Tap brand to reboot"><span id="heal"></span><b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b> <span id="ver">V1</span></div></div><div id="dock"><div id="panel"><div id="sn-live"></div><div id="line"></div><form id="f"><div class="hub"><button type="button" id="plus">+</button></div><input id="in" autocomplete="off" enterkeyhint="send" placeholder="Talk to Astranov SpaceNet Grok" /><div class="hub"><button type="button" id="go" aria-label="Voice">🎙</button></div></form></div></div>
+<script src="/js/spacenet/work.js?v=4008"></script>
+<script src="/js/spacenet/app.js?v=4008"></script>
 <script>
 (function(){
-  var VER="4007";
+  var VER="4008";
   function nuclear(){ var go=function(){ location.replace("/?v="+VER+"&t="+Date.now()); }; var tasks=[]; try{ if(window.caches) tasks.push(caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); })); }catch(e){} try{ if(navigator.serviceWorker) tasks.push(navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })); }catch(e){} Promise.all(tasks).then(go).catch(go); setTimeout(go,1400); }
   window.SNReboot=nuclear;
   var brand=document.getElementById("island"); if(brand) brand.addEventListener("click", nuclear);
   try{ if(navigator.serviceWorker) navigator.serviceWorker.register("/sw.js?v="+VER,{scope:"/"}).catch(function(){}); }catch(e){}
   if(!window.SN || !window.SN.run){
     var s=document.createElement("script");
-    s.src="/js/spacenet/app.js?v=4007";
+    s.src="/js/spacenet/app.js?v=4008";
     document.body.appendChild(s);
   }
 })();

@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4007
+**Stamp at this rewrite:** 4008
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -46,7 +46,7 @@ Boot view:
 - Brand strip `ASTRANOV SPACENET GROK V1` — tap = wipe caches + unregister service worker + reload.
 - A **still grid globe** on canvas `#g`. Latitudes and meridians. Nothing else.
 - One talk field, one mic, a `+`.
-- One glowing **GPS target** bottom-right, the word **GPS** above it.
+- One glowing **GPS target** bottom-right, small, sitting **above** the talk/mic bar — never on the microphone. The word **GPS** above it.
 - `#city` hidden until national or city is needed.
 - `#sn-sheet` hidden until city work.
 
@@ -72,7 +72,7 @@ Three distances. Three surfaces.
 |---|---|---|
 | Space / world | `#g` canvas **sphere**. Grid of lat and lng. Drag spins the ball. | Navigation. Hold for global menu. |
 | National | Leaflet `#city` at country zoom | Navigation. Hold for national menu. |
-| City / streets | Leaflet `#city` at street zoom | **This is the work surface.** |
+| City / streets | Leaflet `#city` at street zoom. OSM tiles, darkened by us (invert). No map API key. | **This is the work surface.** |
 
 Rules:
 
