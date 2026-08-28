@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4019
+**Stamp at this rewrite:** 4020
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -89,7 +89,7 @@ This is where marketplaces fail. SpaceNet does it without a ticket queue.
 - **Proactive.** tickJustice every 20s raises TASKS before anyone has to shout at support.
 - **Stages are tasks.** After pay: vendor MARK PICKED → MARK BOXED → driver MARK MOVING → MARK HANDED → user VERIFY. Pickup/mail skip the driver miles. DO on TASKS is how a job moves. Credit stays locked until verify or a clock fires.
 
-Listings (posts, shops, delivery locations, delivery driver bases) save on the device (`localStorage`) and also publish to `/api/space` so other SpaceNet users can hunt them. If the net table is down, the device listing still works — never invent a cloud of fake shops to look busy. Calls stay on the device.
+Listings (posts, shops, delivery locations, delivery driver bases) and **live jobs** save on the device and publish to `/api/space`. Another phone nearby pulls them. Stages ride with the job. If the net table is down, the device listing still works — never invent a cloud of fake shops to look busy. Calls stay on the device.
 
 Greek and English. Named places only. **Never speak raw coordinates.**
 

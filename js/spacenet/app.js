@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4019";
+  var VER="4020";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -201,12 +201,28 @@
   function loadEscrow(){ try{ return JSON.parse(localStorage.getItem("sn:escrow")||"[]"); }catch(e){ return []; } }
   function saveEscrow(list){ try{ localStorage.setItem("sn:escrow", JSON.stringify((list||[]).slice(0,40))); }catch(e){} }
   function escrowOf(id){ var list=loadEscrow(), i; for(i=0;i<list.length;i++) if(list[i].id===id) return list[i]; return null; }
-  function putEscrow(row){ var list=loadEscrow(), i, found=false; for(i=0;i<list.length;i++) if(list[i].id===row.id){ list[i]=row; found=true; break; } if(!found) list.unshift(row); saveEscrow(list); }
+  function putEscrow(row, silent){ var list=loadEscrow(), i, found=false; for(i=0;i<list.length;i++) if(list[i].id===row.id){ list[i]=row; found=true; break; } if(!found) list.unshift(row); saveEscrow(list); if(!silent) publishJob(row); }
+  function publishJob(e){
+    if(!e||!e.id) return;
+    var row={id:e.id,kind:"job",lat:Number(e.lat)||(e.shop&&e.shop.lat)||(here&&here.lat)||0,lng:Number(e.lng)||(e.shop&&e.shop.lng)||(here&&here.lng)||0,name:e.query||"job",query:e.query,avc:e.avc,held:e.held,status:e.status,how:e.how,shop:e.shop,driver:e.driver,holdMin:e.holdMin,flag:e.flag,strict:e.strict,t:e.at};
+    fetch("/api/space",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({row:row})}).catch(function(){});
+  }
+  function ingestJobs(list){
+    var dirty=false;
+    var order={paid:0,picked:1,boxed:2,moving:3,handed:4,released:5,done:5};
+    (list||[]).forEach(function(j){
+      if(!j||!j.id) return;
+      var cur=escrowOf(j.id);
+      if(!cur){ putEscrow(j, true); dirty=true; return; }
+      if((order[j.status]||0)>(order[cur.status]||0)){ putEscrow(Object.assign({}, cur, j), true); dirty=true; }
+    });
+    if(dirty) syncTasks();
+  }
   function creditEarned(who, n){ if(!who||!n) return; try{ var e=JSON.parse(localStorage.getItem("sn:earned")||"{}"); e[who]=(Number(e[who])||0)+Number(n); localStorage.setItem("sn:earned", JSON.stringify(e)); }catch(x){} }
   function holdMinOf(j){ var g=goodsOf(j&&j.query); return Math.max(8, Number(g&&g.hold)||40); }
   function openEscrow(price){
     var g=goodsOf(job&&job.query);
-    var row={id:"e"+(Date.now().toString(36)), avc:Number(price||0), held:true, status:"paid", at:Date.now(), holdMin:holdMinOf(job), strict:!!(g&&g.strict), query:(job&&job.query)||"", how:job&&job.how, shop:job&&job.shop?{id:job.shop.id,name:job.shop.name}:null, driver:job&&job.carrier&&job.carrier.driver?{id:job.carrier.id,name:job.carrier.name}:null, flag:"", evidence:{paidAt:Date.now()}};
+    var row={id:"e"+(Date.now().toString(36)), kind:"job", avc:Number(price||0), held:true, status:"paid", at:Date.now(), holdMin:holdMinOf(job), strict:!!(g&&g.strict), query:(job&&job.query)||"", how:job&&job.how, shop:job&&job.shop?{id:job.shop.id,name:job.shop.name,lat:job.shop.lat,lng:job.shop.lng}:null, driver:job&&job.carrier&&job.carrier.driver?{id:job.carrier.id,name:job.carrier.name}:null, flag:"", evidence:{paidAt:Date.now()}, lat:(job&&job.shop&&job.shop.lat)||(here&&here.lat)||0, lng:(job&&job.shop&&job.shop.lng)||(here&&here.lng)||0, name:(job&&job.query)||"job"};
     putEscrow(row); if(job) job.escrowId=row.id; return row;
   }
   function settle(id, split, reason){
@@ -673,7 +689,7 @@
   function tick(){ try{ tickFly(); if(!drag && !pinch && !fly){ yaw+=spin; spin*=0.96; if(Math.abs(spin)<0.00025) spin=0; } var moving=!!(drag||pinch||fly||Math.abs(spin)>0.00025); var sig=yaw.toFixed(4)+"|"+pitch.toFixed(4)+"|"+dist.toFixed(3)+"|"+(here&&here.lat)+"|"+(aim&&aim.lat)+"|"+(selected&&selected.id); if(!moving && sig===drawSig){ requestAnimationFrame(tick); return; } drawSig=sig; if(canvas){ var ctx=canvas.getContext("2d"); if(ctx){ ctx.fillStyle="#02040a"; ctx.fillRect(0,0,canvas.width,canvas.height); var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,R=Math.min(w,h)*0.42/dist; drawGrid(ctx,cx,cy,R); drawPin(ctx,here,hereName||"YOU","#4df0ff",cx,cy,R); if(aim) drawPin(ctx,aim,aim.name||"PIN","#ff8ad4",cx,cy,R); if(selected) drawPin(ctx,selected,selected.name,"#ffd85a",cx,cy,R); } } }catch(e){} requestAnimationFrame(tick); }
   function boot(){ if(permsTried) return; permsTried=true; var returning=/[?&]paypal=/.test(location.search||""); handlePayPalReturn().then(function(){ if(returning) return locate(true); }); askMic(); setTimeout(listen,600); if(window.SNWork&&SNWork.listenPeer) setTimeout(function(){ SNWork.listenPeer(); },800); }
   function repaint(){ if(map&&window.L) paintMapMarks(window.L, selected); }
-  window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,startOrder:startOrder,pack:pack,openMenu:openMenu,minMenu:minMenu,syncTasks:syncTasks,toggleTasks:toggleTasks,openTasks:openTasks,tickJustice:tickJustice,settle:settle,setLayer:setLayer,openCash:openCash,paintMoney:paintMoney,markStage:markStage};
+  window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,startOrder:startOrder,pack:pack,openMenu:openMenu,minMenu:minMenu,syncTasks:syncTasks,toggleTasks:toggleTasks,openTasks:openTasks,tickJustice:tickJustice,settle:settle,setLayer:setLayer,openCash:openCash,paintMoney:paintMoney,markStage:markStage,ingestJobs:ingestJobs};
   if(form) form.addEventListener("submit", function(e){ e.preventDefault(); var v=inEl&&inEl.value; if(inEl) inEl.value=""; run(v); });
   var go=document.getElementById("go"); if(go) go.addEventListener("click", function(e){ e.preventDefault(); if(inEl&&inEl.value.trim()){ run(inEl.value.trim()); inEl.value=""; return; } wantEar=true; listen(); });
   var plus=document.getElementById("plus"); if(plus) plus.addEventListener("click", function(){ hands(); });

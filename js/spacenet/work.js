@@ -42,6 +42,7 @@
       if(!j||j.ok===false) return j;
       netCache={shops:j.shops||[],drops:j.drops||[],drivers:j.drivers||[],posts:j.posts||[]};
       paint();
+      if(window.SN&&SN.ingestJobs) SN.ingestJobs(j.jobs||[]);
       return j;
     }).catch(function(){ return null; });
   }

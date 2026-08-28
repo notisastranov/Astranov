@@ -52,7 +52,16 @@ function slim(row) {
     'place',
     'raw',
     't',
-    'hits',
+    'held',
+    'status',
+    'avc',
+    'how',
+    'query',
+    'shop',
+    'driver',
+    'holdMin',
+    'flag',
+    'strict',
   ];
   keep.forEach(function (k) {
     if (row[k] != null && row[k] !== '') out[k] = row[k];
@@ -108,10 +117,10 @@ module.exports = async function handler(req, res) {
     const lng = Number(q.lng);
     const got = await sb('sn_listings?select=id,kind,lat,lng,body,updated_at&order=updated_at.desc&limit=80');
     if (!got.ok) {
-      res.status(200).json({ ok: false, local: true, status: got.status, shops: [], drops: [], drivers: [], posts: [] });
+      res.status(200).json({ ok: false, local: true, status: got.status, shops: [], drops: [], drivers: [], posts: [], jobs: [] });
       return;
     }
-    const buckets = { shops: [], drops: [], drivers: [], posts: [] };
+    const buckets = { shops: [], drops: [], drivers: [], posts: [], jobs: [] };
     (got.json || []).forEach(function (row) {
       const body = row.body || {};
       body.id = body.id || row.id;
@@ -128,7 +137,7 @@ module.exports = async function handler(req, res) {
         const km = 6371 * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
         if (km > 80) return;
       }
-      const k = body.kind === 'shop' ? 'shops' : body.kind === 'drop' ? 'drops' : body.kind === 'driver' ? 'drivers' : body.kind === 'post' ? 'posts' : '';
+      const k = body.kind === 'shop' ? 'shops' : body.kind === 'drop' ? 'drops' : body.kind === 'driver' ? 'drivers' : body.kind === 'post' ? 'posts' : body.kind === 'job' ? 'jobs' : '';
       if (k) buckets[k].push(body);
     });
     res.status(200).json(Object.assign({ ok: true, local: false }, buckets));
