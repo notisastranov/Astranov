@@ -7,7 +7,7 @@
   var netCache={shops:[],drops:[],drivers:[],posts:[]};
 
   function load(k){ try{ return JSON.parse(localStorage.getItem(k)||"[]")||[]; }catch(e){ return []; } }
-  function save(k, list){ try{ localStorage.setItem(k, JSON.stringify((list||[]).slice(0,40))); }catch(e){} }
+  function save(k, list){ try{ localStorage.setItem(k, JSON.stringify((list||[]).slice(0,40))); }catch(e){} if(window.SN&&SN.syncTasks) setTimeout(function(){ SN.syncTasks(); },0); }
   function talk(t){ if(window.SN&&SN.talk) SN.talk(t); else if(window.SN&&SN.say) SN.say(t); }
   function say(t){ if(window.SN&&SN.say) SN.say(t); }
   function paint(){ if(window.SN&&SN.repaint) SN.repaint(); }

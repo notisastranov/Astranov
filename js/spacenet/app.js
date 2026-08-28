@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4011";
+  var VER="4012";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -49,6 +49,120 @@
   }
   function clearNeed(){ things={}; if(liveEl) liveEl.innerHTML=""; if(menuEl) menuEl.classList.remove("on"); if(pillEl) pillEl.classList.remove("on","glow"); packSoon(); }
   function need(spec){ spec=spec||{}; var id=spec.id||("m"+Date.now()+Math.random().toString(36).slice(2,6)); things[id]=spec; if(!liveEl) return id; var b=document.createElement("button"); b.type="button"; b.textContent=spec.label||id; b.onclick=function(){ try{ spec.run(); }catch(e){ talk("That step failed. Try again."); } }; liveEl.appendChild(b); openMenu(); return id; }
+  var tasksBtn=document.getElementById("sn-tasks-btn");
+  var tasksEl=document.getElementById("sn-tasks");
+  var tasksList=document.getElementById("sn-tasks-list");
+  function loadTasks(){ try{ return JSON.parse(localStorage.getItem("sn:tasks")||"[]"); }catch(e){ return []; } }
+  function saveTasks(list){ try{ localStorage.setItem("sn:tasks", JSON.stringify((list||[]).slice(0,80))); }catch(e){} }
+  function jobNext(j){
+    if(!j) return "";
+    if(j.status==="paid") return "Wait for a real associate. Picked → boxed → moving → handed → verified.";
+    if(j.carrier && j.price) return "Pay "+j.price+" AVC.";
+    if(j.how) return "Pick a carrier.";
+    if(j.shop) return "Instant, mail, or pick up.";
+    if(j.query) return "Pick the place.";
+    return "Finish this.";
+  }
+  function derivedTasks(){
+    var out=[], perish=job?goodsOf(job.query):null;
+    if(job && job.status && job.status!=="done"){
+      out.push({id:"job-live", role:"user", title:job.query||"Order", next:jobNext(job), status:"open", perish:perish&&perish.strict, hold:perish&&perish.hold, t:job.t||Date.now(), auto:1});
+    }
+    if(!window.SNWork) return out;
+    var all=SNWork.all();
+    (all.shops||[]).forEach(function(s){
+      if(!s||!s.id) return;
+      if(s.hours && (s.menu || (s.menuPhotos&&s.menuPhotos.length))) return;
+      out.push({id:"list-shop-"+s.id, role:"vendor", title:s.name||"Shop", next:"Finish hours and menu.", status:"open", listing:s, t:s.t||Date.now(), auto:1});
+    });
+    (all.drivers||[]).forEach(function(d){
+      if(!d||!d.id) return;
+      if(d.hours && d.vehicles) return;
+      out.push({id:"list-driver-"+d.id, role:"driver", title:d.name||"Driver base", next:"Finish vehicles and working time.", status:"open", listing:d, t:d.t||Date.now(), auto:1});
+    });
+    (all.drops||[]).forEach(function(d){
+      if(!d||!d.id) return;
+      if(d.phone || d.doorbell) return;
+      out.push({id:"list-drop-"+d.id, role:"user", title:d.label||"Drop", next:"Add phone or doorbell.", status:"open", listing:d, t:d.t||Date.now(), auto:1});
+    });
+    return out;
+  }
+  function rankTasks(list){
+    list.forEach(function(t){
+      var p=50;
+      if(t.status==="done") p=90;
+      if(t.role==="user" && /Pay |Wait for a real/.test(t.next||"")) p=12;
+      if(t.perish) p=6;
+      if(t.hold && t.hold<=25) p=4;
+      if(t.role==="vendor") p=Math.min(p,28);
+      if(t.role==="driver") p=Math.min(p,30);
+      if(t.boost!=null) p=Math.min(p, Number(t.boost));
+      t.pri=p;
+    });
+    list.sort(function(a,b){ return (a.pri-b.pri) || ((a.t||0)-(b.t||0)); });
+  }
+  function paintTasksBtn(){
+    if(!tasksBtn) return;
+    var n=loadTasks().filter(function(t){ return t.status!=="done"; }).length;
+    var open=tasksEl&&tasksEl.classList.contains("on");
+    if(!n || open){ tasksBtn.classList.remove("on","glow"); packSoon(); return; }
+    tasksBtn.classList.add("on","glow");
+    tasksBtn.textContent=n>1?("TASKS "+n):"TASKS";
+    packSoon();
+  }
+  function renderTaskList(){
+    if(!tasksList) return;
+    var list=loadTasks().filter(function(t){ return t.status!=="done"; });
+    if(!list.length){ tasksList.innerHTML='<p class="note">Nothing on you.</p>'; return; }
+    tasksList.innerHTML=list.map(function(t){
+      var ask=t.ask&&t.ask.state==="wait"?" · waiting on Grok":(t.boost!=null?" · moved":"");
+      return '<div class="task" data-id="'+t.id+'"><b>'+String(t.title||"Task").replace(/[<>]/g,"")+'</b><span>'+String(t.role||"").toUpperCase()+" · "+String(t.next||"")+" "+ask+'</span><div class="row"><button type="button" data-act="go">DO</button><button type="button" data-act="problem">PROBLEM</button></div></div>';
+    }).join("");
+  }
+  function openTasks(){ if(!tasksEl) return; syncTasks(); tasksEl.classList.add("on"); renderTaskList(); paintTasksBtn(); setTimeout(pack,40); }
+  function hideTasks(){ if(tasksEl) tasksEl.classList.remove("on"); paintTasksBtn(); packSoon(); }
+  function toggleTasks(){ if(tasksEl&&tasksEl.classList.contains("on")) hideTasks(); else openTasks(); }
+  function goTask(id){
+    var t=loadTasks().filter(function(x){ return x.id===id; })[0];
+    if(!t) return;
+    hideTasks();
+    if(t.id==="job-live"){
+      if(job&&job.price && job.status!=="paid") return offerPay(job.price);
+      if(job&&job.shop && !job.how) return selectVendor(job.shop);
+      if(job&&job.query && !job.shop) return hunt(job.query);
+      talk(t.next||"This order is waiting on a real associate.");
+      return;
+    }
+    if(t.listing && window.SNWork) return SNWork.open(t.listing);
+    talk(t.next||t.title);
+  }
+  function askProblem(id){
+    var t=loadTasks().filter(function(x){ return x.id===id; })[0];
+    if(!t) return;
+    awaiting={kind:"priority", id:id};
+    if(inEl){ inEl.value=""; inEl.placeholder="What's the real difficulty?"; try{ inEl.focus(); }catch(e){} }
+    talk("Say the real bind. I'll move it only if it's an emergency — not a preference.");
+  }
+  function bumpTask(id, ok, say){
+    var list=loadTasks(), t=null, i;
+    for(i=0;i<list.length;i++) if(list[i].id===id) t=list[i];
+    if(!t){ talk(say||"That task is gone."); return; }
+    t.ask={reason:"", t:Date.now(), state: ok?"ok":"no"};
+    if(ok){ t.boost=1; talk(say||("Moved up: "+t.title+". Only because the bind is real.")); }
+    else { t.boost=null; talk(say||"No. That would be jumping the queue for you. I won't."); }
+    rankTasks(list); saveTasks(list); renderTaskList(); paintTasksBtn();
+  }
+  function syncTasks(){
+    var old=loadTasks(), by={};
+    old.forEach(function(t){ by[t.id]=t; });
+    var next=derivedTasks().map(function(t){
+      var prev=by[t.id];
+      if(prev){ if(prev.boost!=null) t.boost=prev.boost; if(prev.ask) t.ask=prev.ask; }
+      return t;
+    });
+    rankTasks(next); saveTasks(next); paintTasksBtn();
+    if(tasksEl&&tasksEl.classList.contains("on")) renderTaskList();
+  }
   function lookAt(p){ if(!p||!isFinite(p.lat)||!isFinite(p.lng)) return; yaw=p.lng*Math.PI/180; pitch=Math.max(-1.15, Math.min(1.15, p.lat*Math.PI/180)); spin=0; }
   function facingPoint(){ var lat=pitch*180/Math.PI, lng=yaw*180/Math.PI; while(lng>180) lng-=360; while(lng<-180) lng+=360; return {lat:lat,lng:lng}; }
   function viewLevel(){ if(cityEl&&cityEl.classList.contains("on")&&map){ return map.getZoom()>=10?"city":"national"; } return "globe"; }
@@ -128,7 +242,7 @@
   function showCall(from, dest){ if(!from||!dest) return; var mid={lat:(from.lat+dest.lat)/2,lng:(from.lng+dest.lng)/2}; var d=km(from,dest); var z=d>80?6:d>8?10:14; showMap(mid, z); setTimeout(function(){ if(!map) return; try{ map.fitBounds([[from.lat,from.lng],[dest.lat,dest.lng]],{padding:[48,48],maxZoom:14}); }catch(e){} },500); }
   function startFly(p, then, ms, toDist){ if(!p) return; spin=0; var toYaw=p.lng*Math.PI/180, toPitch=Math.max(-1.15, Math.min(1.15, p.lat*Math.PI/180)); fly={fromYaw:yaw, fromPitch:pitch, toYaw:toYaw, toPitch:toPitch, fromDist:dist, toDist:toDist!=null?toDist:dist, t0:Date.now(), ms:ms||520, then:then||null}; }
   function flyTap(p){ if(!p) return; if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; aim=p; hidePlace(); var lvl=viewLevel(); nameAim(p).then(function(n){ if(aim&&Math.abs(aim.lat-p.lat)<0.3) aim=n; }); if(lvl==="globe"){ startFly(p, function(){ showNational(p); }); } else if(lvl==="national"){ showMap(p, 14); } else { cityWork(p); } }
-  function selectVendor(v){ selected=v; if(job){ job.shop=v; job.status="chosen"; } if(v&&v.id&&window.SNWork&&SNWork.hit) SNWork.hit(v.id); routeTo(v); if(viewLevel()==="globe") showGlobe(); clearNeed(); if(v&&v.kind==="driver"){ need({id:"now",label:"NOW",run:function(){ chooseHow("now"); }}); talk((v.name||"Driver base")+". Starting point. Send a job to this base."); return; } need({id:"now",label:"NOW",run:function(){ chooseHow("now"); }}); need({id:"mail",label:"MAIL",run:function(){ chooseHow("mail"); }}); need({id:"pickup",label:"PICK UP",run:function(){ chooseHow("pickup"); }}); talk((v.name||"Shop")+". Instant, mail, or pick up."); }
+  function selectVendor(v){ selected=v; if(job){ job.shop=v; job.status="chosen"; } if(v&&v.id&&window.SNWork&&SNWork.hit) SNWork.hit(v.id); routeTo(v); if(viewLevel()==="globe") showGlobe(); clearNeed(); syncTasks(); if(v&&v.kind==="driver"){ need({id:"now",label:"NOW",run:function(){ chooseHow("now"); }}); talk((v.name||"Driver base")+". Starting point. Send a job to this base."); return; } need({id:"now",label:"NOW",run:function(){ chooseHow("now"); }}); need({id:"mail",label:"MAIL",run:function(){ chooseHow("mail"); }}); need({id:"pickup",label:"PICK UP",run:function(){ chooseHow("pickup"); }}); talk((v.name||"Shop")+". Instant, mail, or pick up."); }
   function partnerPlaces(how){ if(!selected||how==="pickup") return Promise.resolve([]); var f=how==="mail"?'["amenity"="post_office"]':'["office"~"courier|logistics",i]'; var q='[out:json][timeout:12];nwr(around:25000,'+selected.lat+','+selected.lng+')["name"]'+f+';out center tags 12;'; return fetchJson("https://overpass-api.de/api/interpreter?data="+encodeURIComponent(q),{headers:{Accept:"application/json"}},15000).then(function(j){ return (j.elements||[]).map(function(r){var p=pointOf(r),t=r.tags||{};return {id:"carrier-"+r.type+"-"+r.id,name:t.name,how:how,own:false,real:true,eta:how==="mail"?1440:Math.max(12,(job&&job.routeMin)||travelMin(here,selected)+10),note:how==="mail"?"Named post. Days. No heat hold.":"Named local courier."};}).filter(function(o){return o.name;}); }).catch(function(){return [];}); }
   function portalOffers(){ return []; }
   function listedDriverBases(how){ if(how!=="now"||!window.SNWork) return []; var all=SNWork.all(), from=here||selected; var rows=(all.drivers||[]).filter(function(d){ if(!d||!isFinite(d.lat)) return false; if(String(d.presence||"present")==="off") return false; var range=Number(d.range)||25; return !from || km(from,d)<=range; }).map(function(d){ var eta=Math.max(8, (here?travelMin(d,here):10)+(selected&&selected.kind!=="driver"&&selected!==d?travelMin(d,selected):0)); return {id:d.id,name:(d.name||"Driver")+" base",how:"now",own:false,driver:true,eta:eta,note:"Driver base. Starting point. "+(d.routes?("Routes: "+d.routes+". "):"")+"Receives jobs from SpaceNet users."}; }); if(selected&&selected.kind==="driver") rows.sort(function(a,b){ return a.id===selected.id?-1:b.id===selected.id?1:0; }); return rows; }
@@ -138,7 +252,7 @@
   function priceOf(o){ return o&&o.how==="pickup"?6:(o&&o.how==="mail"?14:10); }
   function pickCarrier(o){ if(job) job.carrier=o; offerPay(priceOf(o)); if(o.id==="ours"||(o.own&&o.how!=="pickup")) talk("Astranov. Tasks spend AVC now. Reload through PayPal only if credit is empty."); else if(o.id==="self") talk("Pick up at "+(selected&&selected.name||"the shop")+"."); else if(o.driver) talk((o.name||"Driver base")+". Starting point. Job goes to this base. About "+o.eta+" min."); else talk(o.name+" · about "+o.eta+" min. Portals see one slice."); }
   function offerPay(price){ clearNeed(); var bal=avcGet(); if(job) job.price=price; need({id:"pay",label:"PAY "+price+" AVC",run:function(){ spendAvc(price); }}); if(bal<price) need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(Math.max(10, Math.ceil(price-bal))); }}); talk((bal>=price)?("Pay "+price+" AVC. You have "+bal.toFixed(2)+"."):("Need "+price+" AVC. You have "+bal.toFixed(2)+". Reload through PayPal.")); }
-  function spendAvc(price){ price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } clearNeed(); talk("Paid "+price+" AVC. Remaining "+avcGet().toFixed(2)+". Stage: paid."); if(job&&job.carrier&&job.carrier.id==="ours") watchStages(price); }
+  function spendAvc(price){ price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } clearNeed(); syncTasks(); talk("Paid "+price+" AVC. Remaining "+avcGet().toFixed(2)+". Stage: paid."); if(job&&job.carrier&&job.carrier.id==="ours") watchStages(price); }
   function watchStages(avc){ if(!job) return; job.status="paid"; talk("Stage paid · "+Number(avc||job.paidAvc||0).toFixed(2)+" AVC moved. Waiting on a real associate for picked → boxed → moving → handed → verified."); }
   function reloadPaypal(eur){ say("PayPal reload…"); try{ sessionStorage.setItem("sn:paypal-job", JSON.stringify(job||{})); sessionStorage.setItem("sn:paypal-reload", String(eur||10)); }catch(e){} fetch("/api/paypal/create-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:eur||10,origin:location.origin,reference:"avc-reload"})}).then(function(r){return r.json().then(function(j){j.http=r.status;return j;});}).then(function(j){ if(j&&j.ok&&j.approve){ location.href=j.approve; return; } clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk(j&&j.error==="paypal_not_configured"?"PayPal is not on this host yet.":"PayPal could not start. RELOAD is still here."); }).catch(function(){ clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk("PayPal could not be reached."); }); }
   function restorePayJob(){ try{ var saved=JSON.parse(sessionStorage.getItem("sn:paypal-job")||"null"); if(saved){ job=saved; selected=saved.shop||null; } }catch(e){} }
@@ -163,14 +277,14 @@
   }
   function askMic(){ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) return Promise.resolve(false); var gum=navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){ try{s.getTracks().forEach(function(t){t.stop();});}catch(e){} return true; }).catch(function(){ return false; }); return Promise.race([gum,new Promise(function(resolve){setTimeout(function(){resolve(false);},15000);})]); }
   function listen(){ if(listening||speaking) return; var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) return; listening=true; rec=new SR(); rec.continuous=false; rec.lang=navigator.language||"en-US"; rec.onresult=function(ev){ var i,tx="",fin=false; for(i=ev.resultIndex;i<ev.results.length;i++){ tx+=ev.results[i][0].transcript; if(ev.results[i].isFinal) fin=true; } if(inEl) inEl.value=tx; if(fin&&tx.trim()){ listening=false; try{rec.stop();}catch(e){} run(tx.trim()); } }; rec.onend=function(){ listening=false; if(wantEar&&!speaking) setTimeout(listen,500); }; rec.onerror=function(ev){ listening=false; if(ev&&ev.error==="not-allowed") wantEar=false; }; try{ rec.start(); }catch(e){ listening=false; } }
-  function parseMind(j, raw){ var text=String((j&&(j.text||j.response||j.answer||j.say))||""); var act=String((j&&j.act)||"").toLowerCase(), q=(j&&j.q)||"", s=(j&&j.say)||""; var m=text.match(/\{[\s\S]*\}/); if(m){ try{ var o=JSON.parse(m[0]); if(o){ if(o.act) act=String(o.act).toLowerCase(); if(o.q) q=String(o.q); if(o.say) s=String(o.say); if(!s && o.text) s=String(o.text); } }catch(e){} } if(!s) s=text.replace(/\{[\s\S]*\}/,"").trim(); return {act:act||"talk", q:q||raw, say:s||""}; }
-  function applyMind(m, raw){ if(!m) return; var a=String(m.act||"talk").toLowerCase(); if(m.say && a!=="hunt" && a!=="order" && a!=="find") talk(m.say); else if(m.say) say(m.say); if(a==="talk"||!a) return; if(a==="locate") return goHere(); if(a==="globe"){ showGlobe(); return; } if(a==="national") return showNational(aim||here||facingPoint()); if(a==="map"||a==="city"||a==="streets") return showCity(selected||aim||here); if(a==="now") return chooseHow("now"); if(a==="mail") return chooseHow("mail"); if(a==="pickup"||a==="pick up") return chooseHow("pickup"); if(a==="pay") return spendAvc(priceOf(job&&job.carrier)); if(a==="reload") return reloadPaypal(10); if(a==="post"||a==="call"||a==="shop"||a==="drop"||a==="driver"||a==="base"){ if(window.SNWork) return SNWork.open(aim||here, a==="base"?"driver":a); return; } if(a==="hunt"||a==="order"||a==="find") return hunt(m.q||raw, aim||here); }
-  function grok(text){ var raw=String(text||"").trim(); if(!raw) return; say("Grok…"); var origin=aim||here; var ctx={ place:(aim&&aim.name)||hereName||"", avc:avcGet(), shop:selected&&selected.name||"", query:job&&job.query||"", level:viewLevel(), vendors:(vendors||[]).slice(0,6).map(function(v){return v.name+(origin?" "+km(origin,v).toFixed(1)+"km":"");}) }; fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:raw, message:raw, here:ctx, history:mindHist, spacenet:true, fast:true, force_paid:true, allow_paid:true})}).then(function(r){return r.json().then(function(j){ j.http=r.status; return j; });}).then(function(j){ var m=parseMind(j, raw); mindHist.push({role:"user",content:raw}); mindHist.push({role:"assistant",content:m.say||m.act||""}); if(mindHist.length>16) mindHist=mindHist.slice(-16); applyMind(m, raw); }).catch(function(){ talk("Grok did not answer. Say it again."); }); }
+  function parseMind(j, raw){ var text=String((j&&(j.text||j.response||j.answer||j.say))||""); var act=String((j&&j.act)||"").toLowerCase(), q=(j&&j.q)||"", s=(j&&j.say)||"", ok=j&&j.priority_ok, id=(j&&(j.task_id||j.id))||""; var m=text.match(/\{[\s\S]*\}/); if(m){ try{ var o=JSON.parse(m[0]); if(o){ if(o.act) act=String(o.act).toLowerCase(); if(o.q) q=String(o.q); if(o.say) s=String(o.say); if(!s && o.text) s=String(o.text); if(o.ok!=null) ok=o.ok; if(o.id) id=String(o.id); } }catch(e){} } if(!s) s=text.replace(/\{[\s\S]*\}/,"").trim(); return {act:act||"talk", q:q||raw, say:s||"", ok:ok, id:id}; }
+  function applyMind(m, raw){ if(!m) return; var a=String(m.act||"talk").toLowerCase(); if(m.say && a!=="hunt" && a!=="order" && a!=="find" && a!=="priority") talk(m.say); else if(m.say && a!=="priority") say(m.say); if(a==="talk"||!a) return; if(a==="priority"){ var ok=m.ok===true||m.ok==="true"||m.ok===1; bumpTask(m.id||(awaiting&&awaiting.id), ok, m.say); awaiting=null; return; } if(a==="locate") return goHere(); if(a==="globe"){ showGlobe(); return; } if(a==="national") return showNational(aim||here||facingPoint()); if(a==="map"||a==="city"||a==="streets") return showCity(selected||aim||here); if(a==="now") return chooseHow("now"); if(a==="mail") return chooseHow("mail"); if(a==="pickup"||a==="pick up") return chooseHow("pickup"); if(a==="pay") return spendAvc(priceOf(job&&job.carrier)); if(a==="reload") return reloadPaypal(10); if(a==="post"||a==="call"||a==="shop"||a==="drop"||a==="driver"||a==="base"){ if(window.SNWork) return SNWork.open(aim||here, a==="base"?"driver":a); return; } if(a==="hunt"||a==="order"||a==="find") return hunt(m.q||raw, aim||here); }
+  function grok(text){ var raw=String(text||"").trim(); if(!raw) return; say("Grok…"); var origin=aim||here; var ctx={ place:(aim&&aim.name)||hereName||"", avc:avcGet(), shop:selected&&selected.name||"", query:job&&job.query||"", level:viewLevel(), vendors:(vendors||[]).slice(0,6).map(function(v){return v.name+(origin?" "+km(origin,v).toFixed(1)+"km":"");}), tasks:loadTasks().filter(function(t){return t.status!=="done";}).slice(0,8).map(function(t){return {id:t.id,title:t.title,pri:t.pri,role:t.role,next:t.next};}) }; if(awaiting&&awaiting.kind==="priority") ctx.priority_request={id:awaiting.id, reason:raw}; fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:raw, message:raw, here:ctx, history:mindHist, spacenet:true, fast:true, force_paid:true, allow_paid:true})}).then(function(r){return r.json().then(function(j){ j.http=r.status; return j; });}).then(function(j){ var m=parseMind(j, raw); mindHist.push({role:"user",content:raw}); mindHist.push({role:"assistant",content:m.say||m.act||""}); if(mindHist.length>16) mindHist=mindHist.slice(-16); applyMind(m, raw); }).catch(function(){ talk("Grok did not answer. Say it again."); }); }
   function savePost(a, text){ var row={level:a.level, lat:a.at&&a.at.lat, lng:a.at&&a.at.lng, name:(a.at&&a.at.name)||"", text:String(text||"").trim(), t:Date.now(), kind:"post", id:"p"+Date.now().toString(36)}; try{ var list=JSON.parse(localStorage.getItem("sn:posts")||"[]"); list.unshift(row); localStorage.setItem("sn:posts", JSON.stringify(list.slice(0,80))); }catch(e){} talk("Saved on this device at "+(row.name||a.level)+"."); if(window.SN&&SN.repaint) SN.repaint(); }
   function startAwait(kind, level, p){ awaiting={kind:kind, level:level, at:p}; if(inEl){ inEl.value=""; inEl.placeholder= kind==="post"?"Post at this place": kind==="add"?"Name what you add":"Task at this place"; try{ inEl.focus(); }catch(e){} } var n=(p&&p.name)||level; if(kind==="post") talk("Post at "+n+". Write it."); else if(kind==="add") talk("Add at "+n+". Name it."); else talk("Task at "+n+". Say what you want."); }
   function doCall(p){ if(window.SNWork){ SNWork.open(p,"call"); return; } nameAim(p).then(function(n){ var t=n.tags||{}; var phone=t.phone||t["contact:phone"]||t.tel||""; if(phone){ talk("Calling "+(n.name||"place")+"."); location.href="tel:"+String(phone).replace(/[^\d+]/g,""); } else talk("No phone listed for "+(n.name||"this place")+"."); }); }
   function whatIsHere(p, level){ say("Looking…"); nameAim(p).then(function(n){ aim=n; var line=n.water?"No named place on that water.":(n.name||"This place"); if(level==="city"){ showAround(n); return; } talk(line); }); }
-  function run(raw){ var t=String(raw||"").trim(); if(!t) return; var low=t.toLowerCase(); if(low==="reboot") return (window.SNReboot&&SNReboot()); if(window.SNWork&&SNWork.picking&&SNWork.picking()){ SNWork.searchDest(t); return; } if(awaiting){ var a=awaiting; awaiting=null; if(inEl) inEl.placeholder="Talk to Astranov SpaceNet Grok"; if(a.kind==="post"||a.kind==="add"){ savePost(a,t); return; } if(a.kind==="task"||a.kind==="find"){ aim=a.at||aim; return grok(t); } } var named=vendors.find(function(v){var n=(v.name||"").toLowerCase(); return n && (low===n || low.indexOf(n)>=0);}); if(named) return selectVendor(named); named=currentOffers.find(function(o){var n=(o.name||"").toLowerCase(); return n && (low===n || low.indexOf(n)>=0);}); if(named) return pickCarrier(named); return grok(t); }
+  function run(raw){ var t=String(raw||"").trim(); if(!t) return; var low=t.toLowerCase(); if(low==="reboot") return (window.SNReboot&&SNReboot()); if(window.SNWork&&SNWork.picking&&SNWork.picking()){ SNWork.searchDest(t); return; } if(awaiting){ var a=awaiting; awaiting=null; if(inEl) inEl.placeholder="Talk to Astranov SpaceNet Grok"; if(a.kind==="priority") return grok("PRIORITY REQUEST id="+a.id+" reason: "+t); if(a.kind==="post"||a.kind==="add"){ savePost(a,t); return; } if(a.kind==="task"||a.kind==="find"){ aim=a.at||aim; return grok(t); } } var named=vendors.find(function(v){var n=(v.name||"").toLowerCase(); return n && (low===n || low.indexOf(n)>=0);}); if(named) return selectVendor(named); named=currentOffers.find(function(o){var n=(o.name||"").toLowerCase(); return n && (low===n || low.indexOf(n)>=0);}); if(named) return pickCarrier(named); return grok(t); }
   function globeHit(clientX, clientY){ if(!canvas) return null; var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,R=Math.min(w,h)*0.42/dist; var rect=canvas.getBoundingClientRect(); var px=(clientX-rect.left)*(w/Math.max(1,rect.width)); var py=(clientY-rect.top)*(h/Math.max(1,rect.height)); var x=(px-cx)/R, y2=(cy-py)/R, rr=x*x+y2*y2; if(rr>1) return null; var z2=Math.sqrt(Math.max(0,1-rr)); var cp=Math.cos(pitch), sp=Math.sin(pitch); var y=y2*cp+z2*sp; var z=-y2*sp+z2*cp; var lat=Math.asin(Math.max(-1,Math.min(1,y)))*180/Math.PI; var lng=Math.atan2(x,z)*180/Math.PI + yaw*180/Math.PI; while(lng>180) lng-=360; while(lng<-180) lng+=360; return {lat:lat,lng:lng}; }
   function nameAim(p){ if(!p) return Promise.resolve(p); var url="https://photon.komoot.io/reverse?lat="+p.lat+"&lon="+p.lng; return fetchJson(url,{headers:{Accept:"application/json"}},8000).then(function(j){ var f=j&&j.features&&j.features[0], pr=f&&f.properties||{}; var n=pr.name||pr.street||pr.city||pr.locality||pr.district||""; p.name=n||pr.county||pr.country||""; p.raw=[pr.street,pr.city||pr.locality,pr.country].filter(Boolean).join(", "); p.tags=pr; p.water=!p.name; if(!p.name) p.name="This place"; return p; }).catch(function(){ var nurl="https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=16&lat="+p.lat+"&lon="+p.lng; return fetchJson(nurl,{headers:{Accept:"application/json","Accept-Language":navigator.language||"en"}},8000).then(function(j){ p.name=humanName(j)||"This place"; p.raw=j&&j.display_name||p.name; p.tags=(j&&j.extratags)||{}; p.water=p.name==="This place"; return p; }).catch(function(){ p.name="This place"; p.water=true; p.tags={}; return p; }); }); }
   function hidePlace(){ if(placeEl){ placeEl.classList.remove("on"); placeEl.innerHTML=""; } packSoon(); }
@@ -227,7 +341,8 @@
     var video=document.getElementById("sn-video"), sheet=document.getElementById("sn-sheet");
     if((video&&video.classList.contains("on"))||(sheet&&sheet.classList.contains("on"))){
       g.classList.add("ghost");
-      if(menuEl&&menuEl.classList.contains("on")) minMenu();
+      if(menuEl) menuEl.classList.remove("on");
+      if(tasksEl) tasksEl.classList.remove("on");
       return;
     }
     g.classList.remove("ghost");
@@ -240,6 +355,8 @@
     add(document.getElementById("sn-pick"));
     add(menuEl&&menuEl.querySelector(".card"));
     add(pillEl&&pillEl.classList.contains("on")?pillEl:null);
+    add(tasksBtn&&tasksBtn.classList.contains("on")?tasksBtn:null);
+    add(tasksEl&&tasksEl.querySelector(".card"));
     add(sheet&&sheet.querySelector(".card"));
     add(document.querySelector(".leaflet-control-zoom"));
     add(document.querySelector(".leaflet-control-attribution"));
@@ -294,6 +411,15 @@
       pillEl.style.right="auto";
       pillEl.style.bottom="auto";
     }
+    if(tasksBtn&&tasksBtn.classList.contains("on")){
+      var tw=tasksBtn.offsetWidth||72, th=tasksBtn.offsetHeight||36;
+      var tb=free({x:W-pad-tw, y:topY, w:tw, h:th});
+      if(!tb.ok) tb=free({x:pad, y:topY, w:tw, h:th});
+      tasksBtn.style.left=Math.round(tb.x)+"px";
+      tasksBtn.style.top=Math.round(tb.y)+"px";
+      tasksBtn.style.right="auto";
+      tasksBtn.style.bottom="auto";
+    }
   }
   function size(){ if(!canvas) return; var d=Math.min(2,devicePixelRatio||1); canvas.width=Math.max(1,Math.floor((innerWidth||320)*d)); canvas.height=Math.max(1,Math.floor((innerHeight||480)*d)); pack(); }
   function sph(latDeg,lngDeg,cx,cy,R){ var la=latDeg*Math.PI/180, ln=lngDeg*Math.PI/180-yaw; var x=Math.cos(la)*Math.sin(ln); var y=Math.sin(la); var z=Math.cos(la)*Math.cos(ln); var y2=y*Math.cos(pitch)-z*Math.sin(pitch); var z2=y*Math.sin(pitch)+z*Math.cos(pitch); if(z2<=0.02) return null; return {x:cx+R*x, y:cy-R*y2, z:z2}; }
@@ -304,12 +430,25 @@
   function tick(){ try{ tickFly(); if(canvas){ var ctx=canvas.getContext("2d"); if(ctx){ ctx.fillStyle="#02040a"; ctx.fillRect(0,0,canvas.width,canvas.height); var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,R=Math.min(w,h)*0.42/dist; drawGrid(ctx,cx,cy,R); drawPin(ctx,here,hereName||"YOU","#4df0ff",cx,cy,R); if(aim) drawPin(ctx,aim,aim.name||"PIN","#ff8ad4",cx,cy,R); if(selected) drawPin(ctx,selected,selected.name,"#ffd85a",cx,cy,R); if(!drag && !pinch && !fly){ yaw+=spin; spin*=0.96; if(Math.abs(spin)<0.00025) spin=0; } } } }catch(e){} requestAnimationFrame(tick); }
   function boot(){ if(permsTried) return; permsTried=true; var returning=/[?&]paypal=/.test(location.search||""); handlePayPalReturn().then(function(){ if(returning) return locate(true); }); askMic(); setTimeout(listen,600); if(window.SNWork&&SNWork.listenPeer) setTimeout(function(){ SNWork.listenPeer(); },800); }
   function repaint(){ if(map&&window.L) paintMapMarks(window.L, selected); }
-  window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,pack:pack,openMenu:openMenu,minMenu:minMenu};
+  window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,pack:pack,openMenu:openMenu,minMenu:minMenu,syncTasks:syncTasks,toggleTasks:toggleTasks,openTasks:openTasks};
   if(form) form.addEventListener("submit", function(e){ e.preventDefault(); var v=inEl&&inEl.value; if(inEl) inEl.value=""; run(v); });
   var go=document.getElementById("go"); if(go) go.addEventListener("click", function(e){ e.preventDefault(); if(inEl&&inEl.value.trim()){ run(inEl.value.trim()); inEl.value=""; return; } wantEar=true; listen(); });
   var plus=document.getElementById("plus"); if(plus) plus.addEventListener("click", function(){ hands(); });
   var gpsBtn=document.getElementById("gps"); if(gpsBtn) gpsBtn.addEventListener("click", function(e){ e.preventDefault(); goHere(); });
   if(pillEl) pillEl.addEventListener("click", function(e){ e.preventDefault(); openMenu(); });
+  if(tasksBtn) tasksBtn.addEventListener("click", function(e){ e.preventDefault(); toggleTasks(); });
+  if(tasksEl){
+    var tBg=tasksEl.querySelector(".bg"), tX=tasksEl.querySelector(".x");
+    if(tBg) tBg.addEventListener("click", hideTasks);
+    if(tX) tX.addEventListener("click", function(e){ e.preventDefault(); hideTasks(); });
+    if(tasksList) tasksList.addEventListener("click", function(e){
+      var btn=e.target.closest("button"), row=e.target.closest(".task");
+      if(!row) return;
+      var id=row.getAttribute("data-id"), act=btn&&btn.getAttribute("data-act");
+      if(act==="problem") askProblem(id);
+      else if(act==="go"||!btn) goTask(id);
+    });
+  }
   if(menuEl){
     var mCard=menuEl.querySelector(".card"), mBg=menuEl.querySelector(".bg"), mX=menuEl.querySelector(".x");
     if(mBg) mBg.addEventListener("click", function(){ minMenu(); });
@@ -329,10 +468,10 @@
   document.addEventListener("pointerdown", function(){ if(!permsTried) boot(); }, {passive:true});
   window.addEventListener("resize", size);
   if(window.visualViewport) visualViewport.addEventListener("resize", packSoon);
-  ["sn-sheet","sn-place","sn-pick","sn-video","sn-live","sn-menu","sn-pill","line","island","dock"].forEach(function(id){
+  ["sn-sheet","sn-place","sn-pick","sn-video","sn-live","sn-menu","sn-pill","sn-tasks","sn-tasks-btn","line","island","dock"].forEach(function(id){
     var el=document.getElementById(id);
     if(!el) return;
     new MutationObserver(packSoon).observe(el,{attributes:true,childList:true,subtree:true,characterData:true});
   });
-  size(); tick(); setTimeout(boot,200); setInterval(function(){ if(!permsTried) boot(); },4000);
+  size(); tick(); setTimeout(boot,200); setTimeout(syncTasks,500); setInterval(function(){ if(!permsTried) boot(); },4000);
 })();

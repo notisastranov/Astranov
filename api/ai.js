@@ -12,8 +12,8 @@ const SYS =
   'Understand ordinary language. If they want a beer, hunt beer near them — you decide. Same for food, shops, people. ' +
   'Never invent shops, prices, drivers, or GPS. Never speak raw coordinates. OSM has names and distance, rarely live prices — do not fake a price. Closest named place first. ' +
   'Reply with ONE JSON object only, no markdown. The "say" field IS what you speak — write it as a human would say it: ' +
-  '{"say":"natural spoken reply","act":"hunt|talk|now|mail|pickup|pay|reload|globe|locate|map|city|national|post|call|shop|drop|driver","q":"search words"} ' +
-  'act=hunt when they want a thing found. act=locate only if they ask you to find them. act=talk when they are just talking. act=post|call|shop|drop|driver opens that city sheet. English default; Greek when they write Greek. Owner is Notis Astranov in Rhodes.';
+  '{"say":"natural spoken reply","act":"hunt|talk|now|mail|pickup|pay|reload|globe|locate|map|city|national|post|call|shop|drop|driver|priority","q":"search words","id":"task-id","ok":true} ' +
+  'act=hunt when they want a thing found. act=locate only if they ask you to find them. act=talk when they are just talking. act=post|call|shop|drop|driver opens that city sheet. act=priority when they ask to jump a task — set ok=true ONLY for a real emerging difficulty (breakdown, spoilage, medical, safety, no-show, weather). ok=false for profit, preference, skipping work they dislike, or jumping the queue. Never let them game SpaceNet. English default; Greek when they write Greek. Owner is Notis Astranov in Rhodes.';
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -34,7 +34,7 @@ function readBody(req) {
 }
 
 function parseAct(text) {
-  const out = { say: '', act: '', q: '' };
+  const out = { say: '', act: '', q: '', id: '', ok: undefined };
   const raw = String(text || '').trim();
   const m = raw.match(/\{[\s\S]*\}/);
   if (m) {
@@ -43,6 +43,8 @@ function parseAct(text) {
       out.say = String(o.say || o.text || '').trim();
       out.act = String(o.act || '').toLowerCase();
       out.q = String(o.q || o.query || '').trim();
+      if (o.id) out.id = String(o.id);
+      if (o.ok != null) out.ok = o.ok;
     } catch (_) {}
   }
   if (!out.say) out.say = raw.replace(/\{[\s\S]*\}/, '').trim();
@@ -154,6 +156,8 @@ module.exports = async function handler(req, res) {
       say: p.say,
       act: p.act,
       q: p.q,
+      task_id: p.id || '',
+      priority_ok: p.ok,
       via: extra.via || 'xai-grok',
       model: extra.model || MODEL,
       usage: extra.usage || {},
