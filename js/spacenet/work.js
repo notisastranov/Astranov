@@ -12,6 +12,16 @@
   function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){ if(c==="&") return "&"+ "amp;"; if(c==="<") return "&"+"lt;"; if(c===">") return "&"+"gt;"; if(c==='"') return "&"+"quot;"; return "&#39;"; }); }
   function km(a,b){ if(window.SN&&SN.km) return SN.km(a,b); if(!a||!b) return 0; var R=6371,dLat=((b.lat-a.lat)*Math.PI)/180,dLng=((b.lng-a.lng)*Math.PI)/180; var x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos((a.lat*Math.PI)/180)*Math.cos((b.lat*Math.PI)/180)*Math.sin(dLng/2)*Math.sin(dLng/2); return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
   function all(){ return {posts:load(KEYS.posts),shops:load(KEYS.shops),drops:load(KEYS.drops),drivers:load(KEYS.drivers),calls:load(KEYS.calls)}; }
+  function hit(id){
+    if(!id) return;
+    ["shops","drops","drivers","posts"].forEach(function(k){
+      var list=load(KEYS[k]), i, changed=false;
+      for(i=0;i<list.length;i++){
+        if(list[i]&&list[i].id===id){ list[i].hits=(Number(list[i].hits)||0)+1; changed=true; }
+      }
+      if(changed) save(KEYS[k], list);
+    });
+  }
   function placeName(p){ if(!p) return "This place"; var n=String(p.name||p.label||"").trim(); if(!n || /^-?\d+\.\d+/.test(n) || /\d+\.\d+[NS]/.test(n)) return "This place"; return n; }
   function placeLine(p){ return String((p&&(p.raw||p.street))||"").trim(); }
 
@@ -452,6 +462,7 @@
     close:close,
     rename:rename,
     all:all,
+    hit:hit,
     match:match,
     picking:function(){ return picking; },
     takePoint:takePoint,

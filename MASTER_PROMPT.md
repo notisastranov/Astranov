@@ -6,7 +6,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar text:** `ASTRANOV SPACENET GROK V1`
-**Internal stamp at this rewrite:** 4004
+**Internal stamp at this rewrite:** 4005
 **Today’s bar:** this product either works as a closed task-to-credit loop or we stop spending money on it.
 
 Paste this file first. Then open live `index.html` and `js/spacenet/app.js`. Chat history is junk next to those two files plus this archive.
@@ -87,7 +87,7 @@ Pins on the grid globe use the same sphere math (front face only). You = this se
 
 ## Fly, hold, work — do not flood the screen
 
-Idle dock is empty except ALLOW LOCATION until GPS is granted, and except real hunt/pay results. No FOOD/BEER/CITY/NATIONAL chrome sitting on the globe.
+Idle dock is empty except real hunt/pay results. One glowing **GPS** target sits bottom-right with the word GPS above it. Tap GPS: globe slowly rotates, zooms, flies to the city map, locates you, and shows SpaceNet around you (listed shops, present driver bases, posts). No ALLOW LOCATION chrome in the dock. No FOOD/BEER/CITY/NATIONAL chrome sitting on the globe.
 
 Ladder:
 - **Tap / point** = fly there on globe and national. Globe tap flies to **national** at that point. National tap flies to **city**.
@@ -114,7 +114,7 @@ Everything else is the search field / Grok, or the real result buttons after a h
 
 ## The task cycle — one rope, no cut
 
-boot → mic + GPS → short status → listen. GPS denied → ALLOW LOCATION.
+boot → mic + glowing GPS target. GPS denied → keep the GPS button, tell them to tap GPS and allow it.
 Person says what they want → Grok hears it → if it is a find, hunt named places (Nominatim + Overpass) → list name · km.
 Pick a place → stay on grid globe → NOW | MAIL | PICK UP.
 NOW: Astranov first (own associates), then named **delivery driver bases** that declared presence (starting point + routes, they receive jobs from our users), then named local partner, then DoorDash / Instacart / Walmart as last-mile portals only where that country uses them.
@@ -140,7 +140,9 @@ PayPal keys are in Supabase Custom secrets. If create-order says paypal_not_conf
 
 ## Screen
 
-Boot dock = input + mic + +. No toy buttons. Voice and hands are the same tools. No kitchen monologue. No fake YOU / fake drivers / silent Rhodes. No beeps. Greek + English. After speak, listen. Do not tight-loop the mic.
+Boot dock = input + mic + +. One GPS target bottom-right. No toy buttons. Voice and hands are the same tools. No kitchen monologue. No fake YOU / fake drivers / silent Rhodes. No beeps. Greek + English. After speak, listen. Do not tight-loop the mic.
+
+Default city map after GPS: YOU + the few most useful SpaceNet listings around you (listed shops, present driver bases, user posts). Rank by usefulness then hits then distance. Cap the pins. Do not flood OSM shops or emoji. Hunt/search is how the rest of the world is indexed. Verified partners and listed users only on the idle map. Everything else waits for a request.
 
 ---
 
