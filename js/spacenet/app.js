@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4061";
+  var VER="4062";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -151,19 +151,23 @@
     var live=listedShopOf(selected);
     if(!live){ talk("Only a listed SpaceNet shop pin can take an order. List it with +."); if(window.SNWork) SNWork.open(selected||aim,"shop"); return; }
     selected=live;
+    var left=it.stock!=null?Number(it.stock):Number(it.stock0);
+    if(isFinite(left) && left<=0){ talk("None left."); return; }
     if(!job) job={kind:"find",query:(selected&&selected.name)||"order",status:"cart",shop:selected,t:Date.now()};
     job.shop=selected;
     job.drop=myDrop()||job.drop;
     job.cart=job.cart||[];
     var hit=null;
     job.cart.forEach(function(x){ if(x.name===it.name) hit=x; });
-    if(hit) hit.qty=(Number(hit.qty)||1)+1;
+    var next=(hit?Number(hit.qty)||1:0)+1;
+    if(isFinite(left) && next>left){ talk("Only "+left+" left."); return; }
+    if(hit) hit.qty=next;
     else job.cart.push({name:it.name,price:Number(it.price)||0,sample:!!it.sample,qty:1});
     job.price=cartSum();
     job.status="cart";
     if(el) el.classList.add("on");
     openCart();
-    talk(it.name+" in the cart. "+fmtAve(job.price)+". Checkout when you are ready.");
+    talk(it.name+" in the cart. "+fmtAve(job.price)+". "+(isFinite(left)?(left-next)+" left. ":"")+"Checkout when you are ready.");
   }
   function loadTasks(){ try{ return JSON.parse(localStorage.getItem("sn:tasks")||"[]"); }catch(e){ return []; } }
   function saveTasks(list){ try{ localStorage.setItem("sn:tasks", JSON.stringify((list||[]).slice(0,80))); }catch(e){} }
@@ -1354,11 +1358,15 @@
   function htmlEsc(s){ return String(s==null?"":s).replace(/&/g,"&#38;").replace(/</g,"&#60;").replace(/>/g,"&#62;").replace(/\"/g,"&#34;").replace(/'/g,"&#39;"); }
   function renderMenu(items){
     if(!liveEl) return;
+    liveEl.innerHTML='<div class="dish sheet head"><span>Photo</span><span>Description</span><span>AV€</span><span>Hours</span><span>Initial</span><span>Left</span></div>';
     (items||[]).forEach(function(it){
       var b=document.createElement("button");
       b.type="button";
-      b.className="dish";
-      b.innerHTML='<img alt="" src="'+htmlEsc(it.photo||samplePic(it.name))+'"><span class="meta"><b>'+htmlEsc(it.name)+'</b><span class="px">'+fmtAve(Number(it.price)||0)+(it.sample?'<i class="sample">SAMPLE</i>':'')+(it.stock!=null&&it.stock!==""?'<i class="st"> ×'+htmlEsc(it.stock)+'</i>':'')+'</span></span>';
+      b.className="dish sheet";
+      var init=it.stock0!=null?it.stock0:it.stock;
+      var left=it.stock!=null?it.stock:init;
+      b.innerHTML='<img alt="" src="'+htmlEsc(it.photo||samplePic(it.name))+'"><b>'+htmlEsc(it.name||it.desc||"")+(it.sample?' <i class="sample">SAMPLE</i>':'')+'</b><span class="px">'+fmtAve(Number(it.price)||0)+'</span><span class="hrs">'+htmlEsc(it.hours||"—")+'</span><span class="st">'+htmlEsc(init==null?"":init)+'</span><span class="st">'+htmlEsc(left==null?"":left)+'</span>';
+      if(isFinite(Number(left)) && Number(left)<=0) b.disabled=true;
       b.onclick=function(){ pickDish(it, b); };
       liveEl.appendChild(b);
     });
@@ -1499,7 +1507,7 @@
   function spendAvc(price){
     if(!listedAgents().length){ cancelUnpaid("No Astranov Delivery Agent in this area. Not charged."); return; }
     if(paying) return;
-    price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } paying=true; avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } openEscrow(price); clearNeed(); hideCart(); paintCartBtn(); syncTasks(); watchStages(price); offerCalls(); openTasks(); setTimeout(function(){ paying=false; },1200);
+    price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } paying=true; avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; if(job.shop&&job.shop.id&&window.SNWork&&SNWork.takeStock) SNWork.takeStock(job.shop.id, job.cart); } openEscrow(price); clearNeed(); hideCart(); paintCartBtn(); syncTasks(); watchStages(price); offerCalls(); openTasks(); setTimeout(function(){ paying=false; },1200);
   }
   function watchStages(avc){ if(!job) return; job.status="paid"; talk("Paid. Ride at 1 AV€/km. SpaceNet 3% "+fmtAve(snFee(cartNet()))+" locked. An Astranov agent with a listed base runs this."); }
   function reloadPaypal(eur){ say("PayPal reload…"); try{ sessionStorage.setItem("sn:paypal-job", JSON.stringify(job||{})); sessionStorage.setItem("sn:paypal-reload", String(eur||10)); }catch(e){} fetch("/api/paypal/create-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:eur||10,origin:location.origin,reference:"avc-reload"})}).then(function(r){return r.json().then(function(j){j.http=r.status;return j;});}).then(function(j){ if(j&&j.ok&&j.approve){ location.href=j.approve; return; } clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk(j&&j.error==="paypal_not_configured"?"PayPal is not on this host yet.":"PayPal could not start. RELOAD is still here."); }).catch(function(){ clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk("PayPal could not be reached."); }); }

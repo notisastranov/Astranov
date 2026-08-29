@@ -396,29 +396,35 @@
     close(); paint(); publish(row); talk("Posted at "+placeName(at)+".");
   }
 
+  function dishHead(edit){
+    return '<div class="dish sheet head"><span>Photo</span><span>Description</span><span>AV€</span><span>Hours</span><span>Initial</span><span>Left</span>'+(edit?'<span></span>':'')+'</div>';
+  }
   function dishEdit(it){
     it=it||{};
     var px=it.price!=null&&it.price!==""?it.price:"";
-    var st=it.stock!=null&&it.stock!==""?it.stock:"";
-    return '<div class="dish edit" data-dish data-photo="'+esc(it.photo||"")+'">'+
+    var init=it.stock0!=null&&it.stock0!==""?it.stock0:(it.stock!=null&&it.stock!==""?it.stock:"");
+    var left=it.stock!=null&&it.stock!==""?it.stock:init;
+    return '<div class="dish sheet edit" data-dish data-photo="'+esc(it.photo||"")+'">'+
       '<button type="button" class="pic" data-act="dish-pic">'+(it.photo?'<img alt="" src="'+esc(it.photo)+'">':'<span>+</span>')+'</button>'+
-      '<span class="meta">'+
-        '<input name="dname" value="'+esc(it.name||"")+'" placeholder="Name" autocomplete="off">'+
-        '<span class="px">AV€ <input name="dprice" inputmode="decimal" value="'+esc(px)+'" placeholder="0.00"></span>'+
-        '<span class="st">stock <input name="dstock" inputmode="numeric" value="'+esc(st)+'" placeholder="0"></span>'+
-      '</span>'+
+      '<textarea name="dname" rows="2" placeholder="Product or service">'+esc(it.name||it.desc||"")+'</textarea>'+
+      '<input name="dprice" inputmode="decimal" value="'+esc(px)+'" placeholder="0.00">'+
+      '<input name="dhours" value="'+esc(it.hours||"")+'" placeholder="10–22">'+
+      '<input name="dstock0" inputmode="numeric" value="'+esc(init)+'" placeholder="0">'+
+      '<input name="dstock" inputmode="numeric" value="'+esc(left)+'" placeholder="0">'+
       '<button type="button" class="del" data-act="dish-del">✕</button>'+
     '</div>';
   }
   function dishShow(it){
     it=it||{};
-    return '<div class="dish"><img alt="" src="'+esc(it.photo||"")+'"><span class="meta"><b>'+esc(it.name||"")+'</b><span class="px">AV€ '+Number(it.price||0).toFixed(2)+(it.stock!=null&&it.stock!==""?'<i class="st"> ×'+esc(it.stock)+'</i>':'')+'</span></span></div>';
+    var init=it.stock0!=null?it.stock0:it.stock;
+    var left=it.stock!=null?it.stock:init;
+    return '<div class="dish sheet"><img alt="" src="'+esc(it.photo||"")+'"><b>'+esc(it.name||it.desc||"")+'</b><span class="px">'+Number(it.price||0).toFixed(2)+'</span><span class="hrs">'+esc(it.hours||"—")+'</span><span class="st">'+esc(init==null?"":init)+'</span><span class="st">'+esc(left==null?"":left)+'</span></div>';
   }
   function seedDishes(){
     var s=(at&&(at.tags||at))||{};
     var list=s.dishes||[];
-    if(!list.length) list=[{name:"",price:"",stock:"",photo:""}];
-    return list.map(dishEdit).join("");
+    if(!list.length) list=[{name:"",price:"",hours:"",stock0:"",stock:"",photo:""}];
+    return dishHead(true)+list.map(dishEdit).join("");
   }
   function readDishCards(){
     var out=[];
@@ -426,12 +432,33 @@
     card.querySelectorAll("[data-dish]").forEach(function(el){
       var name=String((el.querySelector("[name=dname]")||{}).value||"").trim();
       var price=Number(String((el.querySelector("[name=dprice]")||{}).value||"").replace(",","."));
-      var stock=Number((el.querySelector("[name=dstock]")||{}).value||0);
+      var hours=String((el.querySelector("[name=dhours]")||{}).value||"").trim();
+      var stock0=Number((el.querySelector("[name=dstock0]")||{}).value||0);
+      var stock=Number((el.querySelector("[name=dstock]")||{}).value);
       var photo=el.getAttribute("data-photo")||"";
       if(!name||!(price>0)) return;
-      out.push({name:name,price:price,stock:isFinite(stock)?stock:0,photo:photo,sample:false});
+      if(!isFinite(stock)) stock=stock0;
+      if(!isFinite(stock0)) stock0=stock;
+      out.push({name:name,desc:name,price:price,hours:hours,stock0:stock0,stock:stock,photo:photo,sample:false});
     });
     return out;
+  }
+  function takeStock(shopId, cart){
+    if(!shopId||!cart||!cart.length) return;
+    var list=load(KEYS.shops), i, changed=false;
+    for(i=0;i<list.length;i++){
+      var s=list[i];
+      if(!s||s.id!==shopId||!s.dishes) continue;
+      cart.forEach(function(c){
+        s.dishes.forEach(function(d){
+          if(!d||d.name!==c.name) return;
+          d.stock=Math.max(0, Number(d.stock||0)-(Number(c.qty)||1));
+          changed=true;
+        });
+      });
+      if(changed) publish(s);
+    }
+    if(changed) save(KEYS.shops,list);
   }
 
   function saveShop(fd){
@@ -439,7 +466,7 @@
     if(!name){ talk("Name the shop."); return; }
     if(at&&at.id&&at.kind==="shop"&&!canEdit(at.tags||at)){ talk("Only the owner or a SpaceNet admin can edit this pin."); return; }
     var dishes=readDishCards();
-    if(!dishes.length){ talk("Add a dish with a photo, a price, and stock. That is what the client sees."); return; }
+    if(!dishes.length){ talk("Add a row: photo, description, hours, initial stock, stock left."); return; }
     var row=baseRow();
     if(at&&at.id&&at.kind==="shop") row.id=at.id; else row.id=uid("s");
     row.kind="shop"; row.name=name;
@@ -861,7 +888,7 @@
         card.innerHTML=head(s.name||title, (s.open||"")+(s.hours?" · "+s.hours:""))+
           (s.cover?'<img class="cover" alt="Cover" src="'+s.cover+'" />':'')+
           (s.profile?'<img class="avatar" alt="Profile" src="'+s.profile+'" />':'')+
-          (dishes.length?'<div class="sn-menu-grid">'+dishes.map(dishShow).join("")+'</div>':(s.menu?'<pre class="menu">'+esc(s.menu)+'</pre>':''))+
+          (dishes.length?'<div class="sn-menu-grid">'+dishHead(false)+dishes.map(dishShow).join("")+'</div>':(s.menu?'<pre class="menu">'+esc(s.menu)+'</pre>':''))+
           (s.phone?'<button type="button" class="go" data-act="dial" data-tel="'+esc(s.phone)+'">DIAL '+esc(s.phone)+'</button>':'')+
           (s.peer?'<button type="button" class="go" data-act="video" data-peer="'+esc(s.peer)+'" data-tel="'+esc(s.phone||"")+'">VIDEO CALL</button>':'')+
           '<button type="button" class="go" data-act="order">ORDER FROM HERE</button>'+
@@ -876,10 +903,10 @@
         field("name","Shop name",{ph:"Name on the door"})+
         fileField("cover","Cover picture")+
         fileField("profile","Profile picture")+
-        '<label>Menu — photo, price, stock</label>'+
+        '<label>Products and services</label>'+
         '<div class="sn-menu-grid" data-menu>'+seedDishes()+'</div>'+
         '<input type="file" accept="image/*" capture="environment" hidden data-dish-file>'+
-        '<button type="button" class="opt" data-act="dish-add"><b>Add a dish</b><span>Photo, name, AV€, stock. Same card the client taps.</span></button>'+
+        '<button type="button" class="opt" data-act="dish-add"><b>Add a row</b><span>Photo, description, hours, initial stock, stock left.</span></button>'+
         field("open","Availability",{select:[["open","Open now"],["order","By order"],["closed","Closed"]]})+
         field("hours","Schedule",{ph:"Mon–Sat 10–22"})+
         field("phone","Telephone",{type:"tel",ph:"+30 …",inputmode:"tel"})+
@@ -982,6 +1009,7 @@
     peerId:peerId,
     canEdit:canEdit,
     isAdmin:isAdmin,
+    takeStock:takeStock,
     startVideo:startVideo,
     pull:pull,
     publish:publish,
