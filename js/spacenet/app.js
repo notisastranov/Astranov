@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4045";
+  var VER="4046";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -95,7 +95,10 @@
   var cartEl=document.getElementById("sn-cart");
   var cartList=document.getElementById("sn-cart-list");
   function cartQty(){ if(!job||!job.cart) return 0; return job.cart.reduce(function(s,x){ return s+(Number(x.qty)||1); },0); }
-  function cartSum(){ if(!job||!job.cart) return 0; var n=job.cart.reduce(function(s,x){ return s+(Number(x.price)||0)*(Number(x.qty)||1); },0); if(job.floor) n+=3; return Math.round(n*100)/100; }
+  function goodsSum(){ if(!job||!job.cart) return 0; return job.cart.reduce(function(s,x){ return s+(Number(x.price)||0)*(Number(x.qty)||1); },0); }
+  function rideKm(){ var a=here, b=(job&&job.shop)||selected; if(!a||!b||!isFinite(a.lat)||!isFinite(b.lat)) return 1; return Math.max(0.5, km(a,b)); }
+  function rideFee(){ return Math.max(1, Math.round(rideKm())); }
+  function cartSum(){ var n=goodsSum()+rideFee(); if(job&&job.floor) n+=3; return Math.round(n*100)/100; }
   function paintCartBtn(){
     if(!cartBtn) return;
     var n=cartQty();
@@ -111,7 +114,7 @@
     if(!rows.length){ hideCart(); return; }
     cartList.innerHTML=rows.map(function(it,i){
       return '<div class="row" data-i="'+i+'"><b>'+String(it.name||"").replace(/[<>]/g,"")+' · '+fmtAve(it.price)+'</b><button type="button" data-act="sub">−</button><span>'+(it.qty||1)+'</span><button type="button" data-act="add">+</button></div>';
-    }).join("")+'<label class="floor"><input type="checkbox" id="sn-floor"'+(job.floor?" checked":"")+'> Floor / room service + AV€ 3.00</label><div class="sum">'+fmtAve(cartSum())+'</div><button type="button" class="go" data-act="out">CHECKOUT</button>';
+    }).join("")+'<label class="floor"><input type="checkbox" id="sn-floor"'+(job.floor?" checked":"")+'> Floor / room service + AV€ 3.00</label><div class="sum">Ride '+rideKm().toFixed(1)+' km · '+fmtAve(rideFee())+' · total '+fmtAve(cartSum())+'</div><button type="button" class="go" data-act="out">CHECKOUT</button>';
     cartEl.classList.add("on");
     paintCartBtn();
     packSoon();
@@ -574,7 +577,8 @@
   function holdMinOf(j){ var g=goodsOf(j&&j.query); return Math.max(8, Number(g&&g.hold)||40); }
   function openEscrow(price){
     var g=goodsOf(job&&job.query);
-    var row={id:"e"+(Date.now().toString(36)), kind:"job", avc:Number(price||0), held:true, status:"paid", at:Date.now(), holdMin:holdMinOf(job), strict:!!(g&&g.strict), query:(job&&job.query)||"", how:"now", floor:!!(job&&job.floor), eta:Number(job&&job.carrier&&job.carrier.eta)||18, cart:job&&job.cart||[], customerPeer:window.SNWork&&SNWork.peerId?SNWork.peerId():"", shop:job&&job.shop?{id:job.shop.id,name:job.shop.name,lat:job.shop.lat,lng:job.shop.lng,phone:job.shop.phone||telOf(job.shop),peer:job.shop.peer||shopPeerOf()}:null, driver:job&&job.carrier&&(job.carrier.agent||job.carrier.driver)?{id:job.carrier.id,name:job.carrier.name,phone:job.carrier.phone||"",peer:job.carrier.peer||agentPeerOf()}:null, flag:"", evidence:{paidAt:Date.now()}, lat:(job&&job.shop&&job.shop.lat)||(here&&here.lat)||0, lng:(job&&job.shop&&job.shop.lng)||(here&&here.lng)||0, name:(job&&job.query)||"job"};
+    var ride=rideFee(), goods=Math.round(goodsSum()*100)/100;
+    var row={id:"e"+(Date.now().toString(36)), kind:"job", avc:Number(price||0), held:true, status:"paid", at:Date.now(), holdMin:holdMinOf(job), strict:!!(g&&g.strict), query:(job&&job.query)||"", how:"now", floor:!!(job&&job.floor), eta:Number(job&&job.carrier&&job.carrier.eta)||Math.max(8, Math.round(rideKm()*3)), cart:job&&job.cart||[], ride:ride, goods:goods, km:rideKm(), customerPeer:window.SNWork&&SNWork.peerId?SNWork.peerId():"", shop:job&&job.shop?{id:job.shop.id,name:job.shop.name,lat:job.shop.lat,lng:job.shop.lng,phone:job.shop.phone||telOf(job.shop),peer:job.shop.peer||shopPeerOf()}:null, driver:job&&job.carrier&&(job.carrier.agent||job.carrier.driver)?{id:job.carrier.id,name:job.carrier.name,phone:job.carrier.phone||"",peer:job.carrier.peer||agentPeerOf()}:null, flag:"", evidence:{paidAt:Date.now()}, lat:(job&&job.shop&&job.shop.lat)||(here&&here.lat)||0, lng:(job&&job.shop&&job.shop.lng)||(here&&here.lng)||0, name:(job&&job.query)||"job"};
     putEscrow(row); if(job) job.escrowId=row.id; return row;
   }
   function settle(id, split, reason){
@@ -593,10 +597,10 @@
   function settleRefund(id, reason){ var e=escrowOf(id); if(!e) return; settle(id, {customer:e.avc, vendor:0, driver:0}, reason||"Full credit back. Nothing was picked."); }
   function settleVerify(id){
     var e=escrowOf(id); if(!e) return;
-    var v=e.how==="pickup"?e.avc:Math.round(e.avc*0.5*100)/100;
-    var d=e.how==="now"?Math.round((e.avc-v)*100)/100:0;
-    if(e.how==="mail"){ v=Math.round(e.avc*0.7*100)/100; d=Math.round((e.avc-v)*100)/100; }
-    settle(id, {customer:0, vendor:v, driver:d}, "Verified. Shop and driver are credited. You kept the goods.");
+    var goods=Number(e.goods); if(!goods) goods=Math.round(e.avc*0.5*100)/100;
+    var ride=Number(e.ride); if(!ride) ride=Math.max(0, Math.round((e.avc-goods)*100)/100);
+    if(e.floor) ride+=3;
+    settle(id, {customer:0, vendor:goods, driver:ride}, "Verified. Shop got the goods. Agent got "+fmtAve(ride)+" ride at 1 AV€/km plus extras. You kept the goods.");
   }
   function markStage(id, status){
     var e=escrowOf(id); if(!e||!e.held) return;
@@ -1193,10 +1197,16 @@
   }
   function parseListedMenu(text){
     return String(text||"").split(/\n+/).map(function(line){
-      var m=String(line).match(/^\s*(.+?)\s*[—\-–:]\s*€?\s*(\d+[.,]?\d*)\s*$/);
+      var m=String(line).match(/^\s*(.+?)\s*[—\-–:]\s*(?:AV€|€|AVE)?\s*(\d+[.,]?\d*)\s*(?:[x×]\s*(\d+))?/i);
       if(!m) return null;
-      return {name:m[1].trim(), price:Number(String(m[2]).replace(",",".")), sample:false};
+      return {name:m[1].trim(), price:Number(String(m[2]).replace(",",".")), stock:m[3]?Number(m[3]):null, sample:false};
     }).filter(function(x){ return x&&x.name&&x.price>0; });
+  }
+  function listedDishes(v){
+    var s=(v&&v.tags)||v||{};
+    if(s.dishes&&s.dishes.length) return s.dishes;
+    if(s.menu) return parseListedMenu(s.menu);
+    return [];
   }
   function wikiPic(q){
     var url="https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(String(q||"Pizza").replace(/\s+/g,"_"));
@@ -1213,6 +1223,8 @@
     }));
   }
   function loadShopMenu(v, b){
+    var own=listedDishes(v);
+    if(own.length) return withPhotos(own);
     var listed=parseListedMenu(b&&b.menu);
     if(listed.length) return withPhotos(listed);
     if(v&&v.crawlItems&&v.crawlItems.length) return withPhotos(v.crawlItems);
@@ -1321,7 +1333,7 @@
     if(!listedAgents().length){ cancelUnpaid("No Astranov Delivery Agent in this area. Not charged."); return; }
     price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } var esc=openEscrow(price); clearNeed(); hideCart(); paintCartBtn(); syncTasks(); watchStages(price); offerCalls(); openTasks();
   }
-  function watchStages(avc){ if(!job) return; job.status="paid"; talk("Paid. Credit locked. Call to verify. An Astranov agent with a listed base runs this. No mail."); }
+  function watchStages(avc){ if(!job) return; job.status="paid"; talk("Paid. "+fmtAve(rideFee())+" ride at 1 AV€/km locked. Call to verify. An Astranov agent with a listed base runs this."); }
   function reloadPaypal(eur){ say("PayPal reload…"); try{ sessionStorage.setItem("sn:paypal-job", JSON.stringify(job||{})); sessionStorage.setItem("sn:paypal-reload", String(eur||10)); }catch(e){} fetch("/api/paypal/create-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:eur||10,origin:location.origin,reference:"avc-reload"})}).then(function(r){return r.json().then(function(j){j.http=r.status;return j;});}).then(function(j){ if(j&&j.ok&&j.approve){ location.href=j.approve; return; } clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk(j&&j.error==="paypal_not_configured"?"PayPal is not on this host yet.":"PayPal could not start. RELOAD is still here."); }).catch(function(){ clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk("PayPal could not be reached."); }); }
   function restorePayJob(){ try{ var saved=JSON.parse(sessionStorage.getItem("sn:paypal-job")||"null"); if(saved){ job=saved; selected=saved.shop||null; } }catch(e){} }
   function clearPayQuery(){ try{ var u=new URL(location.href); ["paypal","token","PayerID"].forEach(function(k){u.searchParams.delete(k);}); history.replaceState({},"",u.pathname+(u.searchParams.toString()?"?"+u.searchParams.toString():"")); }catch(e){} }
@@ -1483,6 +1495,14 @@
   function addPlaceBtn(label,fn){ if(!placeEl) return; var b=document.createElement("button"); b.type="button"; b.textContent=label; b.onclick=function(ev){ ev.preventDefault(); ev.stopPropagation(); hidePlace(); try{ fn(); }catch(e){ talk("That step failed."); } }; placeEl.appendChild(b); }
   function openLevelMenu(p, screen, level){ if(!p) return; level=level||viewLevel(); aim=p; if(screen) tapScreen=screen; if(level==="city"){ cityWork(p); return; } hidePlace(); if(!placeEl) placeEl=document.getElementById("sn-place"); if(!placeEl){ placeEl=document.createElement("div"); placeEl.id="sn-place"; document.body.appendChild(placeEl); } placeEl.classList.add("on"); placeMenuAt((tapScreen&&tapScreen.x)||(innerWidth/2), (tapScreen&&tapScreen.y)||(innerHeight*0.38)); var ttl=document.createElement("div"); ttl.className="ttl"; ttl.textContent=p.name&&p.name!=="This place"?p.name:(level==="globe"?"Global":"National"); placeEl.appendChild(ttl); addPlaceBtn("WHAT IS HERE", function(){ whatIsHere(p, level); }); if(level==="globe"){ addPlaceBtn("GLOBAL POST", function(){ if(window.SNWork) SNWork.open(p,"post"); else startAwait("post","globe",p); }); addPlaceBtn("GLOBAL CALL", function(){ doCall(p); }); addPlaceBtn("GLOBAL TASK", function(){ startAwait("task","globe",p); }); addPlaceBtn("ADD", function(){ if(window.SNWork) SNWork.open(p); else startAwait("add","globe",p); }); } else { addPlaceBtn("NATIONAL POST", function(){ if(window.SNWork) SNWork.open(p,"post"); else startAwait("post","national",p); }); addPlaceBtn("NATIONAL CALL", function(){ doCall(p); }); addPlaceBtn("NATIONAL TASK", function(){ startAwait("task","national",p); }); } addPlaceBtn("CANCEL", function(){}); nameAim(p).then(function(n){ if(!placeEl||!placeEl.classList.contains("on")) return; if(aim&&Math.abs(aim.lat-p.lat)<0.3){ aim=n; var el=placeEl.querySelector(".ttl"); if(el && n.name) el.textContent=n.water?"No named place":n.name; } }); }
   function openPlace(p,screen){ openLevelMenu(p, screen, viewLevel()); }
+  function listHere(){
+    var p=here||aim;
+    if(map&&map.getCenter){ try{ var c=map.getCenter(); if(c&&isFinite(c.lat)) p={lat:c.lat,lng:c.lng,name:(aim&&aim.name)||(here&&here.name)||"This place"}; }catch(e){} }
+    if(!p||!isFinite(p.lat)){ talk("Set your place first. GPS or click the map."); if(typeof correctHere==="function") correctHere(); return; }
+    aim=p;
+    function go(){ if(window.SNWork) SNWork.open(p,"list"); talk("List a shop, a driver base, or a delivery location."); }
+    if(viewLevel()!=="city"){ showCity(p); setTimeout(go, 280); } else go();
+  }
   function hands(){ hidePlace(); var p=aim||here|| (map&&map.getCenter()?{lat:map.getCenter().lat,lng:map.getCenter().lng}:facingPoint()); var screen={x:innerWidth/2,y:innerHeight*0.4}; if(!here && viewLevel()==="globe"){ talk("Tap GPS to land on your city."); } if(viewLevel()==="city"){ cityWork(p); return; } openLevelMenu(p, screen, viewLevel()); }
   function placeGps(){ pack(); }
   function shownRect(el){
@@ -1683,7 +1703,7 @@
   window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,startOrder:startOrder,pack:pack,openMenu:openMenu,minMenu:minMenu,syncTasks:syncTasks,toggleTasks:toggleTasks,openTasks:openTasks,tickJustice:tickJustice,settle:settle,setLayer:setLayer,openCash:openCash,paintMoney:paintMoney,markStage:markStage,ingestJobs:ingestJobs,isMoving:isMoving,liveEscrow:liveEscrow,watchMove:watchMove};
   if(form) form.addEventListener("submit", function(e){ e.preventDefault(); var v=inEl&&inEl.value; if(inEl) inEl.value=""; run(v); });
   var go=document.getElementById("go"); if(go) go.addEventListener("click", function(e){ e.preventDefault(); if(inEl&&inEl.value.trim() && !listening){ run(inEl.value.trim()); inEl.value=""; return; } if(speaking){ try{ speechSynthesis.cancel(); }catch(x){} speaking=false; } listen(); });
-  var plus=document.getElementById("plus"); if(plus) plus.addEventListener("click", function(){ hands(); });
+  var plus=document.getElementById("plus"); if(plus) plus.addEventListener("click", function(){ listHere(); });
   var gpsBtn=document.getElementById("gps"); if(gpsBtn) gpsBtn.addEventListener("click", function(e){ e.preventDefault(); goHere(); });
   if(moneyBtn) moneyBtn.addEventListener("click", function(e){ e.preventDefault(); if(cashEl&&cashEl.classList.contains("on")) hideCash(); else openCash(); });
   if(cashEl){

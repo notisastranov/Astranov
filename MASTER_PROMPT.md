@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4045
+**Stamp at this rewrite:** 4046
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -50,6 +50,8 @@ A human coder waits for a ticket. You do not.
 ## Owner’s last full instruction — 2026-08-29
 
 This block **overrides** every older note in this file if they fight. Do not make the owner say it again.
+
+**Plus lists the marketplace.** **+** opens shop / driver base / delivery location at the map pin. Shop: menu photos, prices, stock, schedule. Driver: starting point, desired trips, range, schedule. Client drop: entrance or drop-out, street, floor, doorbell. **Ride is 1 AV€ per km**, plus extras (floor +3, door wait, return). Goods to the shop, km to the agent. Instant lock on pay.
 
 **Set place.** One button: **CLICK MAP TO SET LOCATION MANUALLY**. Never flood VENDORS with NOT HERE. Tap it, then tap the map (or type the city). That is YOU. Hunt and cart stay. `need()` replaces the same id — never stack dummy chips.
 

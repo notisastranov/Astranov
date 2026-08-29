@@ -203,7 +203,7 @@
     var act=b.getAttribute("data-act");
     if(act==="close"){ close(); return; }
     if(act==="home"){ view="home"; resetPhotos(); render(); return; }
-    if(act==="post"||act==="call"||act==="shop"||act==="drop"||act==="driver"){ view=act; resetPhotos(); render(); return; }
+    if(act==="post"||act==="call"||act==="shop"||act==="drop"||act==="driver"||act==="list"){ view=act; resetPhotos(); render(); return; }
     if(act==="pick-map"){ startPick(); return; }
     if(act==="dial"){ nativeCall(b.getAttribute("data-tel")||"", false); return; }
     if(act==="video-dial"){ nativeCall(b.getAttribute("data-tel")||"", true); return; }
@@ -295,12 +295,18 @@
     row.id=uid("s"); row.kind="shop"; row.name=name;
     row.menu=val(fd,"menu"); row.hours=val(fd,"hours");
     row.open=val(fd,"open"); row.phone=val(fd,"phone");
+    row.stock=val(fd,"stock");
     row.note=val(fd,"note");
     row.cover=photos.cover||"";
     row.profile=photos.profile||"";
     row.menuPhotos=(photos.menu||[]).slice();
+    row.dishes=String(row.menu||"").split(/\n+/).map(function(line,i){
+      var m=String(line).match(/^\s*(.+?)\s*[—\-–:]\s*(?:AV€|€|AVE)?\s*(\d+[.,]?\d*)\s*(?:[x×]\s*(\d+)|[\s—\-]+\s*(\d+))?/i);
+      if(!m) return null;
+      return {name:m[1].trim(), price:Number(String(m[2]).replace(",",".")), stock:Number(m[3]||m[4]||row.stock||0)||null, photo:(photos.menu&&photos.menu[i])||"", sample:false};
+    }).filter(function(x){ return x&&x.name&&x.price>0; });
     var list=load(KEYS.shops); list.unshift(row); save(KEYS.shops,list);
-    close(); paint(); publish(row); talk(name+" is listed. Cover, profile, and menu are on SpaceNet.");
+    close(); paint(); publish(row); talk(name+" is listed. Menu, stock, and hours are on SpaceNet.");
   }
 
   function saveDrop(fd){
@@ -311,10 +317,11 @@
     row.street=val(fd,"street"); row.number=val(fd,"number");
     row.floor=val(fd,"floor"); row.phone=val(fd,"phone");
     row.bell=val(fd,"bell"); row.bellName=val(fd,"bellName");
+    row.dropOut=val(fd,"dropOut");
     row.pref=val(fd,"pref"); row.photo=photos.shot||"";
     if(!row.street && !row.number && !row.phone && !row.photo){ talk("Add a street, number, phone, or entrance photo."); return; }
     var list=load(KEYS.drops); list.unshift(row); save(KEYS.drops,list);
-    close(); paint(); publish(row); talk("Delivery location listed at "+row.label+".");
+    close(); paint(); publish(row); talk("Delivery location listed. Entrance and drop-out are on SpaceNet.");
   }
 
   function saveDriver(fd){
@@ -323,13 +330,14 @@
     row.name=val(fd,"name")||"Driver base";
     row.presence=val(fd,"presence")||"present";
     row.routes=val(fd,"routes");
+    row.dest=val(fd,"dest");
     row.vehicles=val(fd,"vehicles"); row.hours=val(fd,"hours");
     row.range=val(fd,"range"); row.carry=val(fd,"carry");
     row.pref=val(fd,"pref"); row.phone=val(fd,"phone");
     row.photo=photos.shot||"";
     if(!row.vehicles && !row.hours && !row.routes){ talk("Add a vehicle, a working time, or the routes you work."); return; }
     var list=load(KEYS.drivers); list.unshift(row); save(KEYS.drivers,list);
-    close(); paint(); publish(row); talk("Delivery driver base listed. Starting point. Presence and routes declared. Users can send jobs here.");
+    close(); paint(); publish(row); talk("Driver base listed. Starting point, trips, range, schedule. Jobs pay 1 AV€ per km plus extras.");
   }
 
   function removeCurrent(){
@@ -590,13 +598,19 @@
     if(!card) return;
     var title=placeName(at);
     var sub=placeLine(at);
-    if(view==="home"){
+    if(view==="home"||view==="list"){
+      var three=
+        '<button type="button" class="opt" data-act="shop"><b>List your shop</b><span>Menu with photos, prices, stock, schedule.</span></button>'+
+        '<button type="button" class="opt" data-act="drop"><b>List a delivery location</b><span>Entrance or drop-out. Street, floor, doorbell.</span></button>'+
+        '<button type="button" class="opt" data-act="driver"><b>List a delivery driver base</b><span>Starting point, desired trips, range, schedule. 1 AV€/km.</span></button>';
+      if(view==="list"){
+        card.innerHTML=head("List on SpaceNet", title)+three;
+        return;
+      }
       card.innerHTML=head(title, sub)+
         '<button type="button" class="opt" data-act="post"><b>Post something here</b><span>News, a note, a photo. It shows on SpaceNet.</span></button>'+
         '<button type="button" class="opt" data-act="call"><b>Start a call from here</b><span>Video if they are on SpaceNet. Or search a name and dial.</span></button>'+
-        '<button type="button" class="opt" data-act="shop"><b>List your shop</b><span>Cover, profile, menu with photos and prices, hours.</span></button>'+
-        '<button type="button" class="opt" data-act="drop"><b>List a delivery location</b><span>Entrance photo, floor, doorbell, phone.</span></button>'+
-        '<button type="button" class="opt" data-act="driver"><b>List a delivery driver base</b><span>Starting point. Declare presence and routes. Receive jobs from SpaceNet users.</span></button>';
+        three;
       return;
     }
     if(view==="post"){
@@ -645,8 +659,9 @@
         field("name","Shop name",{ph:"Name on the door"})+
         fileField("cover","Cover picture")+
         fileField("profile","Profile picture")+
-        field("menu","Menu and prices",{area:true,rows:6,ph:"Item — price. One per line."})+
+        field("menu","Menu — price — stock",{area:true,rows:6,ph:"Margherita — 9.00 — 12\nSpecial — 12.00 — 8"})+
         '<label>Menu photos<input type="file" accept="image/*" capture="environment" data-slot="menu" /></label><div class="gallery" data-slot="menu"></div>'+
+        field("stock","Available amount now",{ph:"How many orders you can take",inputmode:"numeric"})+
         field("open","Availability",{select:[["open","Open now"],["order","By order"],["closed","Closed"]]})+
         field("hours","Schedule",{ph:"Mon–Sat 10–22"})+
         field("phone","Telephone",{type:"tel",ph:"+30 …",inputmode:"tel"})+
@@ -675,6 +690,7 @@
         field("phone","Telephone",{type:"tel",inputmode:"tel"})+
         field("bell","Doorbell number",{ph:"12"})+
         field("bellName","Doorbell name",{ph:"Name on the bell"})+
+        field("dropOut","Drop-out / leave-at",{ph:"Gate, lobby, back door, box"})+
         field("pref","Contact preferences",{area:true,rows:3,ph:"Call first. Leave at door. Ring twice."})+
         '<button type="submit" class="go">LIST LOCATION</button></form>';
       return;
@@ -697,7 +713,8 @@
         field("name","Name on the base",{ph:"How you want to be called"})+
         fileField("shot","Photo of this starting point")+
         field("presence","Presence",{select:[["present","Present at this base"],["route","On a route"],["off","Off"]]})+
-        field("routes","Routes you work",{area:true,rows:3,ph:"Rhodes town — airport. Kalithea. Faliraki. What you like to run."})+
+        field("routes","Routes you work",{area:true,rows:3,ph:"Rhodes town — airport. Kalithea. Faliraki."})+
+        field("dest","Desired trips / drop zones",{area:true,rows:3,ph:"Where you want to go. Town, coast, airport."})+
         field("vehicles","Vehicles",{ph:"Bike, car, van"})+
         field("hours","Working time",{ph:"Everyday 9–21"})+
         field("range","How far from this base (km)",{ph:"12",inputmode:"numeric"})+
