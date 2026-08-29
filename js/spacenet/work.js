@@ -2,7 +2,7 @@
   if(window.SNWork && window.SNWork.open) return;
   var KEYS={posts:"sn:posts",shops:"sn:shops",drops:"sn:drops",drivers:"sn:drivers",calls:"sn:calls"};
   var picking=null, activeCall=null, sheet=null, card=null, pickBar=null, at=null, view="home";
-  var photos={profile:"",cover:"",menu:[],shot:""};
+  var photos={profile:"",cover:"",menu:[],shot:"",face:"",vehicle:""};
   var peer=null, mediaStream=null, mediaCall=null, videoEl=null;
   var netCache={shops:[],drops:[],drivers:[],posts:[]};
 
@@ -67,7 +67,7 @@
       return id;
     }catch(e){ return "sn"+Date.now().toString(36); }
   }
-  function resetPhotos(){ photos={profile:"",cover:"",menu:[],shot:""}; }
+  function resetPhotos(){ photos={profile:"",cover:"",menu:[],shot:"",face:"",vehicle:""}; }
 
   function match(q, from){
     var l=String(q||"").toLowerCase().trim();
@@ -209,7 +209,8 @@
     if(act==="video-dial"){ nativeCall(b.getAttribute("data-tel")||"", true); return; }
     if(act==="video"){ startVideo(b.getAttribute("data-peer")||"", b.getAttribute("data-tel")||""); return; }
     if(act==="order"){ close(); if(window.SN&&SN.startOrder) SN.startOrder({id:at.id,name:placeName(at),lat:at.lat,lng:at.lng,raw:"SpaceNet",tags:at.tags||at,kind:at.kind||"shop"}); else if(window.SN&&SN.selectVendor) SN.selectVendor({id:at.id,name:placeName(at),lat:at.lat,lng:at.lng,raw:"SpaceNet",tags:at.tags||at,kind:at.kind||"shop"}); return; }
-    if(act==="remove"){ removeCurrent(); return; }
+    if(act==="print-books"){ try{ window.print(); }catch(e){} return; }
+    if(act==="books"){ view="tax"; render(); return; }
   }
 
   function onSubmit(e){
@@ -334,12 +335,57 @@
     row.vehicles=val(fd,"vehicles"); row.hours=val(fd,"hours");
     row.range=val(fd,"range"); row.carry=val(fd,"carry");
     row.pref=val(fd,"pref"); row.phone=val(fd,"phone");
-    row.photo=photos.shot||"";
+    row.langMain=val(fd,"langMain")||"el";
+    row.langAlt=val(fd,"langAlt")||"en";
+    row.face=photos.face||"";
+    row.vehicle=photos.vehicle||"";
+    row.photo=photos.face||photos.shot||photos.vehicle||"";
     if(!row.vehicles && !row.hours && !row.routes){ talk("Add a vehicle, a working time, or the routes you work."); return; }
     var list=load(KEYS.drivers); list.unshift(row); save(KEYS.drivers,list);
     close(); paint(); publish(row); talk("Driver base listed. Starting point, trips, range, schedule. Jobs pay 1 AV€ per km plus extras.");
   }
 
+  function taxOffice(){
+    return {id:"tax-rodos", kind:"tax", name:"ΔΟΥ Ρόδου", lat:36.43114, lng:28.23609, raw:"G. Mavrou 2, Zephyros, 851 00 Rhodes", phone:"+302241363305", email:"doy.rodou@aade.gr"};
+  }
+  function monthKey(t){ var d=new Date(t||Date.now()); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+  function monthLabel(k){ var p=String(k||monthKey()).split("-"); var names="Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" "); return (names[Number(p[1])-1]||p[1])+" "+p[0]; }
+  function loadEscrow(){ try{ return JSON.parse(localStorage.getItem("sn:escrow")||"[]")||[]; }catch(e){ return []; } }
+  function booksOf(month){
+    month=month||monthKey();
+    var jobs=loadEscrow().filter(function(e){ return e && monthKey(e.at)===month && Number(e.avc)>0; });
+    var shop={}, drv={}, cli={};
+    jobs.forEach(function(e){
+      var line={id:e.id, at:e.at, query:e.query||e.name||"job", avc:Number(e.avc)||0, goods:Number(e.goods)||0, ride:Number(e.ride)||0, status:e.status};
+      var sn=(e.shop&&e.shop.name)||"Shop";
+      var dn=(e.driver&&e.driver.name)||"Agent";
+      (shop[sn]=shop[sn]||[]).push(line);
+      (drv[dn]=drv[dn]||[]).push(line);
+      (cli["You"]=cli["You"]||[]).push(line);
+    });
+    return {month:month, shop:shop, driver:drv, client:cli};
+  }
+  function booksHtml(){
+    var b=booksOf();
+    function block(title, groups, empty){
+      var names=Object.keys(groups);
+      if(!names.length) return '<p class="note">'+esc(empty)+"</p>";
+      return names.map(function(n){
+        var lines=groups[n], sum=0;
+        var rows=lines.map(function(l){ sum+=l.avc; var d=new Date(l.at); return '<div class="inv">'+(d.getDate())+" · "+esc(l.query)+" · AV€ "+l.avc.toFixed(2)+"</div>"; }).join("");
+        return "<h4>"+esc(title)+" · "+esc(n)+"</h4>"+rows+"<b>Total AV€ "+sum.toFixed(2)+"</b>";
+      }).join("");
+    }
+    return '<div class="books"><p class="note">Astranov SpaceNet issues these monthly. Filed at ΔΟΥ Ρόδου, G. Mavrou 2, Zephyros. Phone 22413 63305.</p>'+
+      block("INVOICE shop", b.shop, "No shop invoices this month.")+
+      block("INVOICE driver", b.driver, "No driver invoices this month.")+
+      block("RECEIPT client", b.client, "No client receipts this month.")+
+      '<button type="button" class="go" data-act="print-books">PRINT FOR ΔΟΥ</button></div>';
+  }
+  function flagOf(code){
+    var m={el:"🇬🇷",en:"🇬🇧",de:"🇩🇪",fr:"🇫🇷",it:"🇮🇹",tr:"🇹🇷",ru:"🇷🇺",ar:"🇸🇦",es:"🇪🇸",nl:"🇳🇱"};
+    return m[String(code||"").toLowerCase()]||"";
+  }
   function removeCurrent(){
     if(!at||!at.id||!at.kind) return;
     var key=KEYS[at.kind==="drop"?"drops":at.kind==="driver"?"drivers":at.kind==="shop"?"shops":"posts"];
@@ -651,6 +697,7 @@
           (s.phone?'<button type="button" class="go" data-act="dial" data-tel="'+esc(s.phone)+'">DIAL '+esc(s.phone)+'</button>':'')+
           (s.peer?'<button type="button" class="go" data-act="video" data-peer="'+esc(s.peer)+'" data-tel="'+esc(s.phone||"")+'">VIDEO CALL</button>':'')+
           '<button type="button" class="go" data-act="order">ORDER FROM HERE</button>'+
+          '<button type="button" class="opt" data-act="books"><b>This month</b><span>SpaceNet invoice at ΔΟΥ Ρόδου.</span></button>'+
           '<button type="button" class="opt" data-act="remove"><b>Remove listing</b><span>Off this device.</span></button>';
         return;
       }
@@ -677,6 +724,7 @@
           '<p class="note">'+(d.bell?"Doorbell "+esc(d.bell)+(d.bellName?" · "+esc(d.bellName):""):"")+(d.pref?"\n"+esc(d.pref):"")+'</p>'+
           (d.phone?'<button type="button" class="go" data-act="dial" data-tel="'+esc(d.phone)+'">DIAL '+esc(d.phone)+'</button>':'')+
           (d.peer?'<button type="button" class="go" data-act="video" data-peer="'+esc(d.peer)+'">VIDEO CALL</button>':'')+
+          '<button type="button" class="opt" data-act="books"><b>This month</b><span>Receipts at ΔΟΥ Ρόδου.</span></button>'+
           '<button type="button" class="opt" data-act="remove"><b>Remove listing</b><span>Off this device.</span></button>';
         return;
       }
@@ -699,19 +747,24 @@
       if(at&&at.kind==="driver"&&at.id){
         var r=at.tags||at;
         var pres=r.presence==="off"?"Off":r.presence==="route"?"On a route":"Present at this base";
-        card.innerHTML=head((r.name||"Driver base")+" · starting point", pres)+
-          (r.photo?'<img class="shot" alt="Base" src="'+r.photo+'" />':'')+
+        card.innerHTML=head((r.name||"Driver base")+" · starting point", pres+" "+(flagOf(r.langMain)||"")+(flagOf(r.langAlt)||""))+
+          (r.face?'<img class="avatar" alt="Face" src="'+r.face+'" />':'')+
+          (r.vehicle?'<img class="shot" alt="Vehicle" src="'+r.vehicle+'" />':(r.photo?'<img class="shot" alt="Base" src="'+r.photo+'" />':''))+
           '<p class="note">'+(r.routes?"Routes: "+esc(r.routes)+"\n":"")+(r.vehicles?esc(r.vehicles)+"\n":"")+(r.hours?esc(r.hours)+"\n":"")+(r.range?"Range "+esc(r.range)+" km\n":"")+(r.carry?esc(r.carry)+"\n":"")+esc(r.pref||"")+"\nReceives jobs from SpaceNet users."+'</p>'+
           '<button type="button" class="go" data-act="order">SEND A JOB HERE</button>'+
           (r.phone?'<button type="button" class="go" data-act="dial" data-tel="'+esc(r.phone)+'">DIAL '+esc(r.phone)+'</button>':'')+
           (r.peer?'<button type="button" class="go" data-act="video" data-peer="'+esc(r.peer)+'">VIDEO CALL</button>':'')+
+          '<button type="button" class="opt" data-act="books"><b>This month</b><span>Driver invoice at ΔΟΥ Ρόδου.</span></button>'+
           '<button type="button" class="opt" data-act="remove"><b>Remove listing</b><span>Off this device.</span></button>';
         return;
       }
       card.innerHTML=head("Delivery driver base", "Starting point. Declare presence and routes. Receive jobs from users.")+
         '<form data-kind="driver">'+
         field("name","Name on the base",{ph:"How you want to be called"})+
-        fileField("shot","Photo of this starting point")+
+        fileField("face","Face photo")+
+        fileField("vehicle","Vehicle photo")+
+        field("langMain","Main language",{select:[["el","Greek 🇬🇷"],["en","English 🇬🇧"],["de","German 🇩🇪"],["fr","French 🇫🇷"],["it","Italian 🇮🇹"],["tr","Turkish 🇹🇷"],["ru","Russian 🇷🇺"]]})+
+        field("langAlt","Second language",{select:[["en","English 🇬🇧"],["el","Greek 🇬🇷"],["de","German 🇩🇪"],["fr","French 🇫🇷"],["it","Italian 🇮🇹"],["tr","Turkish 🇹🇷"],["ru","Russian 🇷🇺"]]})+
         field("presence","Presence",{select:[["present","Present at this base"],["route","On a route"],["off","Off"]]})+
         field("routes","Routes you work",{area:true,rows:3,ph:"Rhodes town — airport. Kalithea. Faliraki."})+
         field("dest","Desired trips / drop zones",{area:true,rows:3,ph:"Where you want to go. Town, coast, airport."})+
@@ -722,6 +775,11 @@
         field("pref","Preferences",{area:true,rows:3,ph:"Cash, AVC, stairs ok, no stairs"})+
         field("phone","Telephone",{type:"tel",inputmode:"tel"})+
         '<button type="submit" class="go">LIST DRIVER BASE</button></form>';
+      return;
+    }
+    if(view==="tax"){
+      var tx=taxOffice();
+      card.innerHTML=head("ΔΟΥ Ρόδου", tx.raw+" · "+monthLabel())+booksHtml();
       return;
     }
     view="home"; render();
@@ -746,7 +804,10 @@
     peerId:peerId,
     startVideo:startVideo,
     pull:pull,
-    publish:publish
+    publish:publish,
+    taxOffice:taxOffice,
+    flagOf:flagOf,
+    booksOf:booksOf
   };
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", ensure);
   else ensure();

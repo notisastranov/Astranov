@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4046";
+  var VER="4047";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -1032,8 +1032,23 @@
     });
   }
   var listMarks=[], globeMarks=[], huntMarks=[];
-  function glowIcon(kind, on){
-    return window.L.divIcon({className:"sn-glow-pin "+(kind||"shop")+(on?" on":""), html:"<i></i>", iconSize:[36,36], iconAnchor:[18,18]});
+  function flagOf(code){ return (window.SNWork&&SNWork.flagOf&&SNWork.flagOf(code))||""; }
+  function pillSrc(row, kind){
+    row=row||{};
+    if(kind==="driver") return row.face||row.photo||row.vehicle||"";
+    return row.profile||row.cover||row.photo||"";
+  }
+  function pillHtml(row, kind){
+    row=row||{};
+    if(kind==="tax") return "<b>ΔΟΥ</b>";
+    var src=pillSrc(row, kind);
+    var img=src?'<img class="face" alt="" src="'+src+'">':'<i></i>';
+    var veh=(kind==="driver"&&row.vehicle)?'<img class="veh" alt="" src="'+row.vehicle+'">':"";
+    var flags=kind==="driver"?'<span class="fl">'+flagOf(row.langMain)+flagOf(row.langAlt)+"</span>":"";
+    return img+veh+flags;
+  }
+  function glowIcon(kind, on, row){
+    return window.L.divIcon({className:"sn-pillpin "+(kind||"shop")+(on?" on":""), html:pillHtml(row,kind), iconSize:[44,44], iconAnchor:[22,22]});
   }
   function clearHuntPins(){
     huntMarks.forEach(function(m){ try{ if(map) map.removeLayer(m); }catch(e){} });
@@ -1048,7 +1063,7 @@
       list.slice(0,8).forEach(function(v){
         if(!v||!isFinite(v.lat)) return;
         var on=selected&&selected.id&&v.id===selected.id;
-        var m=window.L.marker([v.lat,v.lng],{icon:glowIcon(v.kind||"shop", on), keyboard:false, riseOnHover:true});
+        var m=window.L.marker([v.lat,v.lng],{icon:glowIcon(v.kind||"shop", on, v), keyboard:false, riseOnHover:true});
         m.bindTooltip(v.name||"Place",{direction:"top", className:"sn-tip", opacity:1});
         m.on("click", function(e){ try{ window.L.DomEvent.stopPropagation(e); }catch(_){} mapHeld=true; selectVendor(v); });
         m.addTo(map);
@@ -1076,6 +1091,8 @@
     add(all.drivers,"driver",3);
     add(all.posts,"post",1);
     add(all.drops,"drop",1);
+    var tax=window.SNWork&&SNWork.taxOffice&&SNWork.taxOffice();
+    if(tax&&isFinite(tax.lat)&&( !from || km(from,tax)<80)) rows.push({row:tax, kind:"tax", d:from?km(from,tax):0, hits:99, w:4});
     rows.sort(function(a,b){ if(b.w!==a.w) return b.w-a.w; if(b.hits!==a.hits) return b.hits-a.hits; return a.d-b.d; });
     return rows.slice(0,8);
   }
@@ -1091,12 +1108,17 @@
   }
   function paintMapMarks(L, v){ if(hereMark) hereMark.remove(); if(vendorMark) vendorMark.remove(); if(aimMark) aimMark.remove(); if(routeLine) try{map.removeLayer(routeLine);}catch(e){} if(routeGlow) try{map.removeLayer(routeGlow);}catch(e){} if(bondGroup) try{map.removeLayer(bondGroup);}catch(e){} if(callLine) callLine.remove(); listMarks.forEach(function(m){ try{m.remove();}catch(e){} }); listMarks=[]; if(here) hereMark=L.circleMarker([here.lat,here.lng],{radius:7,color:"#4df0ff",fillColor:"#4df0ff",fillOpacity:.95}).addTo(map).bindTooltip("YOU",{permanent:true,direction:"top",className:"sn-tip",opacity:1}); if(aim && (!here || km(here,aim)>0.05)) aimMark=L.circleMarker([aim.lat,aim.lng],{radius:6,color:"#ff8ad4",fillColor:"#ff8ad4",fillOpacity:.9}).addTo(map); if(v){ vendorMark=L.circleMarker([v.lat,v.lng],{radius:9,color:"#ffd85a",fillColor:"#ffd85a",fillOpacity:.95}).addTo(map).bindTooltip(v.name||"Place",{permanent:false,direction:"top",className:"sn-tip"}); vendorMark.on("click", function(e){ try{ L.DomEvent.stopPropagation(e); }catch(_){} mapHeld=true; vendorTapped(v); }); }
     if(window.SNWork && map){
-      var colors={shop:"#ffd85a",driver:"#4df0ff",drop:"#ff8ad4",post:"#9dffb0"};
-      function pin(row,color,label){ if(!row||!isFinite(row.lat)) return; var m=L.circleMarker([row.lat,row.lng],{radius:7,color:color,fillColor:color,fillOpacity:.9}).addTo(map).bindTooltip(label,{permanent:false,direction:"top"}); m.on("click", function(e){ try{ L.DomEvent.stopPropagation(e); }catch(_){} mapHeld=true; if(window.SNWork) SNWork.open(row); }); listMarks.push(m); }
+      function pin(row,kind,label){
+        if(!row||!isFinite(row.lat)) return;
+        var m=L.marker([row.lat,row.lng],{icon:glowIcon(kind, false, row), keyboard:false, riseOnHover:true}).addTo(map);
+        m.bindTooltip(label,{permanent:false,direction:"top",className:"sn-tip"});
+        m.on("click", function(e){ try{ L.DomEvent.stopPropagation(e); }catch(_){} mapHeld=true; if(kind==="tax"){ if(window.SNWork) SNWork.open(row,"tax"); } else if(window.SNWork) SNWork.open(row); });
+        listMarks.push(m);
+      }
       spaceAround(here||aim||v).forEach(function(x){
         var r=x.row;
-        var lab=x.kind==="driver"?(r.name?r.name+" base":"Driver base"):x.kind==="drop"?(r.label||"Drop"):x.kind==="post"?"Post":(r.name||"Shop");
-        pin(r, colors[x.kind]||"#ffd85a", lab);
+        var lab=x.kind==="driver"?(r.name?r.name+" base":"Driver base"):x.kind==="drop"?(r.label||"Drop"):x.kind==="tax"?"ΔΟΥ Ρόδου":x.kind==="post"?"Post":(r.name||"Shop");
+        pin(r, x.kind, lab);
       });
       var call=SNWork.activeCall&&SNWork.activeCall();
       if(call&&call.from&&call.to&&isFinite(call.from.lat)&&isFinite(call.to.lat)){
