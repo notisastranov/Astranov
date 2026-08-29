@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4056";
+  var VER="4057";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -1707,7 +1707,7 @@
     var W=innerWidth||320, H=innerHeight||480, pad=10;
     var u=Math.round(Math.max(32, Math.min(42, Math.min(W,H)*0.055)));
     document.documentElement.style.setProperty("--u", u+"px");
-    var g=document.getElementById("gps"), f=document.getElementById("f");
+    var g=document.getElementById("gps"), f=document.getElementById("f"), panel=document.getElementById("panel");
     if(!g||!f) return;
     var video=document.getElementById("sn-video"), sheet=document.getElementById("sn-sheet");
     if((video&&video.classList.contains("on"))||(sheet&&sheet.classList.contains("on"))){
@@ -1718,11 +1718,10 @@
       return;
     }
     g.classList.remove("ghost");
-    var fr=f.getBoundingClientRect();
     var gw=g.offsetWidth||u, gh=g.offsetHeight||(u+14);
     var walls=[], add=function(el){ var r=shownRect(el); if(r) walls.push(r); };
     add(document.getElementById("island"));
-    add(f);
+    add(panel||f);
     add(document.getElementById("sn-place"));
     add(document.getElementById("sn-pick"));
     add(menuEl&&menuEl.querySelector(".card"));
@@ -1760,6 +1759,7 @@
     }
     var isl=shownRect(document.getElementById("island"));
     var topY=isl?Math.round(isl.y+isl.h+12):pad+52;
+    var fr=(panel||f).getBoundingClientRect();
     var parked=loadPlace();
     var home=parked.gps?free({x:parked.gps.x, y:parked.gps.y, w:gw, h:gh}):free({x:W-pad-gw, y:fr.top-12-gh});
     if(parked.gps && !home.ok) home=free({x:W-pad-gw, y:fr.top-12-gh});
