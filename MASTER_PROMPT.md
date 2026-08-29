@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4027
+**Stamp at this rewrite:** 4028
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -83,6 +83,8 @@ Mic is **tap to talk**. It glows while it listens. Tap again to shut it. It does
 If they ask for the best among listed shops, Grok **picks** (`act=pick`). Do not tell them to pick. Tap a shop → that shop’s card (menu if listed or known, hours, call, NOW/MAIL/PICK UP), not a fresh list of other shops. In-flight hunt must not overwrite a chosen shop.
 
 After a shop (and after a driver): a **deep-blue neon bond arc** (bowed, signature, YOU → shop → driver) marks the relationship. A separate cyan dashed line is the road. The you-dot says YOU, not a municipality name.
+
+Hunt is **manual and Grok together**. Typing pizza searches the map immediately (Photon first, do not wait for Overpass or Grok). Grok talks in parallel and can pick. Grok abort 8s. Overpass is extra, never the gate.
 
 Tap a shop → that shop’s **menu**: dishes with photo and price. Live listed menu first. Else Grok’s public knowledge. Else a SAMPLE menu (sample pizza photo, sample euro prices) clearly marked SAMPLE. Pick a dish, then NOW / MAIL / PICK UP.
 
