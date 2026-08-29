@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4063";
+  var VER="4064";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -1131,18 +1131,30 @@
     function go(){
       if(!map||!window.L) return;
       clearHuntPins();
-      var pts=here?[[here.lat,here.lng]]:[];
+      var brand=job&&isBrand(job.query);
+      var pts=(!brand && here)?[[here.lat,here.lng]]:[];
+      var pin=window.SNWork&&SNWork.listingAt&&SNWork.listingAt();
       list.slice(0,8).forEach(function(v){
         if(!v||!isFinite(v.lat)) return;
+        if(pin && Math.abs(v.lat-pin.lat)<0.0004 && Math.abs(v.lng-pin.lng)<0.0004) return;
         var on=selected&&selected.id&&v.id===selected.id;
-        var m=window.L.marker([v.lat,v.lng],{icon:glowIcon(v.kind||"shop", on, v), keyboard:false, riseOnHover:true});
+        var m=window.L.marker([v.lat,v.lng],{icon:glowIcon(v.kind||"shop", on, v), keyboard:false, riseOnHover:true, draggable:true, autoPan:true});
         m.bindTooltip(v.name||"Place",{direction:"top", className:"sn-tip", opacity:1});
         m.on("click", function(e){ try{ window.L.DomEvent.stopPropagation(e); }catch(_){} mapHeld=true; openPinMenu(v); });
+        m.on("dragstart", function(){ mapHeld=true; });
+        m.on("dragend", function(e){
+          mapHeld=true;
+          var ll=e.target.getLatLng();
+          v.lat=ll.lat; v.lng=ll.lng;
+          aim=v;
+          if(window.SNWork&&SNWork.setPin) SNWork.setPin({lat:ll.lat,lng:ll.lng,name:v.name,raw:v.raw});
+        });
         m.addTo(map);
         huntMarks.push(m);
         pts.push([v.lat,v.lng]);
       });
-      if(pts.length>=2){ try{ map.fitBounds(pts,{padding:[40,72],maxZoom:15}); }catch(e){} }
+      if(pts.length===1){ try{ map.setView(pts[0], 17); }catch(e){} }
+      else if(pts.length>=2){ try{ map.fitBounds(pts,{padding:[40,72],maxZoom:17}); }catch(e){} }
     }
     if(!map){ showCity(from||here||list[0]); setTimeout(go, 480); }
     else go();
@@ -1215,7 +1227,7 @@
     talk((p.name||"This pin")+". Pick: my location, vendor, driver base, secret drop, post, or report.");
   }
   function cityWork(p, held){ if(!p) return; aim=p; hidePlace(); if(window.SNWork&&SNWork.setPin&&SNWork.setPin(p)) return; if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; if(!held){ nameAim(p).then(function(n){ aim=n; if(window.SNWork&&SNWork.rename) SNWork.rename(n); }); return; } if(job&&job.query) p.name=p.name||job.query; openPinMenu(p); nameAim(p).then(function(n){ aim=n; if(window.SNWork&&SNWork.rename) SNWork.rename(n); }); }
-  function bindMap(L){ if(mapBound||!map||!cityEl) return; mapBound=true; try{ map.attributionControl.setPrefix(false); map.attributionControl.setPosition("bottomleft"); }catch(e){} var lp=null; cityEl.addEventListener("pointerdown", function(e){ if(!cityEl.classList.contains("on")) return; if(e.target && e.target.closest && e.target.closest(".leaflet-control")) return; if(e.isPrimary===false) return; if(correctingHere) return; lp={x:e.clientX,y:e.clientY,id:e.pointerId,held:false}; lp.t=setTimeout(function(){ if(!lp) return; lp.held=true; mapHeld=true; var ll=map.mouseEventToLatLng({clientX:lp.x,clientY:lp.y}); var p={lat:ll.lat,lng:ll.lng}; if(viewLevel()==="city") cityWork(p,true); else openLevelMenu(p,{x:lp.x,y:lp.y}, "national"); },1000); }, true); cityEl.addEventListener("pointermove", function(e){ if(!lp||lp.held) return; if(Math.hypot(e.clientX-lp.x,e.clientY-lp.y)>16){ clearTimeout(lp.t); lp=null; } }, true); function endLp(){ if(!lp) return; clearTimeout(lp.t); lp=null; } cityEl.addEventListener("pointerup", endLp, true); cityEl.addEventListener("pointercancel", endLp, true); map.on("click", function(e){ if(mapHeld){ mapHeld=false; return; } var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(correctingHere){ applyHere(p); return; } if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; if(window.SNWork&&SNWork.setPin&&SNWork.setPin(p)) return; if(job && job.kind==="find" && job.query && (job.status==="hunt"||job.status==="chosen") && isBrand(job.query)){ p.name=job.query; openPinMenu(p); return; } if(map.getZoom()>=10){ cityWork(p,false); } else { flyTap(p); } }); map.on("zoomend", function(){ if(!map) return; if(map.getZoom()<=4) showGlobe(); paintLayerBtn(); packSoon(); }); map.on("contextmenu", function(e){ try{ L.DomEvent.preventDefault(e); }catch(_){} mapHeld=true; var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(correctingHere){ applyHere(p); return; } if(viewLevel()==="city") cityWork(p,true); else openLevelMenu(p, null, "national"); }); }
+  function bindMap(L){ if(mapBound||!map||!cityEl) return; mapBound=true; try{ map.attributionControl.setPrefix(false); map.attributionControl.setPosition("bottomleft"); }catch(e){} var lp=null; cityEl.addEventListener("pointerdown", function(e){ if(!cityEl.classList.contains("on")) return; if(e.target && e.target.closest && (e.target.closest(".leaflet-control")||e.target.closest(".leaflet-marker-icon")||e.target.closest(".leaflet-marker-shadow")||e.target.closest(".leaflet-interactive"))) return; if(e.isPrimary===false) return; if(correctingHere) return; lp={x:e.clientX,y:e.clientY,id:e.pointerId,held:false}; lp.t=setTimeout(function(){ if(!lp) return; lp.held=true; mapHeld=true; var ll=map.mouseEventToLatLng({clientX:lp.x,clientY:lp.y}); var p={lat:ll.lat,lng:ll.lng}; if(viewLevel()==="city") cityWork(p,true); else openLevelMenu(p,{x:lp.x,y:lp.y}, "national"); },1000); }, true); cityEl.addEventListener("pointermove", function(e){ if(!lp||lp.held) return; if(Math.hypot(e.clientX-lp.x,e.clientY-lp.y)>16){ clearTimeout(lp.t); lp=null; } }, true); function endLp(){ if(!lp) return; clearTimeout(lp.t); lp=null; } cityEl.addEventListener("pointerup", endLp, true); cityEl.addEventListener("pointercancel", endLp, true); map.on("click", function(e){ if(mapHeld){ mapHeld=false; return; } var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(correctingHere){ applyHere(p); return; } if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; if(window.SNWork&&SNWork.setPin&&SNWork.setPin(p)) return; if(job && job.kind==="find" && job.query && (job.status==="hunt"||job.status==="chosen") && isBrand(job.query)){ p.name=job.query; openPinMenu(p); return; } if(map.getZoom()>=10){ cityWork(p,false); } else { flyTap(p); } }); map.on("zoomend", function(){ if(!map) return; if(map.getZoom()<=4) showGlobe(); paintLayerBtn(); packSoon(); }); map.on("contextmenu", function(e){ try{ L.DomEvent.preventDefault(e); }catch(_){} mapHeld=true; var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(correctingHere){ applyHere(p); return; } if(viewLevel()==="city") cityWork(p,true); else openLevelMenu(p, null, "national"); }); }
   function showMap(p, z){ if(!cityEl||!p||!isFinite(p.lat)) return; loadMap().then(function(L){ cityEl.classList.add("on"); cityEl.style.pointerEvents="auto"; if(!map){ map=L.map(cityEl,{zoomControl:false,attributionControl:true,tap:true,preferCanvas:false}).setView([p.lat,p.lng], z); setLayer(mapLayer||"dark"); bindMap(L); } else if(map.flyTo) map.flyTo([p.lat,p.lng], z, {duration:0.7}); else map.setView([p.lat,p.lng], z); paintMapMarks(L, selected); setTimeout(function(){ try{ map.invalidateSize(); }catch(e){} paintLayerBtn(); paintMoney(false); packSoon(); },40); }).catch(function(){ mapReady=null; showGlobe(); talk("Map failed to load."); }); }
   function showCity(v){ var p=v||selected||aim||here; if(!p){ talk("Point at a place first."); return; } aim=p; showMap(p, 14); }
   function showNational(p){ p=p||aim||here||facingPoint(); aim=p; showMap(p, 6); }

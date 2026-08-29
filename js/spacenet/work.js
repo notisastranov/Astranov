@@ -198,27 +198,25 @@
     return true;
   }
   function listingAt(){
-    if(!listingOpen()||!at||!isFinite(at.lat)) return null;
+    if(!sheet||!sheet.classList.contains("on")) return null;
+    if(view==="call"||view==="calldone"||view==="tax") return null;
+    if(!at||!isFinite(at.lat)) return null;
     return {lat:+at.lat,lng:+at.lng,name:placeName(at),kind:listingKind(),face:photos.face,photo:photos.shot||photos.profile,vehicle:photos.vehicle,profile:photos.profile,cover:photos.cover};
   }
   function setPin(p){
-    if(!listingOpen()) return false;
+    if(!sheet||!sheet.classList.contains("on")) return false;
+    if(view==="call"||view==="calldone") return false;
     if(!p||!isFinite(p.lat)) return false;
     at=at||{};
     at.lat=+p.lat; at.lng=+p.lng;
     if(p.name) at.name=p.name;
     if(p.raw) at.raw=p.raw;
     var sub=card&&card.querySelector(".sub");
-    if(sub) sub.textContent=placeLine(at)||"Tap or drag the pin on the map.";
+    if(sub) sub.textContent=placeLine(at)||"Drag the pin. That is the listing.";
     if(window.SN&&SN.repaint) SN.repaint();
-    if(window.SN&&SN.nameAim) SN.nameAim({lat:at.lat,lng:at.lng}).then(function(n){
-      if(!listingOpen()) return;
-      if(n&&n.name) at.name=n.name;
-      if(n&&(n.raw||n.display_name)) at.raw=n.raw||n.display_name;
-      if(sub) sub.textContent=placeLine(at);
-    });
-    talk("Pin on the map. That's the listing. Form stays open.");
+    talk("Pin moved. That is the listing.");
     return true;
+  }
   }
 
   function open(place, which){

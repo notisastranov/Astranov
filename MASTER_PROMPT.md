@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4063
+**Stamp at this rewrite:** 4064
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -63,7 +63,7 @@ This block **overrides** every older note in this file if they fight. Do not mak
 
 **Verified pins make tasks.** A real task is three listed pins: shop, Astranov driver base, client drop. Hunt may find a place. CALL is allowed. ORDER only from a listed shop pin. Ride is shop → drop (YOU if no drop listed). Dummy OSM shops do not create jobs.
 
-**Pin while listing.** The sheet sits on the bottom. The map above stays live. Tap or **drag the PIN** to set the listing. Form does not close. Form does not wipe. Click the PIN to reopen and edit (owner/admin).
+**Drag the PIN.** Hunt pins and the listing PIN are draggable. Hold-menu does not eat the drag. Named hunt does not fit YOU in another city (that zoomed Rhodes to the Balkans). Street zoom. **Pin while listing.** The sheet sits on the bottom. The map above stays live. Tap or **drag the PIN** to set the listing. Form does not close. Form does not wipe. Click the PIN to reopen and edit (owner/admin).
 
 **Named hunt is the name.** Searching **Pizzarium** is Pizzarium in **Ανάληψη, Rhodes** (Athinas Tarsouli 1) — not Ixia copy, not Ilioupoli pizza, not Rome unless they asked Rome, not Denmark. GPS city is a hint. **Do not append the GPS city to a brand.** **Do not bias Photon lat/lng on a brand.** The place **name must contain the query**. Grok returns `act=hunt` and `places[{name,lat,lng,raw,phone}]`. Merge those pins. Never pin another city to fake a hit. Never invent a dummy shop. Never scrape Google.
 
