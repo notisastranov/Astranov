@@ -1,5 +1,5 @@
-/* SpaceNet SW 4057 — shell network-first, tiles on the device */
-var CACHE = "sn-shell-4057";
+/* SpaceNet SW 4058 — shell network-first, tiles on the device */
+var CACHE = "sn-shell-4058";
 var TILES = "sn-tiles-1";
 function isTile(url) {
   return /tile\.openstreetmap\.org|openstreetmap\.fr\/hot|tiles\.maps\.eox\.at|server\.arcgisonline\.com|\/js\/vendor\/leaflet/.test(url);

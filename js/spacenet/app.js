@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4057";
+  var VER="4058";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -1345,7 +1345,7 @@
       var b=document.createElement("button");
       b.type="button";
       b.className="dish";
-      b.innerHTML='<img alt="" src="'+htmlEsc(it.photo||samplePic(it.name))+'"><span class="meta"><b>'+htmlEsc(it.name)+'</b><span class="px">'+fmtAve(Number(it.price)||0)+(it.sample?'<i class="sample">SAMPLE</i>':'')+'</span></span>';
+      b.innerHTML='<img alt="" src="'+htmlEsc(it.photo||samplePic(it.name))+'"><span class="meta"><b>'+htmlEsc(it.name)+'</b><span class="px">'+fmtAve(Number(it.price)||0)+(it.sample?'<i class="sample">SAMPLE</i>':'')+(it.stock!=null&&it.stock!==""?'<i class="st"> ×'+htmlEsc(it.stock)+'</i>':'')+'</span></span>';
       b.onclick=function(){ pickDish(it, b); };
       liveEl.appendChild(b);
     });
