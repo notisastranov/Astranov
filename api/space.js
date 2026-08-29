@@ -128,6 +128,7 @@ module.exports = async function handler(req, res) {
       body.lat = Number(body.lat != null ? body.lat : row.lat);
       body.lng = Number(body.lng != null ? body.lng : row.lng);
       if (!isFinite(body.lat) || !isFinite(body.lng)) return;
+      if (body.kind === 'drop' || body.secret) return;
       if (isFinite(lat) && isFinite(lng)) {
         const dLat = ((body.lat - lat) * Math.PI) / 180;
         const dLng = ((body.lng - lng) * Math.PI) / 180;
@@ -137,7 +138,12 @@ module.exports = async function handler(req, res) {
         const km = 6371 * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
         if (km > 80) return;
       }
-      const k = body.kind === 'shop' ? 'shops' : body.kind === 'drop' ? 'drops' : body.kind === 'driver' ? 'drivers' : body.kind === 'post' ? 'posts' : body.kind === 'job' ? 'jobs' : '';
+      const k = body.kind === 'shop' ? 'shops' : body.kind === 'driver' ? 'drivers' : body.kind === 'post' ? 'posts' : body.kind === 'job' ? 'jobs' : '';
+      if (k === 'jobs' && body.drop) {
+        const peer = String(q.peer || '');
+        const allow = peer && ((body.driver && body.driver.peer === peer) || body.customerPeer === peer);
+        if (!allow) delete body.drop;
+      }
       if (k) buckets[k].push(body);
     });
     res.status(200).json(Object.assign({ ok: true, local: false }, buckets));
@@ -151,6 +157,10 @@ module.exports = async function handler(req, res) {
 
   const body = readBody(req);
   const row = slim(body.row || body);
+  if (row && (row.kind === 'drop' || row.secret)) {
+    res.status(200).json({ ok: true, local: true, secret: true });
+    return;
+  }
   if (!row || !row.id || !row.kind || !isFinite(Number(row.lat))) {
     res.status(400).json({ ok: false, error: 'row' });
     return;

@@ -33,14 +33,16 @@
   }
   function publish(row){
     if(!row||!row.id) return;
+    if(row.secret || row.kind==="drop") return;
     fetch("/api/space",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({row:row})}).catch(function(){});
   }
   function pull(from){
     var q="";
-    if(from&&isFinite(from.lat)) q="?lat="+from.lat+"&lng="+from.lng;
+    if(from&&isFinite(from.lat)) q="?lat="+from.lat+"&lng="+from.lng+"&peer="+encodeURIComponent(peerId());
+    else q="?peer="+encodeURIComponent(peerId());
     return fetch("/api/space"+q,{headers:{Accept:"application/json"}}).then(function(r){return r.json();}).then(function(j){
       if(!j||j.ok===false) return j;
-      netCache={shops:j.shops||[],drops:j.drops||[],drivers:j.drivers||[],posts:j.posts||[]};
+      netCache={shops:j.shops||[],drops:[],drivers:j.drivers||[],posts:j.posts||[]};
       paint();
       if(window.SN&&SN.ingestJobs) SN.ingestJobs(j.jobs||[]);
       return j;
@@ -75,6 +77,7 @@
     function add(list, kind, extra){
       (list||[]).forEach(function(row){
         if(!row||!isFinite(row.lat)) return;
+        if(kind==="drop") return;
         if(from && km(from,row)>25) return;
         var blob=((row.name||row.label||"")+" "+(row.text||"")+" "+(row.menu||"")+" "+(row.vehicles||"")+" "+(row.carry||"")+" "+(row.routes||"")+" "+kind+" "+(extra||"")).toLowerCase();
         if(l && blob.indexOf(l)<0 && l.indexOf(kind)<0) return;
@@ -243,7 +246,7 @@
     var act=b.getAttribute("data-act");
     if(act==="close"){ close(); return; }
     if(act==="home"){ view="home"; resetPhotos(); render(); return; }
-    if(act==="post"||act==="call"||act==="shop"||act==="drop"||act==="driver"||act==="list"){ view=act; resetPhotos(); render(); if(window.SN&&SN.repaint) SN.repaint(); return; }
+    if(act==="post"||act==="call"||act==="shop"||act==="drop"||act==="driver"||act==="list"||act==="report"){ view=act; resetPhotos(); render(); if(window.SN&&SN.repaint) SN.repaint(); return; }
     if(act==="pick-map"){ startPick(); return; }
     if(act==="dial"){ nativeCall(b.getAttribute("data-tel")||"", false); return; }
     if(act==="video-dial"){ nativeCall(b.getAttribute("data-tel")||"", true); return; }
@@ -263,6 +266,7 @@
     if(kind==="post") return savePost(fd);
     if(kind==="shop") return saveShop(fd);
     if(kind==="drop") return saveDrop(fd);
+    if(kind==="report") return saveReport(fd);
     if(kind==="driver") return saveDriver(fd);
     if(kind==="call") return searchDest(String(fd.get("q")||"").trim());
   }
@@ -361,9 +365,20 @@
     row.bell=val(fd,"bell"); row.bellName=val(fd,"bellName");
     row.dropOut=val(fd,"dropOut");
     row.pref=val(fd,"pref"); row.photo=photos.shot||"";
+    row.secret=true;
     if(!row.street && !row.number && !row.phone && !row.photo){ talk("Add a street, number, phone, or entrance photo."); return; }
     var list=load(KEYS.drops); list.unshift(row); save(KEYS.drops,list);
-    close(); paint(); publish(row); talk("Delivery location listed. Entrance and drop-out are on SpaceNet.");
+    close(); paint(); talk("Secret drop listed. Only the Astranov agent who takes your task sees it. Not the shop. Not the public map.");
+  }
+
+  function saveReport(fd){
+    var row=baseRow();
+    row.id=uid("p"); row.kind="post"; row.report=true;
+    row.text=val(fd,"text");
+    row.photo=photos.shot||"";
+    if(!row.text && !row.photo){ talk("Write what is wrong, or add a photo."); return; }
+    var list=load(KEYS.posts); list.unshift(row); save(KEYS.posts,list);
+    close(); paint(); publish(row); talk("Report posted on SpaceNet at this pin.");
   }
 
   function saveDriver(fd){
@@ -687,17 +702,25 @@
     var sub=placeLine(at);
     if(view==="home"||view==="list"){
       var three=
-        '<button type="button" class="opt" data-act="shop"><b>List your shop</b><span>Menu with photos, prices, stock, schedule.</span></button>'+
-        '<button type="button" class="opt" data-act="drop"><b>List a delivery location</b><span>Entrance or drop-out. Street, floor, doorbell.</span></button>'+
-        '<button type="button" class="opt" data-act="driver"><b>List a delivery driver base</b><span>Starting point, desired trips, range, schedule. 1 AV€/km.</span></button>';
+        '<button type="button" class="opt" data-act="shop"><b>List a vendor</b><span>Menu with photos, prices, stock, schedule.</span></button>'+
+        '<button type="button" class="opt" data-act="driver"><b>List a driver base</b><span>Starting point, trips, range, schedule. 1 AV€/km.</span></button>'+
+        '<button type="button" class="opt" data-act="drop"><b>List a secret drop</b><span>Only the agent on that task sees it. Never the shop. Never the public map.</span></button>';
       if(view==="list"){
         card.innerHTML=head("List on SpaceNet", title)+three;
         return;
       }
       card.innerHTML=head(title, sub)+
         '<button type="button" class="opt" data-act="post"><b>Post something here</b><span>News, a note, a photo. It shows on SpaceNet.</span></button>'+
+        '<button type="button" class="opt" data-act="report"><b>Report something here</b><span>A problem at this pin. It posts on SpaceNet.</span></button>'+
         '<button type="button" class="opt" data-act="call"><b>Start a call from here</b><span>Video if they are on SpaceNet. Or search a name and dial.</span></button>'+
         three;
+      return;
+    }
+    if(view==="report"){
+      card.innerHTML=head("Report here", title)+
+        '<form data-kind="report">'+field("text","What is wrong",{area:true,rows:5,ph:"Write it."})+
+        fileField("shot","Photo (optional)")+
+        '<button type="submit" class="go">REPORT</button></form>';
       return;
     }
     if(view==="post"){
@@ -769,7 +792,7 @@
           '<button type="button" class="opt" data-act="remove"><b>Remove listing</b><span>Off this device.</span></button>';
         return;
       }
-      card.innerHTML=head("Delivery location", title)+
+      card.innerHTML=head("Secret drop", "Only the agent on your task sees this. Not the shop. Not the public map.")+
         '<form data-kind="drop">'+
         field("label","What to call it",{ph:"Home, office, shop back door"})+
         fileField("shot","Photo of the entrance")+
@@ -781,7 +804,7 @@
         field("bellName","Doorbell name",{ph:"Name on the bell"})+
         field("dropOut","Drop-out / leave-at",{ph:"Gate, lobby, back door, box"})+
         field("pref","Contact preferences",{area:true,rows:3,ph:"Call first. Leave at door. Ring twice."})+
-        '<button type="submit" class="go">LIST LOCATION</button></form>';
+        '<button type="submit" class="go">LIST SECRET DROP</button></form>';
       return;
     }
     if(view==="driver"){
