@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4037";
+  var VER="4038";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -172,8 +172,12 @@
         if(ownAgent) out.push({id:"stg-"+e.id+"-door", role:"driver", title:base, next:"AT THE DOOR.", status:"open", escrowId:e.id, t:e.at, auto:1});
         out.push({id:"stg-"+e.id+"-wait", role:"user", title:title, next:userNext, status:"open", escrowId:e.id, t:e.at, auto:1, eta:eta, state:st});
       } else if(e.status==="door" || e.status==="handed" || e.flag==="handed"){
-        if(ownAgent) out.push({id:"stg-"+e.id+"-return", role:"driver", title:base, next:"RETURN — client not picking up. Route charged again. No refund.", status:"open", escrowId:e.id, t:e.at, auto:1});
-        out.push({id:"stg-"+e.id+"-have", role:"user", title:title, next:userNext+" · + AV€ 3 per 3 min wait. Return trip charged. No refund.", status:"open", escrowId:e.id, t:e.at, auto:1, eta:eta, state:st});
+        var left=doorLeft(e);
+        if(ownAgent && left<=0) out.push({id:"stg-"+e.id+"-waitdoor", role:"driver", title:base, next:"NEXT ORDER — missed goods return to vendor at end of route.", status:"open", escrowId:e.id, t:e.at, auto:1});
+        out.push({id:"stg-"+e.id+"-have", role:"user", title:title, next:userNext+(left>0?(" · "+Math.ceil(left)+" min to pick up"):" · Agent is leaving"), status:"open", escrowId:e.id, t:e.at, auto:1, eta:eta, state:st});
+      } else if(e.status==="carry_back"){
+        if(ownAgent) out.push({id:"stg-"+e.id+"-end", role:"driver", title:base, next:"END ROUTE — return missed goods to the vendor.", status:"open", escrowId:e.id, t:e.at, auto:1});
+        out.push({id:"stg-"+e.id+"-wait", role:"user", title:title, next:st, status:"open", escrowId:e.id, t:e.at, auto:1, state:st});
       }
     });
     return out;
@@ -217,6 +221,8 @@
     if(s==="with_agent") return "Delivered to agent";
     if(s==="moving") return "On the way";
     if(s==="door"||s==="handed") return (e&&e.floor)?"Room service · waiting at your door":"Waiting at your doorstep";
+    if(s==="carry_back") return "Agent left for the next order. Goods return to the vendor at the end of the route";
+    if(s==="back_vendor"||s==="returned") return "Missed goods back at the shop";
     if(s==="verified") return "Delivered";
     return s||"";
   }
@@ -331,7 +337,8 @@
       else if(t.role==="driver" && /-got$/.test(t.id)) btns='<div class="row"><button type="button" data-act="got">GOT IT</button></div>';
       else if(t.role==="driver" && /-way$/.test(t.id)) btns='<div class="row"><button type="button" data-act="way">ON THE WAY</button></div>';
       else if(t.role==="driver" && /-door$/.test(t.id)) btns='<div class="row"><button type="button" data-act="door">AT THE DOOR</button></div>';
-      else if(t.role==="driver" && /-return$/.test(t.id)) btns='<div class="row"><button type="button" data-act="return">RETURN</button></div>';
+      else if(t.role==="driver" && /-waitdoor$/.test(t.id)) btns='<div class="row"><button type="button" data-act="leave">NEXT ORDER</button></div>';
+      else if(t.role==="driver" && /-end$/.test(t.id)) btns='<div class="row"><button type="button" data-act="end">END ROUTE</button></div>';
       else if(/-have$/.test(t.id)) btns='<div class="row"><button type="button" data-act="have">I HAVE IT</button></div>';
       else if(t.listing) btns='<div class="row"><button type="button" data-act="go">OPEN</button></div>';
       return '<div class="task'+(open?" open":"")+'" data-id="'+t.id+'"><b>'+String(t.title||"Task").replace(/[<>]/g,"")+'</b><span>'+String(t.next||"")+'</span>'+(t.eta?('<div class="eta">About '+t.eta+' min</div>'):"")+extra+btns+'</div>';
@@ -427,32 +434,44 @@
   }
   function takeAvc(n){ n=Math.max(0, Number(n)||0); if(!n) return 0; var bal=avcGet(), take=Math.min(bal, n); if(take) avcSet(bal-take); return take; }
   function routeFee(e){ return Math.max(3, Math.round(Number(e&&e.eta)||12)); }
-  function billDoorWait(e){
-    if(!e||!e.held) return false;
-    if(e.status!=="door" && e.status!=="handed") return false;
-    var t0=(e.evidence&&(e.evidence.doorAt||e.evidence.handedAt))||e.at;
-    var mins=Math.max(0, (Date.now()-t0)/60000);
-    var due=Math.floor(mins/3)*3;
-    var done=Number(e.delayAvc)||0;
-    var add=due-done;
-    if(add<=0) return false;
-    var got=takeAvc(add);
-    e.delayAvc=done+got;
-    e.delayOwed=(Number(e.delayOwed)||0)+(add-got);
-    putEscrow(e);
-    talk("+ "+fmtAve(add)+" for "+Math.floor(mins)+" min at the door. No refund.");
-    return true;
+  function doorLeft(e){
+    if(!e) return 0;
+    var t0=(e.evidence&&(e.evidence.doorAt||e.evidence.handedAt))||0;
+    if(!t0) return 3;
+    return Math.max(0, 3-(Date.now()-t0)/60000);
   }
-  function agentReturn(id){
+  function agentJobs(agentId, except){
+    if(!agentId) return [];
+    return loadEscrow().filter(function(x){
+      return x&&x.held&&x.id!==except&&x.driver&&x.driver.id===agentId&&/boxed|with_agent|moving|door/.test(x.status||"");
+    });
+  }
+  function goodsBack(id){
     var e=escrowOf(id); if(!e||!e.held) return;
-    billDoorWait(e);
     var route=routeFee(e);
     var got=takeAvc(route);
     e.returnAvc=(Number(e.returnAvc)||0)+got;
     e.returnOwed=(Number(e.returnOwed)||0)+(route-got);
-    e.status="returned";
+    e.status="back_vendor";
     var half=Math.round(e.avc*0.5*100)/100;
-    settle(id, {customer:0, vendor:half, driver:Math.max(0,e.avc-half)}, "Not picked up at the door. Return trip "+fmtAve(route)+". Wait "+fmtAve(e.delayAvc||0)+". No refund.");
+    settle(id, {customer:0, vendor:half, driver:Math.max(0,e.avc-half)}, "Missed goods back at the shop. Return trip "+fmtAve(route)+". No refund.");
+  }
+  function flushCarry(agentId, except){
+    if(!agentId) return;
+    if(agentJobs(agentId, except).length) return;
+    loadEscrow().forEach(function(x){
+      if(x&&x.held&&x.status==="carry_back"&&x.driver&&x.driver.id===agentId) goodsBack(x.id);
+    });
+  }
+  function agentLeave(id){
+    var e=escrowOf(id); if(!e||!e.held) return;
+    if(!(Number(e.delayAvc)>0)){ var got=takeAvc(3); e.delayAvc=got; e.delayOwed=3-got; }
+    var more=agentJobs(e.driver&&e.driver.id, e.id);
+    if(more.length){
+      e.status="carry_back";
+      putEscrow(e); syncTasks(); needTick();
+      talk("3 minutes is up. Agent goes to the next order. Missed goods return to the vendor at the end of the route. No refund.");
+    } else goodsBack(e.id);
   }
   function payoutIfMine(e){
     if(!e||!e.split) return;
@@ -467,7 +486,7 @@
   }
   function ingestJobs(list){
     var dirty=false;
-    var order={paid:0,picked:1,boxed:2,with_agent:3,moving:4,door:5,handed:5,returned:6,released:7,done:7};
+    var order={paid:0,picked:1,boxed:2,with_agent:3,moving:4,door:5,handed:5,carry_back:6,back_vendor:7,returned:7,released:8,done:8};
     (list||[]).forEach(function(j){
       if(!j||!j.id) return;
       var cur=escrowOf(j.id);
@@ -495,6 +514,7 @@
     if(job&&job.escrowId===id) job.status="done";
     syncTasks();
     talk(reason||("Settled. You "+c.toFixed(2)+", shop "+v.toFixed(2)+", driver "+d.toFixed(2)+". SpaceNet takes none of a failed job."));
+    flushCarry(e.driver&&e.driver.id, e.id);
   }
   function settleRefund(id, reason){ var e=escrowOf(id); if(!e) return; settle(id, {customer:e.avc, vendor:0, driver:0}, reason||"Full credit back. Nothing was picked."); }
   function settleVerify(id){
@@ -514,7 +534,7 @@
     else if(status==="boxed") talk("Ready. Waiting for the Astranov agent.");
     else if(status==="with_agent") talk("With the agent.");
     else if(status==="moving") talk("On the way.");
-    else if(status==="door") talk((e.floor?"Room service. ":"")+"Waiting at your doorstep. 3 minutes, then + AV€ 3 every 3 minutes. If the agent returns, the route is charged again. No refund.");
+    else if(status==="door") talk((e.floor?"Room service. ":"")+"Waiting at your doorstep. Up to 3 minutes. Then the agent goes to the next order. Missed goods return to the vendor at the end of the route.");
     else if(status==="handed") talk("At your door.");
     else talk("Stage "+status+".");
   }
@@ -549,9 +569,7 @@
         dirty=true; return;
       }
       if(e.status==="door" || e.status==="handed"){
-        if(billDoorWait(e)) dirty=true;
-        var doorAt=(e.evidence&&(e.evidence.doorAt||e.evidence.handedAt))||0;
-        if(doorAt && (now-doorAt)>12*60000){ agentReturn(e.id); dirty=true; return; }
+        if(doorLeft(e)<=0){ agentLeave(e.id); dirty=true; return; }
       }
     });
     if(dirty) syncTasks(); else paintTasksBtn();
@@ -1512,7 +1530,8 @@
       else if(act==="got" && t) markStage(t.escrowId, "with_agent");
       else if(act==="way" && t) markStage(t.escrowId, "moving");
       else if(act==="door" && t) markStage(t.escrowId, "door");
-      else if(act==="return" && t) agentReturn(t.escrowId);
+      else if(act==="leave" && t) agentLeave(t.escrowId);
+      else if(act==="end" && t) goodsBack(t.escrowId);
       else if(act==="have" && t) settleVerify(t.escrowId);
       else if(act==="go") goTask(id);
       else openTaskDetail(id);

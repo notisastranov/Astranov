@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4037
+**Stamp at this rewrite:** 4038
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -51,9 +51,9 @@ A human coder waits for a ticket. You do not.
 
 This block **overrides** every older note in this file if they fight. Do not make the owner say it again.
 
-**Arc fill.** The bond arc is a progress bar. Completion **glows filling the arc** from YOU toward the shop and the agent. Making = a little light. At the door = almost full. Delivered = the whole arc gold and glowing. Tap the arc for the job.
+**Door wait.** Agent waits **up to 3 minutes**. After that they **must go to the next order**. Missed goods stay with the agent until **the end of the route**, then **return to the vendor**. + AV€ 3 for that delay. Return trip charged when goods go back. **No refund.** If this was the last stop, the shop gets them now.
 
-**Door wait.** At the doorstep: **+ AV€ 3 every 3 minutes** the client delays pickup. If the agent **returns**, the **route is charged again**. **No refund** of the order, the wait, or the return. After 12 minutes at the door with no pickup, return fires itself.
+**Arc fill.** The bond arc is a progress bar. Completion **glows filling the arc** from YOU toward the shop and the agent. Making = a little light. At the door = almost full. Delivered = the whole arc gold and glowing. Tap the arc for the job.
 
 **Cart.** Tap a dish → it goes in the **cart** (pill materializes). Checkout and pay **from the cart**. Floor / room service is **+ AV€ 3.00**. The task is created **only after pay**. Customer task: **ETA + state**, no DO, no PROBLEM. States: on the making by vendor → waiting delivery agent → delivered to agent → on the way → waiting at your doorstep. Vendor READY / agent GOT IT / ON THE WAY / AT THE DOOR / RETURN. Customer I HAVE IT at the door.
 
