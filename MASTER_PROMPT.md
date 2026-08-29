@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4039
+**Stamp at this rewrite:** 4040
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -50,6 +50,8 @@ A human coder waits for a ticket. You do not.
 ## Owner’s last full instruction — 2026-08-29
 
 This block **overrides** every older note in this file if they fight. Do not make the owner say it again.
+
+**Call only.** Never EMAIL the shop. Never SITE as a contact chip. **CALL** only if a **real official telephone** is published on OSM or the shop’s own site (10+ digits). No invented numbers.
 
 **No agent, no charge.** If no Astranov Delivery Agent has a listed base covering the area, **cancel before checkout**. Do not PAY. Do not lock AV€. Tell them the order is cancelled and they were not charged. CALL SHOP still works.
 

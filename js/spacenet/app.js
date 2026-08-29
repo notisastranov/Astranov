@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4039";
+  var VER="4040";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -247,12 +247,18 @@
       web: t.website||t["contact:website"]||t.url||""
     };
   }
+  function officialTel(v){
+    if(!v) return "";
+    var t=v.tags||v;
+    var raw=String(t.phone||t["contact:phone"]||t.mobile||t["contact:mobile"]||t.tel||v.phone||"").split(/[;,]/)[0].trim();
+    var d=raw.replace(/[^\d]/g,"");
+    if(d.length<10) return "";
+    return raw;
+  }
   function addContactBtns(v){
-    var c=contactOf(v&&v.tags);
-    if(c.phone){ var tel=String(c.phone).split(/[;,]/)[0].trim(); need({id:"tel",label:"CALL "+tel.replace(/[^\d+ ]/g,"").slice(0,18),run:function(){ location.href="tel:"+tel.replace(/[^\d+]/g,""); }}); }
-    if(c.email) need({id:"eml",label:"EMAIL",run:function(){ location.href="mailto:"+String(c.email).split(/[;,]/)[0].trim(); }});
-    if(c.web){ var u=String(c.web); if(!/^https?:/i.test(u)) u="https://"+u; need({id:"web",label:"SITE",run:function(){ window.open(u,"_blank","noopener"); }}); }
-    return c;
+    var tel=officialTel(v);
+    if(tel) need({id:"tel",label:"CALL "+tel.replace(/[^\d+ ]/g,"").slice(0,18),run:function(){ location.href="tel:"+tel.replace(/[^\d+]/g,""); }});
+    return {phone:tel,email:"",web:""};
   }
   function fetchContacts(v){
     if(!v||!isFinite(v.lat)) return Promise.resolve(v&&v.tags||{});
@@ -313,8 +319,8 @@
           var cur=stageOf(e);
           need({id:"next",label:(cur==="verified"?"DONE":("NEXT · "+cur.toUpperCase())),run:function(){ if(t) goTask(t.id); }});
         }
-        if(!c.phone&&!c.email&&!c.web) talk((v.name||"Shop")+". Call if a number is listed.");
-        else talk((v.name||"Shop")+". "+stagePct(e)+"% · "+stageOf(e)+". Tap CALL or EMAIL.");
+        if(!c.phone) talk((v.name||"Shop")+". No official phone published.");
+        else talk((v.name||"Shop")+". "+stagePct(e)+"% · "+stageOf(e)+(c.phone?". Tap CALL.":"."));
       });
     }
   }
@@ -1166,14 +1172,14 @@
   }
   function partnerPlaces(){ return Promise.resolve([]); }
   function portalOffers(){ return []; }
-  function telOf(v){ if(!v) return ""; var t=v.tags||v; return String(t.phone||t["contact:phone"]||t.mobile||t.tel||v.phone||"").split(/[;,]/)[0].trim(); }
-  function dial(tel, label){ tel=String(tel||"").replace(/[^\d+]/g,""); if(!tel){ talk("No phone for "+(label||"them")+"."); return; } location.href="tel:"+tel; }
-  function callShop(){ dial(telOf(selected)||(job&&job.shop&&(job.shop.phone||telOf(job.shop))), "the shop"); }
-  function callAgent(){ var o=job&&job.carrier, d=o&&driverRow(o.id); dial((d&&d.phone)||(o&&o.phone)||telOf(d), "the Astranov agent"); }
+  function telOf(v){ return officialTel(v); }
+  function dial(tel, label){ tel=String(tel||"").replace(/[^\d+]/g,""); if(tel.replace(/\D/g,"").length<10){ talk("No official phone published for "+(label||"them")+"."); return; } location.href="tel:"+tel; }
+  function callShop(){ dial(officialTel(selected)||officialTel(job&&job.shop), "the shop"); }
+  function callAgent(){ var o=job&&job.carrier, d=o&&driverRow(o.id); dial(officialTel(d)||(o&&o.phone), "the Astranov agent"); }
   function offerCalls(){
-    var shop=telOf(selected)||(job&&job.shop&&(job.shop.phone||telOf(job.shop)));
-    var o=job&&job.carrier, d=o&&driverRow(o.id), agent=(d&&d.phone)||(o&&o.phone)||telOf(d);
-    if(shop) need({id:"callshop",label:"CALL SHOP",run:callShop});
+    var shop=officialTel(selected)||officialTel(job&&job.shop);
+    var o=job&&job.carrier, d=o&&driverRow(o.id), agent=officialTel(d)||(o&&o.phone&&String(o.phone).replace(/\D/g,"").length>=10?o.phone:"");
+    if(shop) need({id:"callshop",label:"CALL "+String(shop).replace(/[^\d+ ]/g,"").slice(0,16),run:callShop});
     if(agent) need({id:"callagent",label:"CALL AGENT",run:callAgent});
   }
   function listedAgents(){
