@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4062";
+  var VER="4063";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -1282,7 +1282,7 @@
       clearNeed();
       renderMenu(items);
       addContactBtns(live);
-      talk(n+". Listed pin. "+(items&&items.length?items.length+" dishes. ":"")+"Tap a dish. The task uses this pin, a driver pin, and a drop pin.");
+      talk(n+". Listed pin. "+(items&&items.length?items.length+" on the spreadsheet. ":"No rows yet. Owner adds them.")+"Tap a row to cart.");
     });
   }
   var SAMPLE_PIC={
@@ -1336,24 +1336,9 @@
   }
   function loadShopMenu(v, b){
     var own=listedDishes(v);
-    if(own.length) return withPhotos(own);
-    var listed=parseListedMenu(b&&b.menu);
-    if(listed.length) return withPhotos(listed);
-    if(v&&v.crawlItems&&v.crawlItems.length) return withPhotos(v.crawlItems);
-    return new Promise(function(resolve){
-      var done=false;
-      function finish(items, sample){
-        if(done) return;
-        done=true;
-        var list=(items&&items.length)?items:sampleMenu(v);
-        if(sample) list.forEach(function(it){ it.sample=true; });
-        withPhotos(list).then(resolve);
-      }
-      grok("MENU JSON for "+(v.name||"shop")+(hereName?" in "+hereName:"")+". Return act=menu and items:[{name,price,sample}]. price in euro. sample=true unless this shop published that exact price. 3 to 6 items. No invented live prices.");
-      var t=setTimeout(function(){ finish(null, true); }, 4200);
-      var prev=window.__snMenuCb;
-      window.__snMenuCb=function(items){ window.__snMenuCb=prev; clearTimeout(t); finish(items, false); };
-    });
+    if(own.length) return Promise.resolve(own);
+    if(listedShopOf(v)||(v&&v.kind==="shop"&&v.id)) return Promise.resolve([]);
+    return Promise.resolve([]);
   }
   function htmlEsc(s){ return String(s==null?"":s).replace(/&/g,"&#38;").replace(/</g,"&#60;").replace(/>/g,"&#62;").replace(/\"/g,"&#34;").replace(/'/g,"&#39;"); }
   function renderMenu(items){

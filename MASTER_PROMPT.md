@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4062
+**Stamp at this rewrite:** 4063
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -52,6 +52,8 @@ A human coder waits for a ticket. You do not.
 This block **overrides** every older note in this file if they fight. Do not make the owner say it again.
 
 **Record every new spec in this file the same turn.** Chat is not the archive.
+
+**List a vendor is the form.** Hunt pin or + → multi-menu → List a vendor. Name is already the place (Pizzarium). Pin is already on the map. Spreadsheet is empty and ready. Cover is optional. **Do not bounce to home** because a Grok pin has an id. **Do not invent SAMPLE pizza.** No dummy menu. Add rows. LIST SHOP.
 
 **Products and services are a spreadsheet.** Listing and ordering are the **same grid**. Every row: **photo** (left) · **description** · **AV€** · **hours of availability** · **initial stock** · **stock left**. Clients see initial and left. Pay decrements left. Zero left cannot go in the cart. Not a textarea. Add a row. That is the menu.
 

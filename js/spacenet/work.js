@@ -191,9 +191,11 @@
   }
   function listingOpen(){
     if(!sheet||!sheet.classList.contains("on")) return false;
-    if(view==="call"||view==="calldone"||view==="post"||view==="tax") return false;
-    if(at&&at.id&&(view==="shop"||view==="drop"||view==="driver")) return false;
-    return view==="list"||view==="home"||view==="shop"||view==="drop"||view==="driver";
+    if(view==="call"||view==="calldone"||view==="post"||view==="tax"||view==="report") return false;
+    if(view!=="list"&&view!=="home"&&view!=="shop"&&view!=="drop"&&view!=="driver") return false;
+    if(editing) return true;
+    if(at&&at.id&&(at.kind==="shop"||at.kind==="drop"||at.kind==="driver")&&!editing) return false;
+    return true;
   }
   function listingAt(){
     if(!listingOpen()||!at||!isFinite(at.lat)) return null;
@@ -258,7 +260,10 @@
     var act=b.getAttribute("data-act");
     if(act==="close"){ close(); return; }
     if(act==="home"){ view="home"; resetPhotos(); render(); return; }
-    if(act==="post"||act==="call"||act==="shop"||act==="drop"||act==="driver"||act==="list"||act==="report"){ view=act; resetPhotos(); render(); if(window.SN&&SN.repaint) SN.repaint(); return; }
+    if(act==="post"||act==="call"||act==="shop"||act==="drop"||act==="driver"||act==="list"||act==="report"){
+      if((act==="shop"||act==="drop"||act==="driver") && at && at.kind!==act){ at.id=""; }
+      view=act; resetPhotos(); render(); if(window.SN&&SN.repaint) SN.repaint(); return;
+    }
     if(act==="pick-map"){ startPick(); return; }
     if(act==="dial"){ nativeCall(b.getAttribute("data-tel")||"", false); return; }
     if(act==="video-dial"){ nativeCall(b.getAttribute("data-tel")||"", true); return; }
@@ -375,8 +380,10 @@
 
   function val(fd, k){ return String(fd.get(k)||"").trim(); }
   function fillShopForm(s){
-    if(!s||!card) return;
-    [["name",s.name],["hours",s.hours],["phone",s.phone],["note",s.note],["open",s.open]].forEach(function(p){
+    if(!card) return;
+    s=s||at||{};
+    var name=s.name||s.label||(at&&at.name)||"";
+    [["name",name],["hours",s.hours],["phone",s.phone],["note",s.note],["open",s.open]].forEach(function(p){
       var el=card.querySelector('[name="'+p[0]+'"]');
       if(el&&p[1]&&!el.value) el.value=p[1];
     });
@@ -897,8 +904,8 @@
           (mine?'<button type="button" class="opt" data-act="remove"><b>Remove listing</b><span>Owner or SpaceNet admin.</span></button>':'');
         return;
       }
-      if(at&&at.id&&!canEdit(at.tags||at)){ talk("Only the owner or a SpaceNet admin can edit this pin."); view="home"; render(); return; }
-      card.innerHTML=head("List your shop", "This menu is what the client sees when they order.")+
+      if(at&&at.id&&(at.kind==="shop")&&!canEdit(at.tags||at)){ talk("Only the owner or a SpaceNet admin can edit this pin."); view="home"; render(); return; }
+      card.innerHTML=head(placeName(at)==="This place"?"List your shop":placeName(at), "This spreadsheet is what the client sees. Pin is on the map above.")+
         '<form data-kind="shop">'+
         field("name","Shop name",{ph:"Name on the door"})+
         fileField("cover","Cover picture")+
@@ -929,7 +936,7 @@
           (mine?'<button type="button" class="opt" data-act="remove"><b>Remove listing</b><span>Owner or SpaceNet admin.</span></button>':'');
         return;
       }
-      if(at&&at.id&&!canEdit(at.tags||at)){ talk("Only the owner or a SpaceNet admin can edit this pin."); view="home"; render(); return; }
+      if(at&&at.id&&at.kind==="drop"&&!canEdit(at.tags||at)){ talk("Only the owner or a SpaceNet admin can edit this pin."); view="home"; render(); return; }
       card.innerHTML=head("Secret drop", "Only the agent on your task sees this. Not the shop. Not the public map.")+
         '<form data-kind="drop">'+
         field("label","What to call it",{ph:"Home, office, shop back door"})+
@@ -962,7 +969,7 @@
           (mine?'<button type="button" class="opt" data-act="remove"><b>Remove listing</b><span>Owner or SpaceNet admin.</span></button>':'');
         return;
       }
-      if(at&&at.id&&!canEdit(at.tags||at)){ talk("Only the owner or a SpaceNet admin can edit this pin."); view="home"; render(); return; }
+      if(at&&at.id&&at.kind==="driver"&&!canEdit(at.tags||at)){ talk("Only the owner or a SpaceNet admin can edit this pin."); view="home"; render(); return; }
       card.innerHTML=head("Delivery driver base", "Starting point. Declare presence and routes. Receive jobs from users.")+
         '<form data-kind="driver">'+
         field("name","Name on the base",{ph:"How you want to be called"})+
