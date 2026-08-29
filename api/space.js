@@ -55,6 +55,7 @@ function slim(row) {
     'held',
     'status',
     'avc',
+    'ride',
     'how',
     'query',
     'shop',

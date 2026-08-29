@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4055
+**Stamp at this rewrite:** 4056
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -64,6 +64,8 @@ This block **overrides** every older note in this file if they fight. Do not mak
 **Plus lists the marketplace.** **+** opens shop / driver base / delivery location at the map pin. Shop: menu photos, prices, stock, schedule. Driver: starting point, desired trips, range, schedule. Client drop: entrance or drop-out, street, floor, doorbell. **Ride is 1 AV€ per km**, plus extras (floor +3, door wait, return). Goods to the shop, km to the agent. Instant lock on pay.
 
 **Set place.** One button: **CLICK MAP TO SET LOCATION MANUALLY**. Never flood VENDORS with NOT HERE. Tap it, then tap the map (or type the city). That is YOU. Hunt and cart stay. `need()` replaces the same id — never stack dummy chips.
+
+**Offer cash.** Big glowing blue AV€ on the offer window and on the task arc. Driver sees the ride they are offered. Client sees the task total. Not a tiny label.
 
 **Hold the map.** Right-click, or press 1 second, on the city map. Menu: **Post**, **Report**, **List a vendor**, **List a driver base**, **List a secret drop**. Short tap does not open that menu. Secret drop is never on the public map, never sent to the shop. **When an offer hits the chosen driver, the client pin is on their map** (entrance, street, bell). Client who listed it sees it on their device.
 

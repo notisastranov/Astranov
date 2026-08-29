@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4055";
+  var VER="4056";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -103,6 +103,18 @@
   function platformGet(){ try{ return Math.max(0, Number(localStorage.getItem("sn:platform")||0)); }catch(e){ return 0; } }
   function cartQty(){ if(!job||!job.cart) return 0; return job.cart.reduce(function(s,x){ return s+(Number(x.qty)||1); },0); }
   function goodsSum(){ if(!job||!job.cart) return 0; return job.cart.reduce(function(s,x){ return s+(Number(x.price)||0)*(Number(x.qty)||1); },0); }
+  function taskCash(e){
+    e=e||liveEscrow();
+    if(!e){
+      if(job&&Number(job.price)>0) return Number(job.price);
+      return cartSum()||0;
+    }
+    var mine=myListingIds();
+    if(e.driver&&mine[e.driver.id]==="driver"){
+      var ride=Number(e.ride); if(ride>0) return ride+(e.floor?3:0);
+    }
+    return Number(e.avc)||0;
+  }
   function destPoint(){ return (job&&job.drop)||myDrop()||here; }
   function dropLine(d){ if(!d) return "the client"; return [d.name||d.label||"Client", d.street, d.number, d.floor].filter(Boolean).join(" · ") || ("pin "+Number(d.lat).toFixed(4)); }
   function clientPin(){
@@ -430,6 +442,8 @@
       var e=t.escrowId?escrowOf(t.escrowId):null;
       var open=t.id===openTaskId;
       var extra=open&&e?ladderHtml(e):"";
+      var cash=e?taskCash(e):0;
+      var money=cash?('<div class="cash-glow">'+fmtAve(cash,true)+'</div>'):"";
       var btns="";
       if(t.role==="vendor" && /-ready$/.test(t.id)) btns='<div class="row"><button type="button" data-act="ready">READY</button></div>';
       else if(t.role==="driver" && /-got$/.test(t.id)) btns='<div class="row"><button type="button" data-act="got">GOT IT</button></div>';
@@ -439,7 +453,7 @@
       else if(t.role==="driver" && /-end$/.test(t.id)) btns='<div class="row"><button type="button" data-act="end">END ROUTE</button></div>';
       else if(/-have$/.test(t.id)) btns='<div class="row"><button type="button" data-act="have">I HAVE IT</button></div>';
       else if(t.listing) btns='<div class="row"><button type="button" data-act="go">OPEN</button></div>';
-      return '<div class="task'+(open?" open":"")+'" data-id="'+t.id+'"><b>'+String(t.title||"Task").replace(/[<>]/g,"")+'</b><span>'+String(t.next||"")+'</span>'+(t.eta?('<div class="eta">About '+t.eta+' min</div>'):"")+extra+btns+'</div>';
+      return '<div class="task'+(open?" open":"")+'" data-id="'+t.id+'">'+money+'<b>'+String(t.title||"Task").replace(/[<>]/g,"")+'</b><span>'+String(t.next||"")+'</span>'+(t.eta?('<div class="eta">About '+t.eta+' min</div>'):"")+extra+btns+'</div>';
     }).join("");
   }
   function openTasks(){ if(!tasksEl) return; syncTasks(); tasksEl.classList.add("on"); renderTaskList(); paintTasksBtn(); setTimeout(pack,40); }
@@ -601,7 +615,8 @@
         putEscrow(j, true); dirty=true; cur=j;
         var mine=myListingIds();
         if(j.driver&&mine[j.driver.id]==="driver"&&j.drop&&isFinite(j.drop.lat)){
-          talk("Offer. Client is on your map. "+dropLine(j.drop)+".");
+          talk("Offer. "+fmtAve(Number(j.ride)||Number(j.avc)||0,true)+" on your map. Client: "+dropLine(j.drop)+".");
+          openTasks();
           if(viewLevel()!=="city") showCity(j.drop);
           else if(map&&map.flyTo) map.flyTo([j.drop.lat,j.drop.lng], 16, {duration:0.8});
         }
@@ -1053,6 +1068,11 @@
       window.L.polyline(lit,{color:col,weight:5,opacity:1,lineCap:"round",interactive:false,className:cls}).addTo(bondGroup);
       var last=lit[lit.length-1];
       window.L.circleMarker(last,{radius:done?9:7,color:col,weight:2,fillColor:col,fillOpacity:1,className:cls}).addTo(bondGroup);
+      var cash=taskCash();
+      if(cash>0){
+        var mid=lit[Math.max(0, Math.floor(lit.length/2))];
+        window.L.marker(mid,{icon:window.L.divIcon({className:"sn-arc-cash", html:fmtAve(cash,true), iconSize:[140,32], iconAnchor:[70,16]}), interactive:false, keyboard:false, zIndexOffset:2500}).addTo(bondGroup);
+      }
     }
     if(all.length>=2){
       var hit=window.L.polyline(all,{color:"#3d6bff",weight:28,opacity:0.001,lineCap:"round",interactive:true}).addTo(bondGroup);
@@ -1448,7 +1468,8 @@
       status:"offer",
       lat:+drop.lat, lng:+drop.lng,
       query:(job&&job.query)||(shop&&shop.name)||"order",
-      avc:Number(job&&job.price)||0,
+      avc:Number(job&&job.price)||cartSum()||0,
+      ride:rideFee(),
       customerPeer:SNWork.peerId?SNWork.peerId():"",
       shop:shop?{id:shop.id,name:shop.name,lat:shop.lat,lng:shop.lng,peer:shop.peer||"",phone:shop.phone||""}:null,
       driver:{id:o.id,name:o.name,peer:o.peer||"",lat:o.lat,lng:o.lng,phone:o.phone||""},
