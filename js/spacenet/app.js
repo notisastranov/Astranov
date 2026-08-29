@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4031";
+  var VER="4032";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -177,7 +177,32 @@
     }
     var oid=got.osm_id||got.osmid, ot=String(got.osm_type||got.osmtype||"N")[0].toUpperCase();
     if(oid){ if(ot!=="N"&&ot!=="W"&&ot!=="R") ot="N"; jobs.push(fetchJson("https://nominatim.openstreetmap.org/details.php?osmtype="+ot+"&osmid="+oid+"&format=json",{headers:{Accept:"application/json"}},7000).then(function(j){ take(j&&j.extratags); take(j&&j.namedetails); }).catch(function(){})); }
-    return Promise.all(jobs).then(function(){ v.tags=got; return got; });
+    return Promise.all(jobs).then(function(){ v.tags=got; return enrichPlace(v); });
+  }
+  function crawlKey(v){ return "sn:crawl:"+String((v&&v.id)||(v&&v.name)||""); }
+  function loadCrawl(v){ try{ return JSON.parse(localStorage.getItem(crawlKey(v))||"null"); }catch(e){ return null; } }
+  function saveCrawl(v, row){ try{ localStorage.setItem(crawlKey(v), JSON.stringify(row)); }catch(e){} }
+  function applyCrawl(v, row){
+    if(!v||!row) return;
+    v.tags=v.tags||{};
+    if(row.phone && !v.tags.phone) v.tags.phone=row.phone;
+    if(row.email && !v.tags.email) v.tags.email=row.email;
+    if(row.web && !v.tags.website && !v.tags["contact:website"]) v.tags.website=row.web;
+    v.crawlItems=row.items||[];
+  }
+  function enrichPlace(v){
+    if(!v) return Promise.resolve({});
+    var cached=loadCrawl(v);
+    if(cached && Date.now()-(cached.t||0)<86400000){ applyCrawl(v, cached); return Promise.resolve(v.tags); }
+    var c=contactOf(v.tags);
+    var ctl=window.AbortController?new AbortController():null;
+    var to=ctl&&setTimeout(function(){ try{ctl.abort();}catch(e){} }, 12000);
+    return fetch("/api/place",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:v.name||"",place:hereName||"",website:c.web||v.tags.website||v.tags["contact:website"]||""}),signal:ctl&&ctl.signal}).then(function(r){ return r.json(); }).then(function(j){
+      if(to) clearTimeout(to);
+      if(!j||!j.ok) return v.tags;
+      var row={t:Date.now(),phone:j.phone||"",email:j.email||"",web:j.web||"",items:j.items||[],via:j.via||""};
+      saveCrawl(v, row); applyCrawl(v, row); return v.tags;
+    }).catch(function(){ if(to) clearTimeout(to); return v.tags; });
   }
   function openTaskDetail(id){
     openTaskId=id||openTaskId;
@@ -937,6 +962,7 @@
   function loadShopMenu(v, b){
     var listed=parseListedMenu(b&&b.menu);
     if(listed.length) return withPhotos(listed);
+    if(v&&v.crawlItems&&v.crawlItems.length) return withPhotos(v.crawlItems);
     return new Promise(function(resolve){
       var done=false;
       function finish(items, sample){

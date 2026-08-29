@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4031
+**Stamp at this rewrite:** 4032
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -86,7 +86,7 @@ After a shop (and after a driver): a **deep-blue neon bond arc** (bowed, signatu
 
 Tap the **arc** or the **vendor pin**: open the job. Task tap shows the ladder (paid → picked → boxed → moving → handed → verified), percent done, shop and driver, not just DO / PROBLEM. Vendor pin researches OSM phone, email, website — CALL / EMAIL / SITE if they exist.
 
-Tap a shop → that shop’s **menu**: dishes with photo and price. Live listed menu first. Else Grok’s public knowledge. Else a SAMPLE menu (sample pizza photo, sample euro prices) clearly marked SAMPLE. Pick a dish, then NOW / MAIL / PICK UP.
+Tap a shop → `/api/place` crawls that shop’s **own website** (and public web, not Google) for phone, email, and menu lines. CALL / EMAIL / SITE if found. Menu items from the site are ours, not SAMPLE. OSM first, crawl fills the gaps. Cache one day on the device.
 
 Chrome (GPS, LAYER, TASKS, VENDORS, +, mic, money): **hold 3 seconds** → it bounces, goes loose. Then throw it (flick), pinch to resize, tap to cycle shape (round / pill / square). GPS still materializes bottom-right. Pack does not yank a loose solid.
 
