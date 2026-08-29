@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4026";
+  var VER="4027";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -14,7 +14,7 @@
   var menuScale=1;
   var yaw=0.49, pitch=0.63, dist=1.85, spin=0, pitchSpin=0, drag=null, pinch=null, pointers={}, fly=null, drawSig="", tickOn=false;
   var here=null, hereName="", hereAt=0, countryCode="", things={}, vendors=[], selected=null, job=null, currentOffers=[], huntSeq=0, offerSeq=0, locating=null, pendingHunt=null, aim=null, tapScreen=null, placeEl=null, awaiting=null, mapBound=false, mapHeld=false;
-  var map=null, mapReady=null, hereMark=null, vendorMark=null, routeLine=null, routeGlow=null, aimMark=null, callLine=null, tileLayer=null, mapLayer="dark", lastRoute=null;
+  var map=null, mapReady=null, hereMark=null, vendorMark=null, routeLine=null, routeGlow=null, bondGroup=null, aimMark=null, callLine=null, tileLayer=null, mapLayer="dark", lastRoute=null;
   var listening=false, speaking=false, wantEar=false, rec=null, permsTried=false, mindHist=[];
   function say(t){ if(lineEl&&t!=null) lineEl.textContent=String(t); packSoon(); }
   function noCoords(t){ return String(t||"").replace(/\b-?\d+\.\d+\s*[NS],?\s*-?\d+\.\d+\s*[EW]\b/gi,"").replace(/\b-?\d{1,3}\.\d+\s*,\s*-?\d{1,3}\.\d+\b/g,"").replace(/\s{2,}/g," ").trim(); }
@@ -609,17 +609,51 @@
     if(!map||!window.L||!latlngs||latlngs.length<2) return;
     try{ if(routeGlow) map.removeLayer(routeGlow); }catch(e){}
     try{ if(routeLine) map.removeLayer(routeLine); }catch(e){}
-    routeGlow=window.L.polyline(latlngs,{color:"#4df0ff",weight:14,opacity:0.2,lineCap:"round",interactive:false}).addTo(map);
-    routeLine=window.L.polyline(latlngs,{color:"#7ee9ff",weight:3,opacity:1,lineCap:"round",interactive:false}).addTo(map);
-    try{ map.fitBounds(routeLine.getBounds(),{padding:[56,56],maxZoom:16}); }catch(e){}
+    routeGlow=window.L.polyline(latlngs,{color:"#4df0ff",weight:10,opacity:0.16,lineCap:"round",interactive:false}).addTo(map);
+    routeLine=window.L.polyline(latlngs,{color:"#7ee9ff",weight:2,opacity:0.85,lineCap:"round",interactive:false,dashArray:"6 10"}).addTo(map);
+  }
+  function bondPts(a,b){
+    if(!a||!b||!isFinite(a.lat)||!isFinite(b.lat)) return [];
+    var lat1=a.lat, lng1=a.lng, lat2=b.lat, lng2=b.lng;
+    var dlat=lat2-lat1, dlng=lng2-lng1;
+    var ox=-dlng, oy=dlat, n=Math.hypot(ox,oy)||1;
+    var lift=Math.max(0.028, Math.hypot(dlat,dlng)*0.48);
+    var cx=(lat1+lat2)/2+ox/n*lift, cy=(lng1+lng2)/2+oy/n*lift;
+    var pts=[], i;
+    for(i=0;i<=28;i++){
+      var t=i/28, u=1-t;
+      pts.push([u*u*lat1+2*u*t*cx+t*t*lat2, u*u*lng1+2*u*t*cy+t*t*lng2]);
+    }
+    return pts;
+  }
+  function drawBonds(){
+    if(!map||!window.L) return;
+    try{ if(bondGroup) map.removeLayer(bondGroup); }catch(e){}
+    bondGroup=window.L.layerGroup().addTo(map);
+    function add(a,b){
+      var pts=bondPts(a,b); if(pts.length<2) return;
+      window.L.polyline(pts,{color:"#0a2cff",weight:18,opacity:0.28,lineCap:"round",interactive:false}).addTo(bondGroup);
+      window.L.polyline(pts,{color:"#3d6bff",weight:3.5,opacity:1,lineCap:"round",interactive:false}).addTo(bondGroup);
+    }
+    if(here&&selected) add(here, selected);
+    if(selected&&job&&job.carrier&&job.carrier.driver){ var d=driverRow(job.carrier.id); if(d) add(selected, d); }
   }
   function paintJobArc(){
     var stops=[], d;
     if(here) stops.push(here);
     if(selected) stops.push(selected);
     if(job&&job.carrier&&job.carrier.driver){ d=driverRow(job.carrier.id); if(d&&isFinite(d.lat)) stops.push(d); }
+    drawBonds();
     if(stops.length<2) return Promise.resolve(null);
-    return osrmLine(stops).then(function(line){ drawGlowLine(line); return line; });
+    return osrmLine(stops).then(function(line){
+      drawGlowLine(line);
+      drawBonds();
+      try{
+        var b=window.L.latLngBounds(stops.map(function(p){ return [p.lat,p.lng]; }));
+        map.fitBounds(b.pad(0.35),{padding:[48,48],maxZoom:15});
+      }catch(e){}
+      return line;
+    });
   }
   var listMarks=[], globeMarks=[];
   function spaceAround(from){
@@ -651,7 +685,7 @@
     talk("You're in "+n+". Marks on the map. Search for the rest.");
     if(window.SNWork&&SNWork.pull) SNWork.pull(from||here);
   }
-  function paintMapMarks(L, v){ if(hereMark) hereMark.remove(); if(vendorMark) vendorMark.remove(); if(aimMark) aimMark.remove(); if(routeLine) try{map.removeLayer(routeLine);}catch(e){} if(routeGlow) try{map.removeLayer(routeGlow);}catch(e){} if(callLine) callLine.remove(); listMarks.forEach(function(m){ try{m.remove();}catch(e){} }); listMarks=[]; if(here) hereMark=L.circleMarker([here.lat,here.lng],{radius:7,color:"#4df0ff",fillColor:"#4df0ff",fillOpacity:.95}).addTo(map).bindTooltip("YOU",{permanent:true,direction:"top",className:"sn-tip",opacity:1}); if(aim && (!here || km(here,aim)>0.05)) aimMark=L.circleMarker([aim.lat,aim.lng],{radius:6,color:"#ff8ad4",fillColor:"#ff8ad4",fillOpacity:.9}).addTo(map); if(v) vendorMark=L.circleMarker([v.lat,v.lng],{radius:7,color:"#ffd85a",fillColor:"#ffd85a",fillOpacity:.9}).addTo(map).bindTooltip(v.name||"Place",{permanent:false,direction:"top",className:"sn-tip"});
+  function paintMapMarks(L, v){ if(hereMark) hereMark.remove(); if(vendorMark) vendorMark.remove(); if(aimMark) aimMark.remove(); if(routeLine) try{map.removeLayer(routeLine);}catch(e){} if(routeGlow) try{map.removeLayer(routeGlow);}catch(e){} if(bondGroup) try{map.removeLayer(bondGroup);}catch(e){} if(callLine) callLine.remove(); listMarks.forEach(function(m){ try{m.remove();}catch(e){} }); listMarks=[]; if(here) hereMark=L.circleMarker([here.lat,here.lng],{radius:7,color:"#4df0ff",fillColor:"#4df0ff",fillOpacity:.95}).addTo(map).bindTooltip("YOU",{permanent:true,direction:"top",className:"sn-tip",opacity:1}); if(aim && (!here || km(here,aim)>0.05)) aimMark=L.circleMarker([aim.lat,aim.lng],{radius:6,color:"#ff8ad4",fillColor:"#ff8ad4",fillOpacity:.9}).addTo(map); if(v) vendorMark=L.circleMarker([v.lat,v.lng],{radius:7,color:"#ffd85a",fillColor:"#ffd85a",fillOpacity:.9}).addTo(map).bindTooltip(v.name||"Place",{permanent:false,direction:"top",className:"sn-tip"});
     if(window.SNWork && map){
       var colors={shop:"#ffd85a",driver:"#4df0ff",drop:"#ff8ad4",post:"#9dffb0"};
       function pin(row,color,label){ if(!row||!isFinite(row.lat)) return; var m=L.circleMarker([row.lat,row.lng],{radius:7,color:color,fillColor:color,fillOpacity:.9}).addTo(map).bindTooltip(label,{permanent:false,direction:"top"}); m.on("click", function(e){ try{ L.DomEvent.stopPropagation(e); }catch(_){} mapHeld=true; if(window.SNWork) SNWork.open(row); }); listMarks.push(m); }
@@ -667,6 +701,7 @@
       }
     }
     if(lastRoute&&lastRoute.length>=2) drawGlowLine(lastRoute);
+    drawBonds();
   }
   function cityWork(p){ if(!p) return; aim=p; hidePlace(); if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; if(window.SNWork) SNWork.open(p); nameAim(p).then(function(n){ aim=n; if(window.SNWork&&SNWork.rename) SNWork.rename(n); else if(!window.SNWork) say(n.water?"No named place on that water.":(n.name||"This place")); }); }
   function bindMap(L){ if(mapBound||!map||!cityEl) return; mapBound=true; try{ map.attributionControl.setPosition("bottomleft"); }catch(e){} var lp=null; cityEl.addEventListener("pointerdown", function(e){ if(!cityEl.classList.contains("on")) return; if(e.target && e.target.closest && e.target.closest(".leaflet-control")) return; if(e.isPrimary===false) return; lp={x:e.clientX,y:e.clientY,id:e.pointerId,held:false}; lp.t=setTimeout(function(){ if(!lp) return; lp.held=true; mapHeld=true; var ll=map.mouseEventToLatLng({clientX:lp.x,clientY:lp.y}); var p={lat:ll.lat,lng:ll.lng}; if(viewLevel()==="city") cityWork(p); else openLevelMenu(p,{x:lp.x,y:lp.y}, "national"); },420); }, true); cityEl.addEventListener("pointermove", function(e){ if(!lp||lp.held) return; if(Math.hypot(e.clientX-lp.x,e.clientY-lp.y)>16){ clearTimeout(lp.t); lp=null; } }, true); function endLp(){ if(!lp) return; clearTimeout(lp.t); lp=null; } cityEl.addEventListener("pointerup", endLp, true); cityEl.addEventListener("pointercancel", endLp, true); map.on("click", function(e){ if(mapHeld){ mapHeld=false; return; } var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; if(map.getZoom()>=10){ cityWork(p); } else { flyTap(p); } }); map.on("zoomend", function(){ if(!map) return; if(map.getZoom()<=4) showGlobe(); paintLayerBtn(); packSoon(); }); map.on("contextmenu", function(e){ try{ L.DomEvent.preventDefault(e); }catch(_){} mapHeld=true; var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(viewLevel()==="city") cityWork(p); else openLevelMenu(p, null, "national"); }); }
@@ -715,16 +750,99 @@
       talk((n||"Driver base")+". Starting point. Send a job to this base.");
       return;
     }
-    if(b.menu) need({id:"menu",label:"MENU",run:function(){ talk(b.menu.slice(0,280)); }});
-    if(b.phone) need({id:"callshop",label:"CALL",run:function(){ location.href="tel:"+String(b.phone).replace(/[^\d+]/g,""); }});
-    need({id:"now",label:"NOW",run:function(){ chooseHow("now"); }});
-    need({id:"mail",label:"MAIL",run:function(){ chooseHow("mail"); }});
-    need({id:"pickup",label:"PICK UP",run:function(){ chooseHow("pickup"); }});
-    if(b.menu) talk(n+". Menu is here. Instant, mail, or pick up.");
-    else {
-      talk(n+(b.hours?". "+b.hours:"")+". Getting the menu.");
-      grok("MENU for "+n+(hereName?" in "+hereName:"")+". Public menu only. act=menu. No invented prices.");
-    }
+    loadShopMenu(v, b).then(function(items){
+      if(selected!==v) return;
+      clearNeed();
+      renderMenu(items);
+      if(b.phone) need({id:"callshop",label:"CALL",run:function(){ location.href="tel:"+String(b.phone).replace(/[^\d+]/g,""); }});
+      need({id:"now",label:"NOW",run:function(){ chooseHow("now"); }});
+      need({id:"mail",label:"MAIL",run:function(){ chooseHow("mail"); }});
+      need({id:"pickup",label:"PICK UP",run:function(){ chooseHow("pickup"); }});
+      var samples=(items||[]).some(function(it){ return it.sample; });
+      talk(n+". "+(items&&items.length?items.length+" dishes.":"")+(samples?" Sample photos and prices until the shop lists a live menu.":" Pick a dish."));
+    });
+  }
+  var SAMPLE_PIC={
+    pizza:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Eq_it-na_pizza-margherita_sep2005_s.jpg/320px-Eq_it-na_pizza-margherita_sep2005_s.jpg",
+    beer:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Weizenbier.jpg/320px-Weizenbier.jpg",
+    burger:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/RedDot_Burger.jpg/320px-RedDot_Burger.jpg",
+    gyro:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/57/Gyros.jpg/320px-Gyros.jpg",
+    food:"https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Good_Food_Display_-_NCI_Visuals_Online.jpg/320px-Good_Food_Display_-_NCI_Visuals_Online.jpg"
+  };
+  function samplePic(name){
+    var l=String(name||"").toLowerCase();
+    if(/beer|lager|ale|pint/.test(l)) return SAMPLE_PIC.beer;
+    if(/burger/.test(l)) return SAMPLE_PIC.burger;
+    if(/gyro|souvlaki|kebab/.test(l)) return SAMPLE_PIC.gyro;
+    if(/pizza|πιτσ/.test(l)) return SAMPLE_PIC.pizza;
+    return SAMPLE_PIC.food;
+  }
+  function sampleMenu(v){
+    var g=goodsOf((job&&job.query)||(v&&v.name)||"pizza");
+    if(g.name==="beer") return [{name:"Lager 330ml",price:4,sample:true},{name:"Pint",price:5.5,sample:true},{name:"Local draft",price:4.5,sample:true}];
+    if(g.name==="burger") return [{name:"Classic burger",price:8.5,sample:true},{name:"Cheeseburger",price:9.5,sample:true},{name:"Menu burger",price:12,sample:true}];
+    if(g.name==="gyro") return [{name:"Pita gyro",price:7,sample:true},{name:"Portion gyro",price:9,sample:true}];
+    return [{name:"Margherita",price:9,sample:true},{name:"Special",price:12,sample:true},{name:"Pepperoni",price:11,sample:true}];
+  }
+  function parseListedMenu(text){
+    return String(text||"").split(/\n+/).map(function(line){
+      var m=String(line).match(/^\s*(.+?)\s*[—\-–:]\s*€?\s*(\d+[.,]?\d*)\s*$/);
+      if(!m) return null;
+      return {name:m[1].trim(), price:Number(String(m[2]).replace(",",".")), sample:false};
+    }).filter(function(x){ return x&&x.name&&x.price>0; });
+  }
+  function wikiPic(q){
+    var url="https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(String(q||"Pizza").replace(/\s+/g,"_"));
+    return fetchJson(url,{headers:{Accept:"application/json"}},7000).then(function(j){ return (j&&j.thumbnail&&j.thumbnail.source)||""; }).catch(function(){ return ""; });
+  }
+  function withPhotos(items){
+    return Promise.all((items||[]).map(function(it){
+      if(it.photo) return it;
+      return wikiPic(it.name).then(function(u){
+        it.photo=u||samplePic(it.name);
+        if(!u) it.sample=true;
+        return it;
+      });
+    }));
+  }
+  function loadShopMenu(v, b){
+    var listed=parseListedMenu(b&&b.menu);
+    if(listed.length) return withPhotos(listed);
+    return new Promise(function(resolve){
+      var done=false;
+      function finish(items, sample){
+        if(done) return;
+        done=true;
+        var list=(items&&items.length)?items:sampleMenu(v);
+        if(sample) list.forEach(function(it){ it.sample=true; });
+        withPhotos(list).then(resolve);
+      }
+      grok("MENU JSON for "+(v.name||"shop")+(hereName?" in "+hereName:"")+". Return act=menu and items:[{name,price,sample}]. price in euro. sample=true unless this shop published that exact price. 3 to 6 items. No invented live prices.");
+      var t=setTimeout(function(){ finish(null, true); }, 4200);
+      var prev=window.__snMenuCb;
+      window.__snMenuCb=function(items){ window.__snMenuCb=prev; clearTimeout(t); finish(items, false); };
+    });
+  }
+  function htmlEsc(s){ return String(s==null?"":s).replace(/&/g,"&#38;").replace(/</g,"&#60;").replace(/>/g,"&#62;").replace(/\"/g,"&#34;").replace(/'/g,"&#39;"); }
+  function renderMenu(items){
+    if(!liveEl) return;
+    (items||[]).forEach(function(it){
+      var b=document.createElement("button");
+      b.type="button";
+      b.className="dish";
+      b.innerHTML='<img alt="" src="'+htmlEsc(it.photo||samplePic(it.name))+'"><span class="meta"><b>'+htmlEsc(it.name)+'</b><span class="px">'+fmtAve(Number(it.price)||0)+(it.sample?'<i class="sample">SAMPLE</i>':'')+'</span></span>';
+      b.onclick=function(){ pickDish(it, b); };
+      liveEl.appendChild(b);
+    });
+    openMenu();
+  }
+  function pickDish(it, el){
+    if(!job) job={kind:"find",query:(selected&&selected.name)||"order",status:"chosen",shop:selected};
+    job.cart=job.cart||[];
+    job.cart.push({name:it.name,price:Number(it.price)||0,sample:!!it.sample});
+    job.price=job.cart.reduce(function(s,x){ return s+(Number(x.price)||0); },0);
+    if(el) el.classList.add("on");
+    talk(it.name+" · "+fmtAve(it.price)+(it.sample?" Sample price.":"")+". "+fmtAve(job.price)+" in the bag.");
   }
   function partnerPlaces(how){ if(!selected||how==="pickup") return Promise.resolve([]); var f=how==="mail"?'["amenity"="post_office"]':'["office"~"courier|logistics",i]'; var q='[out:json][timeout:12];nwr(around:25000,'+selected.lat+','+selected.lng+')["name"]'+f+';out center tags 12;'; return fetchJson("https://overpass-api.de/api/interpreter?data="+encodeURIComponent(q),{headers:{Accept:"application/json"}},15000).then(function(j){ return (j.elements||[]).map(function(r){var p=pointOf(r),t=r.tags||{};return {id:"carrier-"+r.type+"-"+r.id,name:t.name,how:how,own:false,real:true,eta:how==="mail"?1440:Math.max(12,(job&&job.routeMin)||travelMin(here,selected)+10),note:how==="mail"?"Named post. Days. No heat hold.":"Named local courier."};}).filter(function(o){return o.name;}); }).catch(function(){return [];}); }
   function portalOffers(){ return []; }
@@ -732,7 +850,7 @@
   function offerList(how,partners){ var mins=here&&selected?Math.max(8,(job&&job.routeMin)||travelMin(here,selected)+6):18; var g=goodsOf(job&&job.query), own={id:"ours",name:"Astranov",how:how,own:true,eta:how==="mail"?Math.max(mins,90):mins,note:"Own associates. Paid, picked, boxed, moving, handed, verified."}; if(how==="pickup") return [{id:"self",name:"You pick up",how:how,own:true,eta:mins,note:"Handoff at the shop."}]; if(how==="mail"&&g.strict&&g.temp!=="ambient") return []; var list=[own].concat(listedDriverBases(how)).concat(partners||[]).concat(portalOffers(how,mins)); return list.filter(function(o){ return !(how==="now"&&g.strict&&o.eta>g.hold); }); }
   function chooseHow(how){ if(!selected){ talk("Pick a place first."); return; } if(job) job.how=how; var seq=++offerSeq; say("Checking carriers…"); partnerPlaces(how).then(function(p){ if(seq!==offerSeq||!job||job.how!==how)return; var list=offerList(how,p); if(!list.length){ clearNeed(); need({id:"pickup",label:"PICK UP",run:function(){chooseHow("pickup");}}); need({id:"place",label:"OTHER PLACE",run:function(){hunt(job&&job.query);}}); talk("That ride cannot keep "+goodsOf(job&&job.query).name+" alive. Pick it up or choose closer."); return; } showOffers(list); }); }
   function showOffers(list){ clearNeed(); currentOffers=list; list.forEach(function(o){ need({id:o.id, label:o.name.toUpperCase()+" · "+(o.eta>=1440?Math.round(o.eta/1440)+"d":o.eta+"m"), run:function(){ pickCarrier(o); }}); }); var f=list[0]; if(f.own) talk("Astranov first. About "+f.eta+" min. Own associates. Every stage checked."); else talk(f.name+" · "+f.eta+" min. "+f.note); }
-  function priceOf(o){ return o&&o.how==="pickup"?6:(o&&o.how==="mail"?14:10); }
+  function priceOf(o){ var c=job&&job.cart&&job.cart.reduce(function(s,x){ return s+(Number(x.price)||0); },0); if(c>0) return Math.round(c*100)/100; return o&&o.how==="pickup"?6:(o&&o.how==="mail"?14:10); }
   function pickCarrier(o){ if(job) job.carrier=o; offerPay(priceOf(o)); paintJobArc(); if(o.id==="ours"||(o.own&&o.how!=="pickup")) talk("Astranov. Tasks spend AV€ now. Reload euro through PayPal only if credit is empty."); else if(o.id==="self") talk("Pick up at "+(selected&&selected.name||"the shop")+"."); else if(o.driver) talk((o.name||"Driver base")+". Starting point. Job goes to this base. About "+o.eta+" min."); else talk(o.name+" · about "+o.eta+" min. Portals see one slice."); }
   function offerPay(price){ clearNeed(); var bal=avcGet(); if(job) job.price=price; need({id:"pay",label:"PAY "+fmtAve(price),run:function(){ spendAvc(price); }}); if(bal<price) need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(Math.max(10, Math.ceil(price-bal))); }}); talk((bal>=price)?("Pay "+fmtAve(price)+". You have "+fmtAve(bal)+"."):("Need "+fmtAve(price)+". You have "+fmtAve(bal)+". Reload euro through PayPal, 1 to 1.")); }
   function spendAvc(price){ price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } var esc=openEscrow(price); clearNeed(); syncTasks(); talk("Paid "+fmtAve(price)+". Locked, not spent in the dark. Hold "+esc.holdMin+" min."); watchStages(price); }
@@ -786,8 +904,8 @@
     rec.onerror=function(ev){ listening=false; rec=null; paintEar(); if(ev&&ev.error==="not-allowed") wantEar=false; };
     try{ rec.start(); listening=true; paintEar(); }catch(e){ listening=false; paintEar(); }
   }
-  function parseMind(j, raw){ var text=String((j&&(j.text||j.response||j.answer||j.say))||""); var act=String((j&&j.act)||"").toLowerCase(), q=(j&&j.q)||"", s=(j&&j.say)||"", ok=j&&j.priority_ok, id=(j&&(j.task_id||j.id))||"", split=j&&j.split; var m=text.match(/\{[\s\S]*\}/); if(m){ try{ var o=JSON.parse(m[0]); if(o){ if(o.act) act=String(o.act).toLowerCase(); if(o.q) q=String(o.q); if(o.say) s=String(o.say); if(!s && o.text) s=String(o.text); if(o.ok!=null) ok=o.ok; if(o.id) id=String(o.id); if(o.split) split=o.split; } }catch(e){} } if(!s) s=text.replace(/\{[\s\S]*\}/,"").trim(); return {act:act||"talk", q:q||raw, say:s||"", ok:ok, id:id, split:split}; }
-  function applyMind(m, raw){ if(!m) return; var a=String(m.act||"talk").toLowerCase(); if(m.say && a!=="hunt" && a!=="order" && a!=="find" && a!=="priority") talk(m.say); else if(m.say && a!=="priority") say(m.say); if(a==="talk"||!a) return; if(a==="priority"){ var ok=m.ok===true||m.ok==="true"||m.ok===1; bumpTask(m.id||(awaiting&&awaiting.id), ok, m.say); awaiting=null; return; } if(a==="justice"){ applyJustice(m); awaiting=null; return; } if(a==="pick"){ var q=String(m.q||m.id||"").toLowerCase(); var v=(vendors||[]).find(function(x){ var n=String(x.name||"").toLowerCase(); return n && q && (n===q || n.indexOf(q)>=0 || q.indexOf(n)>=0); }); if(v) return selectVendor(v); return; } if(a==="menu") return; if(a==="locate") return goHere(); if(a==="globe"){ showGlobe(); return; } if(a==="national") return showNational(aim||here||facingPoint()); if(a==="map"||a==="city"||a==="streets") return showCity(selected||aim||here); if(a==="now") return chooseHow("now"); if(a==="mail") return chooseHow("mail"); if(a==="pickup"||a==="pick up") return chooseHow("pickup"); if(a==="pay") return spendAvc(priceOf(job&&job.carrier)); if(a==="reload") return reloadPaypal(10); if(a==="post"||a==="call"||a==="shop"||a==="drop"||a==="driver"||a==="base"){ if(window.SNWork) return SNWork.open(aim||here, a==="base"?"driver":a); return; } if(a==="hunt"||a==="order"||a==="find") return hunt(m.q||raw, aim||here); }
+  function parseMind(j, raw){ var text=String((j&&(j.text||j.response||j.answer||j.say))||""); var act=String((j&&j.act)||"").toLowerCase(), q=(j&&j.q)||"", s=(j&&j.say)||"", ok=j&&j.priority_ok, id=(j&&(j.task_id||j.id))||"", split=j&&j.split, items=j&&j.items; var m=text.match(/\{[\s\S]*\}/); if(m){ try{ var o=JSON.parse(m[0]); if(o){ if(o.act) act=String(o.act).toLowerCase(); if(o.q) q=String(o.q); if(o.say) s=String(o.say); if(!s && o.text) s=String(o.text); if(o.ok!=null) ok=o.ok; if(o.id) id=String(o.id); if(o.split) split=o.split; if(o.items) items=o.items; } }catch(e){} } if(!s) s=text.replace(/\{[\s\S]*\}/,"").trim(); return {act:act||"talk", q:q||raw, say:s||"", ok:ok, id:id, split:split, items:items||[]}; }
+  function applyMind(m, raw){ if(!m) return; var a=String(m.act||"talk").toLowerCase(); if(m.say && a!=="hunt" && a!=="order" && a!=="find" && a!=="priority") talk(m.say); else if(m.say && a!=="priority") say(m.say); if(a==="talk"||!a) return; if(a==="priority"){ var ok=m.ok===true||m.ok==="true"||m.ok===1; bumpTask(m.id||(awaiting&&awaiting.id), ok, m.say); awaiting=null; return; } if(a==="justice"){ applyJustice(m); awaiting=null; return; } if(a==="pick"){ var q=String(m.q||m.id||"").toLowerCase(); var v=(vendors||[]).find(function(x){ var n=String(x.name||"").toLowerCase(); return n && q && (n===q || n.indexOf(q)>=0 || q.indexOf(n)>=0); }); if(v) return selectVendor(v); return; } if(a==="menu"){ var items=(m.items||[]).filter(function(it){ return it&&it.name; }).map(function(it){ return {name:String(it.name), price:Number(it.price)||0, sample:it.sample!==false, photo:it.photo||""}; }); if(window.__snMenuCb) window.__snMenuCb(items); return; } if(a==="locate") return goHere(); if(a==="globe"){ showGlobe(); return; } if(a==="national") return showNational(aim||here||facingPoint()); if(a==="map"||a==="city"||a==="streets") return showCity(selected||aim||here); if(a==="now") return chooseHow("now"); if(a==="mail") return chooseHow("mail"); if(a==="pickup"||a==="pick up") return chooseHow("pickup"); if(a==="pay") return spendAvc(priceOf(job&&job.carrier)); if(a==="reload") return reloadPaypal(10); if(a==="post"||a==="call"||a==="shop"||a==="drop"||a==="driver"||a==="base"){ if(window.SNWork) return SNWork.open(aim||here, a==="base"?"driver":a); return; } if(a==="hunt"||a==="order"||a==="find") return hunt(m.q||raw, aim||here); }
   function grok(text){ var raw=String(text||"").trim(); if(!raw) return; say("Grok…"); var origin=aim||here; var ctx={ place:(aim&&aim.name)||hereName||"", avc:avcGet(), shop:selected&&selected.name||"", query:job&&job.query||"", level:viewLevel(), vendors:(vendors||[]).slice(0,6).map(function(v){ var b=shopBits(v); return {id:v.id,name:v.name,km:origin?Math.round(km(origin,v)*10)/10:null,cuisine:b.cuisine,hours:b.hours,phone:!!b.phone,listed:!!b.menu}; }), tasks:loadTasks().filter(function(t){return t.status!=="done";}).slice(0,8).map(function(t){return {id:t.id,title:t.title,pri:t.pri,role:t.role,next:t.next};}), escrow:loadEscrow().filter(function(e){return e&&e.held;}).slice(0,4) }; if(awaiting&&awaiting.kind==="priority") ctx.priority_request={id:awaiting.id, reason:raw}; if(awaiting&&awaiting.kind==="justice") ctx.justice_request={id:awaiting.id, reason:raw}; fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:raw, message:raw, here:ctx, history:mindHist, spacenet:true, fast:true, force_paid:true, allow_paid:true})}).then(function(r){return r.json().then(function(j){ j.http=r.status; return j; });}).then(function(j){ var m=parseMind(j, raw); mindHist.push({role:"user",content:raw}); mindHist.push({role:"assistant",content:m.say||m.act||""}); if(mindHist.length>16) mindHist=mindHist.slice(-16); applyMind(m, raw); }).catch(function(){ talk("Grok did not answer. Say it again."); }); }
   function savePost(a, text){ var row={level:a.level, lat:a.at&&a.at.lat, lng:a.at&&a.at.lng, name:(a.at&&a.at.name)||"", text:String(text||"").trim(), t:Date.now(), kind:"post", id:"p"+Date.now().toString(36)}; try{ var list=JSON.parse(localStorage.getItem("sn:posts")||"[]"); list.unshift(row); localStorage.setItem("sn:posts", JSON.stringify(list.slice(0,80))); }catch(e){} if(window.SNWork&&SNWork.publish) SNWork.publish(row); talk("Posted at "+(row.name||a.level)+"."); if(window.SN&&SN.repaint) SN.repaint(); }
   function startAwait(kind, level, p){ awaiting={kind:kind, level:level, at:p}; if(inEl){ inEl.value=""; inEl.placeholder= kind==="post"?"Post at this place": kind==="add"?"Name what you add":"Task at this place"; try{ inEl.focus(); }catch(e){} } var n=(p&&p.name)||level; if(kind==="post") talk("Post at "+n+". Write it."); else if(kind==="add") talk("Add at "+n+". Name it."); else talk("Task at "+n+". Say what you want."); }
@@ -964,10 +1082,11 @@
   function sph(latDeg,lngDeg,cx,cy,R){ var la=latDeg*Math.PI/180, ln=lngDeg*Math.PI/180-yaw; var x=Math.cos(la)*Math.sin(ln); var y=Math.sin(la); var z=Math.cos(la)*Math.cos(ln); var y2=y*Math.cos(pitch)-z*Math.sin(pitch); var z2=y*Math.sin(pitch)+z*Math.cos(pitch); if(z2<=0.02) return null; return {x:cx+R*x, y:cy-R*y2, z:z2}; }
   function drawGrid(ctx,cx,cy,R){ var lat,lng,a,b,step=15; ctx.lineWidth=Math.max(1, (devicePixelRatio||1)*0.7); ctx.strokeStyle="rgba(77,240,255,0.22)"; for(lat=-75; lat<=75; lat+=step){ ctx.beginPath(); a=null; for(lng=-180; lng<=180; lng+=6){ b=sph(lat,lng,cx,cy,R); if(b&&a){ ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); } a=b; } ctx.stroke(); } ctx.strokeStyle="rgba(77,240,255,0.28)"; for(lng=-180; lng<180; lng+=step){ ctx.beginPath(); a=null; for(lat=-90; lat<=90; lat+=4){ b=sph(lat,lng,cx,cy,R); if(b&&a){ ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); } a=b; } ctx.stroke(); } ctx.strokeStyle="rgba(126,233,255,0.55)"; ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke(); }
   function pinLabel(p, fallback){ var n=String((p&&p.name)||fallback||""); if(!n || /^-?\d+\.\d+/.test(n) || /\d+\.\d+[NS]/.test(n)) return fallback||"PIN"; return n.slice(0,18); }
+  function drawBond3d(ctx,a,b,cx,cy,R){ if(!a||!b) return; var pts=bondPts(a,b), i, q, last=null, d=Math.min(2,devicePixelRatio||1); ctx.save(); ctx.lineCap="round"; ctx.shadowColor="#3d6bff"; ctx.shadowBlur=16*d; ctx.strokeStyle="rgba(10,44,255,0.4)"; ctx.lineWidth=8*d; ctx.beginPath(); for(i=0;i<pts.length;i++){ q=sph(pts[i][0],pts[i][1],cx,cy,R); if(q&&last){ ctx.moveTo(last.x,last.y); ctx.lineTo(q.x,q.y);} last=q; } ctx.stroke(); last=null; ctx.strokeStyle="#6d8cff"; ctx.lineWidth=2.2*d; ctx.beginPath(); for(i=0;i<pts.length;i++){ q=sph(pts[i][0],pts[i][1],cx,cy,R); if(q&&last){ ctx.moveTo(last.x,last.y); ctx.lineTo(q.x,q.y);} last=q; } ctx.stroke(); ctx.restore(); }
   function drawPin(ctx,p,label,color,cx,cy,R){ if(!p||!isFinite(p.lat)||!isFinite(p.lng)) return; var q=sph(p.lat,p.lng,cx,cy,R); if(!q) return; var d=Math.min(2,devicePixelRatio||1); ctx.fillStyle=color; ctx.beginPath(); ctx.arc(q.x,q.y,4*d,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#e8fbff"; ctx.font=(9*d)+"px system-ui"; ctx.fillText(pinLabel(p,label),q.x+6*d,q.y-4*d); }
   function tickFly(){ if(!fly) return; var u=(Date.now()-fly.t0)/fly.ms; if(u>=1){ yaw=fly.toYaw; pitch=fly.toPitch; if(fly.toDist!=null) dist=fly.toDist; var fn=fly.then; fly=null; if(fn) fn(); return; } u=u*u*(3-2*u); var dy=fly.toYaw-fly.fromYaw; while(dy>Math.PI) dy-=Math.PI*2; while(dy<-Math.PI) dy+=Math.PI*2; yaw=fly.fromYaw+dy*u; pitch=fly.fromPitch+(fly.toPitch-fly.fromPitch)*u; if(fly.toDist!=null) dist=fly.fromDist+(fly.toDist-fly.fromDist)*u; }
   function needTick(){ if(tickOn) return; tickOn=true; requestAnimationFrame(tick); }
-  function tick(){ tickOn=false; try{ tickFly(); if(!drag && !pinch && !fly){ yaw+=spin; pitch=Math.max(-1.15,Math.min(1.15,pitch+pitchSpin)); spin*=0.988; pitchSpin*=0.988; if(Math.abs(spin)<0.00018) spin=0; if(Math.abs(pitchSpin)<0.00018) pitchSpin=0; } var moving=!!(drag||pinch||fly||Math.abs(spin)>0.00018||Math.abs(pitchSpin)>0.00018); var sig=yaw.toFixed(4)+"|"+pitch.toFixed(4)+"|"+dist.toFixed(3)+"|"+(here&&here.lat)+"|"+(aim&&aim.lat)+"|"+(selected&&selected.id)+"|"+globeMarks.length; if(moving || sig!==drawSig){ drawSig=sig; if(canvas){ var ctx=canvas.getContext("2d"); if(ctx){ ctx.fillStyle="#02040a"; ctx.fillRect(0,0,canvas.width,canvas.height); var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,R=Math.min(w,h)*0.42/dist; drawGrid(ctx,cx,cy,R); drawPin(ctx,here,hereName||"YOU","#4df0ff",cx,cy,R); if(aim) drawPin(ctx,aim,aim.name||"PIN","#ff8ad4",cx,cy,R); if(selected) drawPin(ctx,selected,selected.name,"#ffd85a",cx,cy,R); globeMarks.slice(0,8).forEach(function(x){ var r=x.row, col=x.kind==="driver"?"#4df0ff":x.kind==="post"?"#9dffb0":x.kind==="drop"?"#ff8ad4":"#ffd85a"; drawPin(ctx,r,x.kind==="driver"?((r.name||"")+" base"):(r.name||r.label||x.kind),col,cx,cy,R); }); } } } }catch(e){} if(drag||pinch||fly||Math.abs(spin)>0.00018||Math.abs(pitchSpin)>0.00018) needTick(); }
+  function tick(){ tickOn=false; try{ tickFly(); if(!drag && !pinch && !fly){ yaw+=spin; pitch=Math.max(-1.15,Math.min(1.15,pitch+pitchSpin)); spin*=0.988; pitchSpin*=0.988; if(Math.abs(spin)<0.00018) spin=0; if(Math.abs(pitchSpin)<0.00018) pitchSpin=0; } var moving=!!(drag||pinch||fly||Math.abs(spin)>0.00018||Math.abs(pitchSpin)>0.00018); var sig=yaw.toFixed(4)+"|"+pitch.toFixed(4)+"|"+dist.toFixed(3)+"|"+(here&&here.lat)+"|"+(aim&&aim.lat)+"|"+(selected&&selected.id)+"|"+globeMarks.length; if(moving || sig!==drawSig){ drawSig=sig; if(canvas){ var ctx=canvas.getContext("2d"); if(ctx){ ctx.fillStyle="#02040a"; ctx.fillRect(0,0,canvas.width,canvas.height); var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,R=Math.min(w,h)*0.42/dist; drawGrid(ctx,cx,cy,R); drawPin(ctx,here,hereName||"YOU","#4df0ff",cx,cy,R); if(aim) drawPin(ctx,aim,aim.name||"PIN","#ff8ad4",cx,cy,R); if(selected) drawPin(ctx,selected,selected.name,"#ffd85a",cx,cy,R); if(here&&selected) drawBond3d(ctx,here,selected,cx,cy,R); globeMarks.slice(0,8).forEach(function(x){ var r=x.row, col=x.kind==="driver"?"#4df0ff":x.kind==="post"?"#9dffb0":x.kind==="drop"?"#ff8ad4":"#ffd85a"; drawPin(ctx,r,x.kind==="driver"?((r.name||"")+" base"):(r.name||r.label||x.kind),col,cx,cy,R); }); } } } }catch(e){} if(drag||pinch||fly||Math.abs(spin)>0.00018||Math.abs(pitchSpin)>0.00018) needTick(); }
   function boot(){ if(permsTried) return; permsTried=true; var returning=/[?&]paypal=/.test(location.search||""); handlePayPalReturn().then(function(){ if(returning) return locate(true); }); askMic(); if(window.SNWork&&SNWork.listenPeer) setTimeout(function(){ SNWork.listenPeer(); },800); }
   function repaint(){ if(map&&window.L) paintMapMarks(window.L, selected); }
   window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,startOrder:startOrder,pack:pack,openMenu:openMenu,minMenu:minMenu,syncTasks:syncTasks,toggleTasks:toggleTasks,openTasks:openTasks,tickJustice:tickJustice,settle:settle,setLayer:setLayer,openCash:openCash,paintMoney:paintMoney,markStage:markStage,ingestJobs:ingestJobs};
