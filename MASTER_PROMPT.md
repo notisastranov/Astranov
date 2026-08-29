@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4050
+**Stamp at this rewrite:** 4051
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -50,6 +50,8 @@ A human coder waits for a ticket. You do not.
 ## Owner’s last full instruction — 2026-08-29
 
 This block **overrides** every older note in this file if they fight. Do not make the owner say it again.
+
+**Pin while listing.** The shop / driver / drop sheet sits on the bottom. The map above stays live. Tap or **drag the PIN** to set the listing. Form does not close. Form does not wipe.
 
 **Quality.** No double-pay. SET LOCATION does not open a shop sheet. Network hunt retries once on drop. Motion respects reduce. Focus ring on chrome. Never stack dummy chips. Never invent a shop.
 

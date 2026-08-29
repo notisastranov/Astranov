@@ -167,6 +167,42 @@
     if(sheet) sheet.classList.remove("on");
     view="home";
     resetPhotos();
+    if(window.SN&&SN.repaint) SN.repaint();
+  }
+
+  function listingKind(){
+    if(view==="driver") return "driver";
+    if(view==="drop") return "drop";
+    return "shop";
+  }
+  function listingOpen(){
+    if(!sheet||!sheet.classList.contains("on")) return false;
+    if(view==="call"||view==="calldone"||view==="post"||view==="tax") return false;
+    if(at&&at.id&&(view==="shop"||view==="drop"||view==="driver")) return false;
+    return view==="list"||view==="home"||view==="shop"||view==="drop"||view==="driver";
+  }
+  function listingAt(){
+    if(!listingOpen()||!at||!isFinite(at.lat)) return null;
+    return {lat:+at.lat,lng:+at.lng,name:placeName(at),kind:listingKind(),face:photos.face,photo:photos.shot||photos.profile,vehicle:photos.vehicle,profile:photos.profile,cover:photos.cover};
+  }
+  function setPin(p){
+    if(!listingOpen()) return false;
+    if(!p||!isFinite(p.lat)) return false;
+    at=at||{};
+    at.lat=+p.lat; at.lng=+p.lng;
+    if(p.name) at.name=p.name;
+    if(p.raw) at.raw=p.raw;
+    var sub=card&&card.querySelector(".sub");
+    if(sub) sub.textContent=placeLine(at)||"Tap or drag the pin on the map.";
+    if(window.SN&&SN.repaint) SN.repaint();
+    if(window.SN&&SN.nameAim) SN.nameAim({lat:at.lat,lng:at.lng}).then(function(n){
+      if(!listingOpen()) return;
+      if(n&&n.name) at.name=n.name;
+      if(n&&(n.raw||n.display_name)) at.raw=n.raw||n.display_name;
+      if(sub) sub.textContent=placeLine(at);
+    });
+    talk("Pin on the map. That's the listing. Form stays open.");
+    return true;
   }
 
   function open(place, which){
@@ -184,6 +220,10 @@
     render();
     sheet.classList.add("on");
     say(placeName(at));
+    if(listingOpen()){
+      talk("Tap or drag the pin on the map above. The form stays.");
+      if(window.SN&&SN.repaint) SN.repaint();
+    }
   }
 
   function rename(place){
@@ -203,7 +243,7 @@
     var act=b.getAttribute("data-act");
     if(act==="close"){ close(); return; }
     if(act==="home"){ view="home"; resetPhotos(); render(); return; }
-    if(act==="post"||act==="call"||act==="shop"||act==="drop"||act==="driver"||act==="list"){ view=act; resetPhotos(); render(); return; }
+    if(act==="post"||act==="call"||act==="shop"||act==="drop"||act==="driver"||act==="list"){ view=act; resetPhotos(); render(); if(window.SN&&SN.repaint) SN.repaint(); return; }
     if(act==="pick-map"){ startPick(); return; }
     if(act==="dial"){ nativeCall(b.getAttribute("data-tel")||"", false); return; }
     if(act==="video-dial"){ nativeCall(b.getAttribute("data-tel")||"", true); return; }
@@ -808,7 +848,10 @@
     publish:publish,
     taxOffice:taxOffice,
     flagOf:flagOf,
-    booksOf:booksOf
+    booksOf:booksOf,
+    listingAt:listingAt,
+    listingOpen:listingOpen,
+    setPin:setPin
   };
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", ensure);
   else ensure();
