@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4028";
+  var VER="4029";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -52,6 +52,7 @@
   var tasksBtn=document.getElementById("sn-tasks-btn");
   var tasksEl=document.getElementById("sn-tasks");
   var tasksList=document.getElementById("sn-tasks-list");
+  var openTaskId="";
   function loadTasks(){ try{ return JSON.parse(localStorage.getItem("sn:tasks")||"[]"); }catch(e){ return []; } }
   function saveTasks(list){ try{ localStorage.setItem("sn:tasks", JSON.stringify((list||[]).slice(0,80))); }catch(e){} }
   function jobNext(j){
@@ -134,13 +135,88 @@
     tasksBtn.textContent=n>1?("TASKS "+n):"TASKS";
     packSoon();
   }
+  function liveEscrow(){
+    if(job&&job.escrowId){ var e=escrowOf(job.escrowId); if(e) return e; }
+    var list=loadEscrow(), i;
+    for(i=0;i<list.length;i++) if(list[i]&&list[i].held) return list[i];
+    return null;
+  }
+  function stageList(how){ return how==="now"?["paid","picked","boxed","moving","handed","verified"]:["paid","picked","boxed","handed","verified"]; }
+  function stageOf(e){ if(!e) return "none"; if(!e.held && (e.status==="released"||e.status==="done")) return "verified"; return e.status||"paid"; }
+  function stagePct(e){ var s=stageList(e&&e.how), cur=stageOf(e), i=s.indexOf(cur); if(i<0) i=0; return Math.round(((i+1)/s.length)*100); }
+  function ladderHtml(e){
+    var s=stageList(e&&e.how), cur=stageOf(e), ix=s.indexOf(cur);
+    return '<div class="ladder">'+s.map(function(st,i){ var cls=i<ix?"done":(i===ix?"now":""); return '<i class="'+cls+'">'+st.toUpperCase()+'</i>'; }).join("")+'</div><div class="pct">'+stagePct(e)+"% · "+(cur==="verified"?"Done":("Now "+cur))+'</div>';
+  }
+  function contactOf(t){
+    t=t||{};
+    return {
+      phone: t.phone||t["contact:phone"]||t.mobile||t["contact:mobile"]||"",
+      email: t.email||t["contact:email"]||"",
+      web: t.website||t["contact:website"]||t.url||""
+    };
+  }
+  function addContactBtns(v){
+    var c=contactOf(v&&v.tags);
+    if(c.phone){ var tel=String(c.phone).split(/[;,]/)[0].trim(); need({id:"tel",label:"CALL "+tel.replace(/[^\d+ ]/g,"").slice(0,18),run:function(){ location.href="tel:"+tel.replace(/[^\d+]/g,""); }}); }
+    if(c.email) need({id:"eml",label:"EMAIL",run:function(){ location.href="mailto:"+String(c.email).split(/[;,]/)[0].trim(); }});
+    if(c.web){ var u=String(c.web); if(!/^https?:/i.test(u)) u="https://"+u; need({id:"web",label:"SITE",run:function(){ window.open(u,"_blank","noopener"); }}); }
+    return c;
+  }
+  function fetchContacts(v){
+    if(!v||!isFinite(v.lat)) return Promise.resolve(v&&v.tags||{});
+    var got=Object.assign({}, v.tags||{});
+    function take(t){ if(!t) return; Object.keys(t).forEach(function(k){ if(/phone|mobile|email|website|url|opening_hours|cuisine|facebook|instagram/i.test(k) && t[k] && !got[k]) got[k]=t[k]; }); }
+    take(v.tags);
+    var jobs=[];
+    jobs.push(fetchJson("https://nominatim.openstreetmap.org/reverse?format=jsonv2&extratags=1&namedetails=1&zoom=18&lat="+v.lat+"&lon="+v.lng,{headers:{Accept:"application/json","Accept-Language":"en"}},7000).then(function(j){ take(j&&j.extratags); take(j&&j.address); }).catch(function(){}));
+    var name=escOverpass(v.name||"");
+    if(name){
+      var q='[out:json][timeout:6];nwr(around:90,'+v.lat+','+v.lng+')["name"~"'+name+'",i];out tags center 8;';
+      jobs.push(fetchJson("https://overpass.kumi.systems/api/interpreter?data="+encodeURIComponent(q),{headers:{Accept:"application/json"}},5000).then(function(j){ (j.elements||[]).forEach(function(el){ take(el.tags); }); }).catch(function(){}));
+    }
+    var oid=got.osm_id||got.osmid, ot=String(got.osm_type||got.osmtype||"N")[0].toUpperCase();
+    if(oid){ if(ot!=="N"&&ot!=="W"&&ot!=="R") ot="N"; jobs.push(fetchJson("https://nominatim.openstreetmap.org/details.php?osmtype="+ot+"&osmid="+oid+"&format=json",{headers:{Accept:"application/json"}},7000).then(function(j){ take(j&&j.extratags); take(j&&j.namedetails); }).catch(function(){})); }
+    return Promise.all(jobs).then(function(){ v.tags=got; return got; });
+  }
+  function openTaskDetail(id){
+    openTaskId=id||openTaskId;
+    var t=loadTasks().filter(function(x){ return x.id===openTaskId; })[0];
+    var e=t&&t.escrowId?escrowOf(t.escrowId):liveEscrow();
+    openTasks();
+    renderTaskList();
+    if(e&&e.shop){
+      var v=selected&&selected.id===e.shop.id?selected:e.shop;
+      selected=v;
+      fetchContacts(v).then(function(){
+        clearNeed();
+        if(menuEl){ var ttl=menuEl.querySelector(".ttl"); if(ttl) ttl.textContent=String(v.name||"JOB").toUpperCase().slice(0,22); }
+        var c=addContactBtns(v);
+        if(e){
+          var cur=stageOf(e);
+          need({id:"next",label:(cur==="verified"?"DONE":("NEXT · "+cur.toUpperCase())),run:function(){ if(t) goTask(t.id); }});
+        }
+        if(!c.phone&&!c.email&&!c.web) talk((v.name||"Shop")+". No phone or email on OpenStreetMap.");
+        else talk((v.name||"Shop")+". "+stagePct(e)+"% · "+stageOf(e)+". Tap CALL or EMAIL.");
+      });
+    }
+  }
+  function openJobFromMap(){
+    var e=liveEscrow();
+    var list=loadTasks().filter(function(t){ return e && t.escrowId===e.id; });
+    openTaskId=list[0]?list[0].id:(e?"stg-"+e.id+"-box":"");
+    openTaskDetail(openTaskId);
+  }
   function renderTaskList(){
     if(!tasksList) return;
     var list=loadTasks().filter(function(t){ return t.status!=="done"; });
     if(!list.length){ tasksList.innerHTML='<p class="note">Nothing on you.</p>'; return; }
     tasksList.innerHTML=list.map(function(t){
       var ask=t.ask&&t.ask.state==="wait"?" · waiting on Grok":(t.boost!=null?" · moved":"");
-      return '<div class="task" data-id="'+t.id+'"><b>'+String(t.title||"Task").replace(/[<>]/g,"")+'</b><span>'+String(t.role||"").toUpperCase()+" · "+String(t.next||"")+" "+ask+'</span><div class="row"><button type="button" data-act="go">DO</button>'+( /verify/.test(t.id)?'<button type="button" data-act="dispute">DISPUTE</button>':'')+'<button type="button" data-act="problem">PROBLEM</button></div></div>';
+      var e=t.escrowId?escrowOf(t.escrowId):null;
+      var open=t.id===openTaskId;
+      var extra=open&&e?(ladderHtml(e)+'<div class="who">'+(e.shop&&e.shop.name?("Shop "+e.shop.name+". "):"")+(e.driver&&e.driver.name?("Driver "+e.driver.name+". "):"")+(e.how?("Via "+e.how+". "):"")+"Hold "+(e.holdMin||0)+" min. "+fmtAve(e.avc||0)+" locked.</div>"):"";
+      return '<div class="task'+(open?" open":"")+'" data-id="'+t.id+'"><b>'+String(t.title||"Task").replace(/[<>]/g,"")+'</b><span>'+String(t.role||"").toUpperCase()+" · "+String(t.next||"")+" "+ask+(e?(" · "+stagePct(e)+"%"):"")+'</span>'+extra+'<div class="row"><button type="button" data-act="go">DO</button>'+( /verify/.test(t.id)?'<button type="button" data-act="dispute">DISPUTE</button>':'')+'<button type="button" data-act="problem">PROBLEM</button></div></div>';
     }).join("");
   }
   function openTasks(){ if(!tasksEl) return; syncTasks(); tasksEl.classList.add("on"); renderTaskList(); paintTasksBtn(); setTimeout(pack,40); }
@@ -614,7 +690,7 @@
     try{ if(routeGlow) map.removeLayer(routeGlow); }catch(e){}
     try{ if(routeLine) map.removeLayer(routeLine); }catch(e){}
     routeGlow=window.L.polyline(latlngs,{color:"#4df0ff",weight:10,opacity:0.16,lineCap:"round",interactive:false}).addTo(map);
-    routeLine=window.L.polyline(latlngs,{color:"#7ee9ff",weight:2,opacity:0.85,lineCap:"round",interactive:false,dashArray:"6 10"}).addTo(map);
+    routeLine=window.L.polyline(latlngs,{color:"#7ee9ff",weight:2,opacity:0.85,lineCap:"round",interactive:true,dashArray:"6 10"}).addTo(map); routeLine.on("click", function(e){ try{ window.L.DomEvent.stopPropagation(e);}catch(_){} mapHeld=true; openJobFromMap(); });
   }
   function bondPts(a,b){
     if(!a||!b||!isFinite(a.lat)||!isFinite(b.lat)) return [];
@@ -638,6 +714,8 @@
       var pts=bondPts(a,b); if(pts.length<2) return;
       window.L.polyline(pts,{color:"#0a2cff",weight:18,opacity:0.28,lineCap:"round",interactive:false}).addTo(bondGroup);
       window.L.polyline(pts,{color:"#3d6bff",weight:3.5,opacity:1,lineCap:"round",interactive:false}).addTo(bondGroup);
+      var hit=window.L.polyline(pts,{color:"#3d6bff",weight:28,opacity:0.001,lineCap:"round",interactive:true}).addTo(bondGroup);
+      hit.on("click", function(e){ try{ window.L.DomEvent.stopPropagation(e); }catch(_){} mapHeld=true; openJobFromMap(); });
     }
     if(here&&selected) add(here, selected);
     if(selected&&job&&job.carrier&&job.carrier.driver){ var d=driverRow(job.carrier.id); if(d) add(selected, d); }
@@ -689,7 +767,7 @@
     talk("You're in "+n+". Marks on the map. Search for the rest.");
     if(window.SNWork&&SNWork.pull) SNWork.pull(from||here);
   }
-  function paintMapMarks(L, v){ if(hereMark) hereMark.remove(); if(vendorMark) vendorMark.remove(); if(aimMark) aimMark.remove(); if(routeLine) try{map.removeLayer(routeLine);}catch(e){} if(routeGlow) try{map.removeLayer(routeGlow);}catch(e){} if(bondGroup) try{map.removeLayer(bondGroup);}catch(e){} if(callLine) callLine.remove(); listMarks.forEach(function(m){ try{m.remove();}catch(e){} }); listMarks=[]; if(here) hereMark=L.circleMarker([here.lat,here.lng],{radius:7,color:"#4df0ff",fillColor:"#4df0ff",fillOpacity:.95}).addTo(map).bindTooltip("YOU",{permanent:true,direction:"top",className:"sn-tip",opacity:1}); if(aim && (!here || km(here,aim)>0.05)) aimMark=L.circleMarker([aim.lat,aim.lng],{radius:6,color:"#ff8ad4",fillColor:"#ff8ad4",fillOpacity:.9}).addTo(map); if(v) vendorMark=L.circleMarker([v.lat,v.lng],{radius:7,color:"#ffd85a",fillColor:"#ffd85a",fillOpacity:.9}).addTo(map).bindTooltip(v.name||"Place",{permanent:false,direction:"top",className:"sn-tip"});
+  function paintMapMarks(L, v){ if(hereMark) hereMark.remove(); if(vendorMark) vendorMark.remove(); if(aimMark) aimMark.remove(); if(routeLine) try{map.removeLayer(routeLine);}catch(e){} if(routeGlow) try{map.removeLayer(routeGlow);}catch(e){} if(bondGroup) try{map.removeLayer(bondGroup);}catch(e){} if(callLine) callLine.remove(); listMarks.forEach(function(m){ try{m.remove();}catch(e){} }); listMarks=[]; if(here) hereMark=L.circleMarker([here.lat,here.lng],{radius:7,color:"#4df0ff",fillColor:"#4df0ff",fillOpacity:.95}).addTo(map).bindTooltip("YOU",{permanent:true,direction:"top",className:"sn-tip",opacity:1}); if(aim && (!here || km(here,aim)>0.05)) aimMark=L.circleMarker([aim.lat,aim.lng],{radius:6,color:"#ff8ad4",fillColor:"#ff8ad4",fillOpacity:.9}).addTo(map); if(v){ vendorMark=L.circleMarker([v.lat,v.lng],{radius:9,color:"#ffd85a",fillColor:"#ffd85a",fillOpacity:.95}).addTo(map).bindTooltip(v.name||"Place",{permanent:false,direction:"top",className:"sn-tip"}); vendorMark.on("click", function(e){ try{ L.DomEvent.stopPropagation(e); }catch(_){} mapHeld=true; vendorTapped(v); }); }
     if(window.SNWork && map){
       var colors={shop:"#ffd85a",driver:"#4df0ff",drop:"#ff8ad4",post:"#9dffb0"};
       function pin(row,color,label){ if(!row||!isFinite(row.lat)) return; var m=L.circleMarker([row.lat,row.lng],{radius:7,color:color,fillColor:color,fillOpacity:.9}).addTo(map).bindTooltip(label,{permanent:false,direction:"top"}); m.on("click", function(e){ try{ L.DomEvent.stopPropagation(e); }catch(_){} mapHeld=true; if(window.SNWork) SNWork.open(row); }); listMarks.push(m); }
@@ -709,13 +787,21 @@
   }
   function cityWork(p){ if(!p) return; aim=p; hidePlace(); if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; if(window.SNWork) SNWork.open(p); nameAim(p).then(function(n){ aim=n; if(window.SNWork&&SNWork.rename) SNWork.rename(n); else if(!window.SNWork) say(n.water?"No named place on that water.":(n.name||"This place")); }); }
   function bindMap(L){ if(mapBound||!map||!cityEl) return; mapBound=true; try{ map.attributionControl.setPosition("bottomleft"); }catch(e){} var lp=null; cityEl.addEventListener("pointerdown", function(e){ if(!cityEl.classList.contains("on")) return; if(e.target && e.target.closest && e.target.closest(".leaflet-control")) return; if(e.isPrimary===false) return; lp={x:e.clientX,y:e.clientY,id:e.pointerId,held:false}; lp.t=setTimeout(function(){ if(!lp) return; lp.held=true; mapHeld=true; var ll=map.mouseEventToLatLng({clientX:lp.x,clientY:lp.y}); var p={lat:ll.lat,lng:ll.lng}; if(viewLevel()==="city") cityWork(p); else openLevelMenu(p,{x:lp.x,y:lp.y}, "national"); },420); }, true); cityEl.addEventListener("pointermove", function(e){ if(!lp||lp.held) return; if(Math.hypot(e.clientX-lp.x,e.clientY-lp.y)>16){ clearTimeout(lp.t); lp=null; } }, true); function endLp(){ if(!lp) return; clearTimeout(lp.t); lp=null; } cityEl.addEventListener("pointerup", endLp, true); cityEl.addEventListener("pointercancel", endLp, true); map.on("click", function(e){ if(mapHeld){ mapHeld=false; return; } var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; if(map.getZoom()>=10){ cityWork(p); } else { flyTap(p); } }); map.on("zoomend", function(){ if(!map) return; if(map.getZoom()<=4) showGlobe(); paintLayerBtn(); packSoon(); }); map.on("contextmenu", function(e){ try{ L.DomEvent.preventDefault(e); }catch(_){} mapHeld=true; var p={lat:e.latlng.lat,lng:e.latlng.lng}; if(viewLevel()==="city") cityWork(p); else openLevelMenu(p, null, "national"); }); }
-  function showMap(p, z){ if(!cityEl||!p||!isFinite(p.lat)) return; loadMap().then(function(L){ cityEl.classList.add("on"); cityEl.style.pointerEvents="auto"; if(!map){ map=L.map(cityEl,{zoomControl:false,attributionControl:true,tap:true,preferCanvas:true}).setView([p.lat,p.lng], z); setLayer(mapLayer||"dark"); bindMap(L); } else if(map.flyTo) map.flyTo([p.lat,p.lng], z, {duration:0.7}); else map.setView([p.lat,p.lng], z); paintMapMarks(L, selected); setTimeout(function(){ try{ map.invalidateSize(); }catch(e){} paintLayerBtn(); paintMoney(false); packSoon(); },40); }).catch(function(){ mapReady=null; showGlobe(); talk("Map failed to load."); }); }
+  function showMap(p, z){ if(!cityEl||!p||!isFinite(p.lat)) return; loadMap().then(function(L){ cityEl.classList.add("on"); cityEl.style.pointerEvents="auto"; if(!map){ map=L.map(cityEl,{zoomControl:false,attributionControl:true,tap:true,preferCanvas:false}).setView([p.lat,p.lng], z); setLayer(mapLayer||"dark"); bindMap(L); } else if(map.flyTo) map.flyTo([p.lat,p.lng], z, {duration:0.7}); else map.setView([p.lat,p.lng], z); paintMapMarks(L, selected); setTimeout(function(){ try{ map.invalidateSize(); }catch(e){} paintLayerBtn(); paintMoney(false); packSoon(); },40); }).catch(function(){ mapReady=null; showGlobe(); talk("Map failed to load."); }); }
   function showCity(v){ var p=v||selected||aim||here; if(!p){ talk("Point at a place first."); return; } aim=p; showMap(p, 14); }
   function showNational(p){ p=p||aim||here||facingPoint(); aim=p; showMap(p, 6); }
   function showCall(from, dest){ if(!from||!dest) return; var mid={lat:(from.lat+dest.lat)/2,lng:(from.lng+dest.lng)/2}; var d=km(from,dest); var z=d>80?6:d>8?10:14; showMap(mid, z); setTimeout(function(){ if(!map) return; try{ map.fitBounds([[from.lat,from.lng],[dest.lat,dest.lng]],{padding:[48,48],maxZoom:14}); }catch(e){} },500); }
   function startFly(p, then, ms, toDist){ if(!p) return; spin=0; var toYaw=p.lng*Math.PI/180, toPitch=Math.max(-1.15, Math.min(1.15, p.lat*Math.PI/180)); fly={fromYaw:yaw, fromPitch:pitch, toYaw:toYaw, toPitch:toPitch, fromDist:dist, toDist:toDist!=null?toDist:dist, t0:Date.now(), ms:ms||520, then:then||null}; needTick(); }
   function flyTap(p){ if(!p) return; if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; aim=p; hidePlace(); var lvl=viewLevel(); nameAim(p).then(function(n){ if(aim&&Math.abs(aim.lat-p.lat)<0.3) aim=n; }); if(lvl==="globe"){ startFly(p, function(){ showNational(p); }); } else if(lvl==="national"){ showMap(p, 14); } else { cityWork(p); } }
   function startOrder(v){ if(!v) return; job={kind:"find", query:v.name||"order", status:"chosen", shop:v, t:Date.now()}; selectVendor(v); }
+  function vendorTapped(v){
+    if(!v) return;
+    selected=v;
+    fetchContacts(v).then(function(){
+      if(liveEscrow()) openJobFromMap();
+      else showShopCard(v);
+    });
+  }
   function selectVendor(v){
     if(!v) return;
     huntSeq++;
@@ -726,7 +812,7 @@
     clearNeed();
     syncTasks();
     paintJobArc();
-    showShopCard(v);
+    fetchContacts(v).then(function(){ showShopCard(v); });
   }
   function shopBits(v){
     var t=(v&&(v.tags||v))||{}, listed=null;
@@ -758,7 +844,7 @@
       if(selected!==v) return;
       clearNeed();
       renderMenu(items);
-      if(b.phone) need({id:"callshop",label:"CALL",run:function(){ location.href="tel:"+String(b.phone).replace(/[^\d+]/g,""); }});
+      addContactBtns(v);
       need({id:"now",label:"NOW",run:function(){ chooseHow("now"); }});
       need({id:"mail",label:"MAIL",run:function(){ chooseHow("mail"); }});
       need({id:"pickup",label:"PICK UP",run:function(){ chooseHow("pickup"); }});
@@ -1134,7 +1220,8 @@
       var id=row.getAttribute("data-id"), act=btn&&btn.getAttribute("data-act");
       if(act==="problem") askProblem(id);
       else if(act==="dispute") askDispute(id);
-      else if(act==="go"||!btn) goTask(id);
+      else if(act==="go") goTask(id);
+      else openTaskDetail(id);
     });
   }
   if(menuEl){

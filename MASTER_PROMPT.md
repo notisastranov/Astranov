@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4028
+**Stamp at this rewrite:** 4029
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -84,7 +84,7 @@ If they ask for the best among listed shops, Grok **picks** (`act=pick`). Do not
 
 After a shop (and after a driver): a **deep-blue neon bond arc** (bowed, signature, YOU → shop → driver) marks the relationship. A separate cyan dashed line is the road. The you-dot says YOU, not a municipality name.
 
-Hunt is **manual and Grok together**. Typing pizza searches the map immediately (Photon first, do not wait for Overpass or Grok). Grok talks in parallel and can pick. Grok abort 8s. Overpass is extra, never the gate.
+Tap the **arc** or the **vendor pin**: open the job. Task tap shows the ladder (paid → picked → boxed → moving → handed → verified), percent done, shop and driver, not just DO / PROBLEM. Vendor pin researches OSM phone, email, website — CALL / EMAIL / SITE if they exist.
 
 Tap a shop → that shop’s **menu**: dishes with photo and price. Live listed menu first. Else Grok’s public knowledge. Else a SAMPLE menu (sample pizza photo, sample euro prices) clearly marked SAMPLE. Pick a dish, then NOW / MAIL / PICK UP.
 
