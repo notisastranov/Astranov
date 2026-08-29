@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4070";
+  var VER="4071";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -1216,16 +1216,50 @@
     if(land && target) goThere(target, 17, function(){ go(); var live=listedShopOf(target); if(live) selectVendor(live); else openPinMenu(target); });
     else go();
   }
+  var harvestT=null, harvestKey="", harvestBound=false;
+  function overpassBox(bounds){
+    if(!bounds||!bounds.getSouth) return Promise.resolve([]);
+    var s=bounds.getSouth(), w=bounds.getWest(), n=bounds.getNorth(), e=bounds.getEast();
+    var query="[out:json][timeout:8];(nwr[\"amenity\"~\"^(restaurant|cafe|fast_food|bar|pub|biergarten)$\"]("+s+","+w+","+n+","+e+");nwr[\"shop\"~\"^(bakery|convenience|supermarket)$\"]("+s+","+w+","+n+","+e+"););out center tags 80;";
+    return fetchJson("https://overpass.kumi.systems/api/interpreter?data="+encodeURIComponent(query),{headers:{Accept:"application/json"}},8000)
+      .then(function(j){ return (j.elements||[]).map(function(r){ var p=pointOf(r), t=r.tags||{}; return {name:t.name, lat:p.lat, lng:p.lng, raw:t["addr:street"]||t["addr:city"]||"", tags:t, kind:"shop", phone:t.phone||t["contact:phone"]||""}; }).filter(function(v){ return v.name&&isFinite(v.lat)&&isFinite(v.lng); }).slice(0,80); })
+      .catch(function(){ return []; });
+  }
+  function harvestVendors(){
+    if(!map||!window.SNWork||!SNWork.autoList) return;
+    if(map.getZoom()<12) return;
+    var b=map.getBounds();
+    var key=[b.getSouth().toFixed(2),b.getWest().toFixed(2),b.getNorth().toFixed(2),b.getEast().toFixed(2)].join(",");
+    if(key===harvestKey) return;
+    harvestKey=key;
+    overpassBox(b).then(function(list){
+      (list||[]).forEach(function(v){ SNWork.autoList(v, false); });
+      if(map&&window.L) paintMapMarks(window.L, selected);
+    });
+  }
+  function bindHarvest(){
+    if(harvestBound||!map) return;
+    harvestBound=true;
+    map.on("moveend", function(){ clearTimeout(harvestT); harvestT=setTimeout(harvestVendors, 900); });
+    harvestVendors();
+  }
   function spaceAround(from){
     if(!window.SNWork) return [];
     var all=SNWork.all(), rows=[];
+    var b=null;
+    try{ if(map&&cityEl&&cityEl.classList.contains("on")&&map.getZoom()>=12) b=map.getBounds(); }catch(e){}
+    function inView(r){
+      if(!b) return true;
+      return r.lat>=b.getSouth() && r.lat<=b.getNorth() && r.lng>=b.getWest() && r.lng<=b.getEast();
+    }
     function add(list, kind, w){
       (list||[]).forEach(function(r){
         if(!r||!isFinite(r.lat)) return;
         if(kind==="drop") return;
         if(kind!=="post" && kind!=="tax" && !pinLive(r, kind)) return;
+        if(b && kind==="shop" && !inView(r)) return;
         var d=from?km(from,r):0;
-        if(from && d>18) return;
+        if(!b && from && d>18) return;
         rows.push({row:r, kind:kind, d:d, hits:Number(r.hits)||0, w:w});
       });
     }
@@ -1233,9 +1267,9 @@
     add(all.drivers,"driver",3);
     add(all.posts,"post",1);
     var tax=window.SNWork&&SNWork.taxOffice&&SNWork.taxOffice();
-    if(tax&&isFinite(tax.lat)&&( !from || km(from,tax)<80)) rows.push({row:tax, kind:"tax", d:from?km(from,tax):0, hits:99, w:4});
+    if(tax&&isFinite(tax.lat)&&( !from || km(from,tax)<80 || (b&&inView(tax)))) rows.push({row:tax, kind:"tax", d:from?km(from,tax):0, hits:99, w:4});
     rows.sort(function(a,b){ if(b.w!==a.w) return b.w-a.w; if(b.hits!==a.hits) return b.hits-a.hits; return a.d-b.d; });
-    return rows.slice(0,8);
+    return rows.slice(0, b?40:8);
   }
   function showAround(from){
     var rows=spaceAround(from||here);
@@ -1308,7 +1342,8 @@
         bindMap(L);
       } else if(map.setView) map.setView([p.lat,p.lng], z);
       paintMapMarks(L, selected);
-      setTimeout(function(){ try{ map.invalidateSize(); }catch(e){} paintLayerBtn(); paintMoney(false); packSoon(); mapLanding=false; },80);
+      bindHarvest();
+      setTimeout(function(){ try{ map.invalidateSize(); }catch(e){} paintLayerBtn(); paintMoney(false); packSoon(); mapLanding=false; harvestVendors(); },80);
     }
     loadMap().then(build).catch(function(){
       mapReady=null;

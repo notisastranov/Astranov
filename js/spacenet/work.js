@@ -8,7 +8,7 @@
   var netCache={shops:[],drops:[],drivers:[],posts:[]};
 
   function load(k){ try{ return JSON.parse(localStorage.getItem(k)||"[]")||[]; }catch(e){ return []; } }
-  function save(k, list){ try{ localStorage.setItem(k, JSON.stringify((list||[]).slice(0,40))); }catch(e){} if(window.SN&&SN.syncTasks) setTimeout(function(){ SN.syncTasks(); },0); }
+  function save(k, list){ var cap=k===KEYS.shops?500:80; try{ localStorage.setItem(k, JSON.stringify((list||[]).slice(0,cap))); }catch(e){} if(window.SN&&SN.syncTasks) setTimeout(function(){ SN.syncTasks(); },0); }
   function talk(t){ if(window.SN&&SN.talk) SN.talk(t); else if(window.SN&&SN.say) SN.say(t); }
   function say(t){ if(window.SN&&SN.say) SN.say(t); }
   function paint(){ if(window.SN&&SN.repaint) SN.repaint(); }
@@ -443,7 +443,7 @@
     var row={id:uid("s"), kind:"shop", name:name, lat:+p.lat, lng:+p.lng, raw:p.raw||"", place:name, phone:p.phone||tags.phone||tags["contact:phone"]||"", hours:tags.opening_hours||"", peer:"spacenet", auto:1, t:Date.now(), dishes:[]};
     list.unshift(row);
     save(KEYS.shops,list);
-    publish(row);
+    if(grokFill!==false) publish(row);
     if(window.SN&&SN.repaint) SN.repaint();
     pendingFillId=row.id;
     fetch("/api/place",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name,place:row.raw,lat:row.lat,lng:row.lng,website:tags.website||tags["contact:website"]||""})})
