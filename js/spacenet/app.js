@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4077";
+  var VER="4078";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -150,6 +150,7 @@
   function pickDish(it, el){
     var live=listedShopOf(selected);
     if(!live){ talk("Only a listed SpaceNet shop pin can take an order. List it with +."); if(window.SNWork) SNWork.open(selected||aim,"shop"); return; }
+    if(String(live.open||"")==="closed"){ talk("This shop has offerings off."); return; }
     selected=live;
     var left=it.stock!=null?Number(it.stock):Number(it.stock0);
     if(isFinite(left) && left<=0){ talk("None left."); return; }
@@ -651,10 +652,12 @@
         putEscrow(j, true); dirty=true; cur=j;
         var mine=myListingIds();
         if(j.driver&&mine[j.driver.id]==="driver"&&j.drop&&isFinite(j.drop.lat)){
-          talk("Offer. "+fmtAve(Number(j.ride)||Number(j.avc)||0,true)+" on your map. Client: "+dropLine(j.drop)+".");
-          openTasks();
-          if(viewLevel()!=="city") showCity(j.drop);
-          else if(map&&map.flyTo) map.flyTo([j.drop.lat,j.drop.lng], 16, {duration:0.8});
+          if(powerGet()==="on"){
+            talk("Offer. "+fmtAve(Number(j.ride)||Number(j.avc)||0,true)+" on your map. Client: "+dropLine(j.drop)+".");
+            openTasks();
+            if(viewLevel()!=="city") showCity(j.drop);
+            else if(map&&map.flyTo) map.flyTo([j.drop.lat,j.drop.lng], 16, {duration:0.8});
+          }
         }
       }
       else if((order[j.status]||0)>(order[cur.status]||0)){ cur=Object.assign({}, cur, j); putEscrow(cur, true); dirty=true; }
@@ -1585,6 +1588,7 @@
     var from=here||selected;
     return (SNWork.all().drivers||[]).filter(function(d){
       if(!pinLive(d,"driver")) return false;
+      if(d.peer && window.SNWork && SNWork.peerId && d.peer===SNWork.peerId() && powerGet()!=="on") return false;
       var range=Number(d.range)||25;
       return !from || km(from,d)<=range;
     }).map(function(d){
@@ -2090,6 +2094,35 @@
     });
   }
   bindDrag(gpsBtn, "gps");
+  function powerGet(){ try{ return localStorage.getItem("sn:power")||"idle"; }catch(e){ return "idle"; } }
+  function paintPower(){
+    var el=document.getElementById("sn-power");
+    if(!el) return;
+    var st=powerGet();
+    el.classList.remove("on","off","idle");
+    el.classList.add(st==="on"?"on":st==="off"?"off":"idle");
+    el.setAttribute("aria-pressed", st==="on"?"true":"false");
+  }
+  function setPower(st){
+    try{ localStorage.setItem("sn:power", st); }catch(e){}
+    paintPower();
+    if(window.SNWork&&SNWork.setOffer) SNWork.setOffer(st==="on");
+    if(st==="on") talk("Offerings on. Jobs can reach you.");
+    else if(st==="off") talk("Offerings off.");
+  }
+  function togglePower(){
+    setPower(powerGet()==="on"?"off":"on");
+  }
+  try{ localStorage.setItem("sn:power","idle"); }catch(e){}
+  paintPower();
+  var powerBtn=document.getElementById("sn-power");
+  bindDrag(powerBtn, "power");
+  if(powerBtn) powerBtn.addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    if(powerBtn.dataset.skipClick==="1"){ powerBtn.dataset.skipClick=""; return; }
+    togglePower();
+  });
   bindDrag(document.getElementById("sn-support"), "support");
   var SUPPORT_PROJECT="https://grok.com/project/ca0652ee-24d4-44d1-8a4b-65d41583532b";
   var lastSupport=0;

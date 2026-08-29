@@ -610,6 +610,29 @@
     close(); paint(); publish(row); talk("Report posted on SpaceNet at this pin.");
   }
 
+  function setOffer(on){
+    var me=peerId();
+    function bump(key, kind){
+      var list=load(key), i, dirty=false;
+      for(i=0;i<list.length;i++){
+        var r=list[i];
+        if(!r) continue;
+        if(r.peer && r.peer!==me) continue;
+        if(kind==="driver"){
+          var next=on?"present":"off";
+          if(r.presence!==next){ r.presence=next; dirty=true; publish(r); }
+        } else {
+          var next=on?"open":"closed";
+          if(r.open!==next){ r.open=next; dirty=true; publish(r); }
+        }
+      }
+      if(dirty) save(key, list);
+    }
+    bump(KEYS.drivers,"driver");
+    bump(KEYS.shops,"shop");
+    paint();
+  }
+
   function saveDriver(fd){
     var row=baseRow();
     row.id=uid("r"); row.kind="driver";
@@ -1124,6 +1147,7 @@
     booksOf:booksOf,
     listingAt:listingAt,
     listingOpen:listingOpen,
+    setOffer:setOffer,
     setPin:setPin
   };
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", ensure);
