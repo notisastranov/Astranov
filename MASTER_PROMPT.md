@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4038
+**Stamp at this rewrite:** 4039
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -50,6 +50,8 @@ A human coder waits for a ticket. You do not.
 ## Owner’s last full instruction — 2026-08-29
 
 This block **overrides** every older note in this file if they fight. Do not make the owner say it again.
+
+**No agent, no charge.** If no Astranov Delivery Agent has a listed base covering the area, **cancel before checkout**. Do not PAY. Do not lock AV€. Tell them the order is cancelled and they were not charged. CALL SHOP still works.
 
 **Door wait.** Agent waits **up to 3 minutes**. After that they **must go to the next order**. Missed goods stay with the agent until **the end of the route**, then **return to the vendor**. + AV€ 3 for that delay. Return trip charged when goods go back. **No refund.** If this was the last stop, the shop gets them now.
 

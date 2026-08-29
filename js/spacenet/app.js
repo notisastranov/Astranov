@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4038";
+  var VER="4039";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -1191,24 +1191,55 @@
   }
   function listedDriverBases(){ return listedAgents(); }
   function offerList(){ return listedAgents(); }
+  function cancelUnpaid(why){
+    if(job && job.status==="paid") return false;
+    job=null;
+    currentOffers=[];
+    hideCart();
+    paintCartBtn();
+    clearNeed();
+    if(selected) addContactBtns(selected);
+    talk(why||"No Astranov Delivery Agent in this area. Order cancelled. You were not charged.");
+    return true;
+  }
   function startDeliver(){
     if(!selected){ talk("Pick a place first."); return; }
     if(job) job.how="now";
-    var list=listedAgents();
-    if(!list.length){
-      clearNeed();
-      addContactBtns(selected);
-      talk("No Astranov Delivery Agent has listed a starting base near you. Call the shop, or list a delivery driver base.");
+    function go(){
+      var list=listedAgents();
+      if(!list.length){
+        cancelUnpaid("No Astranov Delivery Agent in this area. Order cancelled before checkout. You were not charged.");
+        return;
+      }
+      showOffers(list);
+    }
+    if(!here){
+      talk("Checking for an Astranov agent near you…");
+      locate(true).then(go);
       return;
     }
-    showOffers(list);
+    go();
   }
   function chooseHow(how){ if(how!=="now"){ talk("Only Astranov Delivery Agents for now."); return startDeliver(); } startDeliver(); }
   function showOffers(list){ clearNeed(); currentOffers=list; list.forEach(function(o){ need({id:o.id, label:o.name.toUpperCase()+" · "+o.eta+"m", run:function(){ pickCarrier(o); }}); }); var f=list[0]; talk((f.name||"Astranov agent")+" · "+f.eta+" min. Registered base. Call to verify."); }
   function priceOf(){ var n=cartSum(); return n>0?n:10; }
-  function pickCarrier(o){ if(job){ job.carrier=o; job.how="now"; } offerPay(priceOf(o)); offerCalls(); paintJobArc(); talk((o.name||"Astranov agent")+". About "+o.eta+" min from their base. Call them to verify, then pay."); }
-  function offerPay(price){ var bal=avcGet(); if(job) job.price=price; need({id:"pay",label:"PAY "+fmtAve(price),run:function(){ spendAvc(price); }}); if(bal<price) need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(Math.max(10, Math.ceil(price-bal))); }}); talk((bal>=price)?("Pay "+fmtAve(price)+". You have "+fmtAve(bal)+"."):("Need "+fmtAve(price)+". You have "+fmtAve(bal)+". Reload euro through PayPal, 1 to 1.")); }
-  function spendAvc(price){ price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } var esc=openEscrow(price); clearNeed(); hideCart(); paintCartBtn(); syncTasks(); watchStages(price); offerCalls(); openTasks(); }
+  function pickCarrier(o){
+    if(!listedAgents().length){ cancelUnpaid("No Astranov Delivery Agent in this area. Order cancelled before charge. You were not charged."); return; }
+    if(job){ job.carrier=o; job.how="now"; }
+    offerPay(priceOf(o)); offerCalls(); paintJobArc();
+    talk((o.name||"Astranov agent")+". About "+o.eta+" min from their base. Call them to verify, then pay.");
+  }
+  function offerPay(price){
+    if(!listedAgents().length){ cancelUnpaid("No Astranov Delivery Agent in this area. Order cancelled before charge. You were not charged."); return; }
+    var bal=avcGet(); if(job) job.price=price;
+    need({id:"pay",label:"PAY "+fmtAve(price),run:function(){ spendAvc(price); }});
+    if(bal<price) need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(Math.max(10, Math.ceil(price-bal))); }});
+    talk((bal>=price)?("Pay "+fmtAve(price)+". You have "+fmtAve(bal)+"."):("Need "+fmtAve(price)+". You have "+fmtAve(bal)+". Reload euro through PayPal, 1 to 1."));
+  }
+  function spendAvc(price){
+    if(!listedAgents().length){ cancelUnpaid("No Astranov Delivery Agent in this area. Not charged."); return; }
+    price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } var esc=openEscrow(price); clearNeed(); hideCart(); paintCartBtn(); syncTasks(); watchStages(price); offerCalls(); openTasks();
+  }
   function watchStages(avc){ if(!job) return; job.status="paid"; talk("Paid. Credit locked. Call to verify. An Astranov agent with a listed base runs this. No mail."); }
   function reloadPaypal(eur){ say("PayPal reload…"); try{ sessionStorage.setItem("sn:paypal-job", JSON.stringify(job||{})); sessionStorage.setItem("sn:paypal-reload", String(eur||10)); }catch(e){} fetch("/api/paypal/create-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:eur||10,origin:location.origin,reference:"avc-reload"})}).then(function(r){return r.json().then(function(j){j.http=r.status;return j;});}).then(function(j){ if(j&&j.ok&&j.approve){ location.href=j.approve; return; } clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk(j&&j.error==="paypal_not_configured"?"PayPal is not on this host yet.":"PayPal could not start. RELOAD is still here."); }).catch(function(){ clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk("PayPal could not be reached."); }); }
   function restorePayJob(){ try{ var saved=JSON.parse(sessionStorage.getItem("sn:paypal-job")||"null"); if(saved){ job=saved; selected=saved.shop||null; } }catch(e){} }
