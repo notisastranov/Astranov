@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4044
+**Stamp at this rewrite:** 4045
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -51,9 +51,11 @@ A human coder waits for a ticket. You do not.
 
 This block **overrides** every older note in this file if they fight. Do not make the owner say it again.
 
+**Set place.** One button: **CLICK MAP TO SET LOCATION MANUALLY**. Never flood VENDORS with NOT HERE. Tap it, then tap the map (or type the city). That is YOU. Hunt and cart stay. `need()` replaces the same id — never stack dummy chips.
+
 **Google crawlers.** Named hunt and shop contacts **search Google first** (Maps + local + web, no API key). Parse official phone and map pin. Geocode the address on OSM. If Google serves a consent wall from the host, fall back to Nominatim. **Never invent a dummy shop.**
 
-**Find YOU on any device.** Precise GPS, then coarse GPS (Windows 10 desktop times out on high accuracy), then network/IP location. Always **NOT HERE**. User searches a city/street or taps the map. **Do not break the order.** pending hunt and cart stay. Wrong city is a correction, not a dead hunt.
+**Find YOU on any device.** Precise GPS, then coarse GPS (Windows 10 desktop times out on high accuracy), then network/IP location. Then **CLICK MAP TO SET LOCATION MANUALLY**. **Do not break the order.**
 
 **Named hunt is the name.** Searching **Pizzarium** is Pizzarium, not a random pizza shop in another city. Do not collapse a brand to cuisine. Do not pin Ilioupoli pizza because OSM lacks Rhodes Pizzarium. If OSM has no named match, `/api/find` uses Nominatim + public web (not Google). If still nothing: say so. **Never invent a dummy shop.**
 

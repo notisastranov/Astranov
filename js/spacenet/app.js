@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4044";
+  var VER="4045";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -73,7 +73,21 @@
     packSoon();
   }
   function clearNeed(){ things={}; if(liveEl) liveEl.innerHTML=""; if(menuEl) menuEl.classList.remove("on"); if(pillEl) pillEl.classList.remove("on","glow"); packSoon(); }
-  function need(spec){ spec=spec||{}; var id=spec.id||("m"+Date.now()+Math.random().toString(36).slice(2,6)); things[id]=spec; if(!liveEl) return id; var b=document.createElement("button"); b.type="button"; b.textContent=spec.label||id; b.onclick=function(){ try{ spec.run(); }catch(e){ talk("That step failed. Try again."); } }; liveEl.appendChild(b); openMenu(); return id; }
+  function need(spec){
+    spec=spec||{};
+    var id=spec.id||("m"+Date.now()+Math.random().toString(36).slice(2,6));
+    things[id]=spec;
+    if(!liveEl) return id;
+    var old=liveEl.querySelector('[data-need="'+id+'"]');
+    var b=old||document.createElement("button");
+    b.type="button";
+    b.setAttribute("data-need", id);
+    b.textContent=spec.label||id;
+    b.onclick=function(){ try{ spec.run(); }catch(e){ talk("That step failed. Try again."); } };
+    if(!old) liveEl.appendChild(b);
+    openMenu();
+    return id;
+  }
   var tasksBtn=document.getElementById("sn-tasks-btn");
   var tasksEl=document.getElementById("sn-tasks");
   var tasksList=document.getElementById("sn-tasks-list");
@@ -903,7 +917,7 @@
       if(isBrand(q)) return close.length?close:out.slice(0,6);
       return close.length?close:out.slice(0,8);
     }
-    function showList(list){ if(seq!==huntSeq) return; if(selected && job && job.status==="chosen") return; vendors=list; clearNeed(); if(menuEl) menuEl.classList.remove("on"); paintHuntPins(list, from); need({id:"fixhere",label:"NOT HERE",run:correctHere}); if(!spoken && list.length){ spoken=true; talk("Found "+list.slice(0,3).map(function(v){return v.name;}).join(", ")+". Glowing on the map."); } }
+    function showList(list){ if(seq!==huntSeq) return; if(selected && job && job.status==="chosen") return; vendors=list; paintHuntPins(list, from); if(!spoken && list.length){ spoken=true; talk("Found "+list.slice(0,3).map(function(v){return v.name;}).join(", ")+". Glowing on the map."); } }
     function merge(list){ if(seq!==huntSeq) return; if(selected && job && job.status==="chosen") return; acc=near(acc.concat(list||[])); if(acc.length) showList(acc); }
     merge(near(window.SNWork&&SNWork.match?SNWork.match(q, from):[]));
     photonPlaces(q,from).then(function(list){ merge(list); });
@@ -1329,21 +1343,34 @@
       return fetchJson("https://ipwho.is/",{headers:{Accept:"application/json"}},6000).then(take);
     }).catch(function(){ return null; });
   }
+  function paintFixBtn(){
+    var el=document.getElementById("sn-fix");
+    if(!el) return;
+    el.textContent="CLICK MAP TO SET LOCATION MANUALLY";
+    el.classList.add("on");
+    el.classList.toggle("glow", !!correctingHere);
+    if(cityEl) cityEl.classList.toggle("set-here", !!correctingHere);
+    packSoon();
+  }
   function offerFixHere(name, quiet){
-    need({id:"fixhere",label:"NOT HERE",run:correctHere});
+    paintFixBtn();
     if(quiet){ if(name) say("You're in "+name+"."); return; }
-    talk((name?("You're in "+name+"."):"Position locked.")+" Not right? Tap NOT HERE. The order stays.");
+    talk((name?("You're in "+name+"."):"Position locked.")+" Wrong place? Click the map to set location manually. The order stays.");
   }
   function correctHere(){
     correctingHere=true;
-    talk("Search your city or street, or tap the map. The order stays.");
+    paintFixBtn();
+    if(menuEl) menuEl.classList.remove("on");
+    talk("Tap the map where you are. Or type your city. The order stays.");
     if(inEl){ inEl.placeholder="Your city or street"; try{ inEl.focus(); }catch(e){} }
-    need({id:"fixhere",label:"NOT HERE",run:correctHere});
-    if(viewLevel()==="globe" && (here||aim)) showNational(here||aim);
+    var p=here||aim||facingPoint();
+    if(viewLevel()==="globe") showNational(p);
+    else if(map) showCity(p);
   }
   function applyHere(p, why){
     if(!p||!isFinite(p.lat)) return;
     correctingHere=false;
+    paintFixBtn();
     if(inEl) inEl.placeholder="Talk to Astranov SpaceNet Grok";
     lockHere(p, true, true).then(function(){
       if(window.L) showCity(here);
@@ -1388,7 +1415,7 @@
       return ipLocate().then(function(p){
         if(!p){
           if(g) g.classList.remove("busy","on");
-          if(!quiet) talk("No GPS lock on this device. Search your city or tap NOT HERE. The order stays.");
+          if(!quiet) talk("No GPS lock on this device. Click the map to set location. The order stays.");
           correctHere();
           return here||undefined;
         }
@@ -1405,7 +1432,7 @@
     var fresh=here && hereAt && (Date.now()-hereAt<120000);
     var jobp=fresh?Promise.resolve(here):locate(true, false);
     jobp.then(function(p){
-      if(!p){ if(g) g.classList.remove("busy"); talk("No GPS lock. Search your city. The order stays."); correctHere(); return; }
+      if(!p){ if(g) g.classList.remove("busy"); talk("No GPS lock. Click the map to set location. The order stays."); correctHere(); return; }
       if(g){ g.classList.remove("busy"); g.classList.add("on"); }
       aim=p;
       reverseHere().then(function(){
@@ -1614,6 +1641,12 @@
         layerBox.style.top=Math.round(lb.y+lh+8)+"px";
       }
     }
+    var fixBtn=document.getElementById("sn-fix");
+    if(fixBtn&&fixBtn.classList.contains("on")&&!fixBtn.classList.contains("loose")){
+      var fw=fixBtn.offsetWidth||220, fh=fixBtn.offsetHeight||44;
+      var fpref=parked.fix?{x:parked.fix.x,y:parked.fix.y,w:fw,h:fh}:{x:pad, y:fr.top-12-fh, w:fw, h:fh};
+      placeSolid(fixBtn, fpref);
+    }
     if(moneyBtn&&moneyBtn.classList.contains("loose")){
       var mw=moneyBtn.offsetWidth||132, mh=moneyBtn.offsetHeight||40;
       var mpref=parked.money?{x:parked.money.x,y:parked.money.y,w:mw,h:mh}:{x:Math.round((W-mw)/2), y:fr.top-12-mh, w:mw, h:mh};
@@ -1668,12 +1701,14 @@
   bindDrag(gpsBtn, "gps");
   bindDrag(moneyBtn, "money");
   bindDrag(layerBtn, "layer");
+  bindDrag(document.getElementById("sn-fix"), "fix");
   bindDrag(tasksBtn, "tasks");
   bindDrag(cartBtn, "cart");
   bindDrag(pillEl, "pill");
   bindDrag(document.getElementById("plus"), "plus");
   bindDrag(document.getElementById("go"), "go");
   if(tasksBtn) tasksBtn.addEventListener("click", function(e){ e.preventDefault(); toggleTasks(); });
+  (function(){ var fixBtn=document.getElementById("sn-fix"); if(fixBtn) fixBtn.addEventListener("click", function(e){ e.preventDefault(); if(fixBtn.dataset.skipClick==="1"){ fixBtn.dataset.skipClick=""; return; } correctHere(); }); })();
   if(cartBtn) cartBtn.addEventListener("click", function(e){ e.preventDefault(); if(cartEl&&cartEl.classList.contains("on")) hideCart(); else openCart(); });
   if(cartEl){
     var cBg=cartEl.querySelector(".bg"), cX=cartEl.querySelector(".x");
