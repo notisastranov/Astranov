@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4043
+**Stamp at this rewrite:** 4044
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -50,6 +50,8 @@ A human coder waits for a ticket. You do not.
 ## Owner’s last full instruction — 2026-08-29
 
 This block **overrides** every older note in this file if they fight. Do not make the owner say it again.
+
+**Google crawlers.** Named hunt and shop contacts **search Google first** (Maps + local + web, no API key). Parse official phone and map pin. Geocode the address on OSM. If Google serves a consent wall from the host, fall back to Nominatim. **Never invent a dummy shop.**
 
 **Find YOU on any device.** Precise GPS, then coarse GPS (Windows 10 desktop times out on high accuracy), then network/IP location. Always **NOT HERE**. User searches a city/street or taps the map. **Do not break the order.** pending hunt and cart stay. Wrong city is a correction, not a dead hunt.
 
