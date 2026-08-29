@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4072";
+  var VER="4073";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -1921,7 +1921,15 @@
     g.classList.remove("ghost");
     var gw=g.offsetWidth||u, gh=g.offsetHeight||(u+14);
     var walls=[], add=function(el){ var r=shownRect(el); if(r) walls.push(r); };
+    var parked=loadPlace();
+    var isl=shownRect(document.getElementById("island"));
     add(document.getElementById("island"));
+    var sup=document.getElementById("sn-support");
+    if(sup && !sup.classList.contains("loose")){
+      var sw=sup.offsetWidth||44, sh=sup.offsetHeight||44;
+      var spref=parked&&parked.support?{x:parked.support.x,y:parked.support.y,w:sw,h:sh}:{x:W-pad-sw, y:Math.max(pad, isl?isl.y:pad), w:sw, h:sh};
+      placeSolid(sup, spref);
+    } else add(sup);
     add(panel||f);
     add(document.getElementById("sn-place"));
     add(document.getElementById("sn-pick"));
@@ -1958,10 +1966,8 @@
       if(!box.ok) box=nudge(prefer, walls, W, H, pad);
       return sit(el, box);
     }
-    var isl=shownRect(document.getElementById("island"));
     var topY=isl?Math.round(isl.y+isl.h+12):pad+52;
     var fr=(panel||f).getBoundingClientRect();
-    var parked=loadPlace();
     var home=parked.gps?free({x:parked.gps.x, y:parked.gps.y, w:gw, h:gh}):free({x:W-pad-gw, y:fr.top-12-gh});
     if(parked.gps && !home.ok) home=free({x:W-pad-gw, y:fr.top-12-gh});
     var box=home.ok?home:null;
@@ -2075,6 +2081,14 @@
     });
   }
   bindDrag(gpsBtn, "gps");
+  bindDrag(document.getElementById("sn-support"), "support");
+  var supBtn=document.getElementById("sn-support");
+  if(supBtn) supBtn.addEventListener("click", function(e){
+    if(supBtn.dataset.skipClick==="1") return;
+    e.preventDefault();
+    var u=supBtn.getAttribute("href")||"https://grok.com/?q=Astranov%20SpaceNet%20support";
+    try{ var w=window.open(u,"_blank","noopener,noreferrer"); if(!w) location.href=u; }catch(x){ location.href=u; }
+  });
   bindDrag(moneyBtn, "money");
   bindDrag(layerBtn, "layer");
   bindDrag(document.getElementById("sn-fix"), "fix");
