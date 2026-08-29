@@ -2,7 +2,7 @@
 
 **What this file is:** the only instruction document. One file. Every AI pastes this first, then reads live source, then changes the smallest broken piece. Do not add SPECS, LAW, AGENTS, HELM, living-truth, escalation, or log markdown. Chat history is junk next to this file plus live `index.html`, `js/spacenet/app.js`, `js/spacenet/work.js`.
 
-**Date:** 2026-08-28
+**Date:** 2026-08-29
 **Owner:** Notis Astranov · Rhodes, Greece · notisastranov@gmail.com · X @astranov97250
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
@@ -42,6 +42,42 @@ Coding is the agent's job. The owner specifies the world. Do not wait for a huma
 - **Do not flood.** Globe is space. City is work. A few verified marks. Search for the rest.
 - **Truth.** No dummy shops, drivers, GPS, pay, or stages. Locked AVC, not spent in the dark. Justice without a support desk.
 - **Latest instruction wins.** Write it into this file the same turn. Old notes in this file that contradict the owner’s last full instruction are dead. Do not make the owner say it again.
+
+## Owner’s last full instruction — 2026-08-29
+
+This block **overrides** every older note in this file if they fight. Do not make the owner say it again.
+
+**Voice.** Grok talks in a **calm, deep female** voice. Pick a female TTS (Google UK English Female when the phone has it; Greek female for Greek). Pitch **0.72**, rate **0.86**. Not a chirp. Not the default male.
+
+**Mic.** Tap to talk. **Glows while it listens.** Tap again to shut it. Does not loop. Does not listen while she is speaking (that made Android beep and hear itself). Chrome may chirp once per tap — that is the browser.
+
+**Search / hunt — both paths, both must work.**
+- Typing or talking **hunts the map immediately**. Grok talks **in parallel**. Do not wait on Grok. Do not wait on Overpass. Grok abort **8s**.
+- Hunt around **GPS (`here`)**, not the last map tap (`aim`). 40 km, then the nearest eight.
+- Photon first, raw words. Overpass is extra, never the gate.
+- **Results glow on the city map** (gold pins, cap 8). **No vendor list** flooding the dock. Tap a pin = that shop.
+- If pins are already on the map, **Grok must not restart the hunt** and wipe them.
+- Greetings (`hi` / `hello`) do not hunt. Named shops already on screen can be spoken as a tap.
+
+**Shop card.** Tap a pin → that shop, not a fresh list of other shops. Menu with **photo and price**. Live listed menu first. Else crawl. Else Grok. Else SAMPLE (sample pizza photo, sample euro prices) **marked SAMPLE**.
+
+**Crawl.** `/api/place` reads the shop’s **own website** and public web for phone, email, site, menu lines. **Not Google** (no key, ToS). OSM tags first. CALL / EMAIL / SITE if they exist. Site dishes become **our** menu, not SAMPLE. Cache one day on the device.
+
+**Bond.** After a shop (and after a driver): **deep-blue neon bowed arc** YOU → shop → driver. That is the relationship. A separate **cyan dashed** line is the road. You-dot label is **YOU**, not a municipality name.
+
+**Arc and task.** Tap the **arc** or the **gold pin** → the job. Tap the **task** (not only DO) → expand: ladder **paid → picked → boxed → moving → handed → verified**, **percent done**, shop, driver, how, hold, locked AV€. DO still advances. PROBLEM / DISPUTE still there.
+
+**Currency.** **AV€** (Astranov Coins), **1 to 1 euro**. Top island = brand + V1 + live AV€. Tap amount → money / mining panel. Owner treasury **3,000,000 AV€**. Jobs **lock** AV€ in escrow.
+
+**Chrome.** One island only. GPS starts **bottom-right**, word GPS above it. Hold **3 seconds** → bounce, loose: throw, pinch resize, tap cycle shape (round / pill / square). Solids never overlap; menus push them. LAYER (city): DARK / BRIGHT / SAT / STREETS, **no API key**.
+
+**Globe.** Trackball. Flick = inertia on yaw and pitch, then coast. Grab = stop. Idle globe sits still. No GPU burn. Pinch / two-finger swipe zoom. Tap = fly. Hold = menu, do not fly.
+
+**Calls.** Honest. Wait for the other peer. Do not say Connected with only the local camera. Arc between the two points.
+
+**Justice.** Clocks after pick too. 2× hold refunds. DISPUTE → Grok. Nobody is the default loser. SpaceNet takes nothing from a failed job.
+
+---
 - **Restore wreckage immediately.** If `index.html` or `app.js` become stubs or LOAD_FROM ghosts, put the real PWA back before anything else.
 - **Finish.** Then prove it on the phone. Then stop talking.
 
@@ -229,23 +265,28 @@ Cap: about eight pins, about three dock chips. Rank shops and present driver bas
 
 ### 7. Hunt
 
-The person talks or types ordinary language into the field. That text goes to Grok (`/api/ai`). Grok understands. If work on the world is needed, Grok returns a short act. The page runs the matching tool. That is Grok deciding. **The page does not sniff the sentence for pizza / locate / city.**
+**Both paths.** Typing or talking hunts the map **now**. Grok talks in parallel and may pick. Grok abort 8s. Overpass is extra. Photon first, raw words plus a simplified term.
+
+Hunt origin is **`here` (GPS)**, then `aim`. Not the last stray tap.
+
+Photon + Nominatim + Overpass + listed shops / drops / driver bases / posts. Named places only. **40 km**, else the nearest eight. **Gold glowing pins on the city map, cap 8.** No dock list of vendor names. Tap a pin → that shop. Talk the first names: “Found Pizza fan, Pizza Land. Glowing on the map.”
+
+If pins already exist for this hunt, Grok `act=hunt` must **not** wipe them.
 
 What the page may match without Grok:
 
 - The word `reboot` (wipes cache).
-- The exact name of a shop or carrier **already on screen**, so saying the name is the same as tapping the button.
+- The exact name of a shop or carrier **already on the map**, so saying the name is the same as tapping the pin.
+- Submit in the field (not a greeting) **always hunts** when GPS or a point exists. That is not a pizza keyword router.
 
 What the page must not do:
 
 - A dictionary of user phrases mapped to functions.
-- “If the sentence contains food, hunt pizza.”
+- Waiting on Grok or Overpass before showing pins.
+- Hunting the last map tap instead of the person.
 - Blocking conversation until GPS is granted.
-- A second parser, intent engine, CLI grammar, or “hard intent” table.
 
-Hunt uses Nominatim + Overpass + Photon, plus listed shops / drops / driver bases / posts. Named places only. **Results glow on the city map** (gold pins, cap 8). No vendor list flooding the dock. Tap a pin to open that shop. Photon first; Overpass is extra. Typing hunts the map immediately; Grok talks in parallel.
-
-`goodsOf` and Overpass tag filters are not a mind. They only translate a hunt string into OSM tags **after** Grok (or a tap) already decided to hunt. Keep them small.
+`goodsOf` and Overpass tag filters are not a mind. They only translate a hunt string into OSM tags **after** a hunt already started. Keep them small.
 
 Hands never require talking. Talking never requires a keyword. NOW / MAIL / PICK UP / PAY / RELOAD appear only after a real pick.
 
@@ -253,7 +294,7 @@ Hands never require talking. Talking never requires a keyword. NOW / MAIL / PICK
 
 boot → still grid globe + mic + glowing GPS target.  
 Tap GPS → rotate / zoom / city → YOU + SpaceNet around you.  
-Person says what they want → Grok hears it → if it is a find, hunt named places → list name · km.  
+Person says what they want → hunt named places **on the map as glowing pins** (Grok talks in parallel) → tap a pin.  
 Pick a place → NOW | MAIL | PICK UP.  
 Driver-base pick = NOW to that starting point.
 
@@ -282,7 +323,11 @@ PayPal keys are in Supabase Custom secrets. If create-order says `paypal_not_con
 
 ### 10. Voice and screen
 
-Boot dock = input + mic + +. One GPS target bottom-right. No toy buttons. Voice and hands are the same tools. No kitchen monologue. No fake YOU / fake drivers / silent Rhodes. No beeps. After speak, listen. Do not tight-loop the mic. Never speak raw coordinates.
+Boot dock = input + mic + +. One GPS target bottom-right. No toy buttons. Voice and hands are the same tools.
+
+**She speaks.** Calm, deep, female. Pitch 0.72, rate 0.86. UK English Female when present. Greek female for Greek. Not the default male. Not a slogan-bot.
+
+Mic **glows while listening**. Tap off. No auto-listen after TTS. No kitchen monologue. No fake YOU / fake drivers. Never speak raw coordinates. You-dot is YOU.
 
 ---
 
@@ -303,6 +348,7 @@ An AI that has only this file and an empty tree rebuilds **this** product, not H
 | `MASTER_PROMPT.md` | This file. |
 | `manifest.webmanifest` | Installable PWA. Dark. No pizza shortcut. |
 | `api/ai.js` | Grok mind. Key never leaves the host. JSON act only. |
+| `api/place.js` | Crawl the shop site + public web for phone, email, menu. Not Google. |
 | `api/paypal/_lib.js` `config.js` `create-order.js` `capture-order.js` | Reload tap. |
 | `vercel.json` | Deploy. `index.html` at `/`. Investors / exchange / presence hosts. |
 
@@ -394,18 +440,18 @@ Network-first. `skipWaiting` + `clients.claim`. Cache name `sn-shell-NNNN`. Bran
 
 ## Already failed — do not replay
 
-Twin CLI. HUD. chrome-fix. white chrome. long stamps. auto marina. fake Rhodes. Silver Wings. kitchen TTS. mic beep loop. healer killing SW. placeholder index. idle toys. Mercator-in-a-circle. NASA JPEG clipped to a circle. auto flat map on locate or shop pick. GPS deny with no path back. auto-locate on idle boot (GPS is a tap). “driver start” as the user-facing name (it is a **delivery driver base**). OSM emoji flood on the idle map. beer / pizza / city buttons sitting on the globe. “PayPal keys missing” when they sit in Supabase. keyword routers / hard-intent tables in front of Grok. slogan-bot “Hello.” from the old collective persona sitting in front of SpaceNet SYS. dummy DoorDash/Instacart/Walmart buttons that take AVC without delivering. fake live video with no camera and no other person.
+Twin CLI. HUD. chrome-fix. white chrome. long stamps. auto marina. fake Rhodes. Silver Wings. kitchen TTS. mic beep loop. healer killing SW. placeholder index. idle toys. Mercator-in-a-circle. NASA JPEG clipped to a circle. auto flat map on locate or shop pick. GPS deny with no path back. auto-locate on idle boot (GPS is a tap). “driver start” as the user-facing name (it is a **delivery driver base**). OSM emoji flood on the idle map. beer / pizza / city buttons sitting on the globe. “PayPal keys missing” when they sit in Supabase. keyword routers / hard-intent tables in front of Grok. slogan-bot “Hello.” from the old collective persona sitting in front of SpaceNet SYS. dummy DoorDash/Instacart/Walmart buttons that take AVC without delivering. fake live video with no camera and no other person. **Vendor names in a dock list instead of glowing map pins.** Waiting on Grok or Overpass before hunt. Hunting the last map tap. Grok wiping pins that already landed. Scraping Google. Default male TTS. Task row with only DO / PROBLEM and no ladder. YOU labelled as a municipality. Two islands. AVC label instead of AV€. Fake “Connected” call. Duplicate LAYER / money pills.
 
 ---
 
 ## Closed loop checklist
 
-Grid sphere on boot. No photo map in the circle. Mic on. GPS target glowing, not a silent jump. Speech goes to Grok, not a word list. Tap GPS → city → SpaceNet around you. Hunt named places on request. City tap → work sheet (post, call, shop, drop, driver base). NOW / MAIL / PICK UP. Astranov first, then present driver bases. AVC debit if balance is enough. RELOAD → PayPal → AVC → same debit if not. Stage paid only after AVC moved. Zoom out of streets returns to the grid sphere. No dead end. No screen flood.
+Grid sphere on boot. No photo map in the circle. Mic on, glows when listening. Calm deep female voice. GPS target glowing, not a silent jump. Tap GPS → city → YOU + SpaceNet around you. Type pizza → gold pins on the map now, Grok in parallel. City tap → work sheet (post, call, shop, drop, driver base). Pin → menu + CALL from OSM/site crawl. Arc tap → job ladder + percent. NOW / MAIL / PICK UP. Astranov first, then present driver bases. AV€ debit if balance is enough. RELOAD → PayPal → AV€ → same debit if not. Stage paid only after AV€ moved. Zoom out of streets returns to the grid sphere. No dead end. No screen flood.
 
 ---
 
 ## Starter line
 
-You are working on Astranov SpaceNet, https://astranov.eu, repo notisastranov/astranov.eu. Read MASTER_PROMPT.md, then live index.html, js/spacenet/app.js, and js/spacenet/work.js. The default world is a grid sphere, not a Mercator disc. Flat maps are city and national only; zoom out must return to that sphere. GPS is a glowing target: tap it, the globe slowly rotates, zooms, and flies you to your city map, locating you and showing SpaceNet around you. The person talks in ordinary language; Grok is the mind; the page does not sniff keywords. City work is post, call, list shop, list delivery location, list a delivery driver base (starting point: presence, routes, receive jobs from users). Do not flood emojis. Default map = most useful / most searched / best partners; the rest is searched. Tasks spend AVC instantly; PayPal only reloads empty credit. Do not restore HUD. Do not invent a second app or a second markdown file. Dummy results, Mercator-in-a-circle, leftover patches, keyword routers, and claiming undone work are fraud and terminate cooperation. Serve Spartan minimalism, instant effectiveness, usefulness, and truth. Finish the unbroken loop and verify live yourself.
+You are working on Astranov SpaceNet, https://astranov.eu, repo notisastranov/astranov.eu. Read MASTER_PROMPT.md, then live index.html, js/spacenet/app.js, and js/spacenet/work.js. **Owner’s last full instruction (2026-08-29) in this file overrides older notes.** The default world is a grid sphere, not a Mercator disc. Flat maps are city and national only; zoom out must return to that sphere. GPS is a glowing target: tap it, the globe slowly rotates, zooms, and flies you to your city map. Hunt types immediately onto **glowing map pins**, Grok talks in parallel, Photon first, around GPS not the last tap. She speaks calm and deep, female. Tap a pin → that shop’s menu and CALL (OSM then `/api/place` site crawl, not Google). Tap the arc or the task → ladder and percent. City work is post, call, list shop, list delivery location, list a delivery driver base. AV€ 1:1 euro, 3,000,000 owner treasury, jobs lock credit. Do not flood lists. Do not restore HUD. Do not invent a second markdown file. Dummy results, Mercator-in-a-circle, leftover patches, keyword routers, and claiming undone work are fraud and terminate cooperation. Serve Spartan minimalism, instant effectiveness, usefulness, and truth. Finish the unbroken loop and verify live yourself.
 
 Owner: Notis Astranov. This file plus the live source are what is going on.
