@@ -393,20 +393,65 @@
     });
   }
   function applyFill(s){
-    if(!s||!card||view!=="shop") return;
+    if(!s) return;
+    var id=pendingFillId||(at&&at.kind==="shop"&&at.id)||"";
     var dishes=s.dishes||s.items||[];
-    if(s.phone||s.hours||s.note||s.name) fillShopForm(s);
-    if(s.cover){ photos.cover=s.cover; var c=card.querySelector('[data-slot=cover]'); var img=c&&c.parentNode&&c.parentNode.querySelector("img"); if(img){ img.src=s.cover; img.style.display="block"; } }
-    if(s.profile){ photos.profile=s.profile; }
-    if(dishes.length){
-      var grid=card.querySelector("[data-menu]");
-      if(grid){
-        grid.innerHTML=dishHead(true)+dishes.map(function(it){
-          return dishEdit({name:it.name||it.desc,price:it.price,hours:it.hours||s.hours||"",stock0:it.stock0||it.stock||20,stock:it.stock||20,photo:it.photo||""});
-        }).join("");
+    if(id){
+      var list=load(KEYS.shops), i;
+      for(i=0;i<list.length;i++){
+        if(!list[i]||list[i].id!==id) continue;
+        if(s.phone) list[i].phone=s.phone;
+        if(s.hours) list[i].hours=s.hours;
+        if(s.note) list[i].note=s.note;
+        if(s.cover) list[i].cover=s.cover;
+        if(s.profile) list[i].profile=s.profile;
+        if(s.open) list[i].open=s.open;
+        if(dishes.length){
+          list[i].dishes=dishes.map(function(it){ return {name:it.name||it.desc,price:Number(it.price)||0,hours:it.hours||s.hours||"",stock0:it.stock||20,stock:it.stock||20,photo:it.photo||"",sample:!!it.sample}; });
+          list[i].menu=list[i].dishes.map(function(d){ return d.name+" — "+d.price; }).join("\n");
+        }
+        publish(list[i]);
+        break;
+      }
+      save(KEYS.shops,list);
+      if(window.SN&&SN.repaint) SN.repaint();
+    }
+    if(card&&view==="shop"){
+      if(s.phone||s.hours||s.note||s.name) fillShopForm(s);
+      if(s.cover){ photos.cover=s.cover; var c=card.querySelector("[data-slot=cover]"); var img=c&&c.parentNode&&c.parentNode.querySelector("img"); if(img){ img.src=s.cover; img.style.display="block"; } }
+      if(dishes.length){
+        var grid=card.querySelector("[data-menu]");
+        if(grid) grid.innerHTML=dishHead(true)+dishes.map(function(it){ return dishEdit({name:it.name||it.desc,price:it.price,hours:it.hours||s.hours||"",stock0:it.stock||20,stock:it.stock||20,photo:it.photo||""}); }).join("");
       }
     }
-    talk("Filled from the public listing. Check it, then SAVE.");
+    if(s.phone||dishes.length) talk((s.name||(at&&at.name)||"Shop")+" is on SpaceNet.");
+  }
+  var pendingFillId="";
+  function autoList(p, grokFill){
+    if(!p||!isFinite(+p.lat)||!isFinite(+p.lng)) return null;
+    var name=String(p.name||p.label||"").trim();
+    if(!name||name==="This place") return null;
+    if(p.kind==="driver"||p.kind==="drop"||p.kind==="post"||p.kind==="tax") return null;
+    var list=load(KEYS.shops), i, hit=null;
+    for(i=0;i<list.length;i++){
+      var r=list[i];
+      if(!r||!r.name) continue;
+      if(String(r.name).toLowerCase()===name.toLowerCase() && Math.abs(+r.lat-+p.lat)<0.002 && Math.abs(+r.lng-+p.lng)<0.002){ hit=r; break; }
+    }
+    if(hit) return hit;
+    var tags=p.tags||{};
+    var row={id:uid("s"), kind:"shop", name:name, lat:+p.lat, lng:+p.lng, raw:p.raw||"", place:name, phone:p.phone||tags.phone||tags["contact:phone"]||"", hours:tags.opening_hours||"", peer:"spacenet", auto:1, t:Date.now(), dishes:[]};
+    list.unshift(row);
+    save(KEYS.shops,list);
+    publish(row);
+    if(window.SN&&SN.repaint) SN.repaint();
+    pendingFillId=row.id;
+    fetch("/api/place",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:name,place:row.raw,lat:row.lat,lng:row.lng,website:tags.website||tags["contact:website"]||""})})
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if(j&&j.ok) applyFill(j); })
+      .catch(function(){});
+    if(grokFill!==false && window.SN&&SN.grokListing) SN.grokListing(row);
+    return row;
   }
   function fillFromWorld(){
     if(view!=="shop"||!at) return;
@@ -1051,6 +1096,7 @@
     hang:hang,
     peerId:peerId,
     applyFill:applyFill,
+    autoList:autoList,
     fillFromWorld:fillFromWorld,
     isAdmin:isAdmin,
     takeStock:takeStock,

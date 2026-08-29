@@ -1,5 +1,5 @@
-/* SpaceNet SW 4069 — shell network-first, tiles on the device. Never serve HTML as JS. */
-var CACHE = "sn-shell-4069";
+/* SpaceNet SW 4070 — shell network-first, tiles on the device. Never serve HTML as JS. */
+var CACHE = "sn-shell-4070";
 var TILES = "sn-tiles-1";
 function isTile(url) {
   return /tile\.openstreetmap\.org|openstreetmap\.fr\/hot|tiles\.maps\.eox\.at|server\.arcgisonline\.com/.test(url);

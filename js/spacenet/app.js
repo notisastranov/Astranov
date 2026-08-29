@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4069";
+  var VER="4070";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -991,6 +991,14 @@
     function showList(list){
       if(seq!==huntSeq) return;
       if(selected && job && job.status==="chosen") return;
+      if(window.SNWork&&SNWork.autoList){
+        list=(list||[]).map(function(v,i){
+          var row=SNWork.autoList(v, i===0);
+          if(!row) return v;
+          v.id=row.id; v.kind="shop"; v.sn=true; v.tags=row; v.phone=row.phone||v.phone;
+          return v;
+        });
+      }
       vendors=list;
       if(huntLanded){ paintHuntPins(list, list[0], false); return; }
       if(!list.length) return;
@@ -999,9 +1007,7 @@
       paintHuntPins(list, list[0], true);
       if(spoken) return;
       spoken=true;
-      var ours=list.filter(function(v){ return v.sn || listedShopOf(v) || v.kind==="driver" || v.kind==="drop"; });
-      if(ours.length) talk("On SpaceNet: "+ours[0].name+". Listed pin.");
-      else talk((list[0].name||q)+" — "+(list[0].raw||"on the map")+". List it.");
+      talk((list[0].name||q)+" is on SpaceNet. Order from the pin.");
     }
     function merge(list){ if(seq!==huntSeq) return; if(selected && job && job.status==="chosen") return; acc=near(acc.concat(list||[])); if(acc.length) showList(acc); }
     huntMergeFn=merge;
@@ -1207,7 +1213,7 @@
       });
     }
     var target=list[0]||from;
-    if(land && target) goThere(target, 17, function(){ go(); if(target && !listedShopOf(target)) openPinMenu(target); });
+    if(land && target) goThere(target, 17, function(){ go(); var live=listedShopOf(target); if(live) selectVendor(live); else openPinMenu(target); });
     else go();
   }
   function spaceAround(from){
