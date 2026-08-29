@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4051";
+  var VER="4052";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -103,7 +103,8 @@
   function platformGet(){ try{ return Math.max(0, Number(localStorage.getItem("sn:platform")||0)); }catch(e){ return 0; } }
   function cartQty(){ if(!job||!job.cart) return 0; return job.cart.reduce(function(s,x){ return s+(Number(x.qty)||1); },0); }
   function goodsSum(){ if(!job||!job.cart) return 0; return job.cart.reduce(function(s,x){ return s+(Number(x.price)||0)*(Number(x.qty)||1); },0); }
-  function rideKm(){ var a=here, b=(job&&job.shop)||selected; if(!a||!b||!isFinite(a.lat)||!isFinite(b.lat)) return 1; return Math.max(0.5, km(a,b)); }
+  function destPoint(){ return (job&&job.drop)||myDrop()||here; }
+  function rideKm(){ var a=(job&&job.shop)||selected, b=destPoint(); if(!a||!b||!isFinite(a.lat)||!isFinite(b.lat)) return 1; return Math.max(0.5, km(a,b)); }
   function rideFee(){ return Math.max(1, Math.round(rideKm())); }
   function cartNet(){ var n=goodsSum()+rideFee(); if(job&&job.floor) n+=3; return Math.round(n*100)/100; }
   function cartSum(){ return withSnFee(cartNet()); }
@@ -128,8 +129,12 @@
     packSoon();
   }
   function pickDish(it, el){
+    var live=listedShopOf(selected);
+    if(!live){ talk("Only a listed SpaceNet shop pin can take an order. List it with +."); if(window.SNWork) SNWork.open(selected||aim,"shop"); return; }
+    selected=live;
     if(!job) job={kind:"find",query:(selected&&selected.name)||"order",status:"cart",shop:selected,t:Date.now()};
-    job.shop=selected||job.shop;
+    job.shop=selected;
+    job.drop=myDrop()||job.drop;
     job.cart=job.cart||[];
     var hit=null;
     job.cart.forEach(function(x){ if(x.name===it.name) hit=x; });
@@ -588,7 +593,7 @@
   function openEscrow(price){
     var g=goodsOf(job&&job.query);
     var ride=rideFee(), goods=Math.round(goodsSum()*100)/100, net=cartNet(), fee=snFee(net);
-    var row={id:"e"+(Date.now().toString(36)), kind:"job", avc:Number(price||0), fee:fee, held:true, status:"paid", at:Date.now(), holdMin:holdMinOf(job), strict:!!(g&&g.strict), query:(job&&job.query)||"", how:"now", floor:!!(job&&job.floor), eta:Number(job&&job.carrier&&job.carrier.eta)||Math.max(8, Math.round(rideKm()*3)), cart:job&&job.cart||[], ride:ride, goods:goods, km:rideKm(), customerPeer:window.SNWork&&SNWork.peerId?SNWork.peerId():"", shop:job&&job.shop?{id:job.shop.id,name:job.shop.name,lat:job.shop.lat,lng:job.shop.lng,phone:job.shop.phone||telOf(job.shop),peer:job.shop.peer||shopPeerOf()}:null, driver:job&&job.carrier&&(job.carrier.agent||job.carrier.driver)?{id:job.carrier.id,name:job.carrier.name,phone:job.carrier.phone||"",peer:job.carrier.peer||agentPeerOf()}:null, flag:"", evidence:{paidAt:Date.now()}, lat:(job&&job.shop&&job.shop.lat)||(here&&here.lat)||0, lng:(job&&job.shop&&job.shop.lng)||(here&&here.lng)||0, name:(job&&job.query)||"job"};
+    var row={id:"e"+(Date.now().toString(36)), kind:"job", avc:Number(price||0), fee:fee, held:true, status:"paid", at:Date.now(), holdMin:holdMinOf(job), strict:!!(g&&g.strict), query:(job&&job.query)||"", how:"now", floor:!!(job&&job.floor), eta:Number(job&&job.carrier&&job.carrier.eta)||Math.max(8, Math.round(rideKm()*3)), cart:job&&job.cart||[], ride:ride, goods:goods, km:rideKm(), customerPeer:window.SNWork&&SNWork.peerId?SNWork.peerId():"", drop:job&&job.drop?{id:job.drop.id,name:job.drop.label||job.drop.name,lat:job.drop.lat,lng:job.drop.lng,phone:job.drop.phone||"",photo:job.drop.photo||""}:null, shop:job&&job.shop?{id:job.shop.id,name:job.shop.name,lat:job.shop.lat,lng:job.shop.lng,phone:job.shop.phone||telOf(job.shop),peer:job.shop.peer||shopPeerOf()}:null, driver:job&&job.carrier&&(job.carrier.agent||job.carrier.driver)?{id:job.carrier.id,name:job.carrier.name,phone:job.carrier.phone||"",peer:job.carrier.peer||agentPeerOf()}:null, flag:"", evidence:{paidAt:Date.now()}, lat:(job&&job.shop&&job.shop.lat)||(here&&here.lat)||0, lng:(job&&job.shop&&job.shop.lng)||(here&&here.lng)||0, name:(job&&job.query)||"job"};
     putEscrow(row); if(job) job.escrowId=row.id; return row;
   }
   function settle(id, split, reason){
@@ -1008,9 +1013,11 @@
     if(!map||!window.L) return;
     try{ if(bondGroup) map.removeLayer(bondGroup); }catch(e){}
     bondGroup=window.L.layerGroup().addTo(map);
-    var segs=[], fill=jobFill(), done=fill>=0.99;
-    if(here&&selected) segs.push(bondPts(here, selected));
-    if(selected&&job&&job.carrier&&(job.carrier.driver||job.carrier.agent)){ var d=driverRow(job.carrier.id); if(d) segs.push(bondPts(selected, d)); }
+    var segs=[], fill=jobFill(), done=fill>=0.99, drop=destPoint(), shop=selected, drv=null;
+    if(job&&job.carrier&&(job.carrier.driver||job.carrier.agent)) drv=driverRow(job.carrier.id);
+    if(shop&&drv) segs.push(bondPts(shop, drv));
+    if(drv&&drop) segs.push(bondPts(drv, drop));
+    else if(shop&&drop) segs.push(bondPts(shop, drop));
     segs.forEach(function(pts){
       if(pts.length<2) return;
       window.L.polyline(pts,{color:"#0a2cff",weight:16,opacity:0.2,lineCap:"round",interactive:false,className:"sn-arc-track"}).addTo(bondGroup);
@@ -1031,10 +1038,10 @@
     }
   }
   function paintJobArc(){
-    var stops=[], d;
-    if(here) stops.push(here);
+    var stops=[], d, drop=destPoint();
     if(selected) stops.push(selected);
-    if(job&&job.carrier&&job.carrier.driver){ d=driverRow(job.carrier.id); if(d&&isFinite(d.lat)) stops.push(d); }
+    if(job&&job.carrier&&(job.carrier.driver||job.carrier.agent)){ d=driverRow(job.carrier.id); if(d&&isFinite(d.lat)) stops.push(d); }
+    if(drop) stops.push(drop);
     drawBonds();
     if(stops.length<2) return Promise.resolve(null);
     return osrmLine(stops).then(function(line){
@@ -1097,7 +1104,7 @@
     function add(list, kind, w){
       (list||[]).forEach(function(r){
         if(!r||!isFinite(r.lat)) return;
-        if(kind==="driver" && String(r.presence||"present")==="off") return;
+        if(kind!=="post" && kind!=="tax" && !pinLive(r, kind)) return;
         var d=from?km(from,r):0;
         if(from && d>18) return;
         rows.push({row:r, kind:kind, d:d, hits:Number(r.hits)||0, w:w});
@@ -1154,7 +1161,7 @@
   function showCall(from, dest){ if(!from||!dest) return; var mid={lat:(from.lat+dest.lat)/2,lng:(from.lng+dest.lng)/2}; var d=km(from,dest); var z=d>80?6:d>8?10:14; showMap(mid, z); setTimeout(function(){ if(!map) return; try{ map.fitBounds([[from.lat,from.lng],[dest.lat,dest.lng]],{padding:[48,48],maxZoom:14}); }catch(e){} },500); }
   function startFly(p, then, ms, toDist){ if(!p) return; spin=0; var toYaw=p.lng*Math.PI/180, toPitch=Math.max(-1.15, Math.min(1.15, p.lat*Math.PI/180)); fly={fromYaw:yaw, fromPitch:pitch, toYaw:toYaw, toPitch:toPitch, fromDist:dist, toDist:toDist!=null?toDist:dist, t0:Date.now(), ms:ms||520, then:then||null}; needTick(); }
   function flyTap(p){ if(!p) return; if(window.SNWork&&SNWork.setPin&&SNWork.setPin(p)) return; if(window.SNWork&&SNWork.takePoint&&SNWork.takePoint(p)) return; aim=p; hidePlace(); var lvl=viewLevel(); nameAim(p).then(function(n){ if(aim&&Math.abs(aim.lat-p.lat)<0.3) aim=n; }); if(lvl==="globe"){ startFly(p, function(){ showNational(p); }); } else if(lvl==="national"){ showMap(p, 14); } else { cityWork(p); } }
-  function startOrder(v){ if(!v) return; job={kind:"find", query:v.name||"order", status:"chosen", shop:v, t:Date.now()}; selectVendor(v); }
+  function startOrder(v){ if(!v) return; var live=listedShopOf(v)||v; job={kind:"find", query:live.name||"order", status:"chosen", shop:live, drop:myDrop()||null, t:Date.now()}; selectVendor(live); }
   function vendorTapped(v){
     if(!v) return;
     selected=v;
@@ -1202,13 +1209,21 @@
       talk((n||"Astranov Delivery Agent")+". Starting base. Send a job here.");
       return;
     }
-    loadShopMenu(v, b).then(function(items){
-      if(selected!==v) return;
+    var live=listedShopOf(v);
+    if(!live){
+      addContactBtns(v);
+      need({id:"listshop",label:"LIST THIS SHOP",run:function(){ if(window.SNWork) SNWork.open(v,"shop"); }});
+      talk(n+". On the map. Not a SpaceNet shop pin yet. Call them. List with + to take orders.");
+      return;
+    }
+    selected=live;
+    if(job) job.shop=live;
+    loadShopMenu(live, shopBits(live)).then(function(items){
+      if(selected!==live) return;
       clearNeed();
       renderMenu(items);
-      addContactBtns(v);
-      var samples=(items||[]).some(function(it){ return it.sample; });
-      talk(n+". "+(items&&items.length?items.length+" dishes.":"")+(samples?" Sample until the shop lists a live menu.":" Tap a dish. It goes in the cart."));
+      addContactBtns(live);
+      talk(n+". Listed pin. "+(items&&items.length?items.length+" dishes. ":"")+"Tap a dish. The task uses this pin, a driver pin, and a drop pin.");
     });
   }
   var SAMPLE_PIC={
@@ -1307,12 +1322,46 @@
     if(agent) need({id:"callagent",label:"CALL AGENT",run:callAgent});
     offerJobVideo();
   }
+  function pinLive(row, kind){
+    kind=kind||(row&&row.kind)||"shop";
+    if(!row||!isFinite(+row.lat)||!isFinite(+row.lng)) return false;
+    if(kind==="shop") return !!(row.menu||(row.dishes&&row.dishes.length)||row.hours||row.phone||row.profile);
+    if(kind==="driver") return String(row.presence||"present")!=="off" && !!(row.vehicles||row.hours||row.routes||row.face||row.phone||row.range);
+    if(kind==="drop") return !!(row.street||row.number||row.phone||row.photo||row.bell||row.floor);
+    return true;
+  }
+  function listedShopOf(v){
+    if(!v||!window.SNWork||!SNWork.all) return null;
+    if(v.kind==="shop" && v.id && pinLive(v,"shop")) return v;
+    var hit=null, shops=SNWork.all().shops||[];
+    shops.forEach(function(s){
+      if(!pinLive(s,"shop")) return;
+      if(v.id&&s.id===v.id) hit=s;
+      else if(!hit && s.name&&v.name&&String(s.name).toLowerCase()===String(v.name).toLowerCase() && km(s,v)<0.12) hit=s;
+    });
+    return hit;
+  }
+  function myDrop(){
+    if(!window.SNWork||!SNWork.all) return null;
+    var drops=(SNWork.all().drops||[]).filter(function(d){ return pinLive(d,"drop"); });
+    if(!drops.length) return null;
+    var from=here||aim;
+    if(!from) return drops[0];
+    drops.sort(function(a,b){ return km(from,a)-km(from,b); });
+    return drops[0];
+  }
+  function bindTaskPins(){
+    var shop=listedShopOf((job&&job.shop)||selected);
+    if(shop){ selected=shop; if(job) job.shop=shop; }
+    var drop=myDrop();
+    if(drop&&job) job.drop=drop;
+    return {shop:shop, drop:drop||here, agents:listedAgents()};
+  }
   function listedAgents(){
     if(!window.SNWork) return [];
     var from=here||selected;
     return (SNWork.all().drivers||[]).filter(function(d){
-      if(!d||!isFinite(d.lat)||!isFinite(d.lng)) return false;
-      if(String(d.presence||"present")==="off") return false;
+      if(!pinLive(d,"driver")) return false;
       var range=Number(d.range)||25;
       return !from || km(from,d)<=range;
     }).map(function(d){
@@ -1334,14 +1383,18 @@
     return true;
   }
   function startDeliver(){
-    if(!selected){ talk("Pick a place first."); return; }
-    if(job) job.how="now";
+    if(!selected){ talk("Pick a listed shop pin first."); return; }
+    var pins=bindTaskPins();
+    if(!pins.shop){ talk("Only a verified SpaceNet shop pin can start a task. List it with +."); if(window.SNWork) SNWork.open(selected,"shop"); return; }
+    if(job){ job.how="now"; job.shop=pins.shop; job.drop=pins.drop; }
+    selected=pins.shop;
     function go(){
       var list=listedAgents();
       if(!list.length){
-        cancelUnpaid("No Astranov Delivery Agent in this area. Order cancelled before checkout. You were not charged.");
+        cancelUnpaid("No listed Astranov Delivery Agent pin in this area. Order cancelled before checkout. You were not charged.");
         return;
       }
+      if(!myDrop()) talk("No listed drop pin. Using YOU. List a delivery location with + for entrance details.");
       showOffers(list);
     }
     if(!here){
