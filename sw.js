@@ -1,8 +1,11 @@
-/* SpaceNet SW 4065 — shell network-first, tiles on the device */
-var CACHE = "sn-shell-4065";
+/* SpaceNet SW 4066 — shell network-first, tiles on the device. Never serve HTML as JS. */
+var CACHE = "sn-shell-4066";
 var TILES = "sn-tiles-1";
 function isTile(url) {
-  return /tile\.openstreetmap\.org|openstreetmap\.fr\/hot|tiles\.maps\.eox\.at|server\.arcgisonline\.com|\/js\/vendor\/leaflet/.test(url);
+  return /tile\.openstreetmap\.org|openstreetmap\.fr\/hot|tiles\.maps\.eox\.at|server\.arcgisonline\.com/.test(url);
+}
+function isAsset(url) {
+  return /\/js\/|\.js(\?|$)|\/css\/|\.css(\?|$)|leaflet/.test(url);
 }
 self.addEventListener("install", function (e) {
   self.skipWaiting();
@@ -19,6 +22,10 @@ self.addEventListener("fetch", function (e) {
   var req = e.request;
   if (req.method !== "GET") return;
   var url = req.url || "";
+  if (isAsset(url)) {
+    e.respondWith(fetch(req, { cache: "no-store" }).catch(function () { return caches.match(req); }));
+    return;
+  }
   if (isTile(url)) {
     e.respondWith(
       caches.open(TILES).then(function (c) {
