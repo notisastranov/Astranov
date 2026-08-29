@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4066
+**Stamp at this rewrite:** 4067
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -63,7 +63,7 @@ This block **overrides** every older note in this file if they fight. Do not mak
 
 **Verified pins make tasks.** A real task is three listed pins: shop, Astranov driver base, client drop. Hunt may find a place. CALL is allowed. ORDER only from a listed shop pin. Ride is shop → drop (YOU if no drop listed). Dummy OSM shops do not create jobs.
 
-**Leaflet is in the page.** Never serve HTML as JS. Map fail still opens the listing on that globe pin. Tap the Pizzarium dot on the globe to list it. **Hunt flies there.** Type a name in the field. Globe rotates to that pin, then the city map at street zoom. Hidden map behind the globe is not a find.
+**Leaflet is in the page.** Never serve HTML as JS. Map fail still opens the listing on that globe pin. Tap the Pizzarium dot on the globe to list it. **No bounce.** Leaflet zoom never throws you back to the globe. Hunt a name: one pin, one land, listing menu opens. fitBounds across countries is forbidden. Globe does not close the listing sheet. **Hunt flies there.** Type a name in the field. Globe rotates to that pin, then the city map at street zoom. Hidden map behind the globe is not a find.
 
 **List the place.** Name + pin is enough to LIST SHOP. Spreadsheet rows can come after. Do not block listing because a product row is empty.
 
