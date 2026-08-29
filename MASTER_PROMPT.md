@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4029
+**Stamp at this rewrite:** 4030
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -243,7 +243,7 @@ What the page must not do:
 - Blocking conversation until GPS is granted.
 - A second parser, intent engine, CLI grammar, or “hard intent” table.
 
-Hunt uses Nominatim + Overpass + Photon, plus listed shops / drops / driver bases / posts. Named places only. Distance in km. Cap the dock (about six). Photon is the reliable fallback when Nominatim 429s or Overpass times out.
+Hunt uses Nominatim + Overpass + Photon, plus listed shops / drops / driver bases / posts. Named places only. **Results glow on the city map** (gold pins, cap 8). No vendor list flooding the dock. Tap a pin to open that shop. Photon first; Overpass is extra. Typing hunts the map immediately; Grok talks in parallel.
 
 `goodsOf` and Overpass tag filters are not a mind. They only translate a hunt string into OSM tags **after** Grok (or a tap) already decided to hunt. Keep them small.
 
