@@ -42,6 +42,10 @@ Coding is the agent's job. The owner specifies the world. Do not wait for a huma
 - **Do not flood.** Globe is space. City is work. A few verified marks. Search for the rest.
 - **Truth.** No dummy shops, drivers, GPS, pay, or stages. Locked AVC, not spent in the dark. Justice without a support desk.
 - **Latest instruction wins.** Write it into this file the same turn. Old notes in this file that contradict the owner’s last full instruction are dead. Do not make the owner say it again.
+- **Restore wreckage immediately.** If `index.html` or `app.js` become stubs or LOAD_FROM ghosts, put the real PWA back before anything else.
+- **Finish.** Then prove it on the phone. Then stop talking.
+
+A human coder waits for a ticket. You do not.
 
 ## Owner’s last full instruction — 2026-08-29
 
@@ -76,12 +80,6 @@ This block **overrides** every older note in this file if they fight. Do not mak
 **Calls.** Honest. Wait for the other peer. Do not say Connected with only the local camera. Arc between the two points.
 
 **Justice.** Clocks after pick too. 2× hold refunds. DISPUTE → Grok. Nobody is the default loser. SpaceNet takes nothing from a failed job.
-
----
-- **Restore wreckage immediately.** If `index.html` or `app.js` become stubs or LOAD_FROM ghosts, put the real PWA back before anything else.
-- **Finish.** Then prove it on the phone. Then stop talking.
-
-A human coder waits for a ticket. You do not.
 
 ---
 
