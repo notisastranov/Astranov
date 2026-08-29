@@ -256,6 +256,17 @@
     if(act==="print-books"){ try{ window.print(); }catch(e){} return; }
     if(act==="books"){ view="tax"; render(); return; }
     if(act==="remove"){ removeCurrent(); return; }
+    if(act==="you"){
+      close();
+      if(window.SN&&SN.applyHere) SN.applyHere(at, "You're here. That's YOU.");
+      else talk("Tap GPS if that failed.");
+      return;
+    }
+    if(act==="fix"){
+      close();
+      if(window.SN&&SN.correctHere) SN.correctHere();
+      return;
+    }
     if(act==="edit-shop"){ view="shop"; render(); return; }
     if(act==="dish-add"){
       var grid=card&&card.querySelector("[data-menu]");
@@ -785,6 +796,8 @@
         return;
       }
       card.innerHTML=head(title, sub)+
+        '<button type="button" class="opt" data-act="you"><b>This is my location</b><span>YOU pin. Not a shop.</span></button>'+
+        '<button type="button" class="opt" data-act="fix"><b>Fix my location</b><span>Next tap on the map is YOU. Order stays.</span></button>'+
         '<button type="button" class="opt" data-act="post"><b>Post something here</b><span>News, a note, a photo. It shows on SpaceNet.</span></button>'+
         '<button type="button" class="opt" data-act="report"><b>Report something here</b><span>A problem at this pin. It posts on SpaceNet.</span></button>'+
         '<button type="button" class="opt" data-act="call"><b>Start a call from here</b><span>Video if they are on SpaceNet. Or search a name and dial.</span></button>'+
