@@ -252,6 +252,22 @@
   }
 
   function onClick(e){
+    var call=e.target.closest("a.sn-call");
+    if(call && sheet.contains(call) && (!call.getAttribute("href") || call.getAttribute("href")==="#")){
+      e.preventDefault();
+      say("Getting the official phone…");
+      fetch("/api/place",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:placeName(at),place:placeLine(at),lat:at&&at.lat,lng:at&&at.lng})})
+        .then(function(r){ return r.json(); })
+        .then(function(j){
+          var n=j&&j.phone||"";
+          if(!n){ talk("No official telephone published."); return; }
+          call.href="tel:"+n.replace(/[^\d+]/g,"");
+          call.textContent="CALL "+n.replace(/[^\d+ ]/g,"");
+          location.href=call.href;
+        })
+        .catch(function(){ talk("No official telephone published."); });
+      return;
+    }
     var b=e.target.closest("[data-act]");
     if(!b || !sheet.contains(b)) return;
     var act=b.getAttribute("data-act");
@@ -976,7 +992,7 @@
           (s.cover?'<img class="cover" alt="Cover" src="'+s.cover+'" />':'')+
           (s.profile?'<img class="avatar" alt="Profile" src="'+s.profile+'" />':'')+
           (dishes.length?'<div class="sn-menu-grid">'+dishHead(false)+dishes.map(dishShow).join("")+'</div>':(s.menu?'<pre class="menu">'+esc(s.menu)+'</pre>':''))+
-          (s.phone?'<button type="button" class="go" data-act="dial" data-tel="'+esc(s.phone)+'">DIAL '+esc(s.phone)+'</button>':'')+
+          '<a class="go sn-call" href="'+(s.phone?("tel:"+String(s.phone).replace(/[^\d+]/g,"")):"#")+'">CALL '+(s.phone?String(s.phone).replace(/[^\d+ ]/g,""):"SHOP")+'</a>'+
           (s.peer?'<button type="button" class="go" data-act="video" data-peer="'+esc(s.peer)+'" data-tel="'+esc(s.phone||"")+'">VIDEO CALL</button>':'')+
           '<button type="button" class="go" data-act="order">ORDER FROM HERE</button>'+
           (mine?'<button type="button" class="opt" data-act="edit-shop"><b>Edit this menu</b><span>Same photo, price, stock the client sees.</span></button>':'')+

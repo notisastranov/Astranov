@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4071";
+  var VER="4072";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -363,9 +363,41 @@
     return raw;
   }
   function addContactBtns(v){
-    var tel=officialTel(v);
-    if(tel) need({id:"tel",label:"CALL "+tel.replace(/[^\d+ ]/g,"").slice(0,18),run:function(){ location.href="tel:"+tel.replace(/[^\d+]/g,""); }});
-    return {phone:tel,email:"",web:""};
+    return {phone:officialTel(v),email:"",web:""};
+  }
+  function paintCallBtn(v){
+    if(!liveEl) return;
+    var tel=officialTel(v)||officialTel(shopBits(v).listed);
+    var old=liveEl.querySelector(".sn-call");
+    var a=old||document.createElement("a");
+    a.className="go sn-call";
+    a.setAttribute("role","button");
+    if(tel){
+      a.href="tel:"+tel.replace(/[^\d+]/g,"");
+      a.textContent="CALL "+tel.replace(/[^\d+ ]/g,"");
+      a.onclick=null;
+    } else {
+      a.href="#";
+      a.textContent="CALL SHOP";
+      a.onclick=function(e){
+        e.preventDefault();
+        say("Getting the official phone…");
+        fetch("/api/place",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:v&&v.name||"",place:v&&v.raw||"",lat:v&&v.lat,lng:v&&v.lng})})
+          .then(function(r){ return r.json(); })
+          .then(function(j){
+            var n=j&&j.phone||"";
+            if(!n){ talk("No official telephone published for "+((v&&v.name)||"this shop")+"."); return; }
+            if(v){ v.phone=n; v.tags=v.tags||{}; v.tags.phone=n; }
+            if(window.SNWork&&SNWork.applyFill) SNWork.applyFill({phone:n,name:v&&v.name});
+            a.href="tel:"+n.replace(/[^\d+]/g,"");
+            a.textContent="CALL "+n.replace(/[^\d+ ]/g,"");
+            a.onclick=null;
+            location.href=a.href;
+          })
+          .catch(function(){ talk("No official telephone published."); });
+      };
+    }
+    if(!old) liveEl.insertBefore(a, liveEl.firstChild);
   }
   function fetchContacts(v){
     if(!v||!isFinite(v.lat)) return Promise.resolve(v&&v.tags||{});
@@ -1418,8 +1450,8 @@
     loadShopMenu(live, shopBits(live)).then(function(items){
       if(selected!==live) return;
       clearNeed();
-      renderMenu(items);
-      addContactBtns(live);
+      renderMenu(items, live);
+      paintCallBtn(live);
       talk(n+". Listed pin. "+(items&&items.length?items.length+" on the spreadsheet. ":"No rows yet. Owner adds them.")+"Tap a row to cart.");
     });
   }
@@ -1479,9 +1511,14 @@
     return Promise.resolve([]);
   }
   function htmlEsc(s){ return String(s==null?"":s).replace(/&/g,"&#38;").replace(/</g,"&#60;").replace(/>/g,"&#62;").replace(/\"/g,"&#34;").replace(/'/g,"&#39;"); }
-  function renderMenu(items){
+  function renderMenu(items, v){
     if(!liveEl) return;
-    liveEl.innerHTML='<div class="dish sheet head"><span>Photo</span><span>Description</span><span>AV€</span><span>Hours</span><span>Initial</span><span>Left</span></div>';
+    liveEl.innerHTML="";
+    paintCallBtn(v||selected);
+    var head=document.createElement("div");
+    head.className="dish sheet head";
+    head.innerHTML="<span>Photo</span><span>Description</span><span>AV€</span><span>Hours</span><span>Initial</span><span>Left</span>";
+    liveEl.appendChild(head);
     (items||[]).forEach(function(it){
       var b=document.createElement("button");
       b.type="button";
