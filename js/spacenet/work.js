@@ -211,6 +211,7 @@
     if(act==="order"){ close(); if(window.SN&&SN.startOrder) SN.startOrder({id:at.id,name:placeName(at),lat:at.lat,lng:at.lng,raw:"SpaceNet",tags:at.tags||at,kind:at.kind||"shop"}); else if(window.SN&&SN.selectVendor) SN.selectVendor({id:at.id,name:placeName(at),lat:at.lat,lng:at.lng,raw:"SpaceNet",tags:at.tags||at,kind:at.kind||"shop"}); return; }
     if(act==="print-books"){ try{ window.print(); }catch(e){} return; }
     if(act==="books"){ view="tax"; render(); return; }
+    if(act==="remove"){ removeCurrent(); return; }
   }
 
   function onSubmit(e){
