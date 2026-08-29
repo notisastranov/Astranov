@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4064
+**Stamp at this rewrite:** 4065
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -62,6 +62,10 @@ This block **overrides** every older note in this file if they fight. Do not mak
 **Owner of the pin edits. SpaceNet admins edit.** Nobody else. Strangers order or call. Edit opens the real form (not a loop back to the view). Type `astranov admin` on a device to mark it admin.
 
 **Verified pins make tasks.** A real task is three listed pins: shop, Astranov driver base, client drop. Hunt may find a place. CALL is allowed. ORDER only from a listed shop pin. Ride is shop → drop (YOU if no drop listed). Dummy OSM shops do not create jobs.
+
+**Hunt flies there.** Type a name in the field. Globe rotates to that pin, then the city map at street zoom. Hidden map behind the globe is not a find.
+
+**List the place.** Name + pin is enough to LIST SHOP. Spreadsheet rows can come after. Do not block listing because a product row is empty.
 
 **Drag the PIN.** Hunt pins and the listing PIN are draggable. Hold-menu does not eat the drag. Named hunt does not fit YOU in another city (that zoomed Rhodes to the Balkans). Street zoom. **Pin while listing.** The sheet sits on the bottom. The map above stays live. Tap or **drag the PIN** to set the listing. Form does not close. Form does not wipe. Click the PIN to reopen and edit (owner/admin).
 

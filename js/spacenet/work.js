@@ -470,7 +470,6 @@
     if(!name){ talk("Name the shop."); return; }
     if(at&&at.id&&at.kind==="shop"&&!canEdit(at.tags||at)){ talk("Only the owner or a SpaceNet admin can edit this pin."); return; }
     var dishes=readDishCards();
-    if(!dishes.length){ talk("Add a row: photo, description, hours, initial stock, stock left."); return; }
     var row=baseRow();
     if(at&&at.id&&at.kind==="shop") row.id=at.id; else row.id=uid("s");
     row.kind="shop"; row.name=name;
@@ -487,7 +486,8 @@
     for(i=0;i<list.length;i++) if(list[i]&&list[i].id===row.id){ list[i]=row; found=true; break; }
     if(!found) list.unshift(row);
     save(KEYS.shops,list);
-    close(); paint(); publish(row); talk(name+" is listed. Clients see this menu.");
+    close(); paint(); publish(row);
+    talk(dishes.length?(name+" is listed. Clients see this spreadsheet."):(name+" is listed on SpaceNet. Add products on the spreadsheet when you have them."));
   }
 
   function saveDrop(fd){
