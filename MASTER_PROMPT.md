@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4036
+**Stamp at this rewrite:** 4037
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -50,6 +50,8 @@ A human coder waits for a ticket. You do not.
 ## Owner’s last full instruction — 2026-08-29
 
 This block **overrides** every older note in this file if they fight. Do not make the owner say it again.
+
+**Arc fill.** The bond arc is a progress bar. Completion **glows filling the arc** from YOU toward the shop and the agent. Making = a little light. At the door = almost full. Delivered = the whole arc gold and glowing. Tap the arc for the job.
 
 **Door wait.** At the doorstep: **+ AV€ 3 every 3 minutes** the client delays pickup. If the agent **returns**, the **route is charged again**. **No refund** of the order, the wait, or the return. After 12 minutes at the door with no pickup, return fires itself.
 
