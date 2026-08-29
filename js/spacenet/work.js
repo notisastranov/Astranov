@@ -435,6 +435,10 @@
       if(!(peer && !peer.destroyed)){
         peer=new Peer(peerId(), {debug:0});
         peer.on("call", function(c){
+          if(!allowIncoming(c)){
+            try{ c.close(); }catch(e){}
+            return;
+          }
           if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
             talk("This device cannot open a camera.");
             return;
@@ -443,7 +447,7 @@
             mediaStream=stream;
             mediaCall=c;
             c.answer(stream);
-            c.on("stream", function(remote){ showVideo(stream); setRemote(remote); talk("Incoming video."); });
+            c.on("stream", function(remote){ showVideo(stream); setRemote(remote); talk("Astranov video."); });
             c.on("close", hang);
           }).catch(function(){ talk("Allow camera and mic for video."); });
         });
@@ -488,12 +492,39 @@
     return true;
   }
 
-  function startVideo(id, tel){
+  function liveJob(){ return window.SN&&SN.liveEscrow?SN.liveEscrow():null; }
+  function movingNow(){ return !!(window.SN&&SN.isMoving&&SN.isMoving()); }
+  function iAmDriver(e){
+    if(!e||!e.driver||!e.driver.id) return false;
+    return load(KEYS.drivers).some(function(d){ return d&&d.id===e.driver.id; });
+  }
+  function iAmVendor(e){
+    if(!e||!e.shop||!e.shop.id) return false;
+    return load(KEYS.shops).some(function(s){ return s&&s.id===e.shop.id; });
+  }
+  function allowIncoming(c){
+    var e=liveJob(), from=c.peer, meta=(c&&c.metadata)||{};
+    if(iAmDriver(e)){
+      if(movingNow()){ talk("Video is off while you are moving."); return false; }
+      var client=e.customerPeer||"";
+      if(client && from!==client && meta.from!==client){ talk("Only the client of this job can video you."); return false; }
+      if(!client && meta.role && meta.role!=="client"){ talk("Only the client of this job can video you."); return false; }
+    }
+    return true;
+  }
+  function startVideo(id, tel, meta){
     id=String(id||"").trim();
     tel=String(tel||(activeCall&&activeCall.phone)||"").replace(/[^\d+]/g,"");
+    meta=meta||{};
+    meta.from=peerId();
+    var e=liveJob();
+    if(iAmDriver(e)){
+      if(movingNow()){ talk("Video is off while you are moving."); return; }
+      if(e.customerPeer && id!==e.customerPeer){ talk("You can only video the client of this job."); return; }
+    }
     if(!id){
       if(tel){ nativeCall(tel, true); return; }
-      talk("The other end is not on SpaceNet video and no phone is listed.");
+      talk("The other end is not on SpaceNet video.");
       return;
     }
     if(id===peerId()){
@@ -503,30 +534,28 @@
     }
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
       if(tel){ nativeCall(tel, true); return; }
-      talk("This device cannot open a camera. Dial if a phone is listed.");
+      talk("This device cannot open a camera.");
       return;
     }
     ensurePeer().then(function(p){
       return navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(function(stream){
         mediaStream=stream;
-        var c=p.call(id, stream);
+        var c=p.call(id, stream, {metadata:meta});
         mediaCall=c;
         var wait=setTimeout(function(){
-          talk(tel?"They did not answer. Dial the listed phone.":"They did not answer. They may be offline.");
+          talk("They did not answer.");
           hang();
         }, 12000);
-        c.on("stream", function(remote){ clearTimeout(wait); showVideo(stream); setRemote(remote); talk("They answered."); });
+        c.on("stream", function(remote){ clearTimeout(wait); showVideo(stream); setRemote(remote); talk("Astranov video."); });
         c.on("error", function(){
           clearTimeout(wait);
-          if(tel) talk("Video did not connect. Dial the listed phone.");
-          else talk("Video did not connect. They may be offline.");
+          talk("Video did not connect. They may be offline.");
         });
         c.on("close", hang);
-        talk("Calling… keep this screen open.");
+        talk("Astranov video… keep this screen open.");
       });
     }).catch(function(){
-      if(tel) nativeCall(tel, true);
-      else talk("Video needs camera, mic, and the other person on SpaceNet.");
+      talk("Video needs camera, mic, and the other person on SpaceNet.");
     });
   }
 
@@ -698,6 +727,7 @@
     listenPeer:listenPeer,
     hang:hang,
     peerId:peerId,
+    startVideo:startVideo,
     pull:pull,
     publish:publish
   };

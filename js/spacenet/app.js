@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4040";
+  var VER="4041";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -247,6 +247,59 @@
       web: t.website||t["contact:website"]||t.url||""
     };
   }
+  var moveSpeed=0, moveAt=0, moveWatch=0;
+  function watchMove(){
+    if(!navigator.geolocation || moveWatch) return;
+    try{
+      moveWatch=navigator.geolocation.watchPosition(function(p){
+        moveSpeed=Number(p.coords.speed); if(!isFinite(moveSpeed)) moveSpeed=0;
+        moveAt=Date.now();
+      }, function(){}, {enableHighAccuracy:true, maximumAge:2500, timeout:20000});
+    }catch(e){}
+  }
+  function isMoving(){
+    if(moveAt && Date.now()-moveAt<20000 && moveSpeed>=2) return true;
+    var e=liveEscrow();
+    if(e && e.status==="moving" && !(moveAt && moveSpeed<0.8)) return true;
+    return false;
+  }
+  function shopPeerOf(){
+    var s=(job&&job.shop)||(liveEscrow()&&liveEscrow().shop);
+    if(s&&s.peer) return s.peer;
+    if(!s||!window.SNWork) return "";
+    var hit="";
+    (SNWork.all().shops||[]).forEach(function(r){ if(r&&((s.id&&r.id===s.id)||(s.name&&r.name===s.name))) hit=r.peer||hit; });
+    return hit;
+  }
+  function agentPeerOf(){
+    var e=liveEscrow(), o=job&&job.carrier, d=o&&driverRow(o.id);
+    if(d&&d.peer) return d.peer;
+    if(e&&e.driver&&e.driver.peer) return e.driver.peer;
+    if(o&&o.peer) return o.peer;
+    if(!window.SNWork||!e||!e.driver) return "";
+    var hit="";
+    (SNWork.all().drivers||[]).forEach(function(r){ if(r&&e.driver&&r.id===e.driver.id) hit=r.peer||""; });
+    return hit;
+  }
+  function offerJobVideo(){
+    if(!window.SNWork||!SNWork.startVideo) return;
+    var me=SNWork.peerId(), e=liveEscrow(), mine=myListingIds();
+    var shopP=shopPeerOf(), agentP=agentPeerOf(), clientP=(job&&job.customerPeer)||(e&&e.customerPeer)||"";
+    var asDriver=!!(e&&e.driver&&mine[e.driver.id]==="driver");
+    var asVendor=!!(e&&e.shop&&mine[e.shop.id]==="shop");
+    if(asDriver){
+      if(isMoving()) return;
+      if(clientP && clientP!==me) need({id:"vidc",label:"VIDEO CLIENT",run:function(){ SNWork.startVideo(clientP,"",{role:"agent",job:e&&e.id}); }});
+      return;
+    }
+    if(asVendor){
+      if(clientP && clientP!==me) need({id:"vidc",label:"VIDEO CLIENT",run:function(){ SNWork.startVideo(clientP,"",{role:"vendor",job:e&&e.id}); }});
+      if(agentP && agentP!==me) need({id:"vida",label:"VIDEO AGENT",run:function(){ SNWork.startVideo(agentP,"",{role:"vendor",job:e&&e.id}); }});
+      return;
+    }
+    if(shopP && shopP!==me) need({id:"vidshop",label:"VIDEO SHOP",run:function(){ SNWork.startVideo(shopP,"",{role:"client",job:e&&e.id}); }});
+    if(agentP && agentP!==me) need({id:"vidagent",label:"VIDEO AGENT",run:function(){ SNWork.startVideo(agentP,"",{role:"client",job:e&&e.id}); }});
+  }
   function officialTel(v){
     if(!v) return "";
     var t=v.tags||v;
@@ -315,6 +368,7 @@
         if(menuEl){ var ttl=menuEl.querySelector(".ttl"); if(ttl) ttl.textContent=String(v.name||"JOB").toUpperCase().slice(0,22); }
         var c=addContactBtns(v);
         offerCalls();
+        offerJobVideo();
         if(e){
           var cur=stageOf(e);
           need({id:"next",label:(cur==="verified"?"DONE":("NEXT · "+cur.toUpperCase())),run:function(){ if(t) goTask(t.id); }});
@@ -506,7 +560,7 @@
   function holdMinOf(j){ var g=goodsOf(j&&j.query); return Math.max(8, Number(g&&g.hold)||40); }
   function openEscrow(price){
     var g=goodsOf(job&&job.query);
-    var row={id:"e"+(Date.now().toString(36)), kind:"job", avc:Number(price||0), held:true, status:"paid", at:Date.now(), holdMin:holdMinOf(job), strict:!!(g&&g.strict), query:(job&&job.query)||"", how:"now", floor:!!(job&&job.floor), eta:Number(job&&job.carrier&&job.carrier.eta)||18, cart:job&&job.cart||[], shop:job&&job.shop?{id:job.shop.id,name:job.shop.name,lat:job.shop.lat,lng:job.shop.lng,phone:job.shop.phone||telOf(job.shop)}:null, driver:job&&job.carrier&&(job.carrier.agent||job.carrier.driver)?{id:job.carrier.id,name:job.carrier.name,phone:job.carrier.phone||""}:null, flag:"", evidence:{paidAt:Date.now()}, lat:(job&&job.shop&&job.shop.lat)||(here&&here.lat)||0, lng:(job&&job.shop&&job.shop.lng)||(here&&here.lng)||0, name:(job&&job.query)||"job"};
+    var row={id:"e"+(Date.now().toString(36)), kind:"job", avc:Number(price||0), held:true, status:"paid", at:Date.now(), holdMin:holdMinOf(job), strict:!!(g&&g.strict), query:(job&&job.query)||"", how:"now", floor:!!(job&&job.floor), eta:Number(job&&job.carrier&&job.carrier.eta)||18, cart:job&&job.cart||[], customerPeer:window.SNWork&&SNWork.peerId?SNWork.peerId():"", shop:job&&job.shop?{id:job.shop.id,name:job.shop.name,lat:job.shop.lat,lng:job.shop.lng,phone:job.shop.phone||telOf(job.shop),peer:job.shop.peer||shopPeerOf()}:null, driver:job&&job.carrier&&(job.carrier.agent||job.carrier.driver)?{id:job.carrier.id,name:job.carrier.name,phone:job.carrier.phone||"",peer:job.carrier.peer||agentPeerOf()}:null, flag:"", evidence:{paidAt:Date.now()}, lat:(job&&job.shop&&job.shop.lat)||(here&&here.lat)||0, lng:(job&&job.shop&&job.shop.lng)||(here&&here.lng)||0, name:(job&&job.query)||"job"};
     putEscrow(row); if(job) job.escrowId=row.id; return row;
   }
   function settle(id, split, reason){
@@ -1181,6 +1235,7 @@
     var o=job&&job.carrier, d=o&&driverRow(o.id), agent=officialTel(d)||(o&&o.phone&&String(o.phone).replace(/\D/g,"").length>=10?o.phone:"");
     if(shop) need({id:"callshop",label:"CALL "+String(shop).replace(/[^\d+ ]/g,"").slice(0,16),run:callShop});
     if(agent) need({id:"callagent",label:"CALL AGENT",run:callAgent});
+    offerJobVideo();
   }
   function listedAgents(){
     if(!window.SNWork) return [];
@@ -1252,7 +1307,7 @@
   function clearPayQuery(){ try{ var u=new URL(location.href); ["paypal","token","PayerID"].forEach(function(k){u.searchParams.delete(k);}); history.replaceState({},"",u.pathname+(u.searchParams.toString()?"?"+u.searchParams.toString():"")); }catch(e){} }
   function handlePayPalReturn(){ var p; try{p=new URLSearchParams(location.search);}catch(e){return Promise.resolve(false);} var state=p.get("paypal"), token=p.get("token"); if(!state) return Promise.resolve(false); restorePayJob(); if(state==="cancel"){ clearPayQuery(); if(job&&job.carrier) pickCarrier(job.carrier); else talk("Reload cancelled."); return Promise.resolve(true); } if(state!=="success"||!token){ clearPayQuery(); talk("PayPal returned without an order."); return Promise.resolve(true); } say("Verifying PayPal…"); return fetch("/api/paypal/capture-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:token})}).then(function(r){return r.json();}).then(function(j){ clearPayQuery(); if(j&&j.ok&&String(j.status).toUpperCase()==="COMPLETED"){ var credited=Number(j.avc!=null?j.avc:(sessionStorage.getItem("sn:paypal-reload")||0)); avcAdd(credited); try{ sessionStorage.removeItem("sn:paypal-job"); sessionStorage.removeItem("sn:paypal-reload"); }catch(e){} talk("Reloaded "+fmtAve(credited)+". Balance "+fmtAve(avcGet())+"."); if(job&&job.carrier&&job.price) spendAvc(job.price); return true; } clearNeed(); need({id:"verify",label:"VERIFY PAYMENT",run:function(){location.href="/?paypal=success&token="+encodeURIComponent(token);}}); talk("Payment not verified yet. AV€ not moved."); return true; }).catch(function(){ clearNeed(); need({id:"verify",label:"VERIFY PAYMENT",run:function(){location.href="/?paypal=success&token="+encodeURIComponent(token);}}); talk("Payment verification failed. AV€ not moved."); return true; }); }
   function reverseHere(){ if(!here) return Promise.resolve(""); var url="https://photon.komoot.io/reverse?lat="+here.lat+"&lon="+here.lng; return fetchJson(url,{headers:{Accept:"application/json"}},8000).then(function(j){ var f=j&&j.features&&j.features[0], pr=f&&f.properties||{}; countryCode=String(pr.countrycode||pr.country||"").slice(0,2).toLowerCase(); hereName=pr.city||pr.locality||pr.district||pr.town||pr.name||pr.county||pr.state||pr.country||""; here.name=hereName; return hereName; }).catch(function(){ var nurl="https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&lat="+here.lat+"&lon="+here.lng; return fetchJson(nurl,{headers:{Accept:"application/json","Accept-Language":"en"}},8000).then(function(j){ countryCode=String(j&&j.address&&j.address.country_code||"").toLowerCase(); hereName=humanName(j)|| (j&&j.address&&(j.address.city||j.address.town||j.address.village||j.address.country))||""; here.name=hereName; return hereName; }).catch(function(){ return ""; }); }); }
-  function locate(quiet, snap){ if(!navigator.geolocation){ talk("No GPS on this device."); return Promise.resolve(); } if(locating) return locating; if(!quiet) say("GPS…"); locating=new Promise(function(resolve){ navigator.geolocation.getCurrentPosition(function(p){ here={lat:p.coords.latitude,lng:p.coords.longitude}; hereAt=Date.now(); if(snap!==false){ lookAt(here); dist=1.65; if(viewLevel()==="globe") showGlobe(); } locating=null; var g=document.getElementById("gps"); if(g){ g.classList.remove("busy"); g.classList.add("on"); } reverseHere().then(function(name){ if(snap!==false){ clearNeed(); if(!quiet) talk(name?("You're in "+name+"."):"Position locked."); else if(name) say("You're in "+name+"."); } resolve(here); }); }, function(){ locating=null; var g=document.getElementById("gps"); if(g) g.classList.remove("busy","on"); if(!here){ if(!quiet) talk("Location denied. Tap GPS and allow it."); } resolve(here||undefined); }, {enableHighAccuracy:true,timeout:18000,maximumAge:0}); }); return locating; }
+  function locate(quiet, snap){ if(!navigator.geolocation){ talk("No GPS on this device."); return Promise.resolve(); } if(locating) return locating; if(!quiet) say("GPS…"); locating=new Promise(function(resolve){ navigator.geolocation.getCurrentPosition(function(p){ here={lat:p.coords.latitude,lng:p.coords.longitude}; hereAt=Date.now(); watchMove(); if(snap!==false){ lookAt(here); dist=1.65; if(viewLevel()==="globe") showGlobe(); } locating=null; var g=document.getElementById("gps"); if(g){ g.classList.remove("busy"); g.classList.add("on"); } reverseHere().then(function(name){ if(snap!==false){ clearNeed(); if(!quiet) talk(name?("You're in "+name+"."):"Position locked."); else if(name) say("You're in "+name+"."); } resolve(here); }); }, function(){ locating=null; var g=document.getElementById("gps"); if(g) g.classList.remove("busy","on"); if(!here){ if(!quiet) talk("Location denied. Tap GPS and allow it."); } resolve(here||undefined); }, {enableHighAccuracy:true,timeout:18000,maximumAge:0}); }); return locating; }
   function goHere(){
     var g=document.getElementById("gps");
     if(g){ g.classList.remove("on"); g.classList.add("busy"); }
@@ -1500,9 +1555,9 @@
   function tickFly(){ if(!fly) return; var u=(Date.now()-fly.t0)/fly.ms; if(u>=1){ yaw=fly.toYaw; pitch=fly.toPitch; if(fly.toDist!=null) dist=fly.toDist; var fn=fly.then; fly=null; if(fn) fn(); return; } u=u*u*(3-2*u); var dy=fly.toYaw-fly.fromYaw; while(dy>Math.PI) dy-=Math.PI*2; while(dy<-Math.PI) dy+=Math.PI*2; yaw=fly.fromYaw+dy*u; pitch=fly.fromPitch+(fly.toPitch-fly.fromPitch)*u; if(fly.toDist!=null) dist=fly.fromDist+(fly.toDist-fly.fromDist)*u; }
   function needTick(){ if(tickOn) return; tickOn=true; requestAnimationFrame(tick); }
   function tick(){ tickOn=false; try{ tickFly(); if(!drag && !pinch && !fly){ yaw+=spin; pitch=Math.max(-1.15,Math.min(1.15,pitch+pitchSpin)); spin*=0.988; pitchSpin*=0.988; if(Math.abs(spin)<0.00018) spin=0; if(Math.abs(pitchSpin)<0.00018) pitchSpin=0; } var moving=!!(drag||pinch||fly||Math.abs(spin)>0.00018||Math.abs(pitchSpin)>0.00018); var sig=yaw.toFixed(4)+"|"+pitch.toFixed(4)+"|"+dist.toFixed(3)+"|"+(here&&here.lat)+"|"+(aim&&aim.lat)+"|"+(selected&&selected.id)+"|"+globeMarks.length+"|"+jobFill().toFixed(2); if(moving || sig!==drawSig){ drawSig=sig; if(canvas){ var ctx=canvas.getContext("2d"); if(ctx){ ctx.fillStyle="#02040a"; ctx.fillRect(0,0,canvas.width,canvas.height); var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,R=Math.min(w,h)*0.42/dist; drawGrid(ctx,cx,cy,R); drawPin(ctx,here,hereName||"YOU","#4df0ff",cx,cy,R); if(aim) drawPin(ctx,aim,aim.name||"PIN","#ff8ad4",cx,cy,R); if(selected) drawPin(ctx,selected,selected.name,"#ffd85a",cx,cy,R); if(here&&selected) drawBond3d(ctx,here,selected,cx,cy,R); globeMarks.slice(0,8).forEach(function(x){ var r=x.row, col=x.kind==="driver"?"#4df0ff":x.kind==="post"?"#9dffb0":x.kind==="drop"?"#ff8ad4":"#ffd85a"; drawPin(ctx,r,x.kind==="driver"?((r.name||"")+" base"):(r.name||r.label||x.kind),col,cx,cy,R); }); } } } }catch(e){} if(drag||pinch||fly||Math.abs(spin)>0.00018||Math.abs(pitchSpin)>0.00018) needTick(); }
-  function boot(){ if(permsTried) return; permsTried=true; var returning=/[?&]paypal=/.test(location.search||""); handlePayPalReturn().then(function(){ if(returning) return locate(true); }); askMic(); if(window.SNWork&&SNWork.listenPeer) setTimeout(function(){ SNWork.listenPeer(); },800); }
+  function boot(){ if(permsTried) return; permsTried=true; var returning=/[?&]paypal=/.test(location.search||""); handlePayPalReturn().then(function(){ if(returning) return locate(true); }); askMic(); watchMove(); if(window.SNWork&&SNWork.listenPeer) setTimeout(function(){ SNWork.listenPeer(); },800); }
   function repaint(){ if(map&&window.L) paintMapMarks(window.L, selected); }
-  window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,startOrder:startOrder,pack:pack,openMenu:openMenu,minMenu:minMenu,syncTasks:syncTasks,toggleTasks:toggleTasks,openTasks:openTasks,tickJustice:tickJustice,settle:settle,setLayer:setLayer,openCash:openCash,paintMoney:paintMoney,markStage:markStage,ingestJobs:ingestJobs};
+  window.SN={ver:"V1",run:run,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,startOrder:startOrder,pack:pack,openMenu:openMenu,minMenu:minMenu,syncTasks:syncTasks,toggleTasks:toggleTasks,openTasks:openTasks,tickJustice:tickJustice,settle:settle,setLayer:setLayer,openCash:openCash,paintMoney:paintMoney,markStage:markStage,ingestJobs:ingestJobs,isMoving:isMoving,liveEscrow:liveEscrow,watchMove:watchMove};
   if(form) form.addEventListener("submit", function(e){ e.preventDefault(); var v=inEl&&inEl.value; if(inEl) inEl.value=""; run(v); });
   var go=document.getElementById("go"); if(go) go.addEventListener("click", function(e){ e.preventDefault(); if(inEl&&inEl.value.trim() && !listening){ run(inEl.value.trim()); inEl.value=""; return; } if(speaking){ try{ speechSynthesis.cancel(); }catch(x){} speaking=false; } listen(); });
   var plus=document.getElementById("plus"); if(plus) plus.addEventListener("click", function(){ hands(); });

@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4040
+**Stamp at this rewrite:** 4041
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -50,6 +50,8 @@ A human coder waits for a ticket. You do not.
 ## Owner’s last full instruction — 2026-08-29
 
 This block **overrides** every older note in this file if they fight. Do not make the owner say it again.
+
+**Astranov video.** WebRTC between **client, vendor, and agent** on SpaceNet so they do not call support. **Agent video only when not in motion** (GPS speed, or stage moving). **Only the client of that job** can video the agent. Agent cannot video a stranger. Keep the page open. END CALL hangs up. No fake Connected.
 
 **Call only.** Never EMAIL the shop. Never SITE as a contact chip. **CALL** only if a **real official telephone** is published on OSM or the shop’s own site (10+ digits). No invented numbers.
 
