@@ -217,7 +217,6 @@
     talk("Pin moved. That is the listing.");
     return true;
   }
-  }
 
   function open(place, which){
     ensure();
