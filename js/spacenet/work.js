@@ -256,6 +256,13 @@
     if(!b || !sheet.contains(b)) return;
     var act=b.getAttribute("data-act");
     if(act==="close"){ close(); return; }
+    if(act==="save"){
+      var form=card&&card.querySelector("form[data-kind]");
+      if(!form){ talk("Open List a vendor, then SAVE."); return; }
+      if(form.requestSubmit) form.requestSubmit();
+      else form.dispatchEvent(new Event("submit",{bubbles:true,cancelable:true}));
+      return;
+    }
     if(act==="home"){ view="home"; resetPhotos(); render(); return; }
     if(act==="post"||act==="call"||act==="shop"||act==="drop"||act==="driver"||act==="list"||act==="report"){
       if((act==="shop"||act==="drop"||act==="driver") && at && at.kind!==act){ at.id=""; }
@@ -823,7 +830,12 @@
   }
 
   function head(title, sub){
-    return '<div class="hd"><button type="button" class="x" data-act="close">Close</button>'+(view!=="home"?'<button type="button" class="back" data-act="home">Back</button>':'')+'<div class="ttl">'+esc(title)+'</div>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'')+'</div>';
+    var save=view==="shop"||view==="drop"||view==="driver"||view==="post"||view==="report";
+    return '<div class="hd">'
+      +(save?'<button type="button" class="save" data-act="save">SAVE</button>':'')
+      +'<button type="button" class="x" data-act="close">'+(save?"✕":"Close")+'</button>'
+      +(view!=="home"?'<button type="button" class="back" data-act="home">Back</button>':'')
+      +'<div class="ttl">'+esc(title)+'</div>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'')+'</div>';
   }
 
   function gallery(urls){
@@ -915,7 +927,7 @@
         field("hours","Schedule",{ph:"Mon–Sat 10–22"})+
         field("phone","Telephone",{type:"tel",ph:"+30 …",inputmode:"tel"})+
         field("note","Notes",{ph:"How to order, what you do"})+
-        '<button type="submit" class="go">LIST SHOP</button></form>';
+        '<button type="submit" class="go">SAVE</button></form>';
       fillShopForm(at&&(at.tags||at));
       return;
     }
@@ -946,7 +958,7 @@
         field("bellName","Doorbell name",{ph:"Name on the bell"})+
         field("dropOut","Drop-out / leave-at",{ph:"Gate, lobby, back door, box"})+
         field("pref","Contact preferences",{area:true,rows:3,ph:"Call first. Leave at door. Ring twice."})+
-        '<button type="submit" class="go">LIST SECRET DROP</button></form>';
+        '<button type="submit" class="go">SAVE</button></form>';
       return;
     }
     if(view==="driver"){
@@ -983,7 +995,7 @@
         field("carry","What you carry",{ph:"Food, parcels, no frozen"})+
         field("pref","Preferences",{area:true,rows:3,ph:"Cash, AVC, stairs ok, no stairs"})+
         field("phone","Telephone",{type:"tel",inputmode:"tel"})+
-        '<button type="submit" class="go">LIST DRIVER BASE</button></form>';
+        '<button type="submit" class="go">SAVE</button></form>';
       return;
     }
     if(view==="tax"){
