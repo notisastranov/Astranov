@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4073";
+  var VER="4074";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -2086,7 +2086,7 @@
   if(supBtn) supBtn.addEventListener("click", function(e){
     if(supBtn.dataset.skipClick==="1") return;
     e.preventDefault();
-    var u=supBtn.getAttribute("href")||"https://grok.com/?q=Astranov%20SpaceNet%20support";
+    var u=supBtn.getAttribute("href")||"https://grok.com/project/ca0652ee-24d4-44d1-8a4b-65d41583532b?tab=conversations";
     try{ var w=window.open(u,"_blank","noopener,noreferrer"); if(!w) location.href=u; }catch(x){ location.href=u; }
   });
   bindDrag(moneyBtn, "money");
