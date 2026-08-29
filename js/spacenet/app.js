@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4034";
+  var VER="4035";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -77,7 +77,45 @@
   var tasksBtn=document.getElementById("sn-tasks-btn");
   var tasksEl=document.getElementById("sn-tasks");
   var tasksList=document.getElementById("sn-tasks-list");
-  var openTaskId="";
+  var cartBtn=document.getElementById("sn-cart-btn");
+  var cartEl=document.getElementById("sn-cart");
+  var cartList=document.getElementById("sn-cart-list");
+  function cartQty(){ if(!job||!job.cart) return 0; return job.cart.reduce(function(s,x){ return s+(Number(x.qty)||1); },0); }
+  function cartSum(){ if(!job||!job.cart) return 0; var n=job.cart.reduce(function(s,x){ return s+(Number(x.price)||0)*(Number(x.qty)||1); },0); if(job.floor) n+=3; return Math.round(n*100)/100; }
+  function paintCartBtn(){
+    if(!cartBtn) return;
+    var n=cartQty();
+    if(!n || (job&&job.status==="paid")){ cartBtn.classList.remove("on","glow"); packSoon(); return; }
+    cartBtn.classList.add("on","glow");
+    cartBtn.textContent=n>1?("CART "+n):"CART";
+    packSoon();
+  }
+  function hideCart(){ if(cartEl) cartEl.classList.remove("on"); paintCartBtn(); packSoon(); }
+  function openCart(){
+    if(!cartEl||!cartList) return;
+    var rows=job&&job.cart||[];
+    if(!rows.length){ hideCart(); return; }
+    cartList.innerHTML=rows.map(function(it,i){
+      return '<div class="row" data-i="'+i+'"><b>'+String(it.name||"").replace(/[<>]/g,"")+' · '+fmtAve(it.price)+'</b><button type="button" data-act="sub">−</button><span>'+(it.qty||1)+'</span><button type="button" data-act="add">+</button></div>';
+    }).join("")+'<label class="floor"><input type="checkbox" id="sn-floor"'+(job.floor?" checked":"")+'> Floor / room service + AV€ 3.00</label><div class="sum">'+fmtAve(cartSum())+'</div><button type="button" class="go" data-act="out">CHECKOUT</button>';
+    cartEl.classList.add("on");
+    paintCartBtn();
+    packSoon();
+  }
+  function pickDish(it, el){
+    if(!job) job={kind:"find",query:(selected&&selected.name)||"order",status:"cart",shop:selected,t:Date.now()};
+    job.shop=selected||job.shop;
+    job.cart=job.cart||[];
+    var hit=null;
+    job.cart.forEach(function(x){ if(x.name===it.name) hit=x; });
+    if(hit) hit.qty=(Number(hit.qty)||1)+1;
+    else job.cart.push({name:it.name,price:Number(it.price)||0,sample:!!it.sample,qty:1});
+    job.price=cartSum();
+    job.status="cart";
+    if(el) el.classList.add("on");
+    openCart();
+    talk(it.name+" in the cart. "+fmtAve(job.price)+". Checkout when you are ready.");
+  }
   function loadTasks(){ try{ return JSON.parse(localStorage.getItem("sn:tasks")||"[]"); }catch(e){ return []; } }
   function saveTasks(list){ try{ localStorage.setItem("sn:tasks", JSON.stringify((list||[]).slice(0,80))); }catch(e){} }
   function jobNext(j){
@@ -90,9 +128,6 @@
   }
   function derivedTasks(){
     var out=[], perish=job?goodsOf(job.query):null, mine=myListingIds();
-    if(job && job.status && job.status!=="done" && job.status!=="paid" && job.carrier && job.carrier.agent){
-      out.push({id:"job-live", role:"user", title:job.query||"Order", next:jobNext(job), status:"open", perish:perish&&perish.strict, hold:perish&&perish.hold, t:job.t||Date.now(), auto:1});
-    }
     if(window.SNWork){
     var all=SNWork.all();
     (all.shops||[]).forEach(function(s){
@@ -119,20 +154,25 @@
       var base=(e.driver&&e.driver.name)||"Astranov agent";
       var ownShop=e.shop&&e.shop.id&&mine[e.shop.id]==="shop";
       var ownAgent=e.driver&&e.driver.id&&mine[e.driver.id]==="driver";
+      var st=stateLabel(e), eta=etaMin(e);
+      var userNext=st+(eta?(" · about "+eta+" min"):"");
       if(e.flag==="hold" && e.status==="paid"){
         out.push({id:"just-"+e.id+"-user", role:"user", title:title, next:"Hold is up. Take the credit back or wait.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
       }
-      if(e.status==="paid"){
-        if(ownShop) out.push({id:"stg-"+e.id+"-pick", role:"vendor", title:shop, next:"Mark picked. Call the customer.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
-        out.push({id:"stg-"+e.id+"-wait", role:"user", title:title, next:"Paid. Call the shop and the agent. Hold "+e.holdMin+" min. "+age+" min in.", status:"open", escrowId:e.id, perish:!!e.strict, hold:e.holdMin, t:e.at, auto:1});
-      } else if(e.status==="picked"){
-        if(ownShop) out.push({id:"stg-"+e.id+"-box", role:"vendor", title:shop, next:"Mark boxed.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
+      if(e.status==="paid"||e.status==="picked"){
+        if(ownShop) out.push({id:"stg-"+e.id+"-ready", role:"vendor", title:shop, next:"READY — food is made.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
+        out.push({id:"stg-"+e.id+"-wait", role:"user", title:title, next:userNext, status:"open", escrowId:e.id, perish:!!e.strict, hold:e.holdMin, t:e.at, auto:1, eta:eta, state:st});
       } else if(e.status==="boxed"){
-        if(ownAgent) out.push({id:"stg-"+e.id+"-move", role:"driver", title:base, next:"Mark moving. Call the customer.", status:"open", escrowId:e.id, t:e.at, auto:1});
+        if(ownAgent) out.push({id:"stg-"+e.id+"-got", role:"driver", title:base, next:"GOT IT — take from the shop.", status:"open", escrowId:e.id, t:e.at, auto:1});
+        out.push({id:"stg-"+e.id+"-wait", role:"user", title:title, next:userNext, status:"open", escrowId:e.id, t:e.at, auto:1, eta:eta, state:st});
+      } else if(e.status==="with_agent"){
+        if(ownAgent) out.push({id:"stg-"+e.id+"-way", role:"driver", title:base, next:"ON THE WAY.", status:"open", escrowId:e.id, t:e.at, auto:1});
+        out.push({id:"stg-"+e.id+"-wait", role:"user", title:title, next:userNext, status:"open", escrowId:e.id, t:e.at, auto:1, eta:eta, state:st});
       } else if(e.status==="moving"){
-        if(ownAgent) out.push({id:"stg-"+e.id+"-hand", role:"driver", title:base, next:"Mark handed. Call to verify.", status:"open", escrowId:e.id, t:e.at, auto:1});
-      } else if(e.status==="handed" || e.flag==="handed"){
-        out.push({id:"stg-"+e.id+"-verify", role:"user", title:title, next:"Call the agent to confirm, then verify — or dispute.", status:"open", escrowId:e.id, t:e.at, auto:1});
+        if(ownAgent) out.push({id:"stg-"+e.id+"-door", role:"driver", title:base, next:"AT THE DOOR.", status:"open", escrowId:e.id, t:e.at, auto:1});
+        out.push({id:"stg-"+e.id+"-wait", role:"user", title:title, next:userNext, status:"open", escrowId:e.id, t:e.at, auto:1, eta:eta, state:st});
+      } else if(e.status==="door" || e.status==="handed" || e.flag==="handed"){
+        out.push({id:"stg-"+e.id+"-have", role:"user", title:title, next:userNext, status:"open", escrowId:e.id, t:e.at, auto:1, eta:eta, state:st});
       }
     });
     return out;
@@ -166,12 +206,31 @@
     for(i=0;i<list.length;i++) if(list[i]&&list[i].held) return list[i];
     return null;
   }
-  function stageList(how){ return how==="now"?["paid","picked","boxed","moving","handed","verified"]:["paid","picked","boxed","handed","verified"]; }
-  function stageOf(e){ if(!e) return "none"; if(!e.held && (e.status==="released"||e.status==="done")) return "verified"; return e.status||"paid"; }
-  function stagePct(e){ var s=stageList(e&&e.how), cur=stageOf(e), i=s.indexOf(cur); if(i<0) i=0; return Math.round(((i+1)/s.length)*100); }
+  function stageList(){ return ["paid","boxed","with_agent","moving","door","verified"]; }
+  function stageOf(e){ if(!e) return "none"; if(!e.held && (e.status==="released"||e.status==="done")) return "verified"; if(e.status==="picked") return "paid"; if(e.status==="handed") return "door"; return e.status||"paid"; }
+  function stagePct(e){ var s=stageList(), cur=stageOf(e), i=s.indexOf(cur); if(i<0) i=0; return Math.round(((i+1)/s.length)*100); }
+  function stateLabel(e){
+    var s=stageOf(e);
+    if(s==="paid"||s==="picked") return "On the making by vendor";
+    if(s==="boxed") return "Waiting delivery agent";
+    if(s==="with_agent") return "Delivered to agent";
+    if(s==="moving") return "On the way";
+    if(s==="door"||s==="handed") return (e&&e.floor)?"Room service · waiting at your door":"Waiting at your doorstep";
+    if(s==="verified") return "Delivered";
+    return s||"";
+  }
+  function etaMin(e){
+    var ride=Number((e&&e.eta)||(job&&job.carrier&&job.carrier.eta)||18);
+    var s=stageOf(e);
+    if(s==="paid"||s==="picked") return 12+ride;
+    if(s==="boxed"||s==="with_agent") return ride;
+    if(s==="moving") return Math.max(4, Math.round(ride*0.45));
+    if(s==="door"||s==="handed") return 1;
+    return 0;
+  }
   function ladderHtml(e){
-    var s=stageList(e&&e.how), cur=stageOf(e), ix=s.indexOf(cur);
-    return '<div class="ladder">'+s.map(function(st,i){ var cls=i<ix?"done":(i===ix?"now":""); return '<i class="'+cls+'">'+st.toUpperCase()+'</i>'; }).join("")+'</div><div class="pct">'+stagePct(e)+"% · "+(cur==="verified"?"Done":("Now "+cur))+'</div>';
+    var s=["Making","Agent","With agent","On the way","Door","Done"], keys=stageList(), cur=stageOf(e), ix=keys.indexOf(cur);
+    return '<div class="ladder">'+s.map(function(st,i){ var cls=i<ix?"done":(i===ix?"now":""); return '<i class="'+cls+'">'+st+'</i>'; }).join("")+'</div><div class="eta">'+(etaMin(e)?("About "+etaMin(e)+" min"):"")+' · '+stateLabel(e)+'</div>';
   }
   function contactOf(t){
     t=t||{};
@@ -263,11 +322,17 @@
     var list=loadTasks().filter(function(t){ return t.status!=="done"; });
     if(!list.length){ tasksList.innerHTML='<p class="note">Nothing on you.</p>'; return; }
     tasksList.innerHTML=list.map(function(t){
-      var ask=t.ask&&t.ask.state==="wait"?" · waiting on Grok":(t.boost!=null?" · moved":"");
       var e=t.escrowId?escrowOf(t.escrowId):null;
       var open=t.id===openTaskId;
-      var extra=open&&e?(ladderHtml(e)+'<div class="who">'+(e.shop&&e.shop.name?("Shop "+e.shop.name+". "):"")+(e.driver&&e.driver.name?("Driver "+e.driver.name+". "):"")+(e.how?("Via "+e.how+". "):"")+"Hold "+(e.holdMin||0)+" min. "+fmtAve(e.avc||0)+" locked.</div>"):"";
-      return '<div class="task'+(open?" open":"")+'" data-id="'+t.id+'"><b>'+String(t.title||"Task").replace(/[<>]/g,"")+'</b><span>'+String(t.role||"").toUpperCase()+" · "+String(t.next||"")+" "+ask+(e?(" · "+stagePct(e)+"%"):"")+'</span>'+extra+'<div class="row"><button type="button" data-act="go">DO</button>'+( /verify/.test(t.id)?'<button type="button" data-act="dispute">DISPUTE</button>':'')+'<button type="button" data-act="problem">PROBLEM</button></div></div>';
+      var extra=open&&e?ladderHtml(e):"";
+      var btns="";
+      if(t.role==="vendor" && /-ready$/.test(t.id)) btns='<div class="row"><button type="button" data-act="ready">READY</button></div>';
+      else if(t.role==="driver" && /-got$/.test(t.id)) btns='<div class="row"><button type="button" data-act="got">GOT IT</button></div>';
+      else if(t.role==="driver" && /-way$/.test(t.id)) btns='<div class="row"><button type="button" data-act="way">ON THE WAY</button></div>';
+      else if(t.role==="driver" && /-door$/.test(t.id)) btns='<div class="row"><button type="button" data-act="door">AT THE DOOR</button></div>';
+      else if(/-have$/.test(t.id)) btns='<div class="row"><button type="button" data-act="have">I HAVE IT</button><button type="button" data-act="dispute">DISPUTE</button></div>';
+      else if(t.listing) btns='<div class="row"><button type="button" data-act="go">OPEN</button></div>';
+      return '<div class="task'+(open?" open":"")+'" data-id="'+t.id+'"><b>'+String(t.title||"Task").replace(/[<>]/g,"")+'</b><span>'+String(t.next||"")+'</span>'+(t.eta?('<div class="eta">About '+t.eta+' min</div>'):"")+extra+btns+'</div>';
     }).join("");
   }
   function openTasks(){ if(!tasksEl) return; syncTasks(); tasksEl.classList.add("on"); renderTaskList(); paintTasksBtn(); setTimeout(pack,40); }
@@ -379,7 +444,7 @@
   function holdMinOf(j){ var g=goodsOf(j&&j.query); return Math.max(8, Number(g&&g.hold)||40); }
   function openEscrow(price){
     var g=goodsOf(job&&job.query);
-    var row={id:"e"+(Date.now().toString(36)), kind:"job", avc:Number(price||0), held:true, status:"paid", at:Date.now(), holdMin:holdMinOf(job), strict:!!(g&&g.strict), query:(job&&job.query)||"", how:job&&job.how, shop:job&&job.shop?{id:job.shop.id,name:job.shop.name,lat:job.shop.lat,lng:job.shop.lng}:null, driver:job&&job.carrier&&job.carrier.driver?{id:job.carrier.id,name:job.carrier.name}:null, flag:"", evidence:{paidAt:Date.now()}, lat:(job&&job.shop&&job.shop.lat)||(here&&here.lat)||0, lng:(job&&job.shop&&job.shop.lng)||(here&&here.lng)||0, name:(job&&job.query)||"job"};
+    var row={id:"e"+(Date.now().toString(36)), kind:"job", avc:Number(price||0), held:true, status:"paid", at:Date.now(), holdMin:holdMinOf(job), strict:!!(g&&g.strict), query:(job&&job.query)||"", how:"now", floor:!!(job&&job.floor), eta:Number(job&&job.carrier&&job.carrier.eta)||18, cart:job&&job.cart||[], shop:job&&job.shop?{id:job.shop.id,name:job.shop.name,lat:job.shop.lat,lng:job.shop.lng,phone:job.shop.phone||telOf(job.shop)}:null, driver:job&&job.carrier&&(job.carrier.agent||job.carrier.driver)?{id:job.carrier.id,name:job.carrier.name,phone:job.carrier.phone||""}:null, flag:"", evidence:{paidAt:Date.now()}, lat:(job&&job.shop&&job.shop.lat)||(here&&here.lat)||0, lng:(job&&job.shop&&job.shop.lng)||(here&&here.lng)||0, name:(job&&job.query)||"job"};
     putEscrow(row); if(job) job.escrowId=row.id; return row;
   }
   function settle(id, split, reason){
@@ -405,12 +470,15 @@
   function markStage(id, status){
     var e=escrowOf(id); if(!e||!e.held) return;
     e.status=status; e.evidence=e.evidence||{}; e.evidence[status+"At"]=Date.now();
-    if(status==="handed") e.flag="handed";
+    if(status==="door"){ e.flag="handed"; e.evidence.handedAt=e.evidence.handedAt||Date.now(); }
     else if(e.flag!=="hold") e.flag="";
     putEscrow(e); syncTasks();
-    if(status==="picked") talk("Picked. Credit still locked. Box it.");
-    else if(status==="boxed") talk(e.how==="now"?"Boxed. Driver: mark moving.":(e.how==="mail"?"Boxed. Mark handed when it is posted.":"Boxed. Hand it over at the shop."));
-    else if(status==="moving") talk("Moving. Mark handed when it is with them.");
+    if(status==="picked") talk("Picked. Still making.");
+    else if(status==="boxed") talk("Ready. Waiting for the Astranov agent.");
+    else if(status==="with_agent") talk("With the agent.");
+    else if(status==="moving") talk("On the way.");
+    else if(status==="door") talk(e.floor?"Room service. At your door.":"Waiting at your doorstep.");
+    else if(status==="handed") talk("At your door.");
     else talk("Stage "+status+".");
   }
   function markPicked(id){ markStage(id, "picked"); }
@@ -435,10 +503,10 @@
       if(e.status==="paid" && age>=hold && e.flag!=="hold"){ e.flag="hold"; putEscrow(e); dirty=true; talk("Hold time is up on "+(e.query||"this order")+". Credit is still locked. Shop must pick or we give it back."); }
       if((e.status==="picked"||e.status==="boxed") && stageAge>=hold*2){
         var v=Math.round(e.avc*0.35*100)/100;
-        settle(e.id, {customer:Math.max(0,e.avc-v), vendor:v, driver:0}, "Went silent after pick. Shop kept a share for work started. Rest back. Driver 0. SpaceNet takes nothing.");
+        settle(e.id, {customer:Math.max(0,e.avc-v), vendor:v, driver:0}, "Went silent after making. Shop kept a share. Rest back. Agent 0. SpaceNet takes nothing.");
         dirty=true; return;
       }
-      if(e.status==="moving" && stageAge>=hold*2){
+      if((e.status==="with_agent"||e.status==="moving") && stageAge>=hold*2){
         var sv=Math.round(e.avc*0.4*100)/100, sd=Math.round(e.avc*0.2*100)/100;
         settle(e.id, {customer:Math.max(0,e.avc-sv-sd), vendor:sv, driver:sd}, "Went silent while moving. Shop and driver kept a share for work marked. Rest back. We do not invent a GPS trace.");
         dirty=true; return;
@@ -936,9 +1004,8 @@
       clearNeed();
       renderMenu(items);
       addContactBtns(v);
-      need({id:"now",label:"ASTRANOV DELIVER",run:function(){ startDeliver(); }});
       var samples=(items||[]).some(function(it){ return it.sample; });
-      talk(n+". "+(items&&items.length?items.length+" dishes.":"")+(samples?" Sample photos and prices until the shop lists a live menu.":" Pick a dish, then Astranov Deliver."));
+      talk(n+". "+(items&&items.length?items.length+" dishes.":"")+(samples?" Sample until the shop lists a live menu.":" Tap a dish. It goes in the cart."));
     });
   }
   var SAMPLE_PIC={
@@ -1016,14 +1083,6 @@
     });
     openMenu();
   }
-  function pickDish(it, el){
-    if(!job) job={kind:"find",query:(selected&&selected.name)||"order",status:"chosen",shop:selected};
-    job.cart=job.cart||[];
-    job.cart.push({name:it.name,price:Number(it.price)||0,sample:!!it.sample});
-    job.price=job.cart.reduce(function(s,x){ return s+(Number(x.price)||0); },0);
-    if(el) el.classList.add("on");
-    talk(it.name+" · "+fmtAve(it.price)+(it.sample?" Sample price.":"")+". "+fmtAve(job.price)+" in the bag.");
-  }
   function partnerPlaces(){ return Promise.resolve([]); }
   function portalOffers(){ return []; }
   function telOf(v){ if(!v) return ""; var t=v.tags||v; return String(t.phone||t["contact:phone"]||t.mobile||t.tel||v.phone||"").split(/[;,]/)[0].trim(); }
@@ -1065,10 +1124,10 @@
   }
   function chooseHow(how){ if(how!=="now"){ talk("Only Astranov Delivery Agents for now."); return startDeliver(); } startDeliver(); }
   function showOffers(list){ clearNeed(); currentOffers=list; list.forEach(function(o){ need({id:o.id, label:o.name.toUpperCase()+" · "+o.eta+"m", run:function(){ pickCarrier(o); }}); }); var f=list[0]; talk((f.name||"Astranov agent")+" · "+f.eta+" min. Registered base. Call to verify."); }
-  function priceOf(o){ var c=job&&job.cart&&job.cart.reduce(function(s,x){ return s+(Number(x.price)||0); },0); if(c>0) return Math.round(c*100)/100; return 10; }
+  function priceOf(){ var n=cartSum(); return n>0?n:10; }
   function pickCarrier(o){ if(job){ job.carrier=o; job.how="now"; } offerPay(priceOf(o)); offerCalls(); paintJobArc(); talk((o.name||"Astranov agent")+". About "+o.eta+" min from their base. Call them to verify, then pay."); }
   function offerPay(price){ var bal=avcGet(); if(job) job.price=price; need({id:"pay",label:"PAY "+fmtAve(price),run:function(){ spendAvc(price); }}); if(bal<price) need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(Math.max(10, Math.ceil(price-bal))); }}); talk((bal>=price)?("Pay "+fmtAve(price)+". You have "+fmtAve(bal)+"."):("Need "+fmtAve(price)+". You have "+fmtAve(bal)+". Reload euro through PayPal, 1 to 1.")); }
-  function spendAvc(price){ price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } var esc=openEscrow(price); clearNeed(); syncTasks(); watchStages(price); offerCalls(); openTasks(); }
+  function spendAvc(price){ price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } var esc=openEscrow(price); clearNeed(); hideCart(); paintCartBtn(); syncTasks(); watchStages(price); offerCalls(); openTasks(); }
   function watchStages(avc){ if(!job) return; job.status="paid"; talk("Paid. Credit locked. Call to verify. An Astranov agent with a listed base runs this. No mail."); }
   function reloadPaypal(eur){ say("PayPal reload…"); try{ sessionStorage.setItem("sn:paypal-job", JSON.stringify(job||{})); sessionStorage.setItem("sn:paypal-reload", String(eur||10)); }catch(e){} fetch("/api/paypal/create-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:eur||10,origin:location.origin,reference:"avc-reload"})}).then(function(r){return r.json().then(function(j){j.http=r.status;return j;});}).then(function(j){ if(j&&j.ok&&j.approve){ location.href=j.approve; return; } clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk(j&&j.error==="paypal_not_configured"?"PayPal is not on this host yet.":"PayPal could not start. RELOAD is still here."); }).catch(function(){ clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk("PayPal could not be reached."); }); }
   function restorePayJob(){ try{ var saved=JSON.parse(sessionStorage.getItem("sn:paypal-job")||"null"); if(saved){ job=saved; selected=saved.shop||null; } }catch(e){} }
@@ -1278,6 +1337,11 @@
       var tpref=parked.tasks?{x:parked.tasks.x,y:parked.tasks.y,w:tw,h:th}:{x:W-pad-tw, y:topY, w:tw, h:th};
       placeSolid(tasksBtn, tpref);
     }
+    if(cartBtn&&cartBtn.classList.contains("on")&&!cartBtn.classList.contains("loose")){
+      var cw=cartBtn.offsetWidth||72, ch=cartBtn.offsetHeight||36;
+      var cpref=parked.cart?{x:parked.cart.x,y:parked.cart.y,w:cw,h:ch}:{x:pad, y:topY, w:cw, h:ch};
+      placeSolid(cartBtn, cpref);
+    }
     if(layerBtn&&layerBtn.classList.contains("on")&&!layerBtn.classList.contains("loose")){
       var lw=layerBtn.offsetWidth||72, lh=layerBtn.offsetHeight||36;
       var lpref=parked.layer?{x:parked.layer.x,y:parked.layer.y,w:lw,h:lh}:{x:W-pad-lw, y:topY+((tasksBtn&&tasksBtn.classList.contains("on"))?48:0), w:lw, h:lh};
@@ -1326,10 +1390,30 @@
   bindDrag(moneyBtn, "money");
   bindDrag(layerBtn, "layer");
   bindDrag(tasksBtn, "tasks");
+  bindDrag(cartBtn, "cart");
   bindDrag(pillEl, "pill");
   bindDrag(document.getElementById("plus"), "plus");
   bindDrag(document.getElementById("go"), "go");
   if(tasksBtn) tasksBtn.addEventListener("click", function(e){ e.preventDefault(); toggleTasks(); });
+  if(cartBtn) cartBtn.addEventListener("click", function(e){ e.preventDefault(); if(cartEl&&cartEl.classList.contains("on")) hideCart(); else openCart(); });
+  if(cartEl){
+    var cBg=cartEl.querySelector(".bg"), cX=cartEl.querySelector(".x");
+    if(cBg) cBg.addEventListener("click", hideCart);
+    if(cX) cX.addEventListener("click", function(e){ e.preventDefault(); hideCart(); });
+    if(cartList) cartList.addEventListener("click", function(e){
+      var btn=e.target.closest("button"), act=btn&&btn.getAttribute("data-act");
+      if(e.target&&e.target.id==="sn-floor"){ if(job) job.floor=e.target.checked; openCart(); return; }
+      if(!act||!job||!job.cart) return;
+      if(act==="out"){ hideCart(); startDeliver(); return; }
+      var row=e.target.closest(".row"), i=row?Number(row.getAttribute("data-i")):-1;
+      if(i<0||!job.cart[i]) return;
+      if(act==="add") job.cart[i].qty=(Number(job.cart[i].qty)||1)+1;
+      if(act==="sub"){ job.cart[i].qty=(Number(job.cart[i].qty)||1)-1; if(job.cart[i].qty<=0) job.cart.splice(i,1); }
+      job.price=cartSum();
+      if(!job.cart.length) hideCart(); else openCart();
+    });
+    if(cartList) cartList.addEventListener("change", function(e){ if(e.target&&e.target.id==="sn-floor"){ if(job) job.floor=e.target.checked; job.price=cartSum(); openCart(); } });
+  }
   bindDrag(pillEl, "pill");
   if(pillEl) pillEl.addEventListener("click", function(e){ e.preventDefault(); openMenu(); });
   if(layerBtn) layerBtn.addEventListener("click", function(e){ e.preventDefault(); if(layerBox&&layerBox.classList.contains("on")) hideLayerMenu(); else openLayerMenu(); });
@@ -1343,8 +1427,13 @@
       var btn=e.target.closest("button"), row=e.target.closest(".task");
       if(!row) return;
       var id=row.getAttribute("data-id"), act=btn&&btn.getAttribute("data-act");
-      if(act==="problem") askProblem(id);
-      else if(act==="dispute") askDispute(id);
+      var t=loadTasks().filter(function(x){ return x.id===id; })[0];
+      if(act==="dispute") askDispute(id);
+      else if(act==="ready" && t) markStage(t.escrowId, "boxed");
+      else if(act==="got" && t) markStage(t.escrowId, "with_agent");
+      else if(act==="way" && t) markStage(t.escrowId, "moving");
+      else if(act==="door" && t) markStage(t.escrowId, "door");
+      else if(act==="have" && t) settleVerify(t.escrowId);
       else if(act==="go") goTask(id);
       else openTaskDetail(id);
     });
@@ -1368,7 +1457,7 @@
   document.addEventListener("pointerdown", function(){ if(!permsTried) boot(); }, {passive:true});
   window.addEventListener("resize", size);
   if(window.visualViewport) visualViewport.addEventListener("resize", packSoon);
-  ["sn-sheet","sn-menu","sn-tasks","sn-cash","sn-video","sn-pick","city"].forEach(function(id){
+  ["sn-sheet","sn-menu","sn-tasks","sn-cash","sn-video","sn-pick","sn-cart","city"].forEach(function(id){
     var el=document.getElementById(id);
     if(!el) return;
     new MutationObserver(function(){ if(!packing) packSoon(); }).observe(el,{attributes:true,attributeFilter:["class"]});

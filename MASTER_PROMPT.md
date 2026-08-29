@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4034
+**Stamp at this rewrite:** 4035
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -51,7 +51,9 @@ A human coder waits for a ticket. You do not.
 
 This block **overrides** every older note in this file if they fight. Do not make the owner say it again.
 
-**Delivery.** Only **Astranov Delivery Agents** who registered on SpaceNet and listed a **starting base** (lat/lng, presence not off). No mail. No pick up. No DoorDash. No fake “Astranov associates.” No dummy carrier named Astranov. If no agent is present near you: say so, offer **CALL SHOP**. After a real agent: **CALL SHOP** and **CALL AGENT** to verify. Tasks: vendor/driver stages only on the phone that listed that shop or base. Customer sees wait / call / verify — not “Mark boxed.”
+**Cart.** Tap a dish → it goes in the **cart** (pill materializes). Checkout and pay **from the cart**. Floor / room service is **+ AV€ 3.00**. The task is created **only after pay**. Customer task: **ETA + state**, no DO, no PROBLEM. States: on the making by vendor → waiting delivery agent → delivered to agent → on the way → waiting at your doorstep. Vendor READY / agent GOT IT / ON THE WAY / AT THE DOOR. Customer I HAVE IT at the door.
+
+**Delivery.** Only **Astranov Delivery Agents** who registered on SpaceNet and listed a **starting base** (lat/lng, presence not off). No mail. No pick up. No DoorDash. No fake “Astranov associates.” No dummy carrier named Astranov. If no agent is present near you: say so, offer **CALL SHOP**. After a real agent: **CALL SHOP** and **CALL AGENT** to verify. Tasks: vendor/driver stages only on the phone that listed that shop or base. Customer sees ETA and state — not “Mark boxed.”
 
 **Voice.** Grok talks in a **calm, deep female** voice. Pick a female TTS (Google UK English Female when the phone has it; Greek female for Greek). Pitch **0.72**, rate **0.86**. Not a chirp. Not the default male.
 
