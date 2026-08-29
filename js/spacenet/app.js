@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4048";
+  var VER="4049";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -94,11 +94,19 @@
   var cartBtn=document.getElementById("sn-cart-btn");
   var cartEl=document.getElementById("sn-cart");
   var cartList=document.getElementById("sn-cart-list");
+  function snFee(n){ return Math.round(Math.max(0, Number(n)||0)*0.03*100)/100; }
+  function withSnFee(n){ n=Number(n)||0; return Math.round((n+snFee(n))*100)/100; }
+  function bankPlatform(n){
+    n=Number(n)||0; if(!n) return;
+    try{ localStorage.setItem("sn:platform", String(Math.round((Number(localStorage.getItem("sn:platform")||0)+n)*100)/100)); }catch(e){}
+  }
+  function platformGet(){ try{ return Math.max(0, Number(localStorage.getItem("sn:platform")||0)); }catch(e){ return 0; } }
   function cartQty(){ if(!job||!job.cart) return 0; return job.cart.reduce(function(s,x){ return s+(Number(x.qty)||1); },0); }
   function goodsSum(){ if(!job||!job.cart) return 0; return job.cart.reduce(function(s,x){ return s+(Number(x.price)||0)*(Number(x.qty)||1); },0); }
   function rideKm(){ var a=here, b=(job&&job.shop)||selected; if(!a||!b||!isFinite(a.lat)||!isFinite(b.lat)) return 1; return Math.max(0.5, km(a,b)); }
   function rideFee(){ return Math.max(1, Math.round(rideKm())); }
-  function cartSum(){ var n=goodsSum()+rideFee(); if(job&&job.floor) n+=3; return Math.round(n*100)/100; }
+  function cartNet(){ var n=goodsSum()+rideFee(); if(job&&job.floor) n+=3; return Math.round(n*100)/100; }
+  function cartSum(){ return withSnFee(cartNet()); }
   function paintCartBtn(){
     if(!cartBtn) return;
     var n=cartQty();
@@ -114,7 +122,7 @@
     if(!rows.length){ hideCart(); return; }
     cartList.innerHTML=rows.map(function(it,i){
       return '<div class="row" data-i="'+i+'"><b>'+String(it.name||"").replace(/[<>]/g,"")+' · '+fmtAve(it.price)+'</b><button type="button" data-act="sub">−</button><span>'+(it.qty||1)+'</span><button type="button" data-act="add">+</button></div>';
-    }).join("")+'<label class="floor"><input type="checkbox" id="sn-floor"'+(job.floor?" checked":"")+'> Floor / room service + AV€ 3.00</label><div class="sum">Ride '+rideKm().toFixed(1)+' km · '+fmtAve(rideFee())+' · total '+fmtAve(cartSum())+'</div><button type="button" class="go" data-act="out">CHECKOUT</button>';
+    }).join("")+'<label class="floor"><input type="checkbox" id="sn-floor"'+(job.floor?" checked":"")+'> Floor / room service + AV€ 3.00</label><div class="sum">Ride '+rideKm().toFixed(1)+' km · '+fmtAve(rideFee())+' · SpaceNet 3% '+fmtAve(snFee(cartNet()))+' · pay '+fmtAve(cartSum())+'</div><button type="button" class="go" data-act="out">CHECKOUT</button>';
     cartEl.classList.add("on");
     paintCartBtn();
     packSoon();
@@ -509,7 +517,7 @@
     avcAdd(n);
     creditEarned(role==="vendor"?(e.shop&&e.shop.id)||"vendor":(e.driver&&e.driver.id)||"driver", n);
   }
-  function takeAvc(n){ n=Math.max(0, Number(n)||0); if(!n) return 0; var bal=avcGet(), take=Math.min(bal, n); if(take) avcSet(bal-take); return take; }
+  function takeAvc(n){ n=Math.max(0, Number(n)||0); if(!n) return 0; var fee=snFee(n), total=n+fee, bal=avcGet(), take=Math.min(bal, total); if(take){ avcSet(bal-take); if(fee) bankPlatform(Math.min(fee, take)); } return take; }
   function routeFee(e){ return Math.max(3, Math.round(Number(e&&e.eta)||12)); }
   function doorLeft(e){
     if(!e) return 0;
@@ -530,8 +538,10 @@
     e.returnAvc=(Number(e.returnAvc)||0)+got;
     e.returnOwed=(Number(e.returnOwed)||0)+(route-got);
     e.status="back_vendor";
-    var half=Math.round(e.avc*0.5*100)/100;
-    settle(id, {customer:0, vendor:half, driver:Math.max(0,e.avc-half)}, "Missed goods back at the shop. Return trip "+fmtAve(route)+". No refund.");
+    var fee=Number(e.fee)||snFee(e.avc);
+    var rest=Math.max(0, e.avc-fee);
+    var half=Math.round(rest*0.5*100)/100;
+    settle(id, {customer:0, vendor:half, driver:Math.max(0,rest-half), platform:fee}, "Missed goods back at the shop. Return trip "+fmtAve(route)+". No refund. SpaceNet 3% stands.");
   }
   function flushCarry(agentId, except){
     if(!agentId) return;
@@ -577,30 +587,36 @@
   function holdMinOf(j){ var g=goodsOf(j&&j.query); return Math.max(8, Number(g&&g.hold)||40); }
   function openEscrow(price){
     var g=goodsOf(job&&job.query);
-    var ride=rideFee(), goods=Math.round(goodsSum()*100)/100;
-    var row={id:"e"+(Date.now().toString(36)), kind:"job", avc:Number(price||0), held:true, status:"paid", at:Date.now(), holdMin:holdMinOf(job), strict:!!(g&&g.strict), query:(job&&job.query)||"", how:"now", floor:!!(job&&job.floor), eta:Number(job&&job.carrier&&job.carrier.eta)||Math.max(8, Math.round(rideKm()*3)), cart:job&&job.cart||[], ride:ride, goods:goods, km:rideKm(), customerPeer:window.SNWork&&SNWork.peerId?SNWork.peerId():"", shop:job&&job.shop?{id:job.shop.id,name:job.shop.name,lat:job.shop.lat,lng:job.shop.lng,phone:job.shop.phone||telOf(job.shop),peer:job.shop.peer||shopPeerOf()}:null, driver:job&&job.carrier&&(job.carrier.agent||job.carrier.driver)?{id:job.carrier.id,name:job.carrier.name,phone:job.carrier.phone||"",peer:job.carrier.peer||agentPeerOf()}:null, flag:"", evidence:{paidAt:Date.now()}, lat:(job&&job.shop&&job.shop.lat)||(here&&here.lat)||0, lng:(job&&job.shop&&job.shop.lng)||(here&&here.lng)||0, name:(job&&job.query)||"job"};
+    var ride=rideFee(), goods=Math.round(goodsSum()*100)/100, net=cartNet(), fee=snFee(net);
+    var row={id:"e"+(Date.now().toString(36)), kind:"job", avc:Number(price||0), fee:fee, held:true, status:"paid", at:Date.now(), holdMin:holdMinOf(job), strict:!!(g&&g.strict), query:(job&&job.query)||"", how:"now", floor:!!(job&&job.floor), eta:Number(job&&job.carrier&&job.carrier.eta)||Math.max(8, Math.round(rideKm()*3)), cart:job&&job.cart||[], ride:ride, goods:goods, km:rideKm(), customerPeer:window.SNWork&&SNWork.peerId?SNWork.peerId():"", shop:job&&job.shop?{id:job.shop.id,name:job.shop.name,lat:job.shop.lat,lng:job.shop.lng,phone:job.shop.phone||telOf(job.shop),peer:job.shop.peer||shopPeerOf()}:null, driver:job&&job.carrier&&(job.carrier.agent||job.carrier.driver)?{id:job.carrier.id,name:job.carrier.name,phone:job.carrier.phone||"",peer:job.carrier.peer||agentPeerOf()}:null, flag:"", evidence:{paidAt:Date.now()}, lat:(job&&job.shop&&job.shop.lat)||(here&&here.lat)||0, lng:(job&&job.shop&&job.shop.lng)||(here&&here.lng)||0, name:(job&&job.query)||"job"};
     putEscrow(row); if(job) job.escrowId=row.id; return row;
   }
   function settle(id, split, reason){
     var e=escrowOf(id); if(!e||!e.held) return;
-    split=split||{}; var c=Math.max(0, Number(split.customer)||0), v=Math.max(0, Number(split.vendor)||0), d=Math.max(0, Number(split.driver)||0);
-    var sum=c+v+d; if(sum<e.avc) c+=(e.avc-sum);
+    split=split||{}; var c=Math.max(0, Number(split.customer)||0), v=Math.max(0, Number(split.vendor)||0), d=Math.max(0, Number(split.driver)||0), plat=Math.max(0, Number(split.platform)||0);
+    var sum=c+v+d+plat;
+    if(sum<e.avc){
+      if(c>0 && v===0 && d===0) c+=(e.avc-sum);
+      else plat+=(e.avc-sum);
+    }
     if(c) avcAdd(c);
-    e.held=false; e.status="released"; e.split={customer:c,vendor:v,driver:d,platform:0}; e.reason=reason||""; e.flag="";
+    if(plat) bankPlatform(plat);
+    e.held=false; e.status="released"; e.split={customer:c,vendor:v,driver:d,platform:plat}; e.reason=reason||""; e.flag="";
     payoutIfMine(e);
     putEscrow(e);
     if(job&&job.escrowId===id) job.status="done";
     syncTasks();
-    talk(reason||("Settled. You "+c.toFixed(2)+", shop "+v.toFixed(2)+", driver "+d.toFixed(2)+". SpaceNet takes none of a failed job."));
+    talk(reason||("Settled. You "+c.toFixed(2)+", shop "+v.toFixed(2)+", driver "+d.toFixed(2)+", SpaceNet "+plat.toFixed(2)+"."));
     flushCarry(e.driver&&e.driver.id, e.id);
   }
-  function settleRefund(id, reason){ var e=escrowOf(id); if(!e) return; settle(id, {customer:e.avc, vendor:0, driver:0}, reason||"Full credit back. Nothing was picked."); }
+  function settleRefund(id, reason){ var e=escrowOf(id); if(!e) return; settle(id, {customer:e.avc, vendor:0, driver:0, platform:0}, reason||"Full credit back. SpaceNet takes none of a failed job."); }
   function settleVerify(id){
     var e=escrowOf(id); if(!e) return;
     var goods=Number(e.goods); if(!goods) goods=Math.round(e.avc*0.5*100)/100;
     var ride=Number(e.ride); if(!ride) ride=Math.max(0, Math.round((e.avc-goods)*100)/100);
     if(e.floor) ride+=3;
-    settle(id, {customer:0, vendor:goods, driver:ride}, "Verified. Shop got the goods. Agent got "+fmtAve(ride)+" ride at 1 AV€/km plus extras. You kept the goods.");
+    var fee=Number(e.fee); if(!fee) fee=snFee(goods+ride);
+    settle(id, {customer:0, vendor:goods, driver:ride, platform:fee}, "Verified. Shop got the goods. Agent got the ride. SpaceNet 3% "+fmtAve(fee)+".");
   }
   function markStage(id, status){
     var e=escrowOf(id); if(!e||!e.held) return;
@@ -626,7 +642,7 @@
     var id=(m&&m.id)||(awaiting&&awaiting.id); var e=escrowOf(id); if(!e){ talk((m&&m.say)||"That hold is gone."); return; }
     var split=m.split||{};
     if(m.ok===false){ talk(m.say||"No. That split would cheat someone."); return; }
-    settle(id, {customer:split.customer, vendor:split.vendor, driver:split.driver}, m.say||"Grok settled it.");
+    settle(id, {customer:split.customer, vendor:split.vendor, driver:split.driver, platform:split.platform}, m.say||"Grok settled it.");
   }
   function tickJustice(){
     var now=Date.now(), list=loadEscrow(), dirty=false;
@@ -759,7 +775,7 @@
     cashBody.innerHTML='<div class="bal">'+fmtAve(n)+'</div>'+
       '<p>Astranov Coins. Tied to the euro 1 to 1. AV€ 1 = €1.</p>'+
       '<p>Locked in jobs: '+fmtAve(held)+'</p>'+
-      '<p>Earned on listings: '+fmtAve(earned)+'</p>'+
+      '<p>SpaceNet 3% on every task and top-up. Filed: '+fmtAve(platformGet())+'</p>'+
       '<p>Presence mint: '+(s.on?"ON":"OFF")+' · listed '+live+' · minted '+fmtAve(Number(s.minted)||0)+'</p>'+
       (s.note?'<p>'+String(s.note).replace(/[<>]/g,"")+'</p>':'')+
       (rows||'')+
@@ -1337,7 +1353,7 @@
   }
   function chooseHow(how){ if(how!=="now"){ talk("Only Astranov Delivery Agents for now."); return startDeliver(); } startDeliver(); }
   function showOffers(list){ clearNeed(); currentOffers=list; list.forEach(function(o){ need({id:o.id, label:o.name.toUpperCase()+" · "+o.eta+"m", run:function(){ pickCarrier(o); }}); }); var f=list[0]; talk((f.name||"Astranov agent")+" · "+f.eta+" min. Registered base. Call to verify."); }
-  function priceOf(){ var n=cartSum(); return n>0?n:10; }
+  function priceOf(){ var n=cartSum(); return n>0?n:withSnFee(10); }
   function pickCarrier(o){
     if(!listedAgents().length){ cancelUnpaid("No Astranov Delivery Agent in this area. Order cancelled before charge. You were not charged."); return; }
     if(job){ job.carrier=o; job.how="now"; }
@@ -1355,11 +1371,11 @@
     if(!listedAgents().length){ cancelUnpaid("No Astranov Delivery Agent in this area. Not charged."); return; }
     price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } var esc=openEscrow(price); clearNeed(); hideCart(); paintCartBtn(); syncTasks(); watchStages(price); offerCalls(); openTasks();
   }
-  function watchStages(avc){ if(!job) return; job.status="paid"; talk("Paid. "+fmtAve(rideFee())+" ride at 1 AV€/km locked. Call to verify. An Astranov agent with a listed base runs this."); }
+  function watchStages(avc){ if(!job) return; job.status="paid"; talk("Paid. Ride at 1 AV€/km. SpaceNet 3% "+fmtAve(snFee(cartNet()))+" locked. An Astranov agent with a listed base runs this."); }
   function reloadPaypal(eur){ say("PayPal reload…"); try{ sessionStorage.setItem("sn:paypal-job", JSON.stringify(job||{})); sessionStorage.setItem("sn:paypal-reload", String(eur||10)); }catch(e){} fetch("/api/paypal/create-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:eur||10,origin:location.origin,reference:"avc-reload"})}).then(function(r){return r.json().then(function(j){j.http=r.status;return j;});}).then(function(j){ if(j&&j.ok&&j.approve){ location.href=j.approve; return; } clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk(j&&j.error==="paypal_not_configured"?"PayPal is not on this host yet.":"PayPal could not start. RELOAD is still here."); }).catch(function(){ clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk("PayPal could not be reached."); }); }
   function restorePayJob(){ try{ var saved=JSON.parse(sessionStorage.getItem("sn:paypal-job")||"null"); if(saved){ job=saved; selected=saved.shop||null; } }catch(e){} }
   function clearPayQuery(){ try{ var u=new URL(location.href); ["paypal","token","PayerID"].forEach(function(k){u.searchParams.delete(k);}); history.replaceState({},"",u.pathname+(u.searchParams.toString()?"?"+u.searchParams.toString():"")); }catch(e){} }
-  function handlePayPalReturn(){ var p; try{p=new URLSearchParams(location.search);}catch(e){return Promise.resolve(false);} var state=p.get("paypal"), token=p.get("token"); if(!state) return Promise.resolve(false); restorePayJob(); if(state==="cancel"){ clearPayQuery(); if(job&&job.carrier) pickCarrier(job.carrier); else talk("Reload cancelled."); return Promise.resolve(true); } if(state!=="success"||!token){ clearPayQuery(); talk("PayPal returned without an order."); return Promise.resolve(true); } say("Verifying PayPal…"); return fetch("/api/paypal/capture-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:token})}).then(function(r){return r.json();}).then(function(j){ clearPayQuery(); if(j&&j.ok&&String(j.status).toUpperCase()==="COMPLETED"){ var credited=Number(j.avc!=null?j.avc:(sessionStorage.getItem("sn:paypal-reload")||0)); avcAdd(credited); try{ sessionStorage.removeItem("sn:paypal-job"); sessionStorage.removeItem("sn:paypal-reload"); }catch(e){} talk("Reloaded "+fmtAve(credited)+". Balance "+fmtAve(avcGet())+"."); if(job&&job.carrier&&job.price) spendAvc(job.price); return true; } clearNeed(); need({id:"verify",label:"VERIFY PAYMENT",run:function(){location.href="/?paypal=success&token="+encodeURIComponent(token);}}); talk("Payment not verified yet. AV€ not moved."); return true; }).catch(function(){ clearNeed(); need({id:"verify",label:"VERIFY PAYMENT",run:function(){location.href="/?paypal=success&token="+encodeURIComponent(token);}}); talk("Payment verification failed. AV€ not moved."); return true; }); }
+  function handlePayPalReturn(){ var p; try{p=new URLSearchParams(location.search);}catch(e){return Promise.resolve(false);} var state=p.get("paypal"), token=p.get("token"); if(!state) return Promise.resolve(false); restorePayJob(); if(state==="cancel"){ clearPayQuery(); if(job&&job.carrier) pickCarrier(job.carrier); else talk("Reload cancelled."); return Promise.resolve(true); } if(state!=="success"||!token){ clearPayQuery(); talk("PayPal returned without an order."); return Promise.resolve(true); } say("Verifying PayPal…"); return fetch("/api/paypal/capture-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:token})}).then(function(r){return r.json();}).then(function(j){ clearPayQuery(); if(j&&j.ok&&String(j.status).toUpperCase()==="COMPLETED"){ var credited=Number(j.avc!=null?j.avc:(sessionStorage.getItem("sn:paypal-reload")||0)); var fee=snFee(credited), net=Math.round((credited-fee)*100)/100; avcAdd(net); bankPlatform(fee); try{ sessionStorage.removeItem("sn:paypal-job"); sessionStorage.removeItem("sn:paypal-reload"); }catch(e){} talk("Reloaded "+fmtAve(net)+". SpaceNet 3% "+fmtAve(fee)+". Balance "+fmtAve(avcGet())+"."); if(job&&job.carrier&&job.price) spendAvc(job.price); return true; } clearNeed(); need({id:"verify",label:"VERIFY PAYMENT",run:function(){location.href="/?paypal=success&token="+encodeURIComponent(token);}}); talk("Payment not verified yet. AV€ not moved."); return true; }).catch(function(){ clearNeed(); need({id:"verify",label:"VERIFY PAYMENT",run:function(){location.href="/?paypal=success&token="+encodeURIComponent(token);}}); talk("Payment verification failed. AV€ not moved."); return true; }); }
   function geoPos(opts){
     return new Promise(function(resolve, reject){
       if(!navigator.geolocation){ reject(new Error("no_geo")); return; }
