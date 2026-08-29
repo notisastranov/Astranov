@@ -59,6 +59,8 @@ function slim(row) {
     'query',
     'shop',
     'driver',
+    'drop',
+    'customerPeer',
     'holdMin',
     'flag',
     'strict',
