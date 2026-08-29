@@ -1,5 +1,5 @@
-/** Named place hunt — Google first, then OSM. Never invent a shop. */
-const { googleFind } = require("../lib/google");
+/** Named place hunt — SpaceNet / OSM. Not Google. Never invent a shop. */
+const UA = "AstranovSpaceNet/1 (https://astranov.eu)";
 
 function cors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -115,18 +115,13 @@ module.exports = async function handler(req, res) {
   function add(list) {
     (list || []).forEach(function (p) {
       if (!p || !isFinite(p.lat)) return;
-      if (!nameOk(p.name, q) && !nameOk(p.raw, q) && p.src !== "google") return;
+      if (!nameOk(p.name, q) && !nameOk(p.raw, q)) return;
       var k = (+p.lat).toFixed(4) + "|" + (+p.lng).toFixed(4);
       if (seen[k]) return;
       seen[k] = 1;
       places.push(p);
     });
   }
-  var g = await googleFind(q, city);
-  add(g.places);
-  if (g.raw) add(await nominatim(g.raw));
-  if (g.raw) add(await nominatim(q + " " + g.raw));
-  if (g.phones && g.phones[0] && places[0]) places[0].phone = places[0].phone || g.phones[0];
   var i;
   for (i = 0; i < terms.length && places.length < 4; i++) add(await nominatim(terms[i]));
   if (!places.length) {

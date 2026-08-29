@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4052";
+  var VER="4053";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -942,14 +942,13 @@
       if(isBrand(q)) return close.length?close:out.slice(0,6);
       return close.length?close:out.slice(0,8);
     }
-    function showList(list){ if(seq!==huntSeq) return; if(selected && job && job.status==="chosen") return; vendors=list; paintHuntPins(list, from); if(!spoken && list.length){ spoken=true; talk("Found "+list.slice(0,3).map(function(v){return v.name;}).join(", ")+". Glowing on the map."); } }
+    function showList(list){ if(seq!==huntSeq) return; if(selected && job && job.status==="chosen") return; vendors=list; paintHuntPins(list, from); if(spoken||!list.length) return; spoken=true; var ours=list.filter(function(v){ return v.sn || listedShopOf(v) || v.kind==="driver" || v.kind==="drop"; }); if(ours.length) talk("On SpaceNet: "+ours.slice(0,3).map(function(v){return v.name;}).join(", ")+". Listed pins. Our index, not Google."); else talk(list[0].name+" is on the open map, not listed on SpaceNet. Call, or list it with +."); }
     function merge(list){ if(seq!==huntSeq) return; if(selected && job && job.status==="chosen") return; acc=near(acc.concat(list||[])); if(acc.length) showList(acc); }
     merge(near(window.SNWork&&SNWork.match?SNWork.match(q, from):[]));
     photonPlaces(q,from).then(function(list){ merge(list); });
     nominatimPlaces(q,from).then(function(list){ merge(list); });
     overpassPlaces(q,from).then(function(list){ merge(list); });
-    if(isBrand(q)) webFind(q,from).then(function(list){ merge(list); });
-    setTimeout(function(){ if(seq!==huntSeq) return; if(selected && job && job.status==="chosen") return; if(!acc.length) talk("No "+q+" on the map. I will not pin a fake shop."); }, 5500);
+    setTimeout(function(){ if(seq!==huntSeq) return; if(selected && job && job.status==="chosen") return; if(!acc.length) talk("Nothing for "+q+" on SpaceNet. I will not pin a Google result or a fake shop. List it with +."); }, 5500);
   }
   function loadMap(){ if(window.L) return Promise.resolve(window.L); if(mapReady) return mapReady; mapReady=new Promise(function(resolve,reject){ if(!document.querySelector('link[data-sn-map]')){ var css=document.createElement("link"); css.rel="stylesheet"; css.href="/js/vendor/leaflet.css?v="+VER; css.setAttribute("data-sn-map",""); document.head.appendChild(css); } var s=document.createElement("script"); s.src="/js/vendor/leaflet.js?v="+VER; s.onload=function(){resolve(window.L);}; s.onerror=reject; document.head.appendChild(s); }); return mapReady; }
   function routeTo(v){ return paintJobArc(); }

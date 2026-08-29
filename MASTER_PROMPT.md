@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4052
+**Stamp at this rewrite:** 4053
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -65,11 +65,11 @@ This block **overrides** every older note in this file if they fight. Do not mak
 
 **Set place.** One button: **CLICK MAP TO SET LOCATION MANUALLY**. Never flood VENDORS with NOT HERE. Tap it, then tap the map (or type the city). That is YOU. Hunt and cart stay. `need()` replaces the same id — never stack dummy chips.
 
-**Google crawlers.** Named hunt and shop contacts **search Google first** (Maps + local + web, no API key). Parse official phone and map pin. Geocode the address on OSM. If Google serves a consent wall from the host, fall back to Nominatim. **Never invent a dummy shop.**
+**Our index.** SpaceNet is its own ecosystem. Listed shop / driver / drop pins are the truth. Map tiles are OSM (no Google Maps). Hunt lists SpaceNet first. OSM may show an unlisted place so they can **list it**. Never scrape Google. Never pin a Google result. Never invent a shop.
 
 **Find YOU on any device.** Precise GPS, then coarse GPS (Windows 10 desktop times out on high accuracy), then network/IP location. Then **CLICK MAP TO SET LOCATION MANUALLY**. **Do not break the order.**
 
-**Named hunt is the name.** Searching **Pizzarium** is Pizzarium, not a random pizza shop in another city. Do not collapse a brand to cuisine. Do not pin Ilioupoli pizza because OSM lacks Rhodes Pizzarium. If OSM has no named match, `/api/find` uses Nominatim + public web (not Google). If still nothing: say so. **Never invent a dummy shop.**
+**Named hunt is the name.** Searching **Pizzarium** is Pizzarium. SpaceNet listed pins first. OSM may show an unlisted pin to list. If nothing: say so. **Never invent a dummy shop. Never pin a Google result.**
 
 **Astranov video.** WebRTC between **client, vendor, and agent** on SpaceNet so they do not call support. **Agent video only when not in motion** (GPS speed, or stage moving). **Only the client of that job** can video the agent. Agent cannot video a stranger. Keep the page open. END CALL hangs up. No fake Connected.
 

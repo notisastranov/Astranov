@@ -198,19 +198,6 @@ async function fromSite(url) {
 }
 
 async function fromDdg(name, place) {
-  var google;
-  try {
-    google = require("../lib/google");
-  } catch (_) {
-    google = null;
-  }
-  if (google && google.googleFind) {
-    var g = await google.googleFind(name, place);
-    if (g && (g.phones[0] || g.raw)) {
-      var web = "";
-      return { phone: g.phones[0] || "", email: "", web: web, via: "google", address: g.raw || "" };
-    }
-  }
   var q = [name, place, "τηλέφωνο", "phone"].filter(Boolean).join(" ");
   var html = await grab("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q), 7000);
   if (!html) return {};
