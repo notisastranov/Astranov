@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4033
+**Stamp at this rewrite:** 4034
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -50,6 +50,8 @@ A human coder waits for a ticket. You do not.
 ## Owner’s last full instruction — 2026-08-29
 
 This block **overrides** every older note in this file if they fight. Do not make the owner say it again.
+
+**Delivery.** Only **Astranov Delivery Agents** who registered on SpaceNet and listed a **starting base** (lat/lng, presence not off). No mail. No pick up. No DoorDash. No fake “Astranov associates.” No dummy carrier named Astranov. If no agent is present near you: say so, offer **CALL SHOP**. After a real agent: **CALL SHOP** and **CALL AGENT** to verify. Tasks: vendor/driver stages only on the phone that listed that shop or base. Customer sees wait / call / verify — not “Mark boxed.”
 
 **Voice.** Grok talks in a **calm, deep female** voice. Pick a female TTS (Google UK English Female when the phone has it; Greek female for Greek). Pitch **0.72**, rate **0.86**. Not a chirp. Not the default male.
 
@@ -114,7 +116,7 @@ Globe is a trackball. Finger follows the grid. Let go with speed and it keeps tu
 
 Mic is **tap to talk**. It glows while it listens. Tap again to shut it. It does not loop. It does not listen while Grok is speaking. That loop was the Android beep. Chrome still chirps once per tap — that is the browser, not SpaceNet. We do not auto-listen after TTS (that made it hear itself).
 
-If they ask for the best among listed shops, Grok **picks** (`act=pick`). Do not tell them to pick. Tap a shop → that shop’s card (menu if listed or known, hours, call, NOW/MAIL/PICK UP), not a fresh list of other shops. In-flight hunt must not overwrite a chosen shop.
+If they ask for the best among listed shops, Grok **picks** (`act=pick`). Do not tell them to pick. Tap a shop → that shop’s card (menu, CALL, **ASTRANOV DELIVER**), not a fresh list of other shops. In-flight hunt must not overwrite a chosen shop.
 
 After a shop (and after a driver): a **deep-blue neon bond arc** (bowed, signature, YOU → shop → driver) marks the relationship. A separate cyan dashed line is the road. The you-dot says YOU, not a municipality name.
 
@@ -286,21 +288,18 @@ What the page must not do:
 
 `goodsOf` and Overpass tag filters are not a mind. They only translate a hunt string into OSM tags **after** a hunt already started. Keep them small.
 
-Hands never require talking. Talking never requires a keyword. NOW / MAIL / PICK UP / PAY / RELOAD appear only after a real pick.
+Hands never require talking. Talking never requires a keyword. **ASTRANOV DELIVER** / PAY / RELOAD / CALL SHOP / CALL AGENT appear only after a real pick. No MAIL. No PICK UP.
 
 ### 8. Task cycle — one rope, no cut
 
 boot → still grid globe + mic + glowing GPS target.  
 Tap GPS → rotate / zoom / city → YOU + SpaceNet around you.  
 Person says what they want → hunt named places **on the map as glowing pins** (Grok talks in parallel) → tap a pin.  
-Pick a place → NOW | MAIL | PICK UP.  
-Driver-base pick = NOW to that starting point.
+Pick a place → **ASTRANOV DELIVER** → only registered Astranov Delivery Agents with a starting base.
 
-**NOW:** Astranov first (own associates), then named **delivery driver bases** that declared presence, then named local partner, then DoorDash / Instacart / Walmart as last-mile portals only where that country uses them.
+**DELIVER:** listed **delivery driver bases** that declared presence and a lat/lng. Call the shop and the agent to verify. If none: say so. Do not invent an associate.
 
-**MAIL:** only if goods survive days with no heat hold.
-
-**PICK UP:** handoff at the named shop.
+Mail is **off**. Pick up is **off**. DoorDash / Instacart / Walmart are **off**.
 
 Price is AVC. Balance >= price → spend instantly → stage starts. Balance < price → RELOAD → PayPal → AVC 1:1 → same spend.
 
@@ -424,7 +423,7 @@ Live `/api/ai` must send `spacenet:true` and this SYS as `system` / `messages[0]
 - English default. Greek when they write Greek.
 - Never invent shops, prices, drivers, or GPS.
 
-NOW carriers: Astranov first, then present delivery driver bases, then **named** local OSM couriers. Do **not** list DoorDash / Instacart / Walmart as buttons that spend AVC without opening those apps. That is dummy fulfillment.
+NOW carriers: **only** present Astranov Delivery Agents with a listed starting base. Never invent “own associates.” Never mail. Never pick up. Never DoorDash.
 
 ### Money in the page
 
@@ -444,7 +443,7 @@ Twin CLI. HUD. chrome-fix. white chrome. long stamps. auto marina. fake Rhodes. 
 
 ## Closed loop checklist
 
-Grid sphere on boot. No photo map in the circle. Mic on, glows when listening. Calm deep female voice. GPS target glowing, not a silent jump. Tap GPS → city → YOU + SpaceNet around you. Type pizza → gold pins on the map now, Grok in parallel. City tap → work sheet (post, call, shop, drop, driver base). Pin → menu + CALL from OSM/site crawl. Arc tap → job ladder + percent. NOW / MAIL / PICK UP. Astranov first, then present driver bases. AV€ debit if balance is enough. RELOAD → PayPal → AV€ → same debit if not. Stage paid only after AV€ moved. Zoom out of streets returns to the grid sphere. No dead end. No screen flood.
+Grid sphere on boot. No photo map in the circle. Mic on, glows when listening. Calm deep female voice. GPS target glowing, not a silent jump. Tap GPS → city → YOU + SpaceNet around you. Type pizza → gold pins on the map now, Grok in parallel. City tap → work sheet (post, call, shop, drop, driver base). Pin → menu + CALL from OSM/site crawl. Arc tap → job ladder + percent. **ASTRANOV DELIVER** only if a registered agent has a base. CALL SHOP / CALL AGENT to verify. No mail. AV€ debit if balance is enough.
 
 ---
 

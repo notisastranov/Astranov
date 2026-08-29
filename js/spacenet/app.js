@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4033";
+  var VER="4034";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -82,16 +82,15 @@
   function saveTasks(list){ try{ localStorage.setItem("sn:tasks", JSON.stringify((list||[]).slice(0,80))); }catch(e){} }
   function jobNext(j){
     if(!j) return "";
-    if(j.status==="paid") return "Wait for a real associate. Picked → boxed → moving → handed → verified.";
+    if(j.status==="paid") return "Call the shop and the Astranov agent.";
     if(j.carrier && j.price) return "Pay "+fmtAve(j.price)+".";
-    if(j.how) return "Pick a carrier.";
-    if(j.shop) return "Instant, mail, or pick up.";
+    if(j.shop) return "Pick an Astranov Delivery Agent.";
     if(j.query) return "Pick the place.";
     return "Finish this.";
   }
   function derivedTasks(){
-    var out=[], perish=job?goodsOf(job.query):null;
-    if(job && job.status && job.status!=="done" && job.status!=="paid"){
+    var out=[], perish=job?goodsOf(job.query):null, mine=myListingIds();
+    if(job && job.status && job.status!=="done" && job.status!=="paid" && job.carrier && job.carrier.agent){
       out.push({id:"job-live", role:"user", title:job.query||"Order", next:jobNext(job), status:"open", perish:perish&&perish.strict, hold:perish&&perish.hold, t:job.t||Date.now(), auto:1});
     }
     if(window.SNWork){
@@ -103,8 +102,8 @@
     });
     (all.drivers||[]).forEach(function(d){
       if(!d||!d.id) return;
-      if(d.hours && d.vehicles) return;
-      out.push({id:"list-driver-"+d.id, role:"driver", title:d.name||"Driver base", next:"Finish vehicles and working time.", status:"open", listing:d, t:d.t||Date.now(), auto:1});
+      if(isFinite(d.lat) && d.hours && (d.vehicles||d.phone)) return;
+      out.push({id:"list-driver-"+d.id, role:"driver", title:d.name||"Agent base", next:"Finish starting location, vehicles, working time.", status:"open", listing:d, t:d.t||Date.now(), auto:1});
     });
     (all.drops||[]).forEach(function(d){
       if(!d||!d.id) return;
@@ -117,22 +116,23 @@
       var age=Math.max(0, Math.round((Date.now()-e.at)/60000));
       var title=e.query||"Order";
       var shop=(e.shop&&e.shop.name)||"Shop";
-      var base=(e.driver&&e.driver.name)||"Driver base";
+      var base=(e.driver&&e.driver.name)||"Astranov agent";
+      var ownShop=e.shop&&e.shop.id&&mine[e.shop.id]==="shop";
+      var ownAgent=e.driver&&e.driver.id&&mine[e.driver.id]==="driver";
       if(e.flag==="hold" && e.status==="paid"){
         out.push({id:"just-"+e.id+"-user", role:"user", title:title, next:"Hold is up. Take the credit back or wait.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
       }
       if(e.status==="paid"){
-        out.push({id:"stg-"+e.id+"-pick", role:"vendor", title:shop, next:"Mark picked.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
-        out.push({id:"stg-"+e.id+"-wait", role:"user", title:title, next:"Paid. Hold "+e.holdMin+" min. "+age+" min in. Waiting on the shop.", status:"open", escrowId:e.id, perish:!!e.strict, hold:e.holdMin, t:e.at, auto:1});
+        if(ownShop) out.push({id:"stg-"+e.id+"-pick", role:"vendor", title:shop, next:"Mark picked. Call the customer.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
+        out.push({id:"stg-"+e.id+"-wait", role:"user", title:title, next:"Paid. Call the shop and the agent. Hold "+e.holdMin+" min. "+age+" min in.", status:"open", escrowId:e.id, perish:!!e.strict, hold:e.holdMin, t:e.at, auto:1});
       } else if(e.status==="picked"){
-        out.push({id:"stg-"+e.id+"-box", role:"vendor", title:shop, next:"Mark boxed.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
+        if(ownShop) out.push({id:"stg-"+e.id+"-box", role:"vendor", title:shop, next:"Mark boxed.", status:"open", escrowId:e.id, perish:!!e.strict, t:e.at, auto:1});
       } else if(e.status==="boxed"){
-        if(e.how==="pickup" || e.how==="mail") out.push({id:"stg-"+e.id+"-hand", role:"vendor", title:shop, next:e.how==="mail"?"Posted. Mark handed when it left.":"Hand it over. Mark handed.", status:"open", escrowId:e.id, t:e.at, auto:1});
-        else out.push({id:"stg-"+e.id+"-move", role:"driver", title:base, next:"Mark moving.", status:"open", escrowId:e.id, t:e.at, auto:1});
+        if(ownAgent) out.push({id:"stg-"+e.id+"-move", role:"driver", title:base, next:"Mark moving. Call the customer.", status:"open", escrowId:e.id, t:e.at, auto:1});
       } else if(e.status==="moving"){
-        out.push({id:"stg-"+e.id+"-hand", role:"driver", title:base, next:"Mark handed.", status:"open", escrowId:e.id, t:e.at, auto:1});
+        if(ownAgent) out.push({id:"stg-"+e.id+"-hand", role:"driver", title:base, next:"Mark handed. Call to verify.", status:"open", escrowId:e.id, t:e.at, auto:1});
       } else if(e.status==="handed" || e.flag==="handed"){
-        out.push({id:"stg-"+e.id+"-verify", role:"user", title:title, next:"Confirm you have it, or dispute.", status:"open", escrowId:e.id, t:e.at, auto:1});
+        out.push({id:"stg-"+e.id+"-verify", role:"user", title:title, next:"Call the agent to confirm, then verify — or dispute.", status:"open", escrowId:e.id, t:e.at, auto:1});
       }
     });
     return out;
@@ -242,11 +242,12 @@
         clearNeed();
         if(menuEl){ var ttl=menuEl.querySelector(".ttl"); if(ttl) ttl.textContent=String(v.name||"JOB").toUpperCase().slice(0,22); }
         var c=addContactBtns(v);
+        offerCalls();
         if(e){
           var cur=stageOf(e);
           need({id:"next",label:(cur==="verified"?"DONE":("NEXT · "+cur.toUpperCase())),run:function(){ if(t) goTask(t.id); }});
         }
-        if(!c.phone&&!c.email&&!c.web) talk((v.name||"Shop")+". No phone or email on OpenStreetMap.");
+        if(!c.phone&&!c.email&&!c.web) talk((v.name||"Shop")+". Call if a number is listed.");
         else talk((v.name||"Shop")+". "+stagePct(e)+"% · "+stageOf(e)+". Tap CALL or EMAIL.");
       });
     }
@@ -925,8 +926,9 @@
     var b=shopBits(v), n=v.name||"Shop";
     if(menuEl){ var ttl=menuEl.querySelector(".ttl"); if(ttl) ttl.textContent=String(n).toUpperCase().slice(0,22); }
     if(v.kind==="driver"){
-      need({id:"now",label:"NOW",run:function(){ chooseHow("now"); }});
-      talk((n||"Driver base")+". Starting point. Send a job to this base.");
+      need({id:"now",label:"SEND JOB HERE",run:function(){ selected=v; startDeliver(); }});
+      if(telOf(v)) need({id:"callbase",label:"CALL AGENT",run:function(){ dial(telOf(v),"the agent"); }});
+      talk((n||"Astranov Delivery Agent")+". Starting base. Send a job here.");
       return;
     }
     loadShopMenu(v, b).then(function(items){
@@ -934,11 +936,9 @@
       clearNeed();
       renderMenu(items);
       addContactBtns(v);
-      need({id:"now",label:"NOW",run:function(){ chooseHow("now"); }});
-      need({id:"mail",label:"MAIL",run:function(){ chooseHow("mail"); }});
-      need({id:"pickup",label:"PICK UP",run:function(){ chooseHow("pickup"); }});
+      need({id:"now",label:"ASTRANOV DELIVER",run:function(){ startDeliver(); }});
       var samples=(items||[]).some(function(it){ return it.sample; });
-      talk(n+". "+(items&&items.length?items.length+" dishes.":"")+(samples?" Sample photos and prices until the shop lists a live menu.":" Pick a dish."));
+      talk(n+". "+(items&&items.length?items.length+" dishes.":"")+(samples?" Sample photos and prices until the shop lists a live menu.":" Pick a dish, then Astranov Deliver."));
     });
   }
   var SAMPLE_PIC={
@@ -1024,17 +1024,52 @@
     if(el) el.classList.add("on");
     talk(it.name+" · "+fmtAve(it.price)+(it.sample?" Sample price.":"")+". "+fmtAve(job.price)+" in the bag.");
   }
-  function partnerPlaces(how){ if(!selected||how==="pickup") return Promise.resolve([]); var f=how==="mail"?'["amenity"="post_office"]':'["office"~"courier|logistics",i]'; var q='[out:json][timeout:12];nwr(around:25000,'+selected.lat+','+selected.lng+')["name"]'+f+';out center tags 12;'; return fetchJson("https://overpass-api.de/api/interpreter?data="+encodeURIComponent(q),{headers:{Accept:"application/json"}},15000).then(function(j){ return (j.elements||[]).map(function(r){var p=pointOf(r),t=r.tags||{};return {id:"carrier-"+r.type+"-"+r.id,name:t.name,how:how,own:false,real:true,eta:how==="mail"?1440:Math.max(12,(job&&job.routeMin)||travelMin(here,selected)+10),note:how==="mail"?"Named post. Days. No heat hold.":"Named local courier."};}).filter(function(o){return o.name;}); }).catch(function(){return [];}); }
+  function partnerPlaces(){ return Promise.resolve([]); }
   function portalOffers(){ return []; }
-  function listedDriverBases(how){ if(how!=="now"||!window.SNWork) return []; var all=SNWork.all(), from=here||selected; var rows=(all.drivers||[]).filter(function(d){ if(!d||!isFinite(d.lat)) return false; if(String(d.presence||"present")==="off") return false; var range=Number(d.range)||25; return !from || km(from,d)<=range; }).map(function(d){ var eta=Math.max(8, (here?travelMin(d,here):10)+(selected&&selected.kind!=="driver"&&selected!==d?travelMin(d,selected):0)); return {id:d.id,name:(d.name||"Driver")+" base",how:"now",own:false,driver:true,eta:eta,note:"Driver base. Starting point. "+(d.routes?("Routes: "+d.routes+". "):"")+"Receives jobs from SpaceNet users."}; }); if(selected&&selected.kind==="driver") rows.sort(function(a,b){ return a.id===selected.id?-1:b.id===selected.id?1:0; }); return rows; }
-  function offerList(how,partners){ var mins=here&&selected?Math.max(8,(job&&job.routeMin)||travelMin(here,selected)+6):18; var g=goodsOf(job&&job.query), own={id:"ours",name:"Astranov",how:how,own:true,eta:how==="mail"?Math.max(mins,90):mins,note:"Own associates. Paid, picked, boxed, moving, handed, verified."}; if(how==="pickup") return [{id:"self",name:"You pick up",how:how,own:true,eta:mins,note:"Handoff at the shop."}]; if(how==="mail"&&g.strict&&g.temp!=="ambient") return []; var list=[own].concat(listedDriverBases(how)).concat(partners||[]).concat(portalOffers(how,mins)); return list.filter(function(o){ return !(how==="now"&&g.strict&&o.eta>g.hold); }); }
-  function chooseHow(how){ if(!selected){ talk("Pick a place first."); return; } if(job) job.how=how; var seq=++offerSeq; say("Checking carriers…"); partnerPlaces(how).then(function(p){ if(seq!==offerSeq||!job||job.how!==how)return; var list=offerList(how,p); if(!list.length){ clearNeed(); need({id:"pickup",label:"PICK UP",run:function(){chooseHow("pickup");}}); need({id:"place",label:"OTHER PLACE",run:function(){hunt(job&&job.query);}}); talk("That ride cannot keep "+goodsOf(job&&job.query).name+" alive. Pick it up or choose closer."); return; } showOffers(list); }); }
-  function showOffers(list){ clearNeed(); currentOffers=list; list.forEach(function(o){ need({id:o.id, label:o.name.toUpperCase()+" · "+(o.eta>=1440?Math.round(o.eta/1440)+"d":o.eta+"m"), run:function(){ pickCarrier(o); }}); }); var f=list[0]; if(f.own) talk("Astranov first. About "+f.eta+" min. Own associates. Every stage checked."); else talk(f.name+" · "+f.eta+" min. "+f.note); }
-  function priceOf(o){ var c=job&&job.cart&&job.cart.reduce(function(s,x){ return s+(Number(x.price)||0); },0); if(c>0) return Math.round(c*100)/100; return o&&o.how==="pickup"?6:(o&&o.how==="mail"?14:10); }
-  function pickCarrier(o){ if(job) job.carrier=o; offerPay(priceOf(o)); paintJobArc(); if(o.id==="ours"||(o.own&&o.how!=="pickup")) talk("Astranov. Tasks spend AV€ now. Reload euro through PayPal only if credit is empty."); else if(o.id==="self") talk("Pick up at "+(selected&&selected.name||"the shop")+"."); else if(o.driver) talk((o.name||"Driver base")+". Starting point. Job goes to this base. About "+o.eta+" min."); else talk(o.name+" · about "+o.eta+" min. Portals see one slice."); }
-  function offerPay(price){ clearNeed(); var bal=avcGet(); if(job) job.price=price; need({id:"pay",label:"PAY "+fmtAve(price),run:function(){ spendAvc(price); }}); if(bal<price) need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(Math.max(10, Math.ceil(price-bal))); }}); talk((bal>=price)?("Pay "+fmtAve(price)+". You have "+fmtAve(bal)+"."):("Need "+fmtAve(price)+". You have "+fmtAve(bal)+". Reload euro through PayPal, 1 to 1.")); }
-  function spendAvc(price){ price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } var esc=openEscrow(price); clearNeed(); syncTasks(); talk("Paid "+fmtAve(price)+". Locked, not spent in the dark. Hold "+esc.holdMin+" min."); watchStages(price); }
-  function watchStages(avc){ if(!job) return; job.status="paid"; talk("Stage paid. Credit locked until picked → boxed → moving → handed → verified. If the shop goes silent, the credit comes back. SpaceNet takes nothing from a failed job."); }
+  function telOf(v){ if(!v) return ""; var t=v.tags||v; return String(t.phone||t["contact:phone"]||t.mobile||t.tel||v.phone||"").split(/[;,]/)[0].trim(); }
+  function dial(tel, label){ tel=String(tel||"").replace(/[^\d+]/g,""); if(!tel){ talk("No phone for "+(label||"them")+"."); return; } location.href="tel:"+tel; }
+  function callShop(){ dial(telOf(selected)||(job&&job.shop&&(job.shop.phone||telOf(job.shop))), "the shop"); }
+  function callAgent(){ var o=job&&job.carrier, d=o&&driverRow(o.id); dial((d&&d.phone)||(o&&o.phone)||telOf(d), "the Astranov agent"); }
+  function offerCalls(){
+    var shop=telOf(selected)||(job&&job.shop&&(job.shop.phone||telOf(job.shop)));
+    var o=job&&job.carrier, d=o&&driverRow(o.id), agent=(d&&d.phone)||(o&&o.phone)||telOf(d);
+    if(shop) need({id:"callshop",label:"CALL SHOP",run:callShop});
+    if(agent) need({id:"callagent",label:"CALL AGENT",run:callAgent});
+  }
+  function listedAgents(){
+    if(!window.SNWork) return [];
+    var from=here||selected;
+    return (SNWork.all().drivers||[]).filter(function(d){
+      if(!d||!isFinite(d.lat)||!isFinite(d.lng)) return false;
+      if(String(d.presence||"present")==="off") return false;
+      var range=Number(d.range)||25;
+      return !from || km(from,d)<=range;
+    }).map(function(d){
+      var eta=Math.max(8,(here?travelMin(d,here):10)+(selected?travelMin(d,selected):0));
+      return {id:d.id,name:(d.name||"Agent")+" · Astranov",how:"now",agent:true,driver:true,phone:d.phone||"",eta:eta,lat:d.lat,lng:d.lng,note:"Astranov Delivery Agent. Base listed."};
+    }).sort(function(a,b){ return a.eta-b.eta; });
+  }
+  function listedDriverBases(){ return listedAgents(); }
+  function offerList(){ return listedAgents(); }
+  function startDeliver(){
+    if(!selected){ talk("Pick a place first."); return; }
+    if(job) job.how="now";
+    var list=listedAgents();
+    if(!list.length){
+      clearNeed();
+      addContactBtns(selected);
+      talk("No Astranov Delivery Agent has listed a starting base near you. Call the shop, or list a delivery driver base.");
+      return;
+    }
+    showOffers(list);
+  }
+  function chooseHow(how){ if(how!=="now"){ talk("Only Astranov Delivery Agents for now."); return startDeliver(); } startDeliver(); }
+  function showOffers(list){ clearNeed(); currentOffers=list; list.forEach(function(o){ need({id:o.id, label:o.name.toUpperCase()+" · "+o.eta+"m", run:function(){ pickCarrier(o); }}); }); var f=list[0]; talk((f.name||"Astranov agent")+" · "+f.eta+" min. Registered base. Call to verify."); }
+  function priceOf(o){ var c=job&&job.cart&&job.cart.reduce(function(s,x){ return s+(Number(x.price)||0); },0); if(c>0) return Math.round(c*100)/100; return 10; }
+  function pickCarrier(o){ if(job){ job.carrier=o; job.how="now"; } offerPay(priceOf(o)); offerCalls(); paintJobArc(); talk((o.name||"Astranov agent")+". About "+o.eta+" min from their base. Call them to verify, then pay."); }
+  function offerPay(price){ var bal=avcGet(); if(job) job.price=price; need({id:"pay",label:"PAY "+fmtAve(price),run:function(){ spendAvc(price); }}); if(bal<price) need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(Math.max(10, Math.ceil(price-bal))); }}); talk((bal>=price)?("Pay "+fmtAve(price)+". You have "+fmtAve(bal)+"."):("Need "+fmtAve(price)+". You have "+fmtAve(bal)+". Reload euro through PayPal, 1 to 1.")); }
+  function spendAvc(price){ price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; } var esc=openEscrow(price); clearNeed(); syncTasks(); watchStages(price); offerCalls(); openTasks(); }
+  function watchStages(avc){ if(!job) return; job.status="paid"; talk("Paid. Credit locked. Call to verify. An Astranov agent with a listed base runs this. No mail."); }
   function reloadPaypal(eur){ say("PayPal reload…"); try{ sessionStorage.setItem("sn:paypal-job", JSON.stringify(job||{})); sessionStorage.setItem("sn:paypal-reload", String(eur||10)); }catch(e){} fetch("/api/paypal/create-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:eur||10,origin:location.origin,reference:"avc-reload"})}).then(function(r){return r.json().then(function(j){j.http=r.status;return j;});}).then(function(j){ if(j&&j.ok&&j.approve){ location.href=j.approve; return; } clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk(j&&j.error==="paypal_not_configured"?"PayPal is not on this host yet.":"PayPal could not start. RELOAD is still here."); }).catch(function(){ clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk("PayPal could not be reached."); }); }
   function restorePayJob(){ try{ var saved=JSON.parse(sessionStorage.getItem("sn:paypal-job")||"null"); if(saved){ job=saved; selected=saved.shop||null; } }catch(e){} }
   function clearPayQuery(){ try{ var u=new URL(location.href); ["paypal","token","PayerID"].forEach(function(k){u.searchParams.delete(k);}); history.replaceState({},"",u.pathname+(u.searchParams.toString()?"?"+u.searchParams.toString():"")); }catch(e){} }
@@ -1085,7 +1120,7 @@
     try{ rec.start(); listening=true; paintEar(); }catch(e){ listening=false; paintEar(); }
   }
   function parseMind(j, raw){ var text=String((j&&(j.text||j.response||j.answer||j.say))||""); var act=String((j&&j.act)||"").toLowerCase(), q=(j&&j.q)||"", s=(j&&j.say)||"", ok=j&&j.priority_ok, id=(j&&(j.task_id||j.id))||"", split=j&&j.split, items=j&&j.items; var m=text.match(/\{[\s\S]*\}/); if(m){ try{ var o=JSON.parse(m[0]); if(o){ if(o.act) act=String(o.act).toLowerCase(); if(o.q) q=String(o.q); if(o.say) s=String(o.say); if(!s && o.text) s=String(o.text); if(o.ok!=null) ok=o.ok; if(o.id) id=String(o.id); if(o.split) split=o.split; if(o.items) items=o.items; } }catch(e){} } if(!s) s=text.replace(/\{[\s\S]*\}/,"").trim(); return {act:act||"talk", q:q||raw, say:s||"", ok:ok, id:id, split:split, items:items||[]}; }
-  function applyMind(m, raw){ if(!m) return; var a=String(m.act||"talk").toLowerCase(); if(m.say && a!=="hunt" && a!=="order" && a!=="find" && a!=="priority") talk(m.say); else if(m.say && a!=="priority") say(m.say); if(a==="talk"||!a) return; if(a==="priority"){ var ok=m.ok===true||m.ok==="true"||m.ok===1; bumpTask(m.id||(awaiting&&awaiting.id), ok, m.say); awaiting=null; return; } if(a==="justice"){ applyJustice(m); awaiting=null; return; } if(a==="pick"){ var q=String(m.q||m.id||"").toLowerCase(); var v=(vendors||[]).find(function(x){ var n=String(x.name||"").toLowerCase(); return n && q && (n===q || n.indexOf(q)>=0 || q.indexOf(n)>=0); }); if(v) return selectVendor(v); return; } if(a==="menu"){ var items=(m.items||[]).filter(function(it){ return it&&it.name; }).map(function(it){ return {name:String(it.name), price:Number(it.price)||0, sample:it.sample!==false, photo:it.photo||""}; }); if(window.__snMenuCb) window.__snMenuCb(items); return; } if(a==="locate") return goHere(); if(a==="globe"){ showGlobe(); return; } if(a==="national") return showNational(aim||here||facingPoint()); if(a==="map"||a==="city"||a==="streets") return showCity(selected||aim||here); if(a==="now") return chooseHow("now"); if(a==="mail") return chooseHow("mail"); if(a==="pickup"||a==="pick up") return chooseHow("pickup"); if(a==="pay") return spendAvc(priceOf(job&&job.carrier)); if(a==="reload") return reloadPaypal(10); if(a==="post"||a==="call"||a==="shop"||a==="drop"||a==="driver"||a==="base"){ if(window.SNWork) return SNWork.open(aim||here, a==="base"?"driver":a); return; } if(a==="hunt"||a==="order"||a==="find"){ if(vendors.length) return; return hunt(m.q||raw, here||aim); } }
+  function applyMind(m, raw){ if(!m) return; var a=String(m.act||"talk").toLowerCase(); if(m.say && a!=="hunt" && a!=="order" && a!=="find" && a!=="priority") talk(m.say); else if(m.say && a!=="priority") say(m.say); if(a==="talk"||!a) return; if(a==="priority"){ var ok=m.ok===true||m.ok==="true"||m.ok===1; bumpTask(m.id||(awaiting&&awaiting.id), ok, m.say); awaiting=null; return; } if(a==="justice"){ applyJustice(m); awaiting=null; return; } if(a==="pick"){ var q=String(m.q||m.id||"").toLowerCase(); var v=(vendors||[]).find(function(x){ var n=String(x.name||"").toLowerCase(); return n && q && (n===q || n.indexOf(q)>=0 || q.indexOf(n)>=0); }); if(v) return selectVendor(v); return; } if(a==="menu"){ var items=(m.items||[]).filter(function(it){ return it&&it.name; }).map(function(it){ return {name:String(it.name), price:Number(it.price)||0, sample:it.sample!==false, photo:it.photo||""}; }); if(window.__snMenuCb) window.__snMenuCb(items); return; } if(a==="locate") return goHere(); if(a==="globe"){ showGlobe(); return; } if(a==="national") return showNational(aim||here||facingPoint()); if(a==="map"||a==="city"||a==="streets") return showCity(selected||aim||here); if(a==="now") return startDeliver(); if(a==="mail"||a==="pickup"||a==="pick up") return startDeliver(); if(a==="pay") return spendAvc(priceOf(job&&job.carrier)); if(a==="reload") return reloadPaypal(10); if(a==="post"||a==="call"||a==="shop"||a==="drop"||a==="driver"||a==="base"){ if(window.SNWork) return SNWork.open(aim||here, a==="base"?"driver":a); return; } if(a==="hunt"||a==="order"||a==="find"){ if(vendors.length) return; return hunt(m.q||raw, here||aim); } }
   function grok(text){ var raw=String(text||"").trim(); if(!raw) return; say("Grok…"); var origin=aim||here; var ctx={ place:(aim&&aim.name)||hereName||"", avc:avcGet(), shop:selected&&selected.name||"", query:job&&job.query||"", level:viewLevel(), vendors:(vendors||[]).slice(0,6).map(function(v){ var b=shopBits(v); return {id:v.id,name:v.name,km:origin?Math.round(km(origin,v)*10)/10:null,cuisine:b.cuisine,hours:b.hours,phone:!!b.phone,listed:!!b.menu}; }), tasks:loadTasks().filter(function(t){return t.status!=="done";}).slice(0,8).map(function(t){return {id:t.id,title:t.title,pri:t.pri,role:t.role,next:t.next};}), escrow:loadEscrow().filter(function(e){return e&&e.held;}).slice(0,4) }; if(awaiting&&awaiting.kind==="priority") ctx.priority_request={id:awaiting.id, reason:raw}; if(awaiting&&awaiting.kind==="justice") ctx.justice_request={id:awaiting.id, reason:raw}; var ctl=window.AbortController?new AbortController():null; var to=ctl&&setTimeout(function(){try{ctl.abort();}catch(e){}},8000); fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:raw, message:raw, here:ctx, history:mindHist, spacenet:true, fast:true, force_paid:true, allow_paid:true}),signal:ctl&&ctl.signal}).then(function(r){return r.json().then(function(j){ j.http=r.status; return j; });}).then(function(j){ if(to) clearTimeout(to); var m=parseMind(j, raw); mindHist.push({role:"user",content:raw}); mindHist.push({role:"assistant",content:m.say||m.act||""}); if(mindHist.length>16) mindHist=mindHist.slice(-16); applyMind(m, raw); }).catch(function(){ if(to) clearTimeout(to); if(!vendors.length) talk("Grok is slow. Searching the map."); }); }
   function savePost(a, text){ var row={level:a.level, lat:a.at&&a.at.lat, lng:a.at&&a.at.lng, name:(a.at&&a.at.name)||"", text:String(text||"").trim(), t:Date.now(), kind:"post", id:"p"+Date.now().toString(36)}; try{ var list=JSON.parse(localStorage.getItem("sn:posts")||"[]"); list.unshift(row); localStorage.setItem("sn:posts", JSON.stringify(list.slice(0,80))); }catch(e){} if(window.SNWork&&SNWork.publish) SNWork.publish(row); talk("Posted at "+(row.name||a.level)+"."); if(window.SN&&SN.repaint) SN.repaint(); }
   function startAwait(kind, level, p){ awaiting={kind:kind, level:level, at:p}; if(inEl){ inEl.value=""; inEl.placeholder= kind==="post"?"Post at this place": kind==="add"?"Name what you add":"Task at this place"; try{ inEl.focus(); }catch(e){} } var n=(p&&p.name)||level; if(kind==="post") talk("Post at "+n+". Write it."); else if(kind==="add") talk("Add at "+n+". Name it."); else talk("Task at "+n+". Say what you want."); }
