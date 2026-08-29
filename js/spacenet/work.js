@@ -1,7 +1,7 @@
 (function(){
   if(window.SNWork && window.SNWork.open) return;
   var KEYS={posts:"sn:posts",shops:"sn:shops",drops:"sn:drops",drivers:"sn:drivers",calls:"sn:calls"};
-  var picking=null, activeCall=null, sheet=null, card=null, pickBar=null, at=null, view="home";
+  var picking=null, activeCall=null, sheet=null, card=null, pickBar=null, at=null, view="home", editing=false;
   var photos={profile:"",cover:"",menu:[],shot:"",face:"",vehicle:""};
   var dishPic=null;
   var peer=null, mediaStream=null, mediaCall=null, videoEl=null;
@@ -70,6 +70,15 @@
       return id;
     }catch(e){ return "sn"+Date.now().toString(36); }
   }
+  function isAdmin(){ try{ return localStorage.getItem("sn:admin")==="1"; }catch(e){ return false; } }
+  function owns(row){
+    row=row&&(row.tags||row);
+    if(!row) return false;
+    if(row.peer) return row.peer===peerId() || isAdmin();
+    var key=row.kind==="drop"?KEYS.drops:row.kind==="driver"?KEYS.drivers:KEYS.shops;
+    return load(key).some(function(x){ return x&&x.id&&row.id&&x.id===row.id; });
+  }
+  function canEdit(row){ return isAdmin() || owns(row); }
   function resetPhotos(){ photos={profile:"",cover:"",menu:[],shot:"",face:"",vehicle:""}; }
 
   function match(q, from){
@@ -170,6 +179,7 @@
   function close(){
     if(sheet) sheet.classList.remove("on");
     view="home";
+    editing=false;
     resetPhotos();
     if(window.SN&&SN.repaint) SN.repaint();
   }
@@ -211,6 +221,7 @@
 
   function open(place, which){
     ensure();
+    editing=false;
     if(place && place.kind && !which){
       at={lat:place.lat,lng:place.lng,name:place.name||place.label,raw:place.raw,tags:place.tags||place,kind:place.kind,id:place.id,peer:place.peer||(place.tags&&place.tags.peer)||""};
       view=place.kind==="drop"?"drop":place.kind;
@@ -267,7 +278,13 @@
       if(window.SN&&SN.correctHere) SN.correctHere();
       return;
     }
-    if(act==="edit-shop"){ view="shop"; render(); return; }
+    if(act==="edit-shop"||act==="edit"){
+      if(!canEdit(at&&(at.tags||at))){ talk("Only the owner of this pin or a SpaceNet admin can edit."); return; }
+      editing=true;
+      view=at&&at.kind?at.kind:"shop";
+      render();
+      return;
+    }
     if(act==="dish-add"){
       var grid=card&&card.querySelector("[data-menu]");
       if(grid) grid.insertAdjacentHTML("beforeend", dishEdit({}));
@@ -420,6 +437,7 @@
   function saveShop(fd){
     var name=val(fd,"name");
     if(!name){ talk("Name the shop."); return; }
+    if(at&&at.id&&at.kind==="shop"&&!canEdit(at.tags||at)){ talk("Only the owner or a SpaceNet admin can edit this pin."); return; }
     var dishes=readDishCards();
     if(!dishes.length){ talk("Add a dish with a photo, a price, and stock. That is what the client sees."); return; }
     var row=baseRow();
@@ -530,6 +548,7 @@
   }
   function removeCurrent(){
     if(!at||!at.id||!at.kind) return;
+    if(!canEdit(at.tags||at)){ talk("Only the owner of this pin or a SpaceNet admin can remove it."); return; }
     var key=KEYS[at.kind==="drop"?"drops":at.kind==="driver"?"drivers":at.kind==="shop"?"shops":"posts"];
     save(key, load(key).filter(function(r){ return r.id!==at.id; }));
     close(); paint(); talk("Removed.");
@@ -791,10 +810,6 @@
         '<button type="button" class="opt" data-act="shop"><b>List a vendor</b><span>Menu with photos, prices, stock, schedule.</span></button>'+
         '<button type="button" class="opt" data-act="driver"><b>List a driver base</b><span>Starting point, trips, range, schedule. 1 AV€/km.</span></button>'+
         '<button type="button" class="opt" data-act="drop"><b>List a secret drop</b><span>Only the agent on that task sees it. Never the shop. Never the public map.</span></button>';
-      if(view==="list"){
-        card.innerHTML=head("List on SpaceNet", title)+three;
-        return;
-      }
       card.innerHTML=head(title, sub)+
         '<button type="button" class="opt" data-act="you"><b>This is my location</b><span>YOU pin. Not a shop.</span></button>'+
         '<button type="button" class="opt" data-act="fix"><b>Fix my location</b><span>Next tap on the map is YOU. Order stays.</span></button>'+
@@ -839,9 +854,10 @@
       return;
     }
     if(view==="shop"){
-      if(at&&at.kind==="shop"&&at.id){
+      if(at&&at.kind==="shop"&&at.id&&!editing){
         var s=at.tags||at;
         var dishes=s.dishes||[];
+        var mine=canEdit(s);
         card.innerHTML=head(s.name||title, (s.open||"")+(s.hours?" · "+s.hours:""))+
           (s.cover?'<img class="cover" alt="Cover" src="'+s.cover+'" />':'')+
           (s.profile?'<img class="avatar" alt="Profile" src="'+s.profile+'" />':'')+
@@ -849,11 +865,12 @@
           (s.phone?'<button type="button" class="go" data-act="dial" data-tel="'+esc(s.phone)+'">DIAL '+esc(s.phone)+'</button>':'')+
           (s.peer?'<button type="button" class="go" data-act="video" data-peer="'+esc(s.peer)+'" data-tel="'+esc(s.phone||"")+'">VIDEO CALL</button>':'')+
           '<button type="button" class="go" data-act="order">ORDER FROM HERE</button>'+
-          '<button type="button" class="opt" data-act="edit-shop"><b>Edit this menu</b><span>Same photo, price, stock the client sees.</span></button>'+
-          '<button type="button" class="opt" data-act="books"><b>This month</b><span>SpaceNet invoice at ΔΟΥ Ρόδου.</span></button>'+
-          '<button type="button" class="opt" data-act="remove"><b>Remove listing</b><span>Off this device.</span></button>';
+          (mine?'<button type="button" class="opt" data-act="edit-shop"><b>Edit this menu</b><span>Same photo, price, stock the client sees.</span></button>':'')+
+          (mine?'<button type="button" class="opt" data-act="books"><b>This month</b><span>SpaceNet invoice at ΔΟΥ Ρόδου.</span></button>':'')+
+          (mine?'<button type="button" class="opt" data-act="remove"><b>Remove listing</b><span>Owner or SpaceNet admin.</span></button>':'');
         return;
       }
+      if(at&&at.id&&!canEdit(at.tags||at)){ talk("Only the owner or a SpaceNet admin can edit this pin."); view="home"; render(); return; }
       card.innerHTML=head("List your shop", "This menu is what the client sees when they order.")+
         '<form data-kind="shop">'+
         field("name","Shop name",{ph:"Name on the door"})+
@@ -872,17 +889,20 @@
       return;
     }
     if(view==="drop"){
-      if(at&&at.kind==="drop"&&at.id){
+      if(at&&at.kind==="drop"&&at.id&&!editing){
         var d=at.tags||at;
+        var mine=canEdit(d);
         card.innerHTML=head(d.label||d.name||"Drop", [d.street,d.number,d.floor].filter(Boolean).join(" · "))+
           (d.photo?'<img class="shot" alt="Entrance" src="'+d.photo+'" />':'')+
           '<p class="note">'+(d.bell?"Doorbell "+esc(d.bell)+(d.bellName?" · "+esc(d.bellName):""):"")+(d.pref?"\n"+esc(d.pref):"")+'</p>'+
           (d.phone?'<button type="button" class="go" data-act="dial" data-tel="'+esc(d.phone)+'">DIAL '+esc(d.phone)+'</button>':'')+
           (d.peer?'<button type="button" class="go" data-act="video" data-peer="'+esc(d.peer)+'">VIDEO CALL</button>':'')+
-          '<button type="button" class="opt" data-act="books"><b>This month</b><span>Receipts at ΔΟΥ Ρόδου.</span></button>'+
-          '<button type="button" class="opt" data-act="remove"><b>Remove listing</b><span>Off this device.</span></button>';
+          (mine?'<button type="button" class="opt" data-act="edit"><b>Edit this drop</b><span>Owner or SpaceNet admin.</span></button>':'')+
+          (mine?'<button type="button" class="opt" data-act="books"><b>This month</b><span>Receipts at ΔΟΥ Ρόδου.</span></button>':'')+
+          (mine?'<button type="button" class="opt" data-act="remove"><b>Remove listing</b><span>Owner or SpaceNet admin.</span></button>':'');
         return;
       }
+      if(at&&at.id&&!canEdit(at.tags||at)){ talk("Only the owner or a SpaceNet admin can edit this pin."); view="home"; render(); return; }
       card.innerHTML=head("Secret drop", "Only the agent on your task sees this. Not the shop. Not the public map.")+
         '<form data-kind="drop">'+
         field("label","What to call it",{ph:"Home, office, shop back door"})+
@@ -899,9 +919,10 @@
       return;
     }
     if(view==="driver"){
-      if(at&&at.kind==="driver"&&at.id){
+      if(at&&at.kind==="driver"&&at.id&&!editing){
         var r=at.tags||at;
         var pres=r.presence==="off"?"Off":r.presence==="route"?"On a route":"Present at this base";
+        var mine=canEdit(r);
         card.innerHTML=head((r.name||"Driver base")+" · starting point", pres+" "+(flagOf(r.langMain)||"")+(flagOf(r.langAlt)||""))+
           (r.face?'<img class="avatar" alt="Face" src="'+r.face+'" />':'')+
           (r.vehicle?'<img class="shot" alt="Vehicle" src="'+r.vehicle+'" />':(r.photo?'<img class="shot" alt="Base" src="'+r.photo+'" />':''))+
@@ -909,10 +930,12 @@
           '<button type="button" class="go" data-act="order">SEND A JOB HERE</button>'+
           (r.phone?'<button type="button" class="go" data-act="dial" data-tel="'+esc(r.phone)+'">DIAL '+esc(r.phone)+'</button>':'')+
           (r.peer?'<button type="button" class="go" data-act="video" data-peer="'+esc(r.peer)+'">VIDEO CALL</button>':'')+
-          '<button type="button" class="opt" data-act="books"><b>This month</b><span>Driver invoice at ΔΟΥ Ρόδου.</span></button>'+
-          '<button type="button" class="opt" data-act="remove"><b>Remove listing</b><span>Off this device.</span></button>';
+          (mine?'<button type="button" class="opt" data-act="edit"><b>Edit this base</b><span>Owner or SpaceNet admin.</span></button>':'')+
+          (mine?'<button type="button" class="opt" data-act="books"><b>This month</b><span>Driver invoice at ΔΟΥ Ρόδου.</span></button>':'')+
+          (mine?'<button type="button" class="opt" data-act="remove"><b>Remove listing</b><span>Owner or SpaceNet admin.</span></button>':'');
         return;
       }
+      if(at&&at.id&&!canEdit(at.tags||at)){ talk("Only the owner or a SpaceNet admin can edit this pin."); view="home"; render(); return; }
       card.innerHTML=head("Delivery driver base", "Starting point. Declare presence and routes. Receive jobs from users.")+
         '<form data-kind="driver">'+
         field("name","Name on the base",{ph:"How you want to be called"})+
@@ -957,6 +980,8 @@
     listenPeer:listenPeer,
     hang:hang,
     peerId:peerId,
+    canEdit:canEdit,
+    isAdmin:isAdmin,
     startVideo:startVideo,
     pull:pull,
     publish:publish,

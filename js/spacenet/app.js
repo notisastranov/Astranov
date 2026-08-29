@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4060";
+  var VER="4061";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -1202,7 +1202,10 @@
     if(!p||!isFinite(p.lat)) return;
     aim=p;
     var live=listedShopOf(p);
-    if(live){ selectVendor(live); return; }
+    if(live){
+      if(window.SNWork&&SNWork.canEdit&&SNWork.canEdit(live)){ SNWork.open(live); return; }
+      selectVendor(live); return;
+    }
     if(p.kind==="driver" && pinLive(p,"driver")){ selectVendor(p); return; }
     if(window.SNWork) SNWork.open({lat:p.lat,lng:p.lng,name:p.name||p.label||job&&job.query||"This place",raw:p.raw||"",kind:p.kind||"",id:p.id||"",tags:p.tags||p}, "home");
     talk((p.name||"This pin")+". Pick: my location, vendor, driver base, secret drop, post, or report.");
@@ -1652,7 +1655,7 @@
   function startAwait(kind, level, p){ awaiting={kind:kind, level:level, at:p}; if(inEl){ inEl.value=""; inEl.placeholder= kind==="post"?"Post at this place": kind==="add"?"Name what you add":"Task at this place"; try{ inEl.focus(); }catch(e){} } var n=(p&&p.name)||level; if(kind==="post") talk("Post at "+n+". Write it."); else if(kind==="add") talk("Add at "+n+". Name it."); else talk("Task at "+n+". Say what you want."); }
   function doCall(p){ if(window.SNWork){ SNWork.open(p,"call"); return; } nameAim(p).then(function(n){ var t=n.tags||{}; var phone=t.phone||t["contact:phone"]||t.tel||""; if(phone){ talk("Calling "+(n.name||"place")+"."); location.href="tel:"+String(phone).replace(/[^\d+]/g,""); } else talk("No phone listed for "+(n.name||"this place")+"."); }); }
   function whatIsHere(p, level){ say("Looking…"); nameAim(p).then(function(n){ aim=n; showAround(n); if(level!=="city" && n.water) talk("No named place on that water."); }); }
-  function run(raw){ var t=String(raw||"").trim(); if(!t) return; var low=t.toLowerCase(); if(low==="reboot") return (window.SNReboot&&SNReboot()); if(correctingHere){ findPlaceName(t).then(function(p){ if(p) applyHere(p); else talk("No place for "+t+". Try the city name."); }); return; } if(window.SNWork&&SNWork.picking&&SNWork.picking()){ SNWork.searchDest(t); return; } if(awaiting){ var a=awaiting; awaiting=null; if(inEl) inEl.placeholder="Talk to Astranov SpaceNet Grok"; if(a.kind==="priority") return grok("PRIORITY REQUEST id="+a.id+" reason: "+t); if(a.kind==="justice") return grok("JUSTICE DISPUTE escrow="+a.id+" reason: "+t); if(a.kind==="post"||a.kind==="add"){ if(window.SNWork) return SNWork.open(a.at, a.kind==="add"?"":"post"); savePost(a,t); return; } if(a.kind==="task"||a.kind==="find"){ aim=a.at||aim; return grok(t); } } var named=vendors.find(function(v){var n=(v.name||"").toLowerCase(); return n && (low===n || low.indexOf(n)>=0);}); if(named) return selectVendor(named); named=currentOffers.find(function(o){var n=(o.name||"").toLowerCase(); return n && (low===n || low.indexOf(n)>=0);}); if(named) return pickCarrier(named); if((here||aim) && !/^(hi|hey|hello|ok|okay|yes|no|thanks|γεια)\.?$/i.test(low)) hunt(t); return grok(t); }
+  function run(raw){ var t=String(raw||"").trim(); if(!t) return; var low=t.toLowerCase(); if(low==="reboot") return (window.SNReboot&&SNReboot()); if(low==="astranov admin"){ try{ localStorage.setItem("sn:admin","1"); }catch(e){} talk("This device is a SpaceNet admin."); return; } if(correctingHere){ findPlaceName(t).then(function(p){ if(p) applyHere(p); else talk("No place for "+t+". Try the city name."); }); return; } if(window.SNWork&&SNWork.picking&&SNWork.picking()){ SNWork.searchDest(t); return; } if(awaiting){ var a=awaiting; awaiting=null; if(inEl) inEl.placeholder="Talk to Astranov SpaceNet Grok"; if(a.kind==="priority") return grok("PRIORITY REQUEST id="+a.id+" reason: "+t); if(a.kind==="justice") return grok("JUSTICE DISPUTE escrow="+a.id+" reason: "+t); if(a.kind==="post"||a.kind==="add"){ if(window.SNWork) return SNWork.open(a.at, a.kind==="add"?"":"post"); savePost(a,t); return; } if(a.kind==="task"||a.kind==="find"){ aim=a.at||aim; return grok(t); } } var named=vendors.find(function(v){var n=(v.name||"").toLowerCase(); return n && (low===n || low.indexOf(n)>=0);}); if(named) return selectVendor(named); named=currentOffers.find(function(o){var n=(o.name||"").toLowerCase(); return n && (low===n || low.indexOf(n)>=0);}); if(named) return pickCarrier(named); if((here||aim) && !/^(hi|hey|hello|ok|okay|yes|no|thanks|γεια)\.?$/i.test(low)) hunt(t); return grok(t); }
   function globeHit(clientX, clientY){ if(!canvas) return null; var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,R=Math.min(w,h)*0.42/dist; var rect=canvas.getBoundingClientRect(); var px=(clientX-rect.left)*(w/Math.max(1,rect.width)); var py=(clientY-rect.top)*(h/Math.max(1,rect.height)); var x=(px-cx)/R, y2=(cy-py)/R, rr=x*x+y2*y2; if(rr>1) return null; var z2=Math.sqrt(Math.max(0,1-rr)); var cp=Math.cos(pitch), sp=Math.sin(pitch); var y=y2*cp+z2*sp; var z=-y2*sp+z2*cp; var lat=Math.asin(Math.max(-1,Math.min(1,y)))*180/Math.PI; var lng=Math.atan2(x,z)*180/Math.PI + yaw*180/Math.PI; while(lng>180) lng-=360; while(lng<-180) lng+=360; return {lat:lat,lng:lng}; }
   function nameAim(p){ if(!p) return Promise.resolve(p); var url="https://photon.komoot.io/reverse?lat="+p.lat+"&lon="+p.lng; return fetchJson(url,{headers:{Accept:"application/json"}},8000).then(function(j){ var f=j&&j.features&&j.features[0], pr=f&&f.properties||{}; var n=pr.name||pr.street||pr.city||pr.locality||pr.district||""; p.name=n||pr.county||pr.country||""; p.raw=[pr.street,pr.city||pr.locality,pr.country].filter(Boolean).join(", "); p.tags=pr; p.water=!p.name; if(!p.name) p.name="This place"; return p; }).catch(function(){ var nurl="https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=16&lat="+p.lat+"&lon="+p.lng; return fetchJson(nurl,{headers:{Accept:"application/json","Accept-Language":navigator.language||"en"}},8000).then(function(j){ p.name=humanName(j)||"This place"; p.raw=j&&j.display_name||p.name; p.tags=(j&&j.extratags)||{}; p.water=p.name==="This place"; return p; }).catch(function(){ p.name="This place"; p.water=true; p.tags={}; return p; }); }); }
   function hidePlace(){ if(placeEl){ placeEl.classList.remove("on"); placeEl.innerHTML=""; } packSoon(); }
@@ -1665,7 +1668,7 @@
     if(map&&map.getCenter){ try{ var c=map.getCenter(); if(c&&isFinite(c.lat)) p={lat:c.lat,lng:c.lng,name:(aim&&aim.name)||(here&&here.name)||"This place"}; }catch(e){} }
     if(!p||!isFinite(p.lat)){ talk("Set your place first. GPS or click the map."); if(typeof correctHere==="function") correctHere(); return; }
     aim=p;
-    function go(){ if(window.SNWork) SNWork.open(p,"list"); talk("Hold 1 second or right-click the map. Post, report, list a shop, a driver base, or a secret drop. The drop is only for the agent on the task."); }
+    function go(){ openPinMenu(p); }
     if(viewLevel()!=="city"){ showCity(p); setTimeout(go, 280); } else go();
   }
   function hands(){ hidePlace(); var p=aim||here|| (map&&map.getCenter()?{lat:map.getCenter().lat,lng:map.getCenter().lng}:facingPoint()); var screen={x:innerWidth/2,y:innerHeight*0.4}; if(!here && viewLevel()==="globe"){ talk("Tap GPS to land on your city."); } if(viewLevel()==="city"){ cityWork(p,true); return; } openLevelMenu(p, screen, viewLevel()); }
