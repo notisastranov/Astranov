@@ -47,39 +47,45 @@ Coding is the agent's job. The owner specifies the world. Do not wait for a huma
 
 A human coder waits for a ticket. You do not.
 
-## Owner’s last full instruction — 2026-08-29
+## Owner’s last full instruction — 2026-08-29 (this turn)
 
 This block **overrides** every older note in this file if they fight. Do not make the owner say it again.
 
+**Record every new spec in this file the same turn.** Chat is not the archive.
+
+**Products and services are a spreadsheet.** Listing and ordering are the **same grid**. Every row: **photo** (left) · **description** · **AV€** · **hours of availability** · **initial stock** · **stock left**. Clients see initial and left. Pay decrements left. Zero left cannot go in the cart. Not a textarea. Add a row. That is the menu.
+
+**Both listing ways open the same multi-menu.** The **+** button and a **map tap / hold / right-click / pin click** all open: **This is my location (YOU)** · **Fix my location** · **Post** · **Report** · **Call** · **List a vendor** · **List a driver base** · **List a secret drop**. Do not drop a silent YOU pin when they meant to list Pizzarium. YOU is a choice, not the default.
+
+**Owner of the pin edits. SpaceNet admins edit.** Nobody else. Strangers order or call. Edit opens the real form (not a loop back to the view). Type `astranov admin` on a device to mark it admin.
+
 **Verified pins make tasks.** A real task is three listed pins: shop, Astranov driver base, client drop. Hunt may find a place. CALL is allowed. ORDER only from a listed shop pin. Ride is shop → drop (YOU if no drop listed). Dummy OSM shops do not create jobs.
 
-**Pin while listing.** The shop / driver / drop sheet sits on the bottom. The map above stays live. Tap or **drag the PIN** to set the listing. Form does not close. Form does not wipe.
+**Pin while listing.** The sheet sits on the bottom. The map above stays live. Tap or **drag the PIN** to set the listing. Form does not close. Form does not wipe. Click the PIN to reopen and edit (owner/admin).
 
-**Quality.** No double-pay. SET LOCATION does not open a shop sheet. Network hunt retries once on drop. Motion respects reduce. Focus ring on chrome. Never stack dummy chips. Never invent a shop.
+**Named hunt is the name.** Searching **Pizzarium** is Pizzarium in **Ανάληψη, Rhodes** (Athinas Tarsouli 1) — not Ixia copy, not Ilioupoli pizza, not Rome unless they asked Rome, not Denmark. GPS city is a hint. **Do not append the GPS city to a brand.** **Do not bias Photon lat/lng on a brand.** The place **name must contain the query**. Grok returns `act=hunt` and `places[{name,lat,lng,raw,phone}]`. Merge those pins. Never pin another city to fake a hit. Never invent a dummy shop. Never scrape Google.
+
+**Tap a hunt pin or tap the map while hunting a name** → the multi-menu with that name. List it as vendor (spreadsheet), driver, drop, post, or report.
+
+**Quality.** No double-pay. SET LOCATION is YOU only when they pick **This is my location** or **Fix my location**. Network hunt retries once on drop. Motion respects reduce. Never stack dummy chips. Never invent a shop.
 
 **SpaceNet 3%.** Every paid task and every AV€ top-up (clients, vendors, drivers) takes **3%** for SpaceNet. Shown on the cart. Deducted from PayPal reload. Failed job: SpaceNet takes none — 3% returns with the credit.
 
 **Books.** SpaceNet issues **monthly invoices** to shops and drivers and **receipts** to clients. They sit on the listing pin and at **ΔΟΥ Ρόδου** (G. Mavrou 2, Zephyros) as a glowing **ΔΟΥ** pill. Same pill style: shop/drop use entrance or place photo; driver uses face + vehicle + main/second language flags.
 
-**Plus lists the marketplace.** **+** opens shop / driver base / delivery location at the map pin. Shop: menu photos, prices, stock, schedule. Driver: starting point, desired trips, range, schedule. Client drop: entrance or drop-out, street, floor, doorbell. **Ride is 1 AV€ per km**, plus extras (floor +3, door wait, return). Goods to the shop, km to the agent. Instant lock on pay.
+**Ride is 1 AV€ per km**, plus extras (floor +3, door wait, return). Goods to the shop, km to the agent. Instant lock on pay.
 
-**Set place.** One button: **CLICK MAP TO SET LOCATION MANUALLY**. Never flood VENDORS with NOT HERE. Tap it, then tap the map (or type the city). That is YOU. Hunt and cart stay. `need()` replaces the same id — never stack dummy chips.
-
-**Menu is the menu.** When a vendor lists, they edit the same cards the client taps: photo, name, AV€, stock. Not a textarea. Add a dish, set the picture, set the price, set the stock. That is the order menu.
+**Set place.** Precise GPS, then coarse GPS (Windows 10 desktop times out on high accuracy), then network/IP, then **CLICK MAP TO SET LOCATION MANUALLY** or **Fix my location** in the multi-menu, then tap the map or type the city. That is YOU. Hunt and cart stay. `need()` replaces the same id — never stack dummy chips.
 
 **Offer cash.** Big glowing blue AV€ on the offer window and on the task arc. Driver sees the ride they are offered. Client sees the task total. Not a tiny label.
 
-**Hold the map.** Right-click, or press 1 second, on the city map. Menu: **Post**, **Report**, **List a vendor**, **List a driver base**, **List a secret drop**. Short tap does not open that menu. Secret drop is never on the public map, never sent to the shop. **When an offer hits the chosen driver, the client pin is on their map** (entrance, street, bell). Client who listed it sees it on their device.
+**Hold the map.** Right-click, or press 1 second, on the city map. Same multi-menu as **+**. Short tap does not open that menu unless they are placing a named hunt. Secret drop is never on the public map, never sent to the shop. **When an offer hits the chosen driver, the client pin is on their map** (entrance, street, bell). Client who listed it sees it on their device.
 
-**Our index.** SpaceNet is its own ecosystem. Listed shop / driver / drop pins are the truth. Map tiles are OSM (no Google Maps). Hunt lists SpaceNet first. OSM may show an unlisted place so they can **list it**. Never scrape Google. Never pin a Google result. Never invent a shop.
-
-**Find YOU on any device.** Precise GPS, then coarse GPS (Windows 10 desktop times out on high accuracy), then network/IP location. Then **CLICK MAP TO SET LOCATION MANUALLY**. **Do not break the order.**
-
-**Named hunt is the name.** Searching **Pizzarium** is Pizzarium. SpaceNet listed pins first. OSM may show an unlisted pin to list. If nothing: say so. **Never invent a dummy shop. Never pin a Google result.**
+**Our index.** SpaceNet is its own ecosystem. Listed shop / driver / drop pins are the truth. Map tiles are OSM (no Google Maps). Hunt lists SpaceNet first. OSM may show an unlisted place so they can **list it**. Never scrape Google. Never pin a Google result.
 
 **Astranov video.** WebRTC between **client, vendor, and agent** on SpaceNet so they do not call support. **Agent video only when not in motion** (GPS speed, or stage moving). **Only the client of that job** can video the agent. Agent cannot video a stranger. Keep the page open. END CALL hangs up. No fake Connected.
 
-**Call only.** Never EMAIL the shop. Never SITE as a contact chip. **CALL** only if a **real official telephone** is published on OSM or the shop’s own site (10+ digits). No invented numbers.
+**Call only.** Never EMAIL the shop. Never SITE as a contact chip. **CALL** only if a **real official telephone** is published (10+ digits). No invented numbers.
 
 **No agent, no charge.** If no Astranov Delivery Agent has a listed base covering the area, **cancel before checkout**. Do not PAY. Do not lock AV€. Tell them the order is cancelled and they were not charged. CALL SHOP still works.
 
@@ -87,7 +93,7 @@ This block **overrides** every older note in this file if they fight. Do not mak
 
 **Arc fill.** The bond arc is a progress bar. Completion **glows filling the arc** from YOU toward the shop and the agent. Making = a little light. At the door = almost full. Delivered = the whole arc gold and glowing. Tap the arc for the job.
 
-**Cart.** Tap a dish → it goes in the **cart** (pill materializes). Checkout and pay **from the cart**. Floor / room service is **+ AV€ 3.00**. The task is created **only after pay**. Customer task: **ETA + state**, no DO, no PROBLEM. States: on the making by vendor → waiting delivery agent → delivered to agent → on the way → waiting at your doorstep. Vendor READY / agent GOT IT / ON THE WAY / AT THE DOOR / RETURN. Customer I HAVE IT at the door.
+**Cart.** Tap a spreadsheet row → **cart**. Checkout and pay **from the cart**. Floor / room service is **+ AV€ 3.00**. The task is created **only after pay**. Pay cuts **stock left**. Customer task: **ETA + state**, no DO, no PROBLEM. States: on the making by vendor → waiting delivery agent → delivered to agent → on the way → waiting at your doorstep. Vendor READY / agent GOT IT / ON THE WAY / AT THE DOOR / RETURN. Customer I HAVE IT at the door.
 
 **Delivery.** Only **Astranov Delivery Agents** who registered on SpaceNet and listed a **starting base** (lat/lng, presence not off). No mail. No pick up. No DoorDash. No fake “Astranov associates.” No dummy carrier named Astranov. If no agent is present near you: say so, offer **CALL SHOP**. After a real agent: **CALL SHOP** and **CALL AGENT** to verify. Tasks: vendor/driver stages only on the phone that listed that shop or base. Customer sees ETA and state — not “Mark boxed.”
 
@@ -96,20 +102,21 @@ This block **overrides** every older note in this file if they fight. Do not mak
 **Mic.** Tap to talk. **Glows while it listens.** Tap again to shut it. Does not loop. Does not listen while she is speaking (that made Android beep and hear itself). Chrome may chirp once per tap — that is the browser.
 
 **Search / hunt — both paths, both must work.**
-- Typing or talking **hunts the map immediately**. Grok talks **in parallel**. Do not wait on Grok. Do not wait on Overpass. Grok abort **8s**.
-- Hunt around **GPS (`here`)**, not the last map tap (`aim`). 40 km, then the nearest eight.
+- Typing or talking hunts. Grok talks **in parallel** and may **drop real lat/lng pins**. Do not wait on Overpass. Grok abort **14s**.
+- Cuisine hunt around **GPS (`here`)**, 40 km, then the nearest eight.
+- **Brand / named hunt is global by name.** No GPS-city suffix. No Photon lat bias. Name must contain the query. Grok `places[]` merge even if far from GPS.
 - Photon first, raw words. Overpass is extra, never the gate.
-- **Results glow on the city map** (gold pins, cap 8). **No vendor list** flooding the dock. Tap a pin = that shop.
-- If pins are already on the map, **Grok must not restart the hunt** and wipe them.
-- Greetings (`hi` / `hello`) do not hunt. Named shops already on screen can be spoken as a tap.
+- **Results glow on the city map** (gold pins, cap 8). **No vendor list** flooding the dock. Tap a pin = multi-menu or that shop if listed.
+- If pins are already on the map, **Grok must not wipe them** — merge.
+- Greetings (`hi` / `hello`) do not hunt.
 
-**Shop card.** Tap a pin → that shop, not a fresh list of other shops. Menu with **photo and price**. Live listed menu first. Else crawl. Else Grok. Else SAMPLE (sample pizza photo, sample euro prices) **marked SAMPLE**.
+**Shop card.** Listed pin → spreadsheet menu (photo, description, AV€, hours, initial, left). Unlisted pin → multi-menu to list it. SAMPLE only if they have no listed rows, and **marked SAMPLE**.
 
-**Crawl.** `/api/place` reads the shop’s **own website** and public web for phone, email, site, menu lines. **Not Google** (no key, ToS). OSM tags first. CALL / EMAIL / SITE if they exist. Site dishes become **our** menu, not SAMPLE. Cache one day on the device.
+**Crawl.** `/api/place` may read the shop’s **own website** for a phone. **Not Google**. CALL if a real official telephone exists. No EMAIL chip. No SITE chip.
 
 **Bond.** After a shop (and after a driver): **deep-blue neon bowed arc** YOU → shop → driver. That is the relationship. A separate **cyan dashed** line is the road. You-dot label is **YOU**, not a municipality name.
 
-**Arc and task.** Tap the **arc** or the **gold pin** → the job. Tap the **task** (not only DO) → expand: ladder **paid → picked → boxed → moving → handed → verified**, **percent done**, shop, driver, how, hold, locked AV€. DO still advances. PROBLEM / DISPUTE still there.
+**Arc and task.** Tap the **arc** or the **gold pin** → the job: state, ETA, percent, shop, driver, locked AV€, glowing cash. No DO / PROBLEM on the customer.
 
 **Currency.** **AV€** (Astranov Coins), **1 to 1 euro**. Top island = brand + V1 + live AV€. Tap amount → money / mining panel. Owner treasury **3,000,000 AV€**. Jobs **lock** AV€ in escrow.
 
@@ -120,6 +127,7 @@ This block **overrides** every older note in this file if they fight. Do not mak
 **Calls.** Honest. Wait for the other peer. Do not say Connected with only the local camera. Arc between the two points.
 
 **Justice.** Clocks after pick too. 2× hold refunds. DISPUTE → Grok. Nobody is the default loser. SpaceNet takes nothing from a failed job.
+
 
 ---
 
@@ -158,9 +166,9 @@ If they ask for the best among listed shops, Grok **picks** (`act=pick`). Do not
 
 After a shop (and after a driver): a **deep-blue neon bond arc** (bowed, signature, YOU → shop → driver) marks the relationship. A separate cyan dashed line is the road. The you-dot says YOU, not a municipality name.
 
-Tap the **arc** or the **vendor pin**: open the job. Task tap shows the ladder (paid → picked → boxed → moving → handed → verified), percent done, shop and driver, not just DO / PROBLEM. Vendor pin researches OSM phone, email, website — CALL / EMAIL / SITE if they exist.
+Tap the **arc** or the **vendor pin**: open the job. Task tap shows state, ETA, percent, shop, driver, locked AV€ — not DO / PROBLEM for the customer. CALL only if an official telephone exists.
 
-Tap a shop → `/api/place` crawls that shop’s **own website** (and public web, not Google) for phone, email, and menu lines. CALL / EMAIL / SITE if found. Menu items from the site are ours, not SAMPLE. OSM first, crawl fills the gaps. Cache one day on the device.
+Tap a shop → listed spreadsheet menu first. Unlisted → multi-menu to list it. `/api/place` may find a phone on the shop’s own site. **CALL only.** No EMAIL. No SITE chip. Not Google.
 
 Chrome (GPS, LAYER, TASKS, VENDORS, +, mic, money): **hold 3 seconds** → it bounces, goes loose. Then throw it (flick), pinch to resize, tap to cycle shape (round / pill / square). GPS still materializes bottom-right. Pack does not yank a loose solid.
 
