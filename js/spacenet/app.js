@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4078";
+  var VER="4079";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -1930,6 +1930,12 @@
     var parked=loadPlace();
     var isl=shownRect(document.getElementById("island"));
     add(document.getElementById("island"));
+    var pwr=document.getElementById("sn-power");
+    if(pwr && !pwr.classList.contains("loose")){
+      var pw=pwr.offsetWidth||44, ph=pwr.offsetHeight||44;
+      var ppref=parked&&parked.power?{x:parked.power.x,y:parked.power.y,w:pw,h:ph}:{x:pad, y:Math.max(pad, isl?isl.y:pad), w:pw, h:ph};
+      placeSolid(pwr, ppref);
+    } else add(pwr);
     var sup=document.getElementById("sn-support");
     if(sup && !sup.classList.contains("loose")){
       var sw=sup.offsetWidth||44, sh=sup.offsetHeight||44;
