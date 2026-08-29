@@ -392,6 +392,32 @@
       if(el&&p[1]&&!el.value) el.value=p[1];
     });
   }
+  function applyFill(s){
+    if(!s||!card||view!=="shop") return;
+    var dishes=s.dishes||s.items||[];
+    if(s.phone||s.hours||s.note||s.name) fillShopForm(s);
+    if(s.cover){ photos.cover=s.cover; var c=card.querySelector('[data-slot=cover]'); var img=c&&c.parentNode&&c.parentNode.querySelector("img"); if(img){ img.src=s.cover; img.style.display="block"; } }
+    if(s.profile){ photos.profile=s.profile; }
+    if(dishes.length){
+      var grid=card.querySelector("[data-menu]");
+      if(grid){
+        grid.innerHTML=dishHead(true)+dishes.map(function(it){
+          return dishEdit({name:it.name||it.desc,price:it.price,hours:it.hours||s.hours||"",stock0:it.stock0||it.stock||20,stock:it.stock||20,photo:it.photo||""});
+        }).join("");
+      }
+    }
+    talk("Filled from the public listing. Check it, then SAVE.");
+  }
+  function fillFromWorld(){
+    if(view!=="shop"||!at) return;
+    say("Filling from the public listing…");
+    var payload={name:placeName(at), place:placeLine(at)||(at.raw||""), lat:at.lat, lng:at.lng, website:(at.tags&&(at.tags.website||at.tags["contact:website"]))||""};
+    fetch("/api/place",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if(j&&(j.phone||j.hours||(j.items&&j.items.length)||j.cover)) applyFill(j); })
+      .catch(function(){});
+    if(window.SN&&SN.grokListing) SN.grokListing(at);
+  }
 
   function baseRow(){
     return {lat:at&&at.lat, lng:at&&at.lng, place:placeName(at), raw:placeLine(at), t:Date.now(), peer:peerId()};
@@ -929,6 +955,7 @@
         field("note","Notes",{ph:"How to order, what you do"})+
         '<button type="submit" class="go">SAVE</button></form>';
       fillShopForm(at&&(at.tags||at));
+      fillFromWorld();
       return;
     }
     if(view==="drop"){
@@ -1023,7 +1050,8 @@
     listenPeer:listenPeer,
     hang:hang,
     peerId:peerId,
-    canEdit:canEdit,
+    applyFill:applyFill,
+    fillFromWorld:fillFromWorld,
     isAdmin:isAdmin,
     takeStock:takeStock,
     startVideo:startVideo,

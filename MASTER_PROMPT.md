@@ -7,7 +7,7 @@
 **Live:** https://astranov.eu
 **Repo:** notisastranov/astranov.eu · `main`
 **Bar:** `ASTRANOV SPACENET GROK V1`
-**Stamp at this rewrite:** 4068
+**Stamp at this rewrite:** 4069
 **Bar for the product:** a closed task-to-credit loop, or we stop spending money on it.
 
 If rebuild law changes, **edit this file**. Do not create a second markdown file.
@@ -65,7 +65,7 @@ This block **overrides** every older note in this file if they fight. Do not mak
 
 **Leaflet is in the page.** Never serve HTML as JS. Map fail still opens the listing on that globe pin. Tap the Pizzarium dot on the globe to list it. **No bounce.** Leaflet zoom never throws you back to the globe. Hunt a name: one pin, one land, listing menu opens. fitBounds across countries is forbidden. Globe does not close the listing sheet. **Hunt flies there.** Type a name in the field. Globe rotates to that pin, then the city map at street zoom. Hidden map behind the globe is not a find.
 
-**SAVE is on the listing sheet.** Sticky top-right. Close does not save. SAVE writes the pin. **List the place.** Name + pin is enough to LIST SHOP. Spreadsheet rows can come after. Do not block listing because a product row is empty.
+**Fill the vendor from the public listing.** List a vendor → Grok + OSM/site pull Google Business Profile facts (phone, hours, dishes, cover). Check, then SAVE. Never invent a phone. **SAVE is on the listing sheet.** Sticky top-right. Close does not save. SAVE writes the pin. **List the place.** Name + pin is enough to LIST SHOP. Spreadsheet rows can come after. Do not block listing because a product row is empty.
 
 **Drag the PIN.** Hunt pins and the listing PIN are draggable. Hold-menu does not eat the drag. Named hunt does not fit YOU in another city (that zoomed Rhodes to the Balkans). Street zoom. **Pin while listing.** The sheet sits on the bottom. The map above stays live. Tap or **drag the PIN** to set the listing. Form does not close. Form does not wipe. Click the PIN to reopen and edit (owner/admin).
 

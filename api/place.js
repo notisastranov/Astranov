@@ -215,6 +215,37 @@ async function fromDdg(name, place) {
   return { phone: ph[0] || "", email: em[0] || "", web: sites[0] || "", via: "web" };
 }
 
+async function fromOsm(name, lat, lng) {
+  lat = Number(lat);
+  lng = Number(lng);
+  if (!isFinite(lat) || !isFinite(lng) || !name) return {};
+  var safe = String(name).replace(/["\\]/g, " ").slice(0, 40);
+  var q =
+    "[out:json][timeout:8];nwr(around:150," +
+    lat +
+    "," +
+    lng +
+    ')["name"~"' +
+    safe +
+    '",i];out center tags 8;';
+  var txt = await grab("https://overpass.kumi.systems/api/interpreter?data=" + encodeURIComponent(q), 8000);
+  try {
+    var j = JSON.parse(txt);
+    var el = (j.elements || [])[0];
+    var t = (el && el.tags) || {};
+    return {
+      phone: t.phone || t["contact:phone"] || "",
+      hours: t.opening_hours || "",
+      web: t.website || t["contact:website"] || "",
+      cover: t.image || t["image:0"] || "",
+      note: [t["addr:street"], t["addr:housenumber"], t["addr:city"]].filter(Boolean).join(" "),
+      via: "osm",
+    };
+  } catch (_) {
+    return {};
+  }
+}
+
 module.exports = async function handler(req, res) {
   cors(res);
   if (req.method === "OPTIONS") {
@@ -229,7 +260,15 @@ module.exports = async function handler(req, res) {
     res.status(400).json({ ok: false, error: "empty" });
     return;
   }
-  var out = { ok: true, phone: "", email: "", web: website, items: [], via: "" };
+  var out = { ok: true, phone: "", email: "", web: website, hours: "", cover: "", note: "", items: [], via: "" };
+  var osm = await fromOsm(name, b.lat, b.lng);
+  if (osm.phone) out.phone = osm.phone;
+  if (osm.hours) out.hours = osm.hours;
+  if (osm.web && !out.web) out.web = osm.web;
+  if (osm.cover) out.cover = osm.cover;
+  if (osm.note) out.note = osm.note;
+  if (osm.via) out.via = osm.via;
+  if (out.web && !website) website = out.web;
   if (website) {
     var site = await fromSite(website);
     out.phone = site.phone || out.phone;
