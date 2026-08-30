@@ -1,5 +1,5 @@
-/* SpaceNet SW 4081 — shell network-first, tiles on the device. Never serve HTML as JS. */
-var CACHE = "sn-shell-4081";
+/* SpaceNet SW 4082 — shell network-first, tiles on the device. Never serve HTML as JS. */
+var CACHE = "sn-shell-4082";
 var TILES = "sn-tiles-1";
 function isTile(url) {
   return /tile\.openstreetmap\.org|openstreetmap\.fr\/hot|tiles\.maps\.eox\.at|server\.arcgisonline\.com/.test(url);
@@ -7,10 +7,17 @@ function isTile(url) {
 function isAsset(url) {
   return /\/js\/|\.js(\?|$)|\/css\/|\.css(\?|$)|leaflet/.test(url);
 }
-function withLeaveFlat(html) {
-  if (!html || html.indexOf("leave-flat.js") !== -1) return html;
-  if (html.indexOf("leaflet.js") === -1) return html;
-  return html.replace(/leaflet\.js(\?v=[^"']*)?"><\/script>/, "leaflet.js$1\"></script>\n<script src=\"/js/spacenet/leave-flat.js?v=4081\"></script>");
+function withShell(html) {
+  if (!html || html.indexOf("leaflet.js") === -1) return html;
+  if (html.indexOf("leave-flat.js") === -1) {
+    html = html.replace(/leaflet\.js(\?v=[^"']*)?"><\/script>/, "leaflet.js$1\"></script>\n<script src=\"/js/spacenet/leave-flat.js?v=4082\"></script>\n<script src=\"/js/spacenet/wallet.js?v=4082\"></script>");
+  } else if (html.indexOf("wallet.js") === -1) {
+    html = html.replace(/leave-flat\.js(\?v=[^"']*)?"><\/script>/, "leave-flat.js$1\"></script>\n<script src=\"/js/spacenet/wallet.js?v=4082\"></script>");
+  }
+  if (html.indexOf("/js/spacenet/auth.js") === -1 && html.indexOf("app.js") !== -1) {
+    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/auth.js?v=4082\"></script>");
+  }
+  return html;
 }
 self.addEventListener("install", function (e) {
   self.skipWaiting();
@@ -52,7 +59,7 @@ self.addEventListener("fetch", function (e) {
       return res.text().then(function (html) {
         var h = new Headers(res.headers);
         h.delete("content-length");
-        return new Response(withLeaveFlat(html), { status: res.status, statusText: res.statusText, headers: h });
+        return new Response(withShell(html), { status: res.status, statusText: res.statusText, headers: h });
       });
     }).catch(function () {
       return caches.match(req).then(function (hit) { return hit || caches.match("/"); });
