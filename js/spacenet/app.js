@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4080";
+  var VER="4087";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -302,14 +302,41 @@
       web: t.website||t["contact:website"]||t.url||""
     };
   }
-  var moveSpeed=0, moveAt=0, moveWatch=0;
+  var moveSpeed=0, moveAt=0, moveWatch=0, lastPan=0, youTrusted=false;
+  function suspectGeo(p){
+    if(!p) return true;
+    if(p.ip) return true;
+    var acc=Number(p.acc!=null?p.acc:p.accuracy);
+    if(isFinite(acc) && acc>400) return true;
+    return false;
+  }
   function watchMove(){
     if(!navigator.geolocation || moveWatch) return;
+    if(!here || !youTrusted) return;
     try{
       moveWatch=navigator.geolocation.watchPosition(function(p){
-        moveSpeed=Number(p.coords.speed); if(!isFinite(moveSpeed)) moveSpeed=0;
+        var c=p&&p.coords; if(!c) return;
+        var lat=+c.latitude, lng=+c.longitude, acc=Number(c.accuracy);
+        moveSpeed=Number(c.speed); if(!isFinite(moveSpeed)) moveSpeed=0;
         moveAt=Date.now();
-      }, function(){}, {enableHighAccuracy:true, maximumAge:2500, timeout:20000});
+        if(!isFinite(lat)||!isFinite(lng)) return;
+        if(isFinite(acc) && acc>250 && moveSpeed<1) return;
+        var prev=here;
+        here={lat:lat,lng:lng,acc:acc}; hereAt=Date.now();
+        if(hereName) here.name=hereName;
+        if(map&&window.L&&cityEl&&cityEl.classList.contains("on")){
+          try{
+            if(hereMark&&hereMark.setLatLng) hereMark.setLatLng([lat,lng]);
+            else paintMapMarks(window.L, selected);
+          }catch(e){}
+          var jumped=prev&&km(prev,here)>0.025;
+          if((moveSpeed>=1.5 || jumped) && Date.now()-lastPan>700){
+            lastPan=Date.now();
+            try{ map.panTo([lat,lng], {animate:true, duration:0.35}); }catch(e){}
+          }
+        }
+        needTick();
+      }, function(){}, {enableHighAccuracy:true, maximumAge:1000, timeout:20000});
     }catch(e){}
   }
   function isMoving(){
@@ -1728,12 +1755,13 @@
     if(quiet){ if(name) say("You're in "+name+"."); return; }
     talk((name?("You're in "+name+"."):"Position locked.")+" Wrong place? Click the map to set location manually. The order stays.");
   }
-  function correctHere(){
+  function correctHere(openMap){
     correctingHere=true;
     paintFixBtn();
     if(menuEl) menuEl.classList.remove("on");
-    talk("Tap the map where you are. Or type your city. The order stays.");
+    talk("Is this you? Tap the map where you are, or type your city. Landline internet often guesses the wrong country.");
     if(inEl){ inEl.placeholder="Your city or street"; try{ inEl.focus(); }catch(e){} }
+    if(openMap===false) return;
     var p=here||aim||facingPoint();
     if(viewLevel()==="globe") showNational(p);
     else if(map) showCity(p);
@@ -1741,6 +1769,8 @@
   function applyHere(p, why){
     if(!p||!isFinite(p.lat)) return;
     correctingHere=false;
+    youTrusted=true;
+    p.ip=false; p.acc=0;
     paintFixBtn();
     if(inEl) inEl.placeholder="Talk to Astranov SpaceNet Grok";
     lockHere(p, true, true).then(function(){
@@ -1761,7 +1791,8 @@
   }
   function lockHere(p, snap, quiet){
     if(!p||!isFinite(p.lat)) return Promise.resolve(null);
-    here={lat:+p.lat,lng:+p.lng}; hereAt=Date.now(); watchMove();
+    here={lat:+p.lat,lng:+p.lng,acc:p.acc,ip:!!p.ip}; hereAt=Date.now();
+    if(!suspectGeo(p)) { youTrusted=true; watchMove(); }
     var g=document.getElementById("gps");
     if(g){ g.classList.remove("busy"); g.classList.add("on"); }
     if(snap!==false){ lookAt(here); dist=1.65; }
@@ -1776,23 +1807,25 @@
     if(locating) return locating;
     if(!quiet) say("Finding you…");
     var g=document.getElementById("gps"); if(g) g.classList.add("busy");
-    locating=geoPos({enableHighAccuracy:true,timeout:8000,maximumAge:30000}).catch(function(){
-      return geoPos({enableHighAccuracy:false,timeout:14000,maximumAge:600000});
+    locating=geoPos({enableHighAccuracy:true,timeout:8000,maximumAge:5000}).catch(function(){
+      return geoPos({enableHighAccuracy:false,timeout:14000,maximumAge:15000});
     }).then(function(pos){
       locating=null;
-      return lockHere({lat:pos.coords.latitude,lng:pos.coords.longitude}, snap, quiet);
+      var acc=Number(pos.coords&&pos.coords.accuracy);
+      var p={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:acc};
+      if(suspectGeo(p)){
+        if(g) g.classList.remove("busy","on");
+        talk("This looks like internet location, not GPS. Tap the map where you really are, or type your city.");
+        correctHere(false);
+        return lockHere(p, false, true);
+      }
+      return lockHere(p, snap, quiet);
     }).catch(function(){
       locating=null;
-      return ipLocate().then(function(p){
-        if(!p){
-          if(g) g.classList.remove("busy","on");
-          if(!quiet) talk("No GPS lock on this device. Click the map to set location. The order stays.");
-          correctHere();
-          return here||undefined;
-        }
-        if(!quiet) say("Network location…");
-        return lockHere(p, snap, quiet);
-      });
+      if(g) g.classList.remove("busy","on");
+      talk("No GPS lock. Tap the map where you are, or type your city. I will not guess from the landline.");
+      correctHere(false);
+      return here||undefined;
     });
     return locating;
   }
@@ -1802,12 +1835,18 @@
     var g=document.getElementById("gps");
     if(g){ g.classList.remove("on"); g.classList.add("busy"); }
     say("GPS…");
-    var fresh=here && hereAt && (Date.now()-hereAt<120000);
+    var fresh=here && youTrusted && hereAt && (Date.now()-hereAt<20000);
     var jobp=fresh?Promise.resolve(here):locate(true, false);
     jobp.then(function(p){
-      if(!p){ if(g) g.classList.remove("busy"); talk("No GPS lock. Click the map to set location. The order stays."); correctHere(); return; }
+      if(!p){ if(g) g.classList.remove("busy"); talk("No GPS lock. Tap the map where you are."); correctHere(false); return; }
+      if(suspectGeo(p)){
+        if(g) g.classList.remove("busy");
+        talk("This is not a GPS lock. Tap the map where you are, or type your city.");
+        correctHere(false);
+        return;
+      }
       if(g){ g.classList.remove("busy"); g.classList.add("on"); }
-      aim=p;
+      aim=p; youTrusted=true; watchMove();
       reverseHere().then(function(){
         startFly(p, function(){ showCity(p); var w=pendingHunt; pendingHunt=null; if(w) hunt(w, p); else showAround(p); }, 1600, 1.16);
       });
@@ -2092,13 +2131,9 @@
   function needTick(){ if(tickOn) return; tickOn=true; requestAnimationFrame(tick); }
   function tick(){ tickOn=false; try{ tickFly(); if(!drag && !pinch && !fly){ yaw+=spin; pitch=Math.max(-1.15,Math.min(1.15,pitch+pitchSpin)); spin*=0.988; pitchSpin*=0.988; if(Math.abs(spin)<0.00018) spin=0; if(Math.abs(pitchSpin)<0.00018) pitchSpin=0; } var moving=!!(drag||pinch||fly||Math.abs(spin)>0.00018||Math.abs(pitchSpin)>0.00018); var sig=yaw.toFixed(4)+"|"+pitch.toFixed(4)+"|"+dist.toFixed(3)+"|"+(here&&here.lat)+"|"+(aim&&aim.lat)+"|"+(selected&&selected.id)+"|"+globeMarks.length+"|"+jobFill().toFixed(2); if(moving || sig!==drawSig){ drawSig=sig; if(canvas){ var ctx=canvas.getContext("2d"); if(ctx){ ctx.fillStyle="#02040a"; ctx.fillRect(0,0,canvas.width,canvas.height); var w=canvas.width,h=canvas.height,cx=w*0.5,cy=h*0.46,R=Math.min(w,h)*0.42/dist; drawGrid(ctx,cx,cy,R); drawPin(ctx,here,hereName||"YOU","#4df0ff",cx,cy,R); if(aim) drawPin(ctx,aim,aim.name||"PIN","#ff8ad4",cx,cy,R); if(vendors) vendors.slice(0,8).forEach(function(v){ drawPin(ctx,v,v.name||"","#ff8ad4",cx,cy,R); }); if(selected) drawPin(ctx,selected,selected.name,"#ffd85a",cx,cy,R); if(here&&selected) drawBond3d(ctx,here,selected,cx,cy,R); globeMarks.slice(0,8).forEach(function(x){ var r=x.row, col=x.kind==="driver"?"#4df0ff":x.kind==="post"?"#9dffb0":x.kind==="drop"?"#ff8ad4":"#ffd85a"; drawPin(ctx,r,x.kind==="driver"?((r.name||"")+" base"):(r.name||r.label||x.kind),col,cx,cy,R); }); } } } }catch(e){} if(drag||pinch||fly||Math.abs(spin)>0.00018||Math.abs(pitchSpin)>0.00018) needTick(); }
   function autoArrive(){
-    if(autoFlew) return;
-    if(cityEl&&cityEl.classList.contains("on")) return;
-    if(document.getElementById("sn-sheet")&&document.getElementById("sn-sheet").classList.contains("on")) return;
     autoFlew=true;
-    goHere();
   }
-  function boot(){ if(permsTried) return; permsTried=true; var returning=/[?&]paypal=/.test(location.search||""); handlePayPalReturn().then(function(){ if(returning) return locate(true); }); askMic(); watchMove(); if(window.SNWork&&SNWork.listenPeer) setTimeout(function(){ SNWork.listenPeer(); },800); setTimeout(autoArrive, 3000); }
+  function boot(){ if(permsTried) return; permsTried=true; var returning=/[?&]paypal=/.test(location.search||""); handlePayPalReturn().then(function(){ if(returning) return locate(true); }); askMic(); if(window.SNWork&&SNWork.listenPeer) setTimeout(function(){ SNWork.listenPeer(); },800); }
   function repaint(){ if(map&&window.L) paintMapMarks(window.L, selected); }
   window.SN={ver:"V1",run:run,grokListing:grokListing,locate:locate,goHere:goHere,listen:listen,hunt:hunt,avc:avcGet,openPlace:openPlace,hands:hands,showCity:showCity,showNational:showNational,showMap:showMap,showCall:showCall,repaint:repaint,talk:talk,say:say,nameAim:nameAim,km:km,selectVendor:selectVendor,startOrder:startOrder,pack:pack,openMenu:openMenu,minMenu:minMenu,syncTasks:syncTasks,toggleTasks:toggleTasks,openTasks:openTasks,tickJustice:tickJustice,settle:settle,setLayer:setLayer,openCash:openCash,paintMoney:paintMoney,markStage:markStage,ingestJobs:ingestJobs,isMoving:isMoving,liveEscrow:liveEscrow,watchMove:watchMove,applyHere:applyHere,openPinMenu:openPinMenu,correctHere:correctHere};
   if(form) form.addEventListener("submit", function(e){ e.preventDefault(); var v=inEl&&inEl.value; if(inEl) inEl.value=""; run(v); });
