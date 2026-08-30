@@ -1,4 +1,4 @@
-/* SpaceNet auth 4091 — Google via the YOU pill. Phone stored unverified. */
+/* SpaceNet auth 4093 — Google via the YOU pill. Phone stored unverified. */
 (function(){
   var SB="https://lkoatrkhuigdolnjsbie.supabase.co";
   var ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb2F0cmtodWlnZG9sbmpzYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODIwOTIsImV4cCI6MjA5NDQ1ODA5Mn0.qf6Kg93YLJ0coTdVQa4baU0ppOdFY5WkmVzMvEV6ejI";
@@ -108,7 +108,12 @@
       "#sn-me-sheet .who.out span{color:#8ec8d8}"+
       "#sn-me-sheet button.go{display:block;width:100%;height:44px;margin:8px 0 0;border:1px solid rgba(126,233,255,.55);background:rgba(4,16,28,.9);color:#7ee9ff;font:800 13px system-ui;border-radius:12px;letter-spacing:.08em}"+
       "#sn-me-sheet input{display:block;width:100%;height:40px;margin:8px 0 0;padding:0 10px;border:1px solid rgba(126,233,255,.28);background:rgba(4,16,28,.9);color:#e8fbff;border-radius:10px;font:500 14px system-ui}"+
-      "#sn-me-sheet .note{margin:8px 0 0;font:500 12px/1.35 system-ui;color:#8ec8d8}";
+      "#sn-me-sheet .note{margin:8px 0 0;font:500 12px/1.35 system-ui;color:#8ec8d8}"+
+      "#sn-me-sheet .card{max-height:min(72vh,calc(100vh - 110px));overflow:auto}"+
+      "#sn-me-sheet .icn-ttl{margin:14px 0 6px;font:800 10px/1 system-ui;letter-spacing:.16em;color:#7ee9ff}"+
+      "#sn-me-sheet .icons{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;max-height:168px;overflow:auto}"+
+      "#sn-me-sheet .icons b{height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:10px;border:1px solid rgba(126,233,255,.28);background:rgba(4,16,28,.9)}"+
+      "#sn-me-sheet .icons b.on{border-color:#4df0ff;box-shadow:0 0 10px #4df0ff}";
     document.head.appendChild(s);
   }
   function face(u){
@@ -180,7 +185,15 @@
         :'<button type="button" class="go" data-act="google">GOOGLE</button>')+
       '<input id="sn-me-phone" inputmode="tel" placeholder="Phone (unverified)" value="'+String(tel).replace(/"/g,"")+'">'+
       '<button type="button" class="go" data-act="phone">SAVE PHONE</button>'+
+      '<div class="icn-ttl">MAP ICON</div><div class="icons">'+iconGrid()+'</div>'+
       '<p class="note">'+(inNow?"Signed in with Google. Phone waits for Twilio.":"Sign in with Google. Each wallet is yours. Starts at zero.")+"</p>";
+  }
+  function iconGrid(){
+    var cur=(window.SNYou&&SNYou.get&&SNYou.get())|| (function(){ try{ return localStorage.getItem("sn:you-icon")||"🛵"; }catch(e){ return "🛵"; } })();
+    var list=(window.SNYou&&SNYou.list&&SNYou.list())||["🛵","🏍️","🚲","🚴","🛴","🚗","🚕","🚙","🚐","🚚","🚛","🚌","🚶","🏃","😊","😎","🧑","👨","👩"];
+    return list.map(function(ch){
+      return '<b data-act="icon" data-icon="'+ch+'" class="'+(ch===cur?"on":"")+'">'+ch+"</b>";
+    }).join("");
   }
   function openMe(){
     css();
@@ -200,6 +213,14 @@
           var inp=document.getElementById("sn-me-phone");
           savePhone(inp&&inp.value);
           fillBody();
+          return;
+        }
+        if(act==="icon"){
+          var ic=b.getAttribute("data-icon")||"🛵";
+          try{ localStorage.setItem("sn:you-icon", ic); }catch(e){}
+          if(window.SNYou&&SNYou.set) SNYou.set(ic);
+          fillBody();
+          talk("That's you on the map.");
         }
       });
     }
