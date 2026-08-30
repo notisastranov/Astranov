@@ -7,6 +7,11 @@ function isTile(url) {
 function isAsset(url) {
   return /\/js\/|\.js(\?|$)|\/css\/|\.css(\?|$)|leaflet/.test(url);
 }
+function withLeaveFlat(html) {
+  if (!html || html.indexOf("leave-flat.js") !== -1) return html;
+  if (html.indexOf("leaflet.js") === -1) return html;
+  return html.replace(/leaflet\.js(\?v=[^"']*)?"><\/script>/, "leaflet.js$1\"></script>\n<script src=\"/js/spacenet/leave-flat.js?v=4081\"></script>");
+}
 self.addEventListener("install", function (e) {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(["/"]); }).catch(function () {}));
@@ -41,7 +46,15 @@ self.addEventListener("fetch", function (e) {
     return;
   }
   e.respondWith(
-    fetch(req, { cache: "no-store" }).then(function (res) { return res; }).catch(function () {
+    fetch(req, { cache: "no-store" }).then(function (res) {
+      var ct = (res.headers && res.headers.get("content-type")) || "";
+      if (ct.indexOf("text/html") === -1) return res;
+      return res.text().then(function (html) {
+        var h = new Headers(res.headers);
+        h.delete("content-length");
+        return new Response(withLeaveFlat(html), { status: res.status, statusText: res.statusText, headers: h });
+      });
+    }).catch(function () {
       return caches.match(req).then(function (hit) { return hit || caches.match("/"); });
     })
   );
