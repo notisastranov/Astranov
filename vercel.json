@@ -60,6 +60,7 @@
     { "source": "/investors/", "destination": "/investors/index.html" },
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" },
-    { "source": "/((?!api/|js/|icon|manifest|assets/|media/|investors|presence|exchange|sw\\.js|briefings/|privacy|terms|robots|favicon).*)", "destination": "/index.html" }
+    { "source": "/opt-in", "destination": "/opt-in.html" },
+    { "source": "/((?!api/|js/|icon|manifest|assets/|media/|investors|presence|exchange|sw\\.js|briefings/|privacy|terms|opt-in|robots|favicon).*)", "destination": "/index.html" }
   ]
 }

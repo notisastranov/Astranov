@@ -6,12 +6,27 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://astranov.eu/privacy.html</loc>
+    <loc>https://astranov.eu/privacy</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://astranov.eu/terms</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://astranov.eu/opt-in</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://astranov.eu/opt-in-proof.png</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://astranov.eu/terms.html</loc>
+    <loc>https://astranov.eu/opt-in-sms.png</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>

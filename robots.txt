@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://astranov.eu/sitemap.xml
