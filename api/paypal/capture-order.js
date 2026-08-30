@@ -1,5 +1,9 @@
 const { cors, keyed, token, base } = require("./_lib");
 
+const SB = "https://lkoatrkhuigdolnjsbie.supabase.co";
+const SB_ANON =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb2F0cmtodWlnZG9sbmpzYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODIwOTIsImV4cCI6MjA5NDQ1ODA5Mn0.qf6Kg93YLJ0coTdVQa4baU0ppOdFY5WkmVzMvEV6ejI";
+
 function readBody(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
   if (typeof req.body === "string") {
@@ -15,6 +19,29 @@ function readBody(req) {
 function firstCapture(j) {
   return j && j.purchase_units && j.purchase_units[0] && j.purchase_units[0].payments &&
     j.purchase_units[0].payments.captures && j.purchase_units[0].payments.captures[0];
+}
+
+async function markPaid(req, cap, eur) {
+  var auth = String((req.headers && (req.headers.authorization || req.headers.Authorization)) || "");
+  if (!/^Bearer\s+\S{20,}/i.test(auth)) return;
+  try {
+    await fetch(SB + "/auth/v1/user", {
+      method: "PUT",
+      headers: {
+        apikey: SB_ANON,
+        Authorization: auth,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        data: {
+          paypal_paid: true,
+          paypal_capture: cap && cap.id,
+          paypal_eur: eur,
+          paypal_at: new Date().toISOString(),
+        },
+      }),
+    });
+  } catch (_) {}
 }
 
 module.exports = async function handler(req, res) {
@@ -66,6 +93,7 @@ module.exports = async function handler(req, res) {
       res.status(502).json({ error: j.message || "capture_failed", details: j });
       return;
     }
+    await markPaid(req, cap, eur);
     res.status(200).json({
       ok: true,
       orderId: j.id || orderId,
@@ -74,6 +102,7 @@ module.exports = async function handler(req, res) {
       avc: eur,
       pool_delta: eur,
       status: cap.status,
+      paid: true,
     });
   } catch (e) {
     res.status(500).json({ error: String(e.message || e) });
