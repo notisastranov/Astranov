@@ -93,6 +93,7 @@ jobs:
           supabase functions deploy gtiles        --no-verify-jwt
           supabase functions deploy investor-budget --no-verify-jwt
           supabase functions deploy vendor-crawler --no-verify-jwt
+          supabase functions deploy sms           --no-verify-jwt
 
       - name: Set Edge Function secrets
         env:

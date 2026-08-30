@@ -130,6 +130,14 @@ serve(async (req) => {
   }
 
   const act = String(body.act || url.searchParams.get('act') || 'send')
+  const OWNER = '+306971930225'
+  if (act === 'test') {
+    const to = normPhone(String(body.to || OWNER))
+    if (to !== OWNER) return json({ ok: false, error: 'not_owner' }, 403)
+    await setStatus(to, 'in')
+    const r = await sendSms(to, 'Astranov SpaceNet test from +18333030833. You are opted in for delivery SMS. Reply HELP for help, STOP to cancel.')
+    return json(r, r.ok ? 200 : 502)
+  }
   if (act === 'send') {
     const to = normPhone(String(body.to || ''))
     const text = String(body.body || body.text || '').slice(0, 320)
