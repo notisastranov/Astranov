@@ -1,4 +1,4 @@
-/* SpaceNet auth 4093 — Google via the YOU pill. Phone stored unverified. */
+/* SpaceNet auth 4094 — Google via the YOU pill. Phone stored unverified. */
 (function(){
   var SB="https://lkoatrkhuigdolnjsbie.supabase.co";
   var ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb2F0cmtodWlnZG9sbmpzYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODIwOTIsImV4cCI6MjA5NDQ1ODA5Mn0.qf6Kg93YLJ0coTdVQa4baU0ppOdFY5WkmVzMvEV6ejI";
@@ -172,6 +172,7 @@
   function fillBody(){
     var body=document.getElementById("sn-me-body");
     if(!body) return;
+    if(window.SNProfile&&SNProfile.paint){ SNProfile.paint(body); return; }
     var u=user();
     var inNow=!!(u&&u.email);
     var name=inNow?(u.name||u.email):"Guest";
