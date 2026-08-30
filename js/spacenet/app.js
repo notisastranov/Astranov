@@ -1,6 +1,6 @@
 (function(){
   if(window.__SN_ALIVE && window.SN && window.SN.run) return;
-  var VER="4079";
+  var VER="4080";
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
@@ -654,6 +654,7 @@
         if(j.driver&&mine[j.driver.id]==="driver"&&j.drop&&isFinite(j.drop.lat)){
           if(powerGet()==="on"){
             talk("Offer. "+fmtAve(Number(j.ride)||Number(j.avc)||0,true)+" on your map. Client: "+dropLine(j.drop)+".");
+            if(j.driver&&j.driver.phone) snSms(j.driver.phone, "Astranov SpaceNet: job offer "+fmtAve(Number(j.ride)||Number(j.avc)||0,true)+". Reply HELP/STOP.");
             openTasks();
             if(viewLevel()!=="city") showCity(j.drop);
             else if(map&&map.flyTo) map.flyTo([j.drop.lat,j.drop.lng], 16, {duration:0.8});
@@ -710,7 +711,7 @@
     else if(status==="boxed") talk("Ready. Waiting for the Astranov agent.");
     else if(status==="with_agent") talk("With the agent.");
     else if(status==="moving") talk("On the way.");
-    else if(status==="door") talk((e.floor?"Room service. ":"")+"Waiting at your doorstep. Up to 3 minutes. Then the agent goes to the next order. Missed goods return to the vendor at the end of the route.");
+    else if(status==="door"){ talk((e.floor?"Room service. ":"")+"Waiting at your doorstep. Up to 3 minutes. Then the agent goes to the next order. Missed goods return to the vendor at the end of the route."); if(e.drop&&e.drop.phone) snSms(e.drop.phone, "Astranov SpaceNet: agent at your door. 3 min wait. Reply HELP/STOP."); }
     else if(status==="handed") talk("At your door.");
     else talk("Stage "+status+".");
   }
@@ -1541,6 +1542,24 @@
   function dial(tel, label){ tel=String(tel||"").replace(/[^\d+]/g,""); if(tel.replace(/\D/g,"").length<10){ talk("No official phone published for "+(label||"them")+"."); return; } location.href="tel:"+tel; }
   function callShop(){ dial(officialTel(selected)||officialTel(job&&job.shop), "the shop"); }
   function callAgent(){ var o=job&&job.carrier, d=o&&driverRow(o.id); dial(officialTel(d)||(o&&o.phone), "the Astranov agent"); }
+  function snSms(to, body){
+    to=String(to||"").replace(/[^\d+]/g,""); if(!to||!body) return;
+    fetch("/api/sms",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({act:"send",to:to,body:String(body).slice(0,320)})}).catch(function(){});
+  }
+  function smsTask(kind){
+    if(!job) return;
+    var shop=officialTel(job.shop)||officialTel(selected);
+    var drop=job.drop&&job.drop.phone;
+    var agent=job.carrier&&(job.carrier.phone||(driverRow(job.carrier.id)&&driverRow(job.carrier.id).phone));
+    var name=(job.shop&&job.shop.name)||"SpaceNet";
+    if(kind==="paid"){
+      if(shop) snSms(shop, "Astranov SpaceNet: paid order at "+name+". Reply HELP/STOP.");
+      if(agent) snSms(agent, "Astranov SpaceNet: new delivery offer "+fmtAve(Number(job.price)||0,true)+". Offerings must be ON. Reply HELP/STOP.");
+      if(drop) snSms(drop, "Astranov SpaceNet: your order at "+name+" is paid. Reply HELP/STOP.");
+    }
+    if(kind==="offer" && agent) snSms(agent, "Astranov SpaceNet: job offer "+fmtAve(Number(job.ride)||Number(job.avc)||0,true)+". Reply HELP/STOP.");
+    if(kind==="door" && drop) snSms(drop, "Astranov SpaceNet: agent at your door. 3 min wait. Reply HELP/STOP.");
+  }
   function offerCalls(){
     var shop=officialTel(selected)||officialTel(job&&job.shop);
     var o=job&&job.carrier, d=o&&driverRow(o.id), agent=officialTel(d)||(o&&o.phone&&String(o.phone).replace(/\D/g,"").length>=10?o.phone:"");
@@ -1671,7 +1690,7 @@
   function spendAvc(price){
     if(!listedAgents().length){ cancelUnpaid("No Astranov Delivery Agent in this area. Not charged."); return; }
     if(paying) return;
-    price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } paying=true; avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; if(job.shop&&job.shop.id&&window.SNWork&&SNWork.takeStock) SNWork.takeStock(job.shop.id, job.cart); } openEscrow(price); clearNeed(); hideCart(); paintCartBtn(); syncTasks(); watchStages(price); offerCalls(); openTasks(); setTimeout(function(){ paying=false; },1200);
+    price=Number(price||(job&&job.price)||10); var bal=avcGet(); if(bal<price){ offerPay(price); return; } paying=true; avcSet(bal-price); if(job){ job.status="paid"; job.paidAvc=price; if(job.shop&&job.shop.id&&window.SNWork&&SNWork.takeStock) SNWork.takeStock(job.shop.id, job.cart); } openEscrow(price); clearNeed(); hideCart(); paintCartBtn(); syncTasks(); watchStages(price); offerCalls(); smsTask("paid"); openTasks(); setTimeout(function(){ paying=false; },1200);
   }
   function watchStages(avc){ if(!job) return; job.status="paid"; talk("Paid. Ride at 1 AV€/km. SpaceNet 3% "+fmtAve(snFee(cartNet()))+" locked. An Astranov agent with a listed base runs this."); }
   function reloadPaypal(eur){ say("PayPal reload…"); try{ sessionStorage.setItem("sn:paypal-job", JSON.stringify(job||{})); sessionStorage.setItem("sn:paypal-reload", String(eur||10)); }catch(e){} fetch("/api/paypal/create-order",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({amount:eur||10,origin:location.origin,reference:"avc-reload"})}).then(function(r){return r.json().then(function(j){j.http=r.status;return j;});}).then(function(j){ if(j&&j.ok&&j.approve){ location.href=j.approve; return; } clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk(j&&j.error==="paypal_not_configured"?"PayPal is not on this host yet.":"PayPal could not start. RELOAD is still here."); }).catch(function(){ clearNeed(); need({id:"reload",label:"RELOAD",run:function(){ reloadPaypal(eur); }}); talk("PayPal could not be reached."); }); }
