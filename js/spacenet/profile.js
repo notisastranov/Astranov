@@ -157,7 +157,7 @@
       '<button type="button" class="go" data-act="copy-promo">COPY LINK</button>'+
       '<p class="note">Lifetime 1% on this book: AV€ '+Number(p.agentAvc||0).toFixed(2)+"</p>";
   }
-  function esc(s){ return String(s||"").replace(/&/g,"&").replace(/</g,"<").replace(/>/g,">").replace(/"/g,"""); })[c]; }); }
+  function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
   function bindSign(c){
     if(!c||c.__bound) return;
     c.__bound=true;
