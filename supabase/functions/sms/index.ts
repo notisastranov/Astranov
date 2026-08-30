@@ -81,14 +81,18 @@ async function sendSms(to: string, body: string) {
   if (!token) return { ok: false, error: 'no_twilio_secret' }
   const dest = normPhone(to)
   const params = new URLSearchParams({ From: from, To: dest, Body: body })
-  const auth = btoa(user + ':' + token)
-  const r = await fetch('https://api.twilio.com/2010-04-01/Accounts/' + sid + '/Messages.json', {
-    method: 'POST',
-    headers: { Authorization: 'Basic ' + auth, 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: params,
-  })
-  const j = await r.json().catch(() => ({}))
-  return { ok: r.ok, status: r.status, sid: j.sid || null, error: j.message || j.error_message || null }
+  async function attempt(userId: string, pass: string) {
+    const r = await fetch('https://api.twilio.com/2010-04-01/Accounts/' + sid + '/Messages.json', {
+      method: 'POST',
+      headers: { Authorization: 'Basic ' + btoa(userId + ':' + pass), 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params,
+    })
+    const j = await r.json().catch(() => ({}))
+    return { ok: r.ok, status: r.status, sid: j.sid || null, error: j.message || j.error_message || null }
+  }
+  let r = await attempt(user, token)
+  if (!r.ok && user !== sid) r = await attempt(sid, token)
+  return r
 }
 
 function keyword(body: string) {
@@ -106,7 +110,21 @@ serve(async (req) => {
   const ct = req.headers.get('content-type') || ''
 
   if (req.method === 'GET') {
-    return json({ ok: true, configured: !!token, from, account: sid.slice(0, 10) + '…' })
+    const { sid, token, from, user } = creds()
+    return json({
+      ok: true,
+      configured: !!token,
+      from,
+      account: sid.slice(0, 10) + '…',
+      shape: {
+        len: token.length,
+        prefix: token.slice(0, 2),
+        json: token.startsWith('{'),
+        colon: token.includes(':'),
+        pipe: token.includes('|'),
+        userPrefix: String(user||'').slice(0, 2),
+      },
+    })
   }
 
   let form: Record<string, string> = {}
