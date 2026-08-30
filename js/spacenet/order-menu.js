@@ -1,22 +1,23 @@
-/* SpaceNet order-menu 4083 — client sees the vendor spreadsheet + qty + ORDER. */
+/* SpaceNet order-menu 4084 — vendor spreadsheet + visible minus/plus and ADD TO CART. */
 (function(){
   var style=document.getElementById("sn-order-css");
   if(!style){
     style=document.createElement("style");
     style.id="sn-order-css";
-    style.textContent=
-      "#sn-live .dish.order,#sn-sheet .dish.order{grid-template-columns:56px minmax(72px,1.4fr) 58px minmax(56px,.8fr) 44px 44px 96px;min-width:520px}"+ 
-      "#sn-live .sn-menu-grid,#sn-sheet .sn-menu-grid,#sn-live{overflow-x:auto;-webkit-overflow-scrolling:touch}"+ 
-      "#sn-live .dish.order .qty,#sn-sheet .dish.order .qty{display:flex;align-items:center;justify-content:flex-end;gap:4px}"+ 
-      "#sn-live .dish.order .qty button,#sn-sheet .dish.order .qty button{width:28px;height:28px;margin:0;padding:0;border:1px solid rgba(126,233,255,.45);background:rgba(4,16,28,.95);color:#7ee9ff;border-radius:8px;font:800 14px system-ui}"+ 
-      "#sn-live .dish.order .qty b,#sn-sheet .dish.order .qty b{min-width:16px;text-align:center;font:800 13px system-ui;color:#e8fbff}"+ 
-      "#sn-order-go{display:block;width:100%;height:48px;margin:8px 0 0;border:0;border-radius:12px;background:#d8f6ff;color:#041018;font:800 15px system-ui;letter-spacing:.04em}"+ 
-      "#sn-order-go[disabled]{opacity:.4}";
     document.head.appendChild(style);
   }
+  style.textContent=
+    "#sn-live .dish.order,#sn-sheet .dish.order{display:flex;flex-direction:column;gap:8px;min-width:0;width:100%;box-sizing:border-box}"+ 
+    "#sn-live .dish.order .cols,#sn-sheet .dish.order .cols{display:grid;grid-template-columns:56px minmax(0,1.6fr) 64px minmax(0,.9fr) 48px 48px;gap:6px;align-items:center;width:100%}"+ 
+    "#sn-live .dish.order .acts,#sn-sheet .dish.order .acts{display:flex;align-items:center;gap:8px;width:100%}"+ 
+    "#sn-live .dish.order .qty,#sn-sheet .dish.order .qty{display:flex;align-items:center;gap:6px;flex:none}"+ 
+    "#sn-live .dish.order .qty button,#sn-sheet .dish.order .qty button{width:40px;height:40px;margin:0;padding:0;border:1px solid rgba(126,233,255,.55);background:#041018;color:#7ee9ff;border-radius:10px;font:800 20px/1 system-ui}"+ 
+    "#sn-live .dish.order .qty b,#sn-sheet .dish.order .qty b{min-width:22px;text-align:center;font:800 16px system-ui;color:#e8fbff}"+ 
+    "#sn-live .dish.order .addcart,#sn-sheet .dish.order .addcart{flex:1;height:40px;margin:0;border:0;border-radius:10px;background:#d8f6ff;color:#041018;font:800 13px/1 system-ui;letter-spacing:.04em}"+ 
+    "#sn-order-go{display:block;width:100%;height:48px;margin:8px 0 0;border:0;border-radius:12px;background:#d8f6ff;color:#041018;font:800 15px system-ui}";
   var cart={};
   var shop=null;
-  function esc(s){ return String(s==null?"":s).replace(/&/g,"&").replace(/</g,"<").replace(/>/g,">").replace(/"/g,"""); }
+  function esc(s){ return String(s==null?"":s).replace(/&/g,"&#38;").replace(/</g,"&#60;").replace(/>/g,"&#62;").replace(/\"/g,"&#34;"); }
   function talk(s){ if(window.SN&&SN.say) SN.say(s); else { var el=document.getElementById("line"); if(el) el.textContent=s; } }
   function fmt(n){ n=Number(n)||0; return "AV€ "+n.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function avc(){ try{ return Math.max(0, Number(localStorage.getItem("sn:avc")||0)); }catch(e){ return 0; } }
@@ -66,8 +67,8 @@
     }
     return shop;
   }
-  function qtyOf(it){ return Number(cart[keyOf(it)]||0)||0; }
   function keyOf(it){ return String(it.id||it.name||""); }
+  function qtyOf(it){ return Number(cart[keyOf(it)]||0)||0; }
   function setQty(it, n){
     var left=it.stock!=null?Number(it.stock):(it.stock0!=null?Number(it.stock0):Infinity);
     n=Math.max(0, Math.round(Number(n)||0));
@@ -76,24 +77,34 @@
     else cart[keyOf(it)]=n;
     paint();
   }
+  function addCart(it){
+    var q=qtyOf(it);
+    setQty(it, q?q:1);
+    talk((it.name||"Item")+" in the cart. "+qtyOf(it)+" x "+fmt(it.price)+".");
+  }
   function lines(){
     var s=listed(currentShop());
     return dishesOf(s).map(function(it){ return {it:it, qty:qtyOf(it), price:Number(it.price)||0}; }).filter(function(x){ return x.qty>0; });
   }
   function total(){ return lines().reduce(function(s,x){ return s+x.price*x.qty; },0); }
-  function headHtml(){ return '<div class="dish sheet head order"><span>Photo</span><span>Description</span><span>AV€</span><span>Hours</span><span>Initial</span><span>Left</span><span>Qty</span></div>'; }
+  function headHtml(){
+    return '<div class="dish sheet head order"><div class="cols"><span>Photo</span><span>Description</span><span>AV€</span><span>Hours</span><span>Initial</span><span>Left</span></div></div>';
+  }
   function rowHtml(it){
     var init=it.stock0!=null?it.stock0:it.stock;
     var left=it.stock!=null?it.stock:init;
     var q=qtyOf(it);
     var img=it.photo?('<img alt="" src="'+esc(it.photo)+'">'):'<span class="pic">+</span>';
     var dead=isFinite(Number(left)) && Number(left)<=0;
-    return '<div class="dish sheet order'+(q?" on":"")+(dead?" dead":"")+'" data-dish="'+esc(keyOf(it))+'">'+img+'<b>'+esc(it.name||it.desc||"")+'</b><span class="px">'+fmt(it.price)+'</span><span class="hrs">'+esc(it.hours||"—")+'</span><span class="st">'+esc(init==null?"":init)+'</span><span class="st">'+esc(left==null?"":left)+'</span><span class="qty"><button type="button" data-act="sub" '+(dead?"disabled":"")+'>−</button><b>'+q+'</b><button type="button" data-act="add" '+(dead?"disabled":"")+'>+</button></span></div>';
+    return '<div class="dish sheet order'+(q?" on":"")+(dead?" dead":"")+'" data-dish="'+esc(keyOf(it))+'">'+ 
+      '<div class="cols">'+img+'<b>'+esc(it.name||it.desc||"")+'</b><span class="px">'+fmt(it.price)+'</span><span class="hrs">'+esc(it.hours||"-")+'</span><span class="st">'+esc(init==null?"":init)+'</span><span class="st">'+esc(left==null?"":left)+'</span></div>'+ 
+      '<div class="acts"><span class="qty"><button type="button" data-act="sub"'+(dead?" disabled":"")+'>-</button><b>'+q+'</b><button type="button" data-act="add"'+(dead?" disabled":"")+'>+</button></span><button type="button" class="addcart" data-act="cart"'+(dead?" disabled":"")+'>ADD TO CART</button></div></div>';
   }
   function gridHtml(s){
     var list=dishesOf(s);
     if(!list.length) return '<p class="note">No rows on this spreadsheet yet.</p>';
-    return '<div class="sn-menu-grid">'+headHtml()+list.map(rowHtml).join("")+'</div><button type="button" id="sn-order-go" data-act="order-go"'+(total()?" ":" disabled")+'>ORDER · '+fmt(total())+'</button>';
+    var n=lines().reduce(function(s,x){ return s+x.qty; },0);
+    return '<div class="sn-menu-grid">'+headHtml()+list.map(rowHtml).join("")+'</div><button type="button" id="sn-order-go" data-act="order-go"'+(n?"":" disabled")+'>'+(n?("ORDER "+n+" "+fmt(total())):"ORDER")+'</button>';
   }
   function bindGrid(root, s){
     if(!root) return;
@@ -104,7 +115,8 @@
       row.addEventListener("click", function(e){
         var act=e.target&&e.target.getAttribute&&e.target.getAttribute("data-act");
         if(act==="add"){ e.preventDefault(); e.stopPropagation(); setQty(it, qtyOf(it)+1); }
-        else if(act==="sub"){ e.preventDefault(); e.stopPropagation(); setQty(it, qtyOf(it)-1); }
+        else if(act==="sub"){ e.preventDefault(); e.stopPropagation(); setQty(it, Math.max(0, qtyOf(it)-1)); }
+        else if(act==="cart"){ e.preventDefault(); e.stopPropagation(); addCart(it); }
       });
     });
     var go=root.querySelector("#sn-order-go,[data-act=order-go]");
@@ -154,11 +166,11 @@
   function complete(){
     var s=listed(currentShop());
     var bag=lines();
-    if(!bag.length){ talk("Set a quantity on a row first."); return; }
+    if(!bag.length){ talk("Add something to the cart first."); return; }
     shop=s;
     var price=Math.round(total()*100)/100;
     var bal=avc();
-    var names=bag.map(function(x){ return x.qty+"× "+x.it.name; }).join(", ");
+    var names=bag.map(function(x){ return x.qty+" x "+x.it.name; }).join(", ");
     try{ localStorage.setItem("sn:last-order", JSON.stringify({shop:s&&s.name, items:bag.map(function(x){ return {name:x.it.name,price:x.price,qty:x.qty}; }), price:price, t:Date.now()})); }catch(e){}
     if(bal<price){
       talk(names+". "+fmt(price)+". You have "+fmt(bal)+". Reload euro, then ORDER again.");
