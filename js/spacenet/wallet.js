@@ -1,14 +1,10 @@
-/* SpaceNet wallet 4105 — personal AV€ only. Pool is owner-only. */
+/* SpaceNet wallet 4120 — personal AV€ only. Phone is on YOU, not here. */
 (function(){
-  var OWNER = {
-    "notisastranov@gmail.com":1
-  };
+  var OWNER = { "notisastranov@gmail.com":1 };
   function read(k, d){ try{ var v=localStorage.getItem(k); return v==null?d:v; }catch(e){ return d; } }
   function write(k,v){ try{ localStorage.setItem(k, String(v)); }catch(e){} }
   function num(k){ return Math.max(0, Number(read(k,"0"))||0); }
-  function user(){
-    try{ return JSON.parse(read("sn:user","null")||"null"); }catch(e){ return null; }
-  }
+  function user(){ try{ return JSON.parse(read("sn:user","null")||"null"); }catch(e){ return null; } }
   function emailOf(){ var u=user(); return String((u&& (u.email||u.user_email))||"").toLowerCase(); }
   function owner(){
     var e=emailOf();
@@ -23,16 +19,9 @@
     var u=user(), isOwner=owner();
     var a=num("sn:avc"), p=num("sn:pool");
     if(!p && a>=1000000){ p=a; write("sn:pool", String(a)); }
-    if(!u){
-      if(a>0 && a>=1000) write("sn:avc","0");
-      return;
-    }
-    if(isOwner){
-      if(a>p) write("sn:pool", String(a));
-      else if(p>a) write("sn:avc", String(p));
-    } else if(a>=1000000){
-      write("sn:avc","0");
-    }
+    if(!u){ if(a>0 && a>=1000) write("sn:avc","0"); return; }
+    if(isOwner){ if(a>p) write("sn:pool", String(a)); else if(p>a) write("sn:avc", String(p)); }
+    else if(a>=1000000) write("sn:avc","0");
   }
   function shown(){
     if(!user()) return 0;
@@ -45,19 +34,13 @@
     s.style.cssText="position:absolute;left:-9999px;top:0;white-space:nowrap;font:"+font;
     s.textContent=text;
     document.body.appendChild(s);
-    var w=s.offsetWidth;
-    s.remove();
-    return w;
+    var w=s.offsetWidth; s.remove(); return w;
   }
   function roomFor(btn){
     var isl=document.getElementById("island");
     if(!isl||!btn) return 9999;
     var used=0, i, ch;
-    for(i=0;i<isl.children.length;i++){
-      ch=isl.children[i];
-      if(ch===btn) continue;
-      used+=ch.getBoundingClientRect().width;
-    }
+    for(i=0;i<isl.children.length;i++){ ch=isl.children[i]; if(ch===btn) continue; used+=ch.getBoundingClientRect().width; }
     return Math.max(0, isl.clientWidth-used-28);
   }
   function euro(n, dec){
@@ -73,18 +56,13 @@
     if(dec && cents) out+=","+(cents<10?"0":"")+cents;
     return out;
   }
-  function bankOpen(){
-    var cash=document.getElementById("sn-cash");
-    return !!(cash && cash.classList.contains("on"));
-  }
+  function bankOpen(){ var cash=document.getElementById("sn-cash"); return !!(cash && cash.classList.contains("on")); }
   function fmt(n){
     n=Number(n)||0;
     var dec=bankOpen();
     var btn=document.getElementById("sn-money");
     var font=(btn&&window.getComputedStyle)?getComputedStyle(btn).font:"800 13px ui-monospace,system-ui";
-    var room=roomFor(btn);
-    var pad=28;
-    var full=euro(n, dec);
+    var room=roomFor(btn), pad=28, full=euro(n, dec);
     if(measure(full,font)+pad<=room) return full;
     if(n>=1000000) return "AV€ "+String(Math.round(n/1000000))+"M";
     return full;
@@ -99,25 +77,22 @@
     btn.title=!user()?"Sign in. Wallets start at zero.":(owner()?"Your pool. Only you see this.":"Your AV€. Only you see this.");
   }
   function cashHtml(){
-    var u=user(), bal=num("sn:avc"), phone=(u&&u.phone)||read("sn:phone","");
-    var bits=[];
+    var u=user(), bal=num("sn:avc"), bits=[];
     if(!u){
       bits.push('<div class="bal">AV€ 0</div>');
-      bits.push('<p>Your wallet starts at zero. Sign in with Google. Phone is stored on your profile until Twilio verifies it.</p>');
+      bits.push('<p>Your wallet starts at zero. Sign in with Google. Phone lives on YOU.</p>');
       bits.push('<button type="button" class="act" data-act="google">CONTINUE WITH GOOGLE</button>');
-      bits.push('<label>Phone (unverified)<input id="sn-phone" type="tel" inputmode="tel" placeholder="+30 …" value="'+String(phone).replace(/"/g,"")+'">');
-      bits.push('<button type="button" class="act" data-act="save-phone">SAVE PHONE</button>');
+      bits.push('<button type="button" class="act" data-act="you">OPEN PROFILE</button>');
       return bits.join("");
     }
     bits.push('<div class="bal">'+fmt(bal)+'</div>');
     bits.push('<p>'+String(u.name||u.email||"You").replace(/[<>]/g,"")+' · '+String(u.email||"").replace(/[<>]/g,"")+'</p>');
-    bits.push('<p>Your coins only. Other people cannot see this.</p>');
+    bits.push('<p>Your coins only. Phone and SMS sit on YOU, not in the bank.</p>');
     if(owner()){
       bits.push('<p>Owner pool: '+fmt(num("sn:pool"))+'</p>');
       bits.push('<p>SpaceNet 3% filed: '+fmt(num("sn:platform"))+'</p>');
     }
-    bits.push('<label>Phone (unverified until Twilio)<input id="sn-phone" type="tel" inputmode="tel" placeholder="+30 …" value="'+String(phone).replace(/"/g,"")+'"></label>');
-    bits.push('<button type="button" class="act" data-act="save-phone">SAVE PHONE</button>');
+    bits.push('<button type="button" class="act" data-act="you">OPEN PROFILE</button>');
     bits.push('<button type="button" class="act" data-act="reload">RELOAD EUR → AV€</button>');
     bits.push('<button type="button" class="act" data-act="out">SIGN OUT</button>');
     return bits.join("");
@@ -129,12 +104,12 @@
     body.onclick=function(e){
       var act=e.target && e.target.getAttribute && e.target.getAttribute("data-act");
       if(act==="google" && window.SNAuth && SNAuth.google) SNAuth.google();
-      if(act==="save-phone"){
-        var inp=document.getElementById("sn-phone");
-        var tel=inp&&inp.value||"";
-        if(window.SNAuth && SNAuth.savePhone) SNAuth.savePhone(tel);
+      if(act==="you"){
+        var cash=document.getElementById("sn-cash");
+        if(cash) cash.classList.remove("on");
+        if(window.SNAuth && SNAuth.open) SNAuth.open();
       }
-      if(act==="reload"){ reload(10); }
+      if(act==="reload") reload(10);
       if(act==="out" && window.SNAuth && SNAuth.out) SNAuth.out();
     };
   }
@@ -166,16 +141,10 @@
       window.SN.user=user;
       window.SN.reload=reload;
       if(SN.paintMoney && !SN.paintMoney.__w){
-        var pm=SN.paintMoney;
         SN.paintMoney=function(flash){
-          lockSeed();
-          paint();
+          lockSeed(); paint();
           var btn=document.getElementById("sn-money");
-          if(flash && btn){
-            btn.classList.remove("glow");
-            void btn.offsetWidth;
-            btn.classList.add("glow");
-          }
+          if(flash && btn){ btn.classList.remove("glow"); void btn.offsetWidth; btn.classList.add("glow"); }
         };
         SN.paintMoney.__w=true;
       }

@@ -1,4 +1,15 @@
-/* SpaceNet 4118 — boot + readable offer + cat choir with space dolphins. */
+/* SpaceNet 4120 — boot extras: English voice + YOU phone SMS. */
+(function(){
+  function add(src){
+    if(document.querySelector('script[src*="'+src.split("/").pop()+'" ]')) return;
+    var s=document.createElement("script");
+    s.src=src;
+    document.head.appendChild(s);
+  }
+  add("/js/spacenet/speak-en.js?v=4120");
+  add("/js/spacenet/phone-verify.js?v=4120");
+  add("/js/spacenet/offer-song.js?v=4118");
+})();
 (function(){
   if(!window.__snOfferRead){
     window.__snOfferRead=true;
@@ -35,11 +46,6 @@
     if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", bootOffer);
     else bootOffer();
     setInterval(bootOffer, 1200);
-  }
-  if(!document.querySelector('script[src*="offer-song.js"]')){
-    var song=document.createElement("script");
-    song.src="/js/spacenet/offer-song.js?v=4118";
-    document.head.appendChild(song);
   }
 })();
 (function(){
@@ -97,21 +103,11 @@
     var el=box();
     var card=document.getElementById("sn-boot-card");
     if(kind==="install"){
-      card.innerHTML=
-        '<div class="ttl">INSTALL SPACENET</div>'+
-        "<p>Overlay on the home screen only works after SpaceNet is installed as an app. Install now, then allow overlay.</p>"+
-        (ios()?"<p>Share → Add to Home Screen. Open it from the icon.</p>":"")+
-        '<div class="row"><button type="button" class="go" data-x="install">INSTALL</button><button type="button" class="no" data-x="later">LATER</button></div>';
+      card.innerHTML='<div class="ttl">INSTALL SPACENET</div><p>Overlay on the home screen only works after SpaceNet is installed as an app. Install now, then allow overlay.</p>'+(ios()?"<p>Share → Add to Home Screen. Open it from the icon.</p>":"")+'<div class="row"><button type="button" class="go" data-x="install">INSTALL</button><button type="button" class="no" data-x="later">LATER</button></div>';
     } else if(kind==="overlay"){
-      card.innerHTML=
-        '<div class="ttl">ALLOW OVERLAY</div>'+
-        "<p>Allow notices so a task can land on top of other apps. This is the overlay.</p>"+
-        '<div class="row"><button type="button" class="ov" data-x="overlay">ALLOW</button><button type="button" class="no" data-x="later">LATER</button></div>';
+      card.innerHTML='<div class="ttl">ALLOW OVERLAY</div><p>Allow notices so a task can land on top of other apps. This is the overlay.</p><div class="row"><button type="button" class="ov" data-x="overlay">ALLOW</button><button type="button" class="no" data-x="later">LATER</button></div>';
     } else {
-      card.innerHTML=
-        '<div class="ttl up">UPDATE SPACENET</div>'+
-        "<p>A new shell is ready. Update now so overlay and tasks match this version.</p>"+
-        '<div class="row"><button type="button" class="go" data-x="update">UPDATE</button><button type="button" class="no" data-x="later">LATER</button></div>';
+      card.innerHTML='<div class="ttl up">UPDATE SPACENET</div><p>A new shell is ready. Update now so overlay and tasks match this version.</p><div class="row"><button type="button" class="go" data-x="update">UPDATE</button><button type="button" class="no" data-x="later">LATER</button></div>';
     }
     el.classList.add("on");
   }
@@ -134,19 +130,11 @@
   function manualInstall(){
     var card=document.getElementById("sn-boot-card");
     if(!card) return;
-    card.innerHTML=
-      '<div class="ttl">INSTALL SPACENET</div>'+
-      (ios()
-        ?"<p>Tap Share, then Add to Home Screen. Open SpaceNet from the new icon, then allow overlay.</p>"
-        :"<p>Chrome menu (⋮) → Install app / Add to Home screen. Open it from the icon, then allow overlay.</p>")+
-      '<div class="row"><button type="button" class="ov" data-x="overlay">I INSTALLED IT</button><button type="button" class="no" data-x="later">LATER</button></div>';
+    card.innerHTML='<div class="ttl">INSTALL SPACENET</div>'+(ios()?"<p>Tap Share, then Add to Home Screen. Open SpaceNet from the new icon, then allow overlay.</p>":"<p>Chrome menu → Install app. Open it from the icon, then allow overlay.</p>")+'<div class="row"><button type="button" class="ov" data-x="overlay">I INSTALLED IT</button><button type="button" class="no" data-x="later">LATER</button></div>';
   }
   function askOverlay(force){
     if(!force && !standalone()) return;
-    if(!window.Notification){
-      show("overlay");
-      return;
-    }
+    if(!window.Notification){ show("overlay"); return; }
     if(Notification.permission==="granted"){
       var el=document.getElementById("sn-boot");
       if(el) el.classList.remove("on");
@@ -161,13 +149,6 @@
           try{ localStorage.setItem("sn:overlay-ok","1"); }catch(e){}
           var el=document.getElementById("sn-boot");
           if(el) el.classList.remove("on");
-          try{
-            if(navigator.serviceWorker && navigator.serviceWorker.ready){
-              navigator.serviceWorker.ready.then(function(reg){
-                if(reg.showNotification) reg.showNotification("SpaceNet overlay on", {body:"Tasks can land on the home screen.", tag:"sn-overlay-ok", silent:true});
-              });
-            }
-          }catch(e){}
         }
       });
     }catch(e){}
@@ -175,9 +156,7 @@
   function doUpdate(){
     window.__snSWReload=true;
     try{
-      if(navigator.serviceWorker && navigator.serviceWorker.controller){
-        navigator.serviceWorker.controller.postMessage("SKIP_WAITING");
-      }
+      if(navigator.serviceWorker && navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage("SKIP_WAITING");
       if(window.__snWaiting && window.__snWaiting.postMessage) window.__snWaiting.postMessage("SKIP_WAITING");
     }catch(e){}
     setTimeout(function(){ location.reload(); }, 180);
@@ -186,43 +165,25 @@
     if(!navigator.serviceWorker) return;
     function arm(reg){
       if(!reg) return;
-      if(reg.waiting && navigator.serviceWorker.controller){
-        window.__snWaiting=reg.waiting;
-        show("update");
-      }
+      if(reg.waiting && navigator.serviceWorker.controller){ window.__snWaiting=reg.waiting; show("update"); }
       reg.addEventListener("updatefound", function(){
         var nw=reg.installing;
         if(!nw) return;
         nw.addEventListener("statechange", function(){
-          if(nw.state==="installed" && navigator.serviceWorker.controller){
-            window.__snWaiting=reg.waiting||nw;
-            show("update");
-          }
+          if(nw.state==="installed" && navigator.serviceWorker.controller){ window.__snWaiting=reg.waiting||nw; show("update"); }
         });
       });
       try{ reg.update(); }catch(e){}
     }
     navigator.serviceWorker.getRegistration().then(arm).catch(function(){});
-    navigator.serviceWorker.addEventListener("controllerchange", function(){
-      if(window.__snSWReload) location.reload();
-    });
+    navigator.serviceWorker.addEventListener("controllerchange", function(){ if(window.__snSWReload) location.reload(); });
   }
   function boot(){
-    css();
-    watchSW();
-    if(standalone()){
-      try{ localStorage.setItem(KEY,"1"); }catch(e){}
-      setTimeout(function(){ askOverlay(true); }, 600);
-      return;
-    }
+    css(); watchSW();
+    if(standalone()){ try{ localStorage.setItem(KEY,"1"); }catch(e){} setTimeout(function(){ askOverlay(true); }, 600); return; }
     setTimeout(function(){ show("install"); }, 400);
   }
-  window.SNInstall={
-    installed:standalone,
-    open:function(){ show("install"); },
-    overlay:function(){ askOverlay(true); },
-    update:function(){ show("update"); }
-  };
+  window.SNInstall={ installed:standalone, open:function(){ show("install"); }, overlay:function(){ askOverlay(true); }, update:function(){ show("update"); } };
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 })();
