@@ -1,4 +1,4 @@
-/* SpaceNet auth 4094 — Google via the YOU pill. Phone stored unverified. */
+/* SpaceNet auth 4098 — Google via the YOU pill. Phone stored unverified. */
 (function(){
   var SB="https://lkoatrkhuigdolnjsbie.supabase.co";
   var ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb2F0cmtodWlnZG9sbmpzYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODIwOTIsImV4cCI6MjA5NDQ1ODA5Mn0.qf6Kg93YLJ0coTdVQa4baU0ppOdFY5WkmVzMvEV6ejI";
@@ -131,7 +131,7 @@
       btn.type="button";
       btn.id="sn-me";
       btn.setAttribute("aria-label","Login");
-      btn.innerHTML='<span class="lbl">YOU</span><span class="tgt"><span class="ph">IN</span></span>';
+      btn.innerHTML='<span class="lbl">LOGIN</span><span class="tgt"><span class="ph">IN</span></span>';
       document.body.appendChild(btn);
       btn.addEventListener("click", function(e){
         e.preventDefault();
@@ -140,7 +140,7 @@
       });
     }
     btn.className=inNow?"in":"out";
-    btn.innerHTML='<span class="lbl">YOU</span><span class="tgt">'+(inNow?face(u):'<span class="ph">IN</span>')+"</span>";
+    btn.innerHTML='<span class="lbl">'+(inNow?"YOU":"LOGIN")+'</span><span class="tgt">'+(inNow?face(u):'<span class="ph">IN</span>')+"</span>";
     placeMe();
     var body=document.getElementById("sn-me-body");
     if(body && document.getElementById("sn-me-sheet") && document.getElementById("sn-me-sheet").classList.contains("on")) fillBody();
