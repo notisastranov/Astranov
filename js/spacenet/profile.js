@@ -255,6 +255,8 @@
     talk("Link copied. "+p.promo);
   }
   function onAct(act, el){
+    if(act==="google"){ if(window.SNAuth&&SNAuth.google) SNAuth.google(); return true; }
+    if(act==="out"){ if(window.SNAuth&&SNAuth.out) SNAuth.out(); paint(document.getElementById("sn-me-body")); return true; }
     if(act==="save"){ saveDetails(); return true; }
     if(act==="sign-clear"){ clearSign(); return true; }
     if(act==="sign-keep"){ lockSign(); return true; }
