@@ -43,7 +43,7 @@
       "#sn-throw{position:fixed;inset:0;z-index:90;display:none;pointer-events:none}"+
       "#sn-throw.on{display:block}"+
       "#sn-throw .card{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 58px);bottom:calc(env(safe-area-inset-bottom) + 88px);transform:translateX(-50%);opacity:0;width:min(92vw,360px);max-height:none;box-sizing:border-box;padding:10px;background:#000;border:2px solid #4df0ff;border-radius:22px;box-shadow:0 0 22px #4df0ff,0 0 48px rgba(77,240,255,.28);pointer-events:auto;color:#4df0ff;font:700 13px/1.35 system-ui;overflow-y:auto;-webkit-overflow-scrolling:touch}"+
-      "#sn-throw.hit .card{opacity:1}"+
+      "#sn-throw.on .card,#sn-throw.hit .card{opacity:1}"+
       "#sn-throw .pay{display:block;text-align:center;font:900 26px/1.1 ui-monospace,system-ui;color:#4df0ff;text-shadow:0 0 10px #4df0ff;padding:0 0 8px;margin:0}"+
       "#sn-throw .pay small{display:block;font:800 9px/1 system-ui;letter-spacing:.2em;margin:0 0 6px;color:#4df0ff}"+
       "#sn-throw .who{display:grid;grid-template-columns:76px 1fr 76px;align-items:start;column-gap:8px;margin:0 0 8px}"+
@@ -418,18 +418,17 @@
         if(x==="1"){ el.classList.remove("on"); }
       });
     }
-    var pay=document.getElementById("sn-throw-pay");
-    var route=document.getElementById("sn-throw-route");
-    if(pay) pay.innerHTML="<small>TASK</small>"+esc(euro(job.price, false));
+    if(!document.getElementById("sn-throw-card")) el.innerHTML='<div class="card" id="sn-throw-card"></div>';
+    el.__job=job;
     paintInfo(job);
-    el.classList.remove("on","hit");
-    void el.offsetWidth;
-    el.classList.add("on");
+    el.classList.add("on","hit");
+    placeCard();
+    requestAnimationFrame(placeCard);
+    setTimeout(placeCard, 50);
+    setTimeout(placeCard, 200);
     flyover();
     flyJob(job);
     overlayNote(job);
-    clearTimeout(el.__hit);
-    el.__hit=setTimeout(function(){ el.classList.add("hit"); }, 1750);
     try{ if(window.SN&&SN.say) SN.say("Task. "+euro(job.price,false)+". "+job.vendor+" to "+job.client+"."); }catch(e){}
     clearTimeout(el.__t);
     el.__t=setTimeout(function(){ el.classList.remove("on"); }, 13500);
@@ -497,6 +496,12 @@
       SN.pack=function(){ orig.apply(this, arguments); park(); };
       SN.pack.__throw=true;
     }
+  }
+  if(!window.__snPlaceBound){
+    window.__snPlaceBound=true;
+    window.addEventListener("resize", function(){ placeCard(); });
+    window.addEventListener("orientationchange", function(){ setTimeout(placeCard, 80); });
+    if(window.visualViewport) visualViewport.addEventListener("resize", function(){ placeCard(); });
   }
   window.SNThrow={throw:function(job){ throwSplash(job||jobOf()); }, park:park, euro:euro, splash:throwSplash};
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", hook);
