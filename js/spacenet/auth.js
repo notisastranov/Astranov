@@ -1,4 +1,4 @@
-/* SpaceNet auth 4098 — Google via the YOU pill. Phone stored unverified. */
+/* SpaceNet auth 4102 — Google via the YOU pill. Phone stored unverified. */
 (function(){
   var SB="https://lkoatrkhuigdolnjsbie.supabase.co";
   var ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb2F0cmtodWlnZG9sbmpzYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODIwOTIsImV4cCI6MjA5NDQ1ODA5Mn0.qf6Kg93YLJ0coTdVQa4baU0ppOdFY5WkmVzMvEV6ejI";
@@ -89,15 +89,15 @@
     var s=document.createElement("style");
     s.id="sn-me-css";
     s.textContent=
-      "#sn-me{position:fixed;left:max(10px,env(safe-area-inset-left));right:auto;bottom:calc(env(safe-area-inset-bottom) + 72px);top:auto;z-index:48;width:var(--u,36px);padding:0;border:0;background:transparent;color:#4df0ff;pointer-events:auto}"+
+      "#sn-me{position:fixed;left:max(10px,env(safe-area-inset-left));right:auto;bottom:calc(env(safe-area-inset-bottom) + 72px);top:auto;z-index:55;touch-action:manipulation;cursor:pointer;width:var(--u,36px);padding:0;border:0;background:transparent;color:#4df0ff;pointer-events:auto}"+
       "#sn-me .lbl{display:block;font:800 8px/1 system-ui;letter-spacing:.2em;text-align:center;margin:0 0 4px;text-shadow:0 0 6px #4df0ff}"+
       "#sn-me .tgt{position:relative;display:flex;align-items:center;justify-content:center;width:var(--u,36px);height:var(--u,36px);margin:0 auto;border-radius:999px;overflow:hidden;border:1.5px solid rgba(77,240,255,.95);background:rgba(4,16,28,.92);box-shadow:0 0 10px rgba(77,240,255,.4)}"+
       "#sn-me img,#sn-me .ph{width:100%;height:100%;object-fit:cover;display:flex;align-items:center;justify-content:center;font:800 11px/1 system-ui;color:#4df0ff}"+
       "#sn-me.in .tgt{box-shadow:0 0 14px rgba(77,240,255,.85)}"+
-      "#sn-me-sheet{position:fixed;inset:0;z-index:72;display:none;pointer-events:none}"+
+      "#sn-me-sheet{position:fixed;inset:0;z-index:80;display:none;pointer-events:none}"+
       "#sn-me-sheet.on{display:block;pointer-events:auto}"+
       "#sn-me-sheet .bg{position:absolute;inset:0;background:transparent}"+
-      "#sn-me-sheet .card{position:absolute;left:50%;bottom:auto;width:min(340px,92vw);transform:translateX(-50%);padding:12px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.45);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.45)}"+
+      "#sn-me-sheet .card{position:absolute;left:50%;top:max(58px,env(safe-area-inset-top));bottom:auto;width:min(360px,94vw);max-height:min(78vh,calc(100vh - 110px));overflow:auto;transform:translateX(-50%);padding:12px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.45);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.45)}"+
       "#sn-me-sheet .bar{display:flex;align-items:center;gap:8px;margin:0 0 10px}"+
       "#sn-me-sheet .ttl{flex:1;font:800 11px/1 system-ui;letter-spacing:.16em;color:#7ee9ff}"+
       "#sn-me-sheet .x{height:36px;padding:0 12px;border:1px solid rgba(126,233,255,.35);background:rgba(4,16,28,.9);color:#e8fbff;border-radius:10px}"+
@@ -121,6 +121,16 @@
     var ch=(u&&(u.name||u.email)||"?").charAt(0).toUpperCase();
     return '<span class="ph">'+ch+"</span>";
   }
+  function bindMe(btn){
+    if(!btn||btn.__snMeClick) return;
+    btn.__snMeClick=true;
+    btn.addEventListener("click", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      if(btn.dataset.skipClick==="1"){ btn.dataset.skipClick=""; return; }
+      openMe();
+    });
+  }
   function paintMe(){
     css();
     var u=user();
@@ -133,12 +143,8 @@
       btn.setAttribute("aria-label","Login");
       btn.innerHTML='<span class="lbl">LOGIN</span><span class="tgt"><span class="ph">IN</span></span>';
       document.body.appendChild(btn);
-      btn.addEventListener("click", function(e){
-        e.preventDefault();
-        if(btn.dataset.skipClick==="1"){ btn.dataset.skipClick=""; return; }
-        openMe();
-      });
     }
+    bindMe(btn);
     btn.className=inNow?"in":"out";
     btn.innerHTML='<span class="lbl">'+(inNow?"YOU":"LOGIN")+'</span><span class="tgt">'+(inNow?face(u):'<span class="ph">IN</span>')+"</span>";
     placeMe();
@@ -172,7 +178,9 @@
   function fillBody(){
     var body=document.getElementById("sn-me-body");
     if(!body) return;
-    if(window.SNProfile&&SNProfile.paint){ SNProfile.paint(body); return; }
+    if(window.SNProfile&&SNProfile.paint){
+      try{ SNProfile.paint(body); return; }catch(e){ console.log(e); }
+    }
     var u=user();
     var inNow=!!(u&&u.email);
     var name=inNow?(u.name||u.email):"Guest";
@@ -227,6 +235,7 @@
     }
     fillBody();
     sh.classList.add("on");
+    talk("Google, phone, then sign and pick a role.");
   }
   function boot(){
     css();
@@ -237,6 +246,17 @@
         write("sn:architect", JSON.stringify([String(j.architect).toLowerCase()]));
       }
     }).catch(function(){});
+    bindMe(document.getElementById("sn-me"));
+    if(!window.__snMeTap){
+      window.__snMeTap=true;
+      document.addEventListener("click", function(e){
+        var b=e.target.closest&&e.target.closest("#sn-me");
+        if(!b) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openMe();
+      }, true);
+    }
     if(!window.__snMePlace){
       window.__snMePlace=true;
       window.addEventListener("resize", placeMe);
