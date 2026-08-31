@@ -42,7 +42,7 @@
       "#sn-tasks-btn.on{display:flex!important}"+
       "#sn-throw{position:fixed;inset:0;z-index:90;display:none;pointer-events:none}"+
       "#sn-throw.on{display:block}"+
-      "#sn-throw .card{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 58px);bottom:calc(env(safe-area-inset-bottom) + 88px);transform:translateX(-50%);opacity:0;width:min(92vw,360px);max-height:none;box-sizing:border-box;padding:10px;background:#000;border:2px solid #4df0ff;border-radius:22px;box-shadow:0 0 22px #4df0ff,0 0 48px rgba(77,240,255,.28);pointer-events:auto;color:#4df0ff;font:700 13px/1.35 system-ui;overflow-y:auto;-webkit-overflow-scrolling:touch}"+
+      "#sn-throw .card{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 58px);bottom:auto;transform:translateX(-50%);opacity:0;width:min(78vw,300px);max-height:min(32vh,240px);box-sizing:border-box;padding:8px 10px;background:#000;border:2px solid #4df0ff;border-radius:18px;box-shadow:0 0 18px #4df0ff;pointer-events:auto;color:#4df0ff;font:700 12px/1.3 system-ui;overflow-y:auto;-webkit-overflow-scrolling:touch}"+
       "#sn-throw.on .card,#sn-throw.hit .card{opacity:1}"+
       "#sn-throw .pay{display:block;text-align:center;font:900 26px/1.1 ui-monospace,system-ui;color:#4df0ff;text-shadow:0 0 10px #4df0ff;padding:0 0 8px;margin:0}"+
       "#sn-throw .pay small{display:block;font:800 9px/1 system-ui;letter-spacing:.2em;margin:0 0 6px;color:#4df0ff}"+
@@ -289,29 +289,21 @@
     var H=Math.round((vv&&vv.height)||window.innerHeight||640);
     var W=Math.round((vv&&vv.width)||window.innerWidth||360);
     var header=12;
-    ["island","top","sn-power","sn-support","sn-tasks-btn"].forEach(function(id){
+    ["island","top"].forEach(function(id){
       var el=document.getElementById(id);
       if(!el) return;
       var r=el.getBoundingClientRect();
       if(r.height<2) return;
-      if(r.bottom<H*0.5) header=Math.max(header, r.bottom);
-    });
-    var floor=H-8;
-    ["dock","cmd","sn-me","sn-gps","line"].forEach(function(id){
-      var el=document.getElementById(id);
-      if(!el) return;
-      var r=el.getBoundingClientRect();
-      if(r.height<2) return;
-      if(r.top>H*0.35) floor=Math.min(floor, r.top);
+      if(r.bottom<H*0.4) header=Math.max(header, r.bottom);
     });
     header=Math.round(header+8);
-    floor=Math.round(floor-8);
-    if(floor-header<180){ header=12; floor=H-12; }
+    var max=Math.min(Math.round(H*0.32), 240);
     card.style.top=header+"px";
-    card.style.bottom=(H-floor)+"px";
+    card.style.bottom="auto";
+    card.style.height="auto";
     card.style.left="50%";
-    card.style.width=Math.min(W-16,360)+"px";
-    card.style.maxHeight=(floor-header)+"px";
+    card.style.width=Math.min(W-24, 300)+"px";
+    card.style.maxHeight=max+"px";
     card.style.transform="translateX(-50%)";
     card.style.overflowY="auto";
     card.style.opacity="1";
