@@ -68,6 +68,10 @@
       "#sn-throw .strip .line{margin:0;padding:2px 0;border-top:1px solid rgba(77,240,255,.22);color:#4df0ff}"+
       "#sn-throw .strip .line:first-of-type{border-top:0;padding-top:0}"+
       "#sn-throw .strip b{color:#4df0ff;letter-spacing:.08em}"+
+      "#sn-throw .acts{display:flex;gap:6px;margin:6px 0 0}"+
+      "#sn-throw .acts button{flex:1;height:40px;border-radius:10px;border:1.5px solid #4df0ff;background:#000;color:#4df0ff;font:800 11px/1 system-ui;letter-spacing:.14em}"+
+      "#sn-throw .acts .yes{background:#4df0ff;color:#000}"+
+      "#sn-throw .acts .no{opacity:.9}"+
       "#sn-perm{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 86px);transform:translateX(-50%);z-index:141;width:min(360px,92vw);padding:12px;border-radius:16px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.45);color:#c6f6ff;font:600 13px/1.35 system-ui;display:none;pointer-events:auto}"+
       "#sn-perm.on{display:block}"+
       "#sn-perm b{display:block;color:#7ee9ff;font:800 11px/1 system-ui;letter-spacing:.16em;margin:0 0 6px}"+
@@ -96,83 +100,53 @@
     var t0=c.currentTime;
     var T=13.5;
     var master=c.createGain();
+    window.__snMaster=master;
     master.gain.setValueAtTime(0.0001, t0);
-    master.gain.exponentialRampToValueAtTime(0.95, t0+0.08);
-    master.gain.setValueAtTime(0.95, t0+12.6);
+    master.gain.exponentialRampToValueAtTime(0.9, t0+0.06);
+    master.gain.setValueAtTime(0.9, t0+12.7);
     master.gain.exponentialRampToValueAtTime(0.0001, t0+T);
-    var comp=c.createDynamicsCompressor();
-    comp.threshold.setValueAtTime(-18, t0);
-    comp.knee.setValueAtTime(12, t0);
-    comp.ratio.setValueAtTime(6, t0);
-    comp.attack.setValueAtTime(0.003, t0);
-    comp.release.setValueAtTime(0.18, t0);
-    master.connect(comp); comp.connect(c.destination);
+    master.connect(c.destination);
 
-    var nLen=Math.floor(c.sampleRate*1.2);
-    var nbuf=c.createBuffer(1,nLen,c.sampleRate), nd=nbuf.getChannelData(0), i;
-    for(i=0;i<nLen;i++) nd[i]=Math.random()*2-1;
-    function noiseTo(filter, lvl){
-      var src=c.createBufferSource();
-      src.buffer=nbuf; src.loop=true;
-      var g=c.createGain(); g.gain.value=lvl;
-      src.connect(filter); filter.connect(g); g.connect(master);
-      src.start(t0); src.stop(t0+T);
-    }
-    function band(type, freq, q, lvl){
-      var f=c.createBiquadFilter();
-      f.type=type; f.frequency.value=freq; f.Q.value=q;
-      noiseTo(f, lvl);
-    }
-    /* full audible floor: 20Hz–16kHz, stays loud the whole 13s */
-    band("lowpass", 90, 0.5, 0.34);
-    band("bandpass", 180, 0.6, 0.22);
-    band("bandpass", 450, 0.7, 0.2);
-    band("bandpass", 1000, 0.8, 0.22);
-    band("bandpass", 2500, 0.8, 0.26);
-    band("bandpass", 5000, 0.7, 0.28);
-    band("bandpass", 8000, 0.7, 0.24);
-    band("highpass", 11000, 0.6, 0.2);
-    band("highpass", 15000, 0.5, 0.16);
-
-    function osc(type, f0, f1, lvl){
+    function ping(at, freq, dur, lvl, type){
       var o=c.createOscillator(), g=c.createGain();
-      o.type=type;
-      o.frequency.setValueAtTime(f0, t0);
-      o.frequency.exponentialRampToValueAtTime(Math.max(40,f1), t0+T-0.4);
-      g.gain.value=lvl;
+      o.type=type||"sine";
+      o.frequency.setValueAtTime(freq, at);
+      g.gain.setValueAtTime(Math.max(0.0001, lvl), at);
+      g.gain.exponentialRampToValueAtTime(0.0001, at+dur);
       o.connect(g); g.connect(master);
-      o.start(t0); o.stop(t0+T);
+      o.start(at); o.stop(at+dur+0.02);
     }
-    osc("sawtooth", 9200, 220, 0.22);
-    osc("sawtooth", 5400, 110, 0.16);
-    osc("sine", 2800, 2800, 0.14); /* presence stays put so it never goes quiet */
-    osc("sine", 4200, 4200, 0.1);
-    osc("triangle", 160, 40, 0.2);
-    osc("sine", 70, 28, 0.24);
-
-    function splash(at, lvl){
-      var hit=c.createBufferSource(); hit.buffer=nbuf;
-      var hp=c.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=600;
-      var lp=c.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=12000;
-      var g=c.createGain();
-      g.gain.setValueAtTime(0.0001, at);
-      g.gain.exponentialRampToValueAtTime(lvl, at+0.02);
-      g.gain.exponentialRampToValueAtTime(lvl*0.35, at+0.45);
-      g.gain.exponentialRampToValueAtTime(0.0001, at+2.2);
-      hit.connect(hp); hp.connect(lp); lp.connect(g); g.connect(master);
-      hit.start(at); hit.stop(at+2.3);
-      var thud=c.createOscillator(), tg=c.createGain();
-      thud.type="sine";
-      thud.frequency.setValueAtTime(120, at);
-      thud.frequency.exponentialRampToValueAtTime(32, at+1.4);
-      tg.gain.setValueAtTime(lvl, at);
-      tg.gain.exponentialRampToValueAtTime(0.0001, at+1.6);
-      thud.connect(tg); tg.connect(master);
-      thud.start(at); thud.stop(at+1.65);
+    function dolphin(at){
+      var k, f;
+      for(k=0;k<5;k++){
+        f=11000+k*900+(k%2?400:0);
+        ping(at+k*0.045, f, 0.035, 0.7, "sine");
+        ping(at+k*0.045+0.008, f*1.12, 0.02, 0.35, "sine");
+      }
     }
-    splash(t0+1.7, 0.85);
-    splash(t0+5.8, 0.55);
-    splash(t0+9.6, 0.4);
+    function whale(at){
+      ping(at, 48, 1.8, 0.85, "sine");
+      ping(at, 36, 2.1, 0.55, "sine");
+      ping(at+0.04, 72, 1.4, 0.4, "triangle");
+    }
+    function sonar(at){
+      ping(at, 980, 1.6, 0.8, "sine");
+      ping(at, 1960, 0.9, 0.35, "sine");
+      ping(at+0.12, 740, 1.3, 0.45, "sine");
+    }
+    var t;
+    for(t=0; t<T-1.2; t+=1.55){
+      whale(t0+t);
+      sonar(t0+t+0.18);
+      dolphin(t0+t+0.55);
+      dolphin(t0+t+0.95);
+    }
+  }
+  function muteThrow(){
+    try{
+      var c=actx||window.__snActx, m=window.__snMaster;
+      if(c&&m) m.gain.exponentialRampToValueAtTime(0.0001, c.currentTime+0.12);
+    }catch(e){}
   }
   function overlayNote(job){
     var title="TASK  "+euro(job.price,false);
@@ -333,7 +307,8 @@
       '<div class="line">'+esc(vName)+" to "+esc(cName)+"</div>"+
       '<div class="line">'+km(job.km||3.2)+" · "+traf+" min in heavy traffic</div>"+
       '<div class="line"><b>'+pay+"</b></div>"+
-      '<div class="line">'+esc(euro(job.price||0,false))+"</div>";
+      '<div class="line">'+esc(euro(job.price||0,false))+"</div>"+
+      '<div class="acts"><button type="button" class="yes" data-x="yes">ACCEPT</button><button type="button" class="no" data-x="no">DECLINE</button></div>';
   }
   function flyJob(job){
     hookMap();
@@ -352,7 +327,8 @@
       job.km=Math.max(3, r.km);
       job.freeMin=r.min;
       job.trafficMin=Math.max(30, Math.round(r.min*2.4));
-      paintInfo(job);
+      el.__job=job;
+    paintInfo(job);
       setTimeout(function(){ hookMap(); drawLine(r.pts.length>2?r.pts:[[shop.lat,shop.lng],[drop.lat,drop.lng]]); }, 650);
     }).catch(function(){
       job.km=Math.max(3.2, haversine(shop, drop));
@@ -381,9 +357,24 @@
           if(window.SN && SN.openTasks) SN.openTasks();
           return;
         }
-        if(x==="take" || x==="1"){
+        if(x==="yes" || x==="take"){
+          muteThrow();
           el.classList.remove("on");
+          try{ if(window.SN&&SN.talk) SN.talk("Accepted."); }catch(err){}
+          return;
         }
+        if(x==="no"){
+          muteThrow();
+          el.classList.remove("on");
+          try{
+            var id=el.__job&&el.__job.id;
+            var list=JSON.parse(localStorage.getItem("sn:tasks")||"[]");
+            localStorage.setItem("sn:tasks", JSON.stringify(list.filter(function(t){ return t.id!==id; })));
+          }catch(err){}
+          try{ if(window.SN&&SN.talk) SN.talk("Declined."); }catch(err){}
+          return;
+        }
+        if(x==="1"){ el.classList.remove("on"); }
       });
     }
     var pay=document.getElementById("sn-throw-pay");
