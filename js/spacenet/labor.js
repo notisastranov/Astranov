@@ -131,7 +131,9 @@
       to:"Any associate",
       km:0,
       t:Date.now(),
-      status:"open"
+      status:"open",
+      lat:(function(){ try{ var p=JSON.parse(localStorage.getItem("sn:place")||"null"); return p&&p.lat; }catch(e){ return null; } })(),
+      lng:(function(){ try{ var p=JSON.parse(localStorage.getItem("sn:place")||"null"); return p&&p.lng; }catch(e){ return null; } })()
     };
     var list=load(); list.unshift(job); save(list);
     mergeTasks(job);
