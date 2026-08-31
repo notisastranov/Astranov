@@ -2,6 +2,47 @@
 (function(){
   if(window.__snChrome) return;
   window.__snChrome=true;
+  function fmtFull(n){
+    n=Number(n)||0;
+    return "AV€ "+n.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function fmtCompact(n){
+    n=Number(n)||0;
+    if(n>=1000000) return "AV€ "+(n/1000000).toFixed(n%1000000?2:0)+"M";
+    return "AV€ "+n.toLocaleString("en-GB",{minimumFractionDigits:n>=1000?0:2,maximumFractionDigits:2});
+  }
+  function fitMoney(){
+    var btn=document.getElementById("sn-money");
+    var isl=document.getElementById("island");
+    if(!btn||!isl) return;
+    if(btn.classList.contains("loose")||btn.classList.contains("drag")) return;
+    var n=0;
+    try{ n=Number(localStorage.getItem("sn:avc")||0); }catch(e){}
+    var used=0;
+    Array.prototype.forEach.call(isl.children, function(ch){
+      if(ch===btn) return;
+      used+=ch.getBoundingClientRect().width;
+    });
+    used+=8;
+    var leftover=Math.max(72, isl.clientWidth-used-16);
+    btn.style.flex="1 1 auto";
+    btn.style.whiteSpace="nowrap";
+    btn.style.overflow="visible";
+    btn.style.maxWidth=leftover+"px";
+    btn.textContent=fmtFull(n);
+    if(btn.scrollWidth>leftover+1) btn.textContent=fmtCompact(n);
+  }
+  function hookMoney(){
+    if(window.SN&&SN.paintMoney&&!SN.paintMoney.__fit){
+      var orig=SN.paintMoney;
+      SN.paintMoney=function(){
+        orig.apply(this, arguments);
+        fitMoney();
+      };
+      SN.paintMoney.__fit=true;
+    }
+    fitMoney();
+  }
   function place(){
     var isl=document.getElementById("island");
     var pwr=document.getElementById("sn-power");
@@ -25,6 +66,7 @@
     }
     park(pwr,"left");
     park(sup,"right");
+    fitMoney();
   }
   function hook(){
     if(window.SN&&SN.pack&&!SN.pack.__chrome){
@@ -36,9 +78,11 @@
       SN.pack.__chrome=true;
     }
     place();
+    hookMoney();
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", hook);
   else hook();
   window.addEventListener("resize", place);
   setInterval(hook, 800);
+  setInterval(fitMoney, 1200);
 })();
