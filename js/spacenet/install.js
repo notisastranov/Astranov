@@ -1,4 +1,4 @@
-/* SpaceNet 4117 — boot: install app, then overlay; offer update when a new shell lands. */
+/* SpaceNet 4118 — boot + readable offer + cat choir with space dolphins. */
 (function(){
   if(!window.__snOfferRead){
     window.__snOfferRead=true;
@@ -35,6 +35,11 @@
     if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", bootOffer);
     else bootOffer();
     setInterval(bootOffer, 1200);
+  }
+  if(!document.querySelector('script[src*="offer-song.js"]')){
+    var song=document.createElement("script");
+    song.src="/js/spacenet/offer-song.js?v=4118";
+    document.head.appendChild(song);
   }
 })();
 (function(){
