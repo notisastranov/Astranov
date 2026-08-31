@@ -1,4 +1,4 @@
-/* SpaceNet wallet 4082 — personal AV€ only. Pool is owner-only. */
+/* SpaceNet wallet 4100 4082 — personal AV€ only. Pool is owner-only. */
 (function(){
   var OWNER = {
     "notisastranov@gmail.com":1
@@ -32,17 +32,44 @@
       write("sn:ave-restored", "4082");
     }
   }catch(e){}
+  function measure(text, font){
+    var s=document.createElement("span");
+    s.style.cssText="position:absolute;left:-9999px;top:0;white-space:nowrap;font:"+font;
+    s.textContent=text;
+    document.body.appendChild(s);
+    var w=s.offsetWidth;
+    s.remove();
+    return w;
+  }
+  function roomFor(btn){
+    var isl=document.getElementById("island");
+    if(!isl||!btn) return 9999;
+    var used=0, i, ch;
+    for(i=0;i<isl.children.length;i++){
+      ch=isl.children[i];
+      if(ch===btn) continue;
+      used+=ch.getBoundingClientRect().width;
+    }
+    return Math.max(0, isl.clientWidth-used-28);
+  }
   function fmt(n){
     n=Number(n)||0;
-    if(n>=1000000) return "AV€ "+(n/1000000).toFixed(n%1000000?2:0)+"M";
-    if(n>=10000) return "AV€ "+Math.round(n).toLocaleString("en-GB");
-    return "AV€ "+n.toLocaleString("en-GB",{minimumFractionDigits:n>=100&&n<1000?0:2,maximumFractionDigits:2});
+    var btn=document.getElementById("sn-money");
+    var font=(btn&&window.getComputedStyle)?getComputedStyle(btn).font:"800 13px system-ui";
+    var room=roomFor(btn);
+    var pad=28;
+    var full="AV€ "+n.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});
+    if(measure(full,font)+pad<=room) return full;
+    var whole="AV€ "+Math.round(n).toLocaleString("en-GB");
+    if(measure(whole,font)+pad<=room) return whole;
+    if(n>=1000000) return "AV€ "+(n/1000000).toFixed(n%1000000?1:0)+"M";
+    if(n>=10000) return "AV€ "+Math.round(n/1000)+"k";
+    return whole;
   }
   function paint(){
     var btn=document.getElementById("sn-money");
     if(!btn) return;
-    var u=user();
-    if(!u){ btn.textContent="LOGIN"; btn.title="Sign in to see your AV€"; return; }
+    if(btn.classList.contains("loose")||btn.classList.contains("drag")) return;
     btn.textContent=fmt(num("sn:avc"));
     btn.title=owner()?"Your AV€. Pool is inside.":"Your AV€";
   }
