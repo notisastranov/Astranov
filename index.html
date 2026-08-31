@@ -18,12 +18,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--sn);outline-off
 #top{top:max(8px,env(safe-area-inset-top));left:0;right:0;padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));box-sizing:border-box}
 #dock{bottom:0;padding:0 10px max(12px,env(safe-area-inset-bottom))}
 #island,#panel{pointer-events:auto}
-#island{display:flex;align-items:center;gap:4px;padding:4px 6px 4px 8px;background:rgba(4,14,28,.78);border:1px solid rgba(80,220,255,.35);border-radius:999px;max-width:calc(100vw - 108px);box-shadow:0 0 22px rgba(40,200,255,.18)}
-#island b{font:800 9px/1 system-ui;letter-spacing:.12em}
+#island{display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(4,14,28,.78);border:1px solid rgba(80,220,255,.35);border-radius:18px;width:100%;max-width:none;box-shadow:0 0 22px rgba(40,200,255,.18)}
+#island b{font:800 13px/1.15 system-ui;letter-spacing:.08em}
 #island .a{color:#4df0ff;text-shadow:0 0 6px #4df0ff}
 #island .s{color:#7ee9ff}
 #island .k{color:#4a7a94}
-#ver{font:800 9px/1 system-ui;color:#4df0ff}
+#ver{font:800 12px/1.15 system-ui;color:#4df0ff}
 #heal{width:6px;height:6px;border-radius:99px;background:#4df0ff;box-shadow:0 0 10px #4df0ff;animation:pulse 1.6s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
 #island #sn-money{position:relative;display:inline-flex;margin-left:auto;align-items:center;justify-content:center;height:24px;min-width:0;margin:0 0 0 2px;padding:0 8px;border-radius:999px;border:1px solid rgba(126,233,255,.7);background:rgba(4,16,28,.94);color:#7ee9ff;font:800 10px/1 system-ui;letter-spacing:.04em;z-index:auto;transform:scale(var(--sc,1))}
