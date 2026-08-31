@@ -1,4 +1,4 @@
-/* SpaceNet wallet 4100 4082 — personal AV€ only. Pool is owner-only. */
+/* SpaceNet wallet 4104 — personal AV€ only. Pool is owner-only. */
 (function(){
   var OWNER = {
     "notisastranov@gmail.com":1
@@ -16,22 +16,30 @@
     try{ var extra=JSON.parse(read("sn:architect","[]")); if(extra.indexOf(e)>=0) return true; }catch(x){}
     return false;
   }
-  try{
-    if(read("sn:ave-restored","")!=="4082"){
-      var cur=num("sn:avc");
-      var seeded=read("sn:ave-restored","")==="4024";
-      if(seeded && cur>=1000){
-        if(!num("sn:pool")) write("sn:pool", cur);
-        write("sn:avc", "0");
-      } else if(read("sn:avc", null)==null){
-        write("sn:avc", "0");
-      } else if(!seeded && cur>=1000000){
-        if(!num("sn:pool")) write("sn:pool", cur);
-        write("sn:avc", "0");
-      }
-      write("sn:ave-restored", "4082");
+  var OWNER_MAIL={"notisastranov@gmail.com":1,"info@astranov.eu":1};
+  for(var k in OWNER_MAIL) OWNER[k]=1;
+  function lockSeed(){
+    write("sn:ave-restored","4024");
+    var u=user(), isOwner=owner();
+    var a=num("sn:avc"), p=num("sn:pool");
+    if(!p && a>=1000000){ p=a; write("sn:pool", String(a)); }
+    if(!u){
+      if(a>0 && a>=1000) write("sn:avc","0");
+      return;
     }
-  }catch(e){}
+    if(isOwner){
+      if(a>p) write("sn:pool", String(a));
+      else if(p>a) write("sn:avc", String(p));
+    } else if(a>=1000000){
+      write("sn:avc","0");
+    }
+  }
+  function shown(){
+    if(!user()) return 0;
+    if(owner()) return Math.max(num("sn:pool"), num("sn:avc"));
+    return num("sn:avc");
+  }
+  try{ lockSeed(); }catch(e){}
   function measure(text, font){
     var s=document.createElement("span");
     s.style.cssText="position:absolute;left:-9999px;top:0;white-space:nowrap;font:"+font;
@@ -70,8 +78,10 @@
     var btn=document.getElementById("sn-money");
     if(!btn) return;
     if(btn.classList.contains("loose")||btn.classList.contains("drag")) return;
-    btn.textContent=fmt(num("sn:avc"));
-    btn.title=owner()?"Your AV€. Pool is inside.":"Your AV€";
+    lockSeed();
+    var n=shown();
+    btn.textContent=fmt(n);
+    btn.title=!user()?"Sign in. Wallets start at zero.":(owner()?"Your pool. Only you see this.":"Your AV€. Only you see this.");
   }
   function cashHtml(){
     var u=user(), bal=num("sn:avc"), phone=(u&&u.phone)||read("sn:phone","");
@@ -136,13 +146,22 @@
     }
     if(window.SN && !window.SN.__wallet){
       window.SN.__wallet=true;
-      window.SN.avc=function(){ return num("sn:avc"); };
+      window.SN.avc=function(){ return shown(); };
       window.SN.owner=owner;
       window.SN.user=user;
       window.SN.reload=reload;
       if(SN.paintMoney && !SN.paintMoney.__w){
         var pm=SN.paintMoney;
-        SN.paintMoney=function(flash){ pm(flash); paint(); };
+        SN.paintMoney=function(flash){
+          lockSeed();
+          paint();
+          var btn=document.getElementById("sn-money");
+          if(flash && btn){
+            btn.classList.remove("glow");
+            void btn.offsetWidth;
+            btn.classList.add("glow");
+          }
+        };
         SN.paintMoney.__w=true;
       }
       if(SN.openCash && !SN.openCash.__w){
@@ -155,5 +174,5 @@
   wrap();
   setInterval(wrap, 800);
   document.addEventListener("visibilitychange", paint);
-  window.SNWallet={paint:paint, owner:owner, user:user, hookCash:hookCash, fmt:fmt};
+  window.SNWallet={paint:paint, owner:owner, user:user, hookCash:hookCash, fmt:fmt, shown:shown};
 })();
