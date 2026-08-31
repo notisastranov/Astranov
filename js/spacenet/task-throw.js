@@ -42,47 +42,30 @@
       "#sn-tasks-btn.on{display:flex!important}"+
       "#sn-throw{position:fixed;inset:0;z-index:90;display:none;pointer-events:none}"+
       "#sn-throw.on{display:block}"+
-      "#sn-throw .drip{position:fixed;left:50%;top:max(62px,env(safe-area-inset-top) + 52px);width:156px;height:156px;transform:translateX(-50%);pointer-events:auto;z-index:2}"+
-      "#sn-throw .goo{position:absolute;inset:0;border-radius:47% 53% 45% 55%/52% 40% 60% 48%;background:#000;border:2.5px solid #4df0ff;box-shadow:0 0 16px #4df0ff,0 0 36px rgba(77,240,255,.55),inset 0 0 10px rgba(77,240,255,.15);opacity:0;transform:scale(.15)}"+
-      "#sn-throw.hit .goo{animation:snPop .38s cubic-bezier(.1,1.6,.2,1) forwards, snGoo 2.2s .38s ease-in-out infinite}"+
-      "#sn-throw .drop{position:absolute;width:12px;height:16px;border-radius:70% 70% 55% 55%;background:#000;border:2px solid #4df0ff;box-shadow:0 0 8px #4df0ff;opacity:0}"+
-      "#sn-throw.hit .drop{animation:snDrop .7s ease-out forwards}"+
-      "#sn-throw .drop.d1{left:8%;top:18%;animation-delay:.05s}"+
-      "#sn-throw .drop.d2{right:6%;top:28%;animation-delay:.1s}"+
-      "#sn-throw .drop.d3{left:18%;bottom:8%;animation-delay:.14s}"+
-      "#sn-throw .drop.d4{right:14%;bottom:12%;animation-delay:.18s}"+
-      "#sn-throw .ring{position:absolute;left:50%;top:50%;width:24px;height:24px;border-radius:999px;border:2px solid rgba(77,240,255,.9);transform:translate(-50%,-50%) scale(.2);opacity:0;pointer-events:none}"+
-      "#sn-throw.hit .ring{animation:snThrowRing .9s cubic-bezier(.12,.8,.2,1) forwards}"+
-      "#sn-throw.hit .ring.r2{animation-delay:.08s}"+
-      "#sn-throw .pay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;font:900 26px/1 ui-monospace,system-ui;color:#4df0ff;text-shadow:0 0 8px #4df0ff,0 0 18px #4df0ff;text-align:center;pointer-events:none;opacity:0}"+
-      "#sn-throw.hit .pay{animation:snFade .25s .2s forwards}"+
-      "#sn-throw .pay small{display:block;font:800 8px/1 system-ui;letter-spacing:.2em;color:#4df0ff;margin-bottom:4px}"+
-      "#sn-throw .strip{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 72px);transform:translateX(-50%);width:min(86vw,320px);pointer-events:auto;padding:8px 8px 8px;border-radius:14px;background:#000;border:1.5px solid #4df0ff;color:#4df0ff;font:700 11px/1.25 system-ui;text-align:left;z-index:3;box-shadow:0 0 14px rgba(77,240,255,.35)}"+
-      "#sn-throw .who{display:flex;align-items:center;gap:6px;margin:0 0 6px}"+
-      "#sn-throw .who .face{width:44px;height:44px;border-radius:999px;border:1.5px solid #4df0ff;overflow:hidden;background:#000;flex:none;display:flex;align-items:center;justify-content:center;font:800 13px system-ui;color:#4df0ff}"+
+      "#sn-throw .card{position:fixed;left:50%;top:max(56px,env(safe-area-inset-top) + 46px);transform:translateX(-50%) scale(.92);opacity:0;width:min(88vw,340px);box-sizing:border-box;padding:12px 12px 10px;background:#000;border:2px solid #4df0ff;border-radius:22px;box-shadow:0 0 22px #4df0ff,0 0 48px rgba(77,240,255,.28);pointer-events:auto;color:#4df0ff;font:700 13px/1.4 system-ui}"+
+      "#sn-throw.hit .card{animation:snPop .4s cubic-bezier(.12,1.4,.2,1) forwards}"+
+      "#sn-throw .pay{display:block;text-align:center;font:900 28px/1.1 ui-monospace,system-ui;color:#4df0ff;text-shadow:0 0 10px #4df0ff;padding:2px 0 10px;margin:0}"+
+      "#sn-throw .pay small{display:block;font:800 9px/1 system-ui;letter-spacing:.2em;margin:0 0 6px;color:#4df0ff}"+
+      "#sn-throw .who{display:grid;grid-template-columns:76px 1fr 76px;align-items:start;column-gap:8px;margin:0 0 8px}"+
+      "#sn-throw .col{display:flex;flex-direction:column;align-items:center;min-width:0}"+
+      "#sn-throw .face{width:48px;height:48px;border-radius:999px;border:2px solid #4df0ff;overflow:hidden;background:#000;flex:none;display:flex;align-items:center;justify-content:center;font:800 14px system-ui;color:#4df0ff}"+
       "#sn-throw .who img{width:100%;height:100%;object-fit:cover;display:block}"+
-      "#sn-throw .who .nm{font:800 9px/1.2 system-ui;letter-spacing:.08em;text-align:center;margin-top:3px;width:44px}"+
-      "#sn-throw .col{display:flex;flex-direction:column;align-items:center;flex:none}"+
-      "#sn-throw .link{flex:1;height:2px;background:#4df0ff;box-shadow:0 0 8px #4df0ff;position:relative;min-width:28px;margin:0 2px 14px}"+
-      "#sn-throw .link:after{content:\"\";position:absolute;right:-1px;top:-3px;width:8px;height:8px;border-radius:99px;background:#4df0ff;box-shadow:0 0 6px #4df0ff}"+
-      "#sn-throw .strip .line{margin:0;padding:2px 0;border-top:1px solid rgba(77,240,255,.22);color:#4df0ff}"+
-      "#sn-throw .strip .line:first-of-type{border-top:0;padding-top:0}"+
-      "#sn-throw .strip b{color:#4df0ff;letter-spacing:.08em}"+
-      "#sn-throw .acts{display:flex;gap:6px;margin:6px 0 0}"+
-      "#sn-throw .acts button{flex:1;height:40px;border-radius:10px;font:800 11px/1 system-ui;letter-spacing:.14em}"+
-      "#sn-throw .acts .yes{background:#19e68c;border:1.5px solid #19e68c;color:#00140a}"+
-      "#sn-throw .acts .no{background:#000;border:1.5px solid #ff3b4e;color:#ff3b4e}"+
-      "#sn-throw .who .col:first-child .face{border-color:#4df0ff}"+
-      "#sn-throw .who .col:last-child .face{border-color:#ff7ae6}"+
-      "#sn-throw .who .col:last-child .nm{color:#ff7ae6}"+
-      "#sn-throw .link{background:linear-gradient(90deg,#4df0ff,#b44dff,#ff7ae6);box-shadow:0 0 8px #b44dff}"+
-      "#sn-throw .link:after{background:#ff7ae6;box-shadow:0 0 6px #ff7ae6}"+
+      "#sn-throw .nm{margin-top:4px;width:76px;font:800 10px/1.25 system-ui;letter-spacing:.04em;text-align:center;white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}"+
+      "#sn-throw .link{height:2px;align-self:center;margin-top:23px;background:linear-gradient(90deg,#4df0ff,#b44dff,#ff7ae6);box-shadow:0 0 8px #b44dff;position:relative}"+
+      "#sn-throw .link:after{content:\"\";position:absolute;right:-1px;top:-3px;width:8px;height:8px;border-radius:99px;background:#ff7ae6;box-shadow:0 0 6px #ff7ae6}"+
+      "#sn-throw .col:last-child .face{border-color:#ff7ae6}"+
+      "#sn-throw .col:last-child .nm{color:#ff7ae6}"+
+      "#sn-throw .line{display:block;padding:7px 0;margin:0;border-top:1px solid rgba(77,240,255,.28);white-space:normal;overflow:visible;word-break:break-word;line-height:1.4}"+
       "#sn-throw .line.what{color:#4df0ff}"+
       "#sn-throw .line.ready{color:#ffe14a}"+
+      "#sn-throw .line.km{color:#7ee9ff}"+
       "#sn-throw .line.pay{color:#19e68c}"+
       "#sn-throw .line.pay.cash{color:#ff9d3b}"+
-      "#sn-throw .line.km{color:#7ee9ff}"+
-      "#sn-throw .line.price{color:#fff36a}"+
+      "#sn-throw .acts{display:flex;gap:8px;margin:10px 0 0;padding-top:8px;border-top:1px solid rgba(77,240,255,.28)}"+
+      "#sn-throw .acts button{flex:1;height:42px;border-radius:12px;font:800 12px/1 system-ui;letter-spacing:.14em}"+
+      "#sn-throw .acts .yes{background:#19e68c;border:0;color:#00140a}"+
+      "#sn-throw .acts .no{background:#000;border:1.5px solid #ff3b4e;color:#ff3b4e}"+
+      "@keyframes snPop{from{opacity:0;transform:translateX(-50%) scale(.86)}to{opacity:1;transform:translateX(-50%) scale(1)}}"+
       "#sn-perm{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 86px);transform:translateX(-50%);z-index:141;width:min(360px,92vw);padding:12px;border-radius:16px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.45);color:#c6f6ff;font:600 13px/1.35 system-ui;display:none;pointer-events:auto}"+
       "#sn-perm.on{display:block}"+
       "#sn-perm b{display:block;color:#7ee9ff;font:800 11px/1 system-ui;letter-spacing:.16em;margin:0 0 6px}"+
@@ -302,7 +285,7 @@
     return '<div class="face">'+esc((letter||"?").slice(0,1).toUpperCase())+"</div>";
   }
   function paintInfo(job){
-    var route=document.getElementById("sn-throw-route");
+    var route=document.getElementById("sn-throw-card")||document.getElementById("sn-throw-route");
     if(!route||!job) return;
     var ready=job.ready?"Ready now":("Ready in "+(job.readyMin||13)+" minutes");
     var pay=(job.pay==="cash"||job.cash)?"CASH ORDER":"PAID BY CARD";
@@ -311,7 +294,9 @@
     var cName=job.client||"YOU";
     var vPic=job.vendorPhoto||"";
     var cPic=job.clientPhoto||userPhoto();
-    route.innerHTML=
+    var card=document.getElementById("sn-throw-card")||route;
+    card.innerHTML=
+      '<div class="pay"><small>TASK</small>'+esc(euro(job.price||0,false))+"</div>"+
       '<div class="who">'+
         '<div class="col">'+face(vPic,vName)+'<div class="nm">'+esc(vName)+"</div></div>"+
         '<div class="link"></div>'+
@@ -322,8 +307,7 @@
       '<div class="line">From '+esc(job.from||vName)+" → "+esc(job.to||"Your pin")+"</div>"+
       '<div class="line">'+esc(vName)+" to "+esc(cName)+"</div>"+
       '<div class="line km">'+km(job.km||3.2)+" · "+traf+" min in heavy traffic</div>"+
-      '<div class="line pay'+(pay.indexOf("CASH")>=0?" cash":"")+'"><b>'+pay+"</b></div>"+
-      '<div class="line price">'+esc(euro(job.price||0,false))+"</div>"+
+      '<div class="line pay'+(pay.indexOf("CASH")>=0?" cash":"")+'">'+pay+"</div>"+
       '<div class="acts"><button type="button" class="yes" data-x="yes">ACCEPT</button><button type="button" class="no" data-x="no">DECLINE</button></div>';
   }
   function flyJob(job){
@@ -375,11 +359,7 @@
     if(!el){
       el=document.createElement("div");
       el.id="sn-throw";
-      el.innerHTML='<div class="drip" data-x="take">'+
-        '<div class="goo"></div><div class="ring"></div><div class="ring r2"></div>'+
-        '<i class="drop d1"></i><i class="drop d2"></i><i class="drop d3"></i><i class="drop d4"></i>'+
-        '<div class="pay" id="sn-throw-pay"></div></div>'+
-        '<div class="strip" id="sn-throw-route"></div>';
+      el.innerHTML='<div class="card" id="sn-throw-card"></div>';
       document.body.appendChild(el);
       el.addEventListener("click", function(e){
         var x=e.target && (e.target.getAttribute("data-x")|| (e.target.closest && e.target.closest("[data-x]") && e.target.closest("[data-x]").getAttribute("data-x")));
