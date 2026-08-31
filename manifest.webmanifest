@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "Astranov SpaceNet Grok",
-  "short_name": "SpaceNet",
-  "description": "Astranov SpaceNet Grok — Earth is the desktop. Install as a normal app, outside browser chrome.",
+  "name": "Astranov SpaceNet",
+  "short_name": "Astranov",
+  "description": "Astranov SpaceNet — Earth is the desktop. Install as a normal app, outside browser chrome.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
@@ -16,9 +16,10 @@
   "handle_links": "preferred",
   "launch_handler": { "client_mode": ["focus-existing", "auto"] },
   "icons": [
+    { "src": "/favicon-32x32.png", "sizes": "32x32", "type": "image/png", "purpose": "any" },
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icon.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ],
   "shortcuts": [
