@@ -59,8 +59,6 @@
       "#sn-throw .line.what{color:#4df0ff}"+
       "#sn-throw .line.ready{color:#ffe14a}"+
       "#sn-throw .line.km{color:#7ee9ff}"+
-      "#sn-throw .line.pay{color:#19e68c}"+
-      "#sn-throw .line.pay.cash{color:#ff9d3b}"+
       "#sn-throw .acts{display:flex;gap:8px;margin:10px 0 0;padding-top:8px;border-top:1px solid rgba(77,240,255,.28)}"+
       "#sn-throw .acts button{flex:1;height:42px;border-radius:12px;font:800 12px/1 system-ui;letter-spacing:.14em}"+
       "#sn-throw .acts .yes{background:#19e68c;border:0;color:#00140a}"+
@@ -214,7 +212,6 @@
       ready:false,
       readyMin:13,
       trafficMin:30,
-      pay:"card",
       vendorPhoto:"",
       clientPhoto:userPhoto()
     };
@@ -288,7 +285,6 @@
     var route=document.getElementById("sn-throw-card")||document.getElementById("sn-throw-route");
     if(!route||!job) return;
     var ready=job.ready?"Ready now":("Ready in "+(job.readyMin||13)+" minutes");
-    var pay=(job.pay==="cash"||job.cash)?"CASH ORDER":"PAID BY CARD";
     var traf=job.trafficMin||30;
     var vName=job.vendor||"Vendor";
     var cName=job.client||"YOU";
@@ -307,7 +303,6 @@
       '<div class="line">From '+esc(job.from||vName)+" → "+esc(job.to||"Your pin")+"</div>"+
       '<div class="line">'+esc(vName)+" to "+esc(cName)+"</div>"+
       '<div class="line km">'+km(job.km||3.2)+" · "+traf+" min in heavy traffic</div>"+
-      '<div class="line pay'+(pay.indexOf("CASH")>=0?" cash":"")+'">'+pay+"</div>"+
       '<div class="acts"><button type="button" class="yes" data-x="yes">ACCEPT</button><button type="button" class="no" data-x="no">DECLINE</button></div>';
   }
   function flyJob(job){
