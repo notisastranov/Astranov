@@ -57,8 +57,9 @@
       "#sn-throw .pay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;font:900 26px/1 ui-monospace,system-ui;color:#4df0ff;text-shadow:0 0 8px #4df0ff,0 0 18px #4df0ff;text-align:center;pointer-events:none;opacity:0}"+
       "#sn-throw.hit .pay{animation:snFade .25s .2s forwards}"+
       "#sn-throw .pay small{display:block;font:800 8px/1 system-ui;letter-spacing:.2em;color:#4df0ff;margin-bottom:4px}"+
-      "#sn-throw .strip{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 76px);transform:translateX(-50%);width:min(92vw,380px);max-height:72px;overflow:hidden;pointer-events:auto;padding:8px 12px;border-radius:16px;background:rgba(4,14,28,.78);border:1px solid rgba(77,240,255,.4);color:#c6f6ff;font:700 11px/1.35 system-ui;text-align:center;z-index:3;backdrop-filter:blur(8px)}"+
-      "#sn-throw .strip b{color:#7ee9ff;letter-spacing:.12em;margin-right:6px}"+
+      "#sn-throw .strip{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 76px);transform:translateX(-50%);width:min(94vw,400px);max-height:128px;overflow:auto;pointer-events:auto;padding:8px 12px;border-radius:14px;background:rgba(0,0,0,.82);border:1px solid #4df0ff;color:#4df0ff;font:700 11px/1.4 system-ui;text-align:left;z-index:3}"+
+      "#sn-throw .strip .line{margin:2px 0;color:#4df0ff}"+
+      "#sn-throw .strip b{color:#4df0ff;letter-spacing:.1em;margin-right:6px}"+
       "#sn-perm{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 86px);transform:translateX(-50%);z-index:141;width:min(360px,92vw);padding:12px;border-radius:16px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.45);color:#c6f6ff;font:600 13px/1.35 system-ui;display:none;pointer-events:auto}"+
       "#sn-perm.on{display:block}"+
       "#sn-perm b{display:block;color:#7ee9ff;font:800 11px/1 system-ui;letter-spacing:.16em;margin:0 0 6px}"+
@@ -195,15 +196,23 @@
   }
 
   function jobOf(){
+    var you=pin();
+    var shop=away(you, 3.4, 38);
     return {
       id:"test-"+Date.now(),
       price:24,
-      km:2.4,
+      km:3.4,
+      what:"Pizza delivery",
       vendor:"Kalithea Oven",
       client:who(),
-      from:"Kalithea, Rhodes",
-      to:"Your pin",
-      lat:36.382, lng:28.250
+      from:"Kalithea Oven",
+      to:you.name||"Your pin",
+      fromLat:shop.lat, fromLng:shop.lng,
+      toLat:you.lat, toLng:you.lng,
+      lat:shop.lat, lng:shop.lng,
+      ready:false,
+      readyMin:13,
+      trafficMin:30
     };
   }
 
@@ -215,19 +224,87 @@
     }catch(e){}
     return {lat:36.382, lng:28.250, name:"Kalithea"};
   }
+  function away(p, kmN, deg){
+    var r=Math.max(3.2, Number(kmN)||3.4), a=(Number(deg)||42)*Math.PI/180;
+    var dlat=(r/111.32)*Math.cos(a);
+    var dlng=(r/(111.32*Math.max(0.2, Math.cos(p.lat*Math.PI/180))))*Math.sin(a);
+    return {lat:p.lat+dlat, lng:p.lng+dlng, name:"Drop"};
+  }
+  function haversine(a,b){
+    var R=6371, f1=a.lat*Math.PI/180, f2=b.lat*Math.PI/180;
+    var df=(b.lat-a.lat)*Math.PI/180, dl=(b.lng-a.lng)*Math.PI/180;
+    var x=Math.sin(df/2)*Math.sin(df/2)+Math.cos(f1)*Math.cos(f2)*Math.sin(dl/2)*Math.sin(dl/2);
+    return 2*R*Math.asin(Math.min(1, Math.sqrt(x)));
+  }
+  function hookMap(){
+    if(!window.L||!L.Map||L.Map.prototype.setView.__snCap) return;
+    function cap(){ window.__snLeaflet=this; var el=this.getContainer&&this.getContainer(); if(el) el.__snMap=this; }
+    ["setView","fitBounds","invalidateSize"].forEach(function(n){
+      var orig=L.Map.prototype[n];
+      if(!orig) return;
+      L.Map.prototype[n]=function(){ cap.call(this); return orig.apply(this, arguments); };
+    });
+    L.Map.prototype.setView.__snCap=true;
+  }
+  function drawLine(pts){
+    hookMap();
+    var map=window.__snLeaflet;
+    if(!map||!window.L||!pts||pts.length<2) return;
+    if(window.__snThrowLayer){ try{ map.removeLayer(window.__snThrowLayer); }catch(e){} }
+    var layer=L.layerGroup();
+    var line=L.polyline(pts,{color:"#4df0ff",weight:5,opacity:1});
+    layer.addLayer(line);
+    layer.addLayer(L.circleMarker(pts[0],{radius:8,color:"#4df0ff",fillColor:"#000",fillOpacity:1,weight:2}));
+    layer.addLayer(L.circleMarker(pts[pts.length-1],{radius:8,color:"#4df0ff",fillColor:"#4df0ff",fillOpacity:1,weight:2}));
+    layer.addTo(map);
+    window.__snThrowLayer=layer;
+    try{ map.fitBounds(line.getBounds(),{padding:[52,96],maxZoom:14}); }catch(e){}
+  }
+  function osrm(from, to){
+    var url="https://router.project-osrm.org/route/v1/driving/"+from.lng+","+from.lat+";"+to.lng+","+to.lat+"?overview=full&geometries=geojson";
+    return fetch(url).then(function(r){ return r.json(); }).then(function(j){
+      var r=j&&j.routes&&j.routes[0];
+      if(!r) throw new Error("no");
+      var c=(r.geometry&&r.geometry.coordinates||[]).map(function(x){ return [x[1],x[0]]; });
+      return {pts:c, km:r.distance/1000, min:Math.max(1, Math.round(r.duration/60))};
+    });
+  }
+  function paintInfo(job){
+    var route=document.getElementById("sn-throw-route");
+    if(!route||!job) return;
+    var ready=job.ready?"Ready now":("Not ready · "+(job.readyMin||13)+" min");
+    var traf=job.trafficMin||30;
+    route.innerHTML=
+      '<div class="line"><b>'+esc((job.what||"Pizza delivery").toUpperCase())+"</b>"+ready+"</div>"+
+      '<div class="line">From '+esc(job.from||job.vendor||"Vendor")+" → "+esc(job.to||"Your pin")+"</div>"+
+      '<div class="line">'+esc(job.vendor||"Vendor")+" to "+esc(job.client||"YOU")+"</div>"+
+      '<div class="line">'+km(job.km||3.2)+" · "+traf+" min in heavy traffic</div>";
+  }
   function flyJob(job){
+    hookMap();
     var you=pin();
-    var dest=you;
-    if(job&&isFinite(Number(job.lat))) dest={lat:Number(job.lat),lng:Number(job.lng),name:job.vendor||job.what||"Task"};
-    else if(job&&!job.labor) dest={lat:36.382,lng:28.250,name:job.vendor||"Kalithea Oven"};
-    var from=you, to=dest;
-    if(window.SN){
-      try{
-        if(from&&to&&SN.showCall&&(Math.abs(from.lat-to.lat)>0.0005||Math.abs(from.lng-to.lng)>0.0005)) SN.showCall(from,to);
-        else if(SN.showCity) SN.showCity(to||from);
-        else if(SN.showMap) SN.showMap(to||from, 14);
-      }catch(e){}
+    var shop={lat:Number(job&&job.fromLat), lng:Number(job&&job.fromLng), name:(job&&job.vendor)||"Kalithea Oven"};
+    if(!isFinite(shop.lat)) shop=away(you, 3.4, 38);
+    var drop={lat:Number(job&&job.toLat), lng:Number(job&&job.toLng), name:(job&&job.to)||you.name||"YOU"};
+    if(!isFinite(drop.lat)) drop=you;
+    if(haversine(shop, drop)<3){
+      drop=away(shop, 3.5, 52);
+      drop.name=(job&&job.to)||"YOU";
     }
+    if(window.SN&&SN.showCall) SN.showCall(shop, drop);
+    else if(window.SN&&SN.showCity) SN.showCity(shop);
+    osrm(shop, drop).then(function(r){
+      job.km=Math.max(3, r.km);
+      job.freeMin=r.min;
+      job.trafficMin=Math.max(30, Math.round(r.min*2.4));
+      paintInfo(job);
+      setTimeout(function(){ hookMap(); drawLine(r.pts.length>2?r.pts:[[shop.lat,shop.lng],[drop.lat,drop.lng]]); }, 650);
+    }).catch(function(){
+      job.km=Math.max(3.2, haversine(shop, drop));
+      job.trafficMin=30;
+      paintInfo(job);
+      setTimeout(function(){ drawLine([[shop.lat,shop.lng],[drop.lat,drop.lng]]); }, 650);
+    });
   }
 
   function throwSplash(job){
@@ -257,14 +334,7 @@
     var pay=document.getElementById("sn-throw-pay");
     var route=document.getElementById("sn-throw-route");
     if(pay) pay.innerHTML="<small>TASK</small>"+esc(euro(job.price, false));
-    if(route){
-      if(job.labor){
-        var extras=(job.extras||[]).join(" · ")||"no specials";
-        route.innerHTML="<b>ROUTE</b>"+esc(job.what||"Labor")+" · "+String(job.hours).replace(".",",")+" h · "+esc(extras)+" · "+esc(job.client||"YOU");
-      } else {
-        route.innerHTML="<b>ROUTE</b>"+km(job.km)+" · "+esc(job.vendor)+" → "+esc(job.client);
-      }
-    }
+    paintInfo(job);
     el.classList.remove("on","hit");
     void el.offsetWidth;
     el.classList.add("on");
@@ -275,7 +345,7 @@
     el.__hit=setTimeout(function(){ el.classList.add("hit"); }, 1750);
     try{ if(window.SN&&SN.say) SN.say("Task. "+euro(job.price,false)+". "+job.vendor+" to "+job.client+"."); }catch(e){}
     clearTimeout(el.__t);
-    el.__t=setTimeout(function(){ el.classList.remove("on"); }, 8000);
+    el.__t=setTimeout(function(){ el.classList.remove("on"); }, 13500);
   }
 
   function park(){
