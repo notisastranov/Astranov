@@ -69,9 +69,20 @@
       "#sn-throw .strip .line:first-of-type{border-top:0;padding-top:0}"+
       "#sn-throw .strip b{color:#4df0ff;letter-spacing:.08em}"+
       "#sn-throw .acts{display:flex;gap:6px;margin:6px 0 0}"+
-      "#sn-throw .acts button{flex:1;height:40px;border-radius:10px;border:1.5px solid #4df0ff;background:#000;color:#4df0ff;font:800 11px/1 system-ui;letter-spacing:.14em}"+
-      "#sn-throw .acts .yes{background:#4df0ff;color:#000}"+
-      "#sn-throw .acts .no{opacity:.9}"+
+      "#sn-throw .acts button{flex:1;height:40px;border-radius:10px;font:800 11px/1 system-ui;letter-spacing:.14em}"+
+      "#sn-throw .acts .yes{background:#19e68c;border:1.5px solid #19e68c;color:#00140a}"+
+      "#sn-throw .acts .no{background:#000;border:1.5px solid #ff3b4e;color:#ff3b4e}"+
+      "#sn-throw .who .col:first-child .face{border-color:#4df0ff}"+
+      "#sn-throw .who .col:last-child .face{border-color:#ff7ae6}"+
+      "#sn-throw .who .col:last-child .nm{color:#ff7ae6}"+
+      "#sn-throw .link{background:linear-gradient(90deg,#4df0ff,#b44dff,#ff7ae6);box-shadow:0 0 8px #b44dff}"+
+      "#sn-throw .link:after{background:#ff7ae6;box-shadow:0 0 6px #ff7ae6}"+
+      "#sn-throw .line.what{color:#4df0ff}"+
+      "#sn-throw .line.ready{color:#ffe14a}"+
+      "#sn-throw .line.pay{color:#19e68c}"+
+      "#sn-throw .line.pay.cash{color:#ff9d3b}"+
+      "#sn-throw .line.km{color:#7ee9ff}"+
+      "#sn-throw .line.price{color:#fff36a}"+
       "#sn-perm{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 86px);transform:translateX(-50%);z-index:141;width:min(360px,92vw);padding:12px;border-radius:16px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.45);color:#c6f6ff;font:600 13px/1.35 system-ui;display:none;pointer-events:auto}"+
       "#sn-perm.on{display:block}"+
       "#sn-perm b{display:block;color:#7ee9ff;font:800 11px/1 system-ui;letter-spacing:.16em;margin:0 0 6px}"+
@@ -98,49 +109,54 @@
     if(!c) return;
     window.__snActx=c;
     var t0=c.currentTime;
-    var T=13.5;
+    var T=13.6;
+    var A=432;
     var master=c.createGain();
     window.__snMaster=master;
     master.gain.setValueAtTime(0.0001, t0);
-    master.gain.exponentialRampToValueAtTime(0.9, t0+0.06);
-    master.gain.setValueAtTime(0.9, t0+12.7);
+    master.gain.exponentialRampToValueAtTime(0.88, t0+0.4);
+    master.gain.setValueAtTime(0.88, t0+12.6);
     master.gain.exponentialRampToValueAtTime(0.0001, t0+T);
     master.connect(c.destination);
 
-    function ping(at, freq, dur, lvl, type){
+    function glide(type, f0, f1, at, dur, lvl){
       var o=c.createOscillator(), g=c.createGain();
       o.type=type||"sine";
-      o.frequency.setValueAtTime(freq, at);
-      g.gain.setValueAtTime(Math.max(0.0001, lvl), at);
+      o.frequency.setValueAtTime(Math.max(20,f0), at);
+      o.frequency.exponentialRampToValueAtTime(Math.max(20,f1), at+dur);
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(lvl, at+Math.min(0.35, dur*0.18));
+      g.gain.setValueAtTime(lvl, at+dur*0.7);
       g.gain.exponentialRampToValueAtTime(0.0001, at+dur);
       o.connect(g); g.connect(master);
-      o.start(at); o.stop(at+dur+0.02);
+      o.start(at); o.stop(at+dur+0.03);
     }
-    function dolphin(at){
-      var k, f;
-      for(k=0;k<5;k++){
-        f=11000+k*900+(k%2?400:0);
-        ping(at+k*0.045, f, 0.035, 0.7, "sine");
-        ping(at+k*0.045+0.008, f*1.12, 0.02, 0.35, "sine");
-      }
+    function hold(type, f, at, dur, lvl){
+      glide(type, f, f, at, dur, lvl);
     }
-    function whale(at){
-      ping(at, 48, 1.8, 0.85, "sine");
-      ping(at, 36, 2.1, 0.55, "sine");
-      ping(at+0.04, 72, 1.4, 0.4, "triangle");
-    }
-    function sonar(at){
-      ping(at, 980, 1.6, 0.8, "sine");
-      ping(at, 1960, 0.9, 0.35, "sine");
-      ping(at+0.12, 740, 1.3, 0.45, "sine");
-    }
-    var t;
-    for(t=0; t<T-1.2; t+=1.55){
-      whale(t0+t);
-      sonar(t0+t+0.18);
-      dolphin(t0+t+0.55);
-      dolphin(t0+t+0.95);
-    }
+    /* 432 family: 27 54 108 216 432 648 864 1728 3456 6912 13824 */
+    hold("sine", A/16, t0, T-0.2, 0.28);
+    hold("sine", A/8, t0, T-0.2, 0.32);
+    hold("triangle", A/4, t0, T-0.3, 0.18);
+    hold("sine", A, t0+0.6, T-1.0, 0.2);
+    hold("sine", A*1.5, t0+1.2, T-1.6, 0.1);
+
+    /* whale song — long moans */
+    glide("sine", A/4, A, t0+0.3, 3.4, 0.42);
+    glide("sine", A, A/8, t0+2.4, 4.2, 0.38);
+    glide("triangle", A/8, A/2, t0+5.8, 3.6, 0.3);
+    glide("sine", A/2, A/16, t0+8.8, 4.2, 0.34);
+
+    /* dolphin space song — long whistles, never ticks */
+    glide("sine", A*4, A*8, t0+1.1, 2.6, 0.28);
+    glide("sine", A*8, A*2, t0+3.4, 2.8, 0.26);
+    glide("sine", A*16, A*4, t0+6.0, 2.4, 0.22);
+    glide("sine", A*8, A*32, t0+8.2, 2.2, 0.18);
+    glide("sine", A*32, A*4, t0+10.2, 2.8, 0.2);
+
+    /* space overtones resolving to 432 */
+    glide("sine", A*2, A, t0+9.6, 3.6, 0.22);
+    glide("sine", A*3, A, t0+10.4, 2.8, 0.12);
   }
   function muteThrow(){
     try{
@@ -301,13 +317,13 @@
         '<div class="link"></div>'+
         '<div class="col">'+face(cPic,cName)+'<div class="nm">'+esc(cName)+"</div></div>"+
       "</div>"+
-      '<div class="line"><b>'+esc((job.what||"Pizza delivery").toUpperCase())+"</b></div>"+
-      '<div class="line">'+ready+"</div>"+
+      '<div class="line what"><b>'+esc((job.what||"Pizza delivery").toUpperCase())+"</b></div>"+
+      '<div class="line ready">'+ready+"</div>"+
       '<div class="line">From '+esc(job.from||vName)+" → "+esc(job.to||"Your pin")+"</div>"+
       '<div class="line">'+esc(vName)+" to "+esc(cName)+"</div>"+
-      '<div class="line">'+km(job.km||3.2)+" · "+traf+" min in heavy traffic</div>"+
-      '<div class="line"><b>'+pay+"</b></div>"+
-      '<div class="line">'+esc(euro(job.price||0,false))+"</div>"+
+      '<div class="line km">'+km(job.km||3.2)+" · "+traf+" min in heavy traffic</div>"+
+      '<div class="line pay'+(pay.indexOf("CASH")>=0?" cash":"")+'"><b>'+pay+"</b></div>"+
+      '<div class="line price">'+esc(euro(job.price||0,false))+"</div>"+
       '<div class="acts"><button type="button" class="yes" data-x="yes">ACCEPT</button><button type="button" class="no" data-x="no">DECLINE</button></div>';
   }
   function flyJob(job){
