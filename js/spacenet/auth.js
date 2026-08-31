@@ -1,4 +1,4 @@
-/* SpaceNet auth 4102 — Google via the YOU pill. Phone stored unverified. */
+/* SpaceNet auth 4103 — Google via YOU. Twilio SMS verify on the phone field. */
 (function(){
   if(window.SNAuth) return;
   var SB="https://lkoatrkhuigdolnjsbie.supabase.co";
@@ -9,13 +9,14 @@
   function saveUser(u){
     if(!u) return;
     var phone=read("sn:phone","");
+    var ok=read("sn:phone-ok","");
     var row={
       id:u.id||u.sub||"",
       email:u.email||"",
       name:(u.user_metadata&& (u.user_metadata.full_name||u.user_metadata.name))||u.name||"",
       photo:(u.user_metadata&& (u.user_metadata.avatar_url||u.user_metadata.picture))||u.picture||"",
       phone:u.phone|| (u.user_metadata&&u.user_metadata.phone) || phone || "",
-      verified:false
+      verified:!!(u.user_metadata&&u.user_metadata.phone_verified) || !!(ok && phone && ok===phone)
     };
     write("sn:user", JSON.stringify(row));
     if(row.phone) write("sn:phone", row.phone);
@@ -43,21 +44,68 @@
     talk("Signed out. Your AV€ stays on this device.");
     if(window.SNWallet) SNWallet.hookCash();
   }
-  function savePhone(raw){
-    var tel=String(raw||"").replace(/[^\d+ ]/g,"").trim();
+  function smsApi(act, extra){
+    return fetch("/api/sms",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(Object.assign({act:act}, extra||{}))
+    }).then(function(r){ return r.json().catch(function(){ return {ok:false,error:"bad_json"}; }); });
+  }
+  function markVerified(tel){
     write("sn:phone", tel);
+    write("sn:phone-ok", tel);
     var u=user()||{};
-    u.phone=tel; u.verified=false;
+    u.phone=tel; u.verified=true;
     write("sn:user", JSON.stringify(u));
     var t=token();
     if(t && tel){
       fetch(SB+"/auth/v1/user",{
         method:"PUT",
         headers:{apikey:ANON,Authorization:"Bearer "+t,"Content-Type":"application/json"},
-        body:JSON.stringify({data:{phone:tel,phone_verified:false}})
+        body:JSON.stringify({data:{phone:tel,phone_verified:true}})
       }).catch(function(){});
     }
-    talk(tel?("Phone stored on your profile. Unverified until Twilio is live."):"Phone cleared.");
+    paintMe();
+    if(window.SNWallet) SNWallet.hookCash();
+  }
+  function sendCode(){
+    var inp=document.getElementById("sn-me-phone")||document.getElementById("sn-p-phone");
+    var tel=String(inp&&inp.value||read("sn:phone","")).trim();
+    savePhone(tel);
+    talk("Sending SMS code…");
+    return smsApi("send_code",{to:tel}).then(function(j){
+      if(j&&j.ok) talk("Code sent from "+(j.from||"+18333030833")+". Check SMS.");
+      else talk("SMS did not send. "+((j&&j.error)||""));
+      return j;
+    }).catch(function(){ talk("SMS endpoint did not answer."); });
+  }
+  function checkCode(){
+    var inp=document.getElementById("sn-me-phone")||document.getElementById("sn-p-phone");
+    var codeEl=document.getElementById("sn-me-code")||document.getElementById("sn-p-code");
+    var tel=String(inp&&inp.value||read("sn:phone","")).trim();
+    var code=String(codeEl&&codeEl.value||"").trim();
+    talk("Checking code…");
+    return smsApi("check_code",{to:tel,code:code}).then(function(j){
+      if(j&&j.ok){ markVerified(j.phone||tel); talk("Phone verified."); fillBody(); }
+      else talk("Code failed. "+((j&&j.error)||""));
+      return j;
+    }).catch(function(){ talk("SMS check did not answer."); });
+  }
+  function savePhone(raw){
+    var tel=String(raw||"").replace(/[^\d+ ]/g,"").trim();
+    write("sn:phone", tel);
+    var u=user()||{};
+    u.phone=tel; u.verified=(read("sn:phone-ok","")===tel && !!tel);
+    write("sn:user", JSON.stringify(u));
+    var t=token();
+    if(t && tel){
+      fetch(SB+"/auth/v1/user",{
+        method:"PUT",
+        headers:{apikey:ANON,Authorization:"Bearer "+t,"Content-Type":"application/json"},
+        body:JSON.stringify({data:{phone:tel,phone_verified:!!u.verified}})
+      }).catch(function(){});
+    }
+    talk(tel?(u.verified?"Phone stored and verified.":"Phone stored. Send the SMS code to verify."):"Phone cleared.");
     paintMe();
     if(window.SNWallet) SNWallet.hookCash();
   }
@@ -90,30 +138,29 @@
     var s=document.createElement("style");
     s.id="sn-me-css";
     s.textContent=
-      "#sn-me{position:fixed;left:max(10px,env(safe-area-inset-left));right:auto;bottom:calc(env(safe-area-inset-bottom) + 72px);top:auto;z-index:55;touch-action:manipulation;cursor:pointer;width:var(--u,36px);padding:0;border:0;background:transparent;color:#4df0ff;pointer-events:auto}"+
-      "#sn-me .lbl{display:block;font:800 8px/1 system-ui;letter-spacing:.2em;text-align:center;margin:0 0 4px;text-shadow:0 0 6px #4df0ff}"+
-      "#sn-me .tgt{position:relative;display:flex;align-items:center;justify-content:center;width:var(--u,36px);height:var(--u,36px);margin:0 auto;border-radius:999px;overflow:hidden;border:1.5px solid rgba(77,240,255,.95);background:rgba(4,16,28,.92);box-shadow:0 0 10px rgba(77,240,255,.4)}"+
-      "#sn-me img,#sn-me .ph{width:100%;height:100%;object-fit:cover;display:flex;align-items:center;justify-content:center;font:800 11px/1 system-ui;color:#4df0ff}"+
-      "#sn-me.in .tgt{box-shadow:0 0 14px rgba(77,240,255,.85)}"+
-      "#sn-me-sheet{position:fixed;inset:0;z-index:80;display:none;pointer-events:none}"+
-      "#sn-me-sheet.on{display:block;pointer-events:auto}"+
-      "#sn-me-sheet .bg{position:absolute;inset:0;background:transparent}"+
-      "#sn-me-sheet .card{position:absolute;left:50%;top:max(58px,env(safe-area-inset-top));bottom:auto;width:min(360px,94vw);max-height:min(78vh,calc(100vh - 110px));overflow:auto;transform:translateX(-50%);padding:12px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.45);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.45)}"+
-      "#sn-me-sheet .bar{display:flex;align-items:center;gap:8px;margin:0 0 10px}"+
-      "#sn-me-sheet .ttl{flex:1;font:800 11px/1 system-ui;letter-spacing:.16em;color:#7ee9ff}"+
-      "#sn-me-sheet .x{height:36px;padding:0 12px;border:1px solid rgba(126,233,255,.35);background:rgba(4,16,28,.9);color:#e8fbff;border-radius:10px}"+
-      "#sn-me-sheet .who{display:flex;align-items:center;gap:10px;margin:0 0 12px}"+
-      "#sn-me-sheet .who img,#sn-me-sheet .who .ph{width:52px;height:52px;border-radius:99px;object-fit:cover;background:rgba(77,240,255,.12);display:flex;align-items:center;justify-content:center;color:#4df0ff;font-size:22px}"+
-      "#sn-me-sheet .who b{display:block;font:650 15px/1.2 system-ui;color:#e8fbff}"+
-      "#sn-me-sheet .who span{display:block;margin-top:4px;font:700 11px system-ui;letter-spacing:.14em;color:#4df0ff}"+
-      "#sn-me-sheet .who.out span{color:#8ec8d8}"+
-      "#sn-me-sheet button.go{display:block;width:100%;height:44px;margin:8px 0 0;border:1px solid rgba(126,233,255,.55);background:rgba(4,16,28,.9);color:#7ee9ff;font:800 13px system-ui;border-radius:12px;letter-spacing:.08em}"+
-      "#sn-me-sheet input{display:block;width:100%;height:40px;margin:8px 0 0;padding:0 10px;border:1px solid rgba(126,233,255,.28);background:rgba(4,16,28,.9);color:#e8fbff;border-radius:10px;font:500 14px system-ui}"+
-      "#sn-me-sheet .note{margin:8px 0 0;font:500 12px/1.35 system-ui;color:#8ec8d8}"+
-      "#sn-me-sheet .card{max-height:min(72vh,calc(100vh - 110px));overflow:auto}"+
-      "#sn-me-sheet .icn-ttl{margin:14px 0 6px;font:800 10px/1 system-ui;letter-spacing:.16em;color:#7ee9ff}"+
-      "#sn-me-sheet .icons{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;max-height:168px;overflow:auto}"+
-      "#sn-me-sheet .icons b{height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:10px;border:1px solid rgba(126,233,255,.28);background:rgba(4,16,28,.9)}"+
+      "#sn-me{position:fixed;left:max(10px,env(safe-area-inset-left));right:auto;bottom:calc(env(safe-area-inset-bottom) + 72px);top:auto;z-index:55;touch-action:manipulation;cursor:pointer;width:var(--u,36px);padding:0;border:0;background:transparent;color:#4df0ff;pointer-events:auto}"+ 
+      "#sn-me .lbl{display:block;font:800 8px/1 system-ui;letter-spacing:.2em;text-align:center;margin:0 0 4px;text-shadow:0 0 6px #4df0ff}"+ 
+      "#sn-me .tgt{position:relative;display:flex;align-items:center;justify-content:center;width:var(--u,36px);height:var(--u,36px);margin:0 auto;border-radius:999px;overflow:hidden;border:1.5px solid rgba(77,240,255,.95);background:rgba(4,16,28,.92);box-shadow:0 0 10px rgba(77,240,255,.4)}"+ 
+      "#sn-me img,#sn-me .ph{width:100%;height:100%;object-fit:cover;display:flex;align-items:center;justify-content:center;font:800 11px/1 system-ui;color:#4df0ff}"+ 
+      "#sn-me.in .tgt{box-shadow:0 0 14px rgba(77,240,255,.85)}"+ 
+      "#sn-me-sheet{position:fixed;inset:0;z-index:80;display:none;pointer-events:none}"+ 
+      "#sn-me-sheet.on{display:block;pointer-events:auto}"+ 
+      "#sn-me-sheet .bg{position:absolute;inset:0;background:transparent}"+ 
+      "#sn-me-sheet .card{position:absolute;left:50%;top:max(58px,env(safe-area-inset-top));bottom:auto;width:min(360px,94vw);max-height:min(78vh,calc(100vh - 110px));overflow:auto;transform:translateX(-50%);padding:12px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.45);border-radius:16px;box-shadow:0 12px 32px rgba(0,0,0,.45)}"+ 
+      "#sn-me-sheet .bar{display:flex;align-items:center;gap:8px;margin:0 0 10px}"+ 
+      "#sn-me-sheet .ttl{flex:1;font:800 11px/1 system-ui;letter-spacing:.16em;color:#7ee9ff}"+ 
+      "#sn-me-sheet .x{height:36px;padding:0 12px;border:1px solid rgba(126,233,255,.35);background:rgba(4,16,28,.9);color:#e8fbff;border-radius:10px}"+ 
+      "#sn-me-sheet .who{display:flex;align-items:center;gap:10px;margin:0 0 12px}"+ 
+      "#sn-me-sheet .who img,#sn-me-sheet .who .ph{width:52px;height:52px;border-radius:99px;object-fit:cover;background:rgba(77,240,255,.12);display:flex;align-items:center;justify-content:center;color:#4df0ff;font-size:22px}"+ 
+      "#sn-me-sheet .who b{display:block;font:650 15px/1.2 system-ui;color:#e8fbff}"+ 
+      "#sn-me-sheet .who span{display:block;margin-top:4px;font:700 11px system-ui;letter-spacing:.14em;color:#4df0ff}"+ 
+      "#sn-me-sheet .who.out span{color:#8ec8d8}"+ 
+      "#sn-me-sheet button.go{display:block;width:100%;height:44px;margin:8px 0 0;border:1px solid rgba(126,233,255,.55);background:rgba(4,16,28,.9);color:#7ee9ff;font:800 13px system-ui;border-radius:12px;letter-spacing:.08em}"+ 
+      "#sn-me-sheet input{display:block;width:100%;height:40px;margin:8px 0 0;padding:0 10px;border:1px solid rgba(126,233,255,.28);background:rgba(4,16,28,.9);color:#e8fbff;border-radius:10px;font:500 14px system-ui}"+ 
+      "#sn-me-sheet .note{margin:8px 0 0;font:500 12px/1.35 system-ui;color:#8ec8d8}"+ 
+      "#sn-me-sheet .icn-ttl{margin:14px 0 6px;font:800 10px/1 system-ui;letter-spacing:.16em;color:#7ee9ff}"+ 
+      "#sn-me-sheet .icons{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;max-height:168px;overflow:auto}"+ 
+      "#sn-me-sheet .icons b{height:40px;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:10px;border:1px solid rgba(126,233,255,.28);background:rgba(4,16,28,.9)}"+ 
       "#sn-me-sheet .icons b.on{border-color:#4df0ff;box-shadow:0 0 10px #4df0ff}";
     document.head.appendChild(s);
   }
@@ -187,16 +234,20 @@
     var name=inNow?(u.name||u.email):"Guest";
     var mail=inNow?u.email:"Not signed in";
     var tel=(u&&u.phone)||read("sn:phone","")||"";
+    var verified=!!(u&&u.verified)|| (read("sn:phone-ok","")===tel && !!tel);
     body.innerHTML=
       '<div class="who '+(inNow?"in":"out")+'">'+face(u)+
         "<div><b>"+String(name).replace(/[<>]/g,"")+"</b><span>"+(inNow?"IN · "+String(mail).replace(/[<>]/g,""):"OUT")+"</span></div></div>"+
       (inNow
         ?'<button type="button" class="go" data-act="out">SIGN OUT</button>'
         :'<button type="button" class="go" data-act="google">GOOGLE</button>')+
-      '<input id="sn-me-phone" inputmode="tel" placeholder="Phone (unverified)" value="'+String(tel).replace(/"/g,"")+'">'+
+      '<input id="sn-me-phone" inputmode="tel" placeholder="+30 … mobile" value="'+String(tel).replace(/"/g,"")+'">'+
       '<button type="button" class="go" data-act="phone">SAVE PHONE</button>'+
+      '<button type="button" class="go" data-act="sms-send">SEND SMS CODE</button>'+
+      '<input id="sn-me-code" inputmode="numeric" maxlength="8" placeholder="6-digit code">'+
+      '<button type="button" class="go" data-act="sms-check">VERIFY CODE</button>'+
       '<div class="icn-ttl">MAP ICON</div><div class="icons">'+iconGrid()+'</div>'+
-      '<p class="note">'+(inNow?"Signed in with Google. Phone waits for Twilio.":"Sign in with Google. Each wallet is yours. Starts at zero.")+"</p>";
+      '<p class="note">'+(verified?"Phone verified by SMS from +18333030833.":(inNow?"Signed in with Google. Verify the phone with the SMS code.":"Sign in with Google, then verify your mobile with SMS."))+"</p>";
   }
   function iconGrid(){
     var cur=(window.SNYou&&SNYou.get&&SNYou.get())|| (function(){ try{ return localStorage.getItem("sn:you-icon")||"🛵"; }catch(e){ return "🛵"; } })();
@@ -225,6 +276,8 @@
           fillBody();
           return;
         }
+        if(act==="sms-send"){ sendCode(); return; }
+        if(act==="sms-check"){ checkCode(); return; }
         if(act==="icon"){
           var ic=b.getAttribute("data-icon")||"🛵";
           try{ localStorage.setItem("sn:you-icon", ic); }catch(e){}
@@ -265,7 +318,7 @@
       setInterval(placeMe, 800);
     }
   }
-  window.SNAuth={google:google,out:out,savePhone:savePhone,user:user,boot:boot,paint:paintMe,open:openMe};
+  window.SNAuth={google:google,out:out,savePhone:savePhone,sendCode:sendCode,checkCode:checkCode,user:user,boot:boot,paint:paintMe,open:openMe};
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();
 })();

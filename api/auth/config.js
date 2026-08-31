@@ -15,6 +15,6 @@ module.exports = async function handler(req, res) {
     google: true,
     via: "supabase",
     architect: architect,
-    phone_verify: "twilio_pending",
+    phone_verify: "twilio_ready",
   });
 };
