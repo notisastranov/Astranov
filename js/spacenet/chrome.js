@@ -16,21 +16,13 @@
     var isl=document.getElementById("island");
     if(!btn||!isl) return;
     if(btn.classList.contains("loose")||btn.classList.contains("drag")) return;
-    var n=0;
-    try{ n=Number(localStorage.getItem("sn:avc")||0); }catch(e){}
-    var used=0;
-    Array.prototype.forEach.call(isl.children, function(ch){
-      if(ch===btn) return;
-      used+=ch.getBoundingClientRect().width;
-    });
-    used+=8;
-    var leftover=Math.max(72, isl.clientWidth-used-16);
+    if(window.SNWallet&&SNWallet.fmt){ btn.textContent=SNWallet.fmt(Number(localStorage.getItem("sn:avc")||0)); return; }
+    var n=0; try{ n=Number(localStorage.getItem("sn:avc")||0);}catch(e){}
     btn.style.flex="1 1 auto";
     btn.style.whiteSpace="nowrap";
     btn.style.overflow="visible";
-    btn.style.maxWidth=leftover+"px";
+    btn.style.font="800 13px/1 system-ui";
     btn.textContent=fmtFull(n);
-    if(btn.scrollWidth>leftover+1) btn.textContent=fmtCompact(n);
   }
   function hookMoney(){
     if(window.SN&&SN.paintMoney&&!SN.paintMoney.__fit){
