@@ -1,4 +1,4 @@
-/* SpaceNet wallet 4105 — personal AV€ only. Pool is owner-only. */
+/* SpaceNet wallet 4119 — personal AV€ only. Phone is on YOU, not here. */
 (function(){
   var OWNER = {
     "notisastranov@gmail.com":1
@@ -99,14 +99,13 @@
     btn.title=!user()?"Sign in. Wallets start at zero.":(owner()?"Your pool. Only you see this.":"Your AV€. Only you see this.");
   }
   function cashHtml(){
-    var u=user(), bal=num("sn:avc"), phone=(u&&u.phone)||read("sn:phone","");
+    var u=user(), bal=num("sn:avc");
     var bits=[];
     if(!u){
       bits.push('<div class="bal">AV€ 0</div>');
-      bits.push('<p>Your wallet starts at zero. Sign in with Google. Phone is stored on your profile until Twilio verifies it.</p>');
+      bits.push('<p>Your wallet starts at zero. Sign in with Google. Phone lives on YOU — open the profile pill to verify it by SMS.</p>');
       bits.push('<button type="button" class="act" data-act="google">CONTINUE WITH GOOGLE</button>');
-      bits.push('<label>Phone (unverified)<input id="sn-phone" type="tel" inputmode="tel" placeholder="+30 …" value="'+String(phone).replace(/"/g,"")+'">');
-      bits.push('<button type="button" class="act" data-act="save-phone">SAVE PHONE</button>');
+      bits.push('<button type="button" class="act" data-act="you">OPEN PROFILE</button>');
       return bits.join("");
     }
     bits.push('<div class="bal">'+fmt(bal)+'</div>');
@@ -116,8 +115,8 @@
       bits.push('<p>Owner pool: '+fmt(num("sn:pool"))+'</p>');
       bits.push('<p>SpaceNet 3% filed: '+fmt(num("sn:platform"))+'</p>');
     }
-    bits.push('<label>Phone (unverified until Twilio)<input id="sn-phone" type="tel" inputmode="tel" placeholder="+30 …" value="'+String(phone).replace(/"/g,"")+'"></label>');
-    bits.push('<button type="button" class="act" data-act="save-phone">SAVE PHONE</button>');
+    bits.push('<p>Phone and SMS verify sit on YOU, not in the bank.</p>');
+    bits.push('<button type="button" class="act" data-act="you">OPEN PROFILE</button>');
     bits.push('<button type="button" class="act" data-act="reload">RELOAD EUR → AV€</button>');
     bits.push('<button type="button" class="act" data-act="out">SIGN OUT</button>');
     return bits.join("");
@@ -129,10 +128,10 @@
     body.onclick=function(e){
       var act=e.target && e.target.getAttribute && e.target.getAttribute("data-act");
       if(act==="google" && window.SNAuth && SNAuth.google) SNAuth.google();
-      if(act==="save-phone"){
-        var inp=document.getElementById("sn-phone");
-        var tel=inp&&inp.value||"";
-        if(window.SNAuth && SNAuth.savePhone) SNAuth.savePhone(tel);
+      if(act==="you"){
+        var cash=document.getElementById("sn-cash");
+        if(cash) cash.classList.remove("on");
+        if(window.SNAuth && SNAuth.open) SNAuth.open();
       }
       if(act==="reload"){ reload(10); }
       if(act==="out" && window.SNAuth && SNAuth.out) SNAuth.out();
