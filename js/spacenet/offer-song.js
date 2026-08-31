@@ -6,19 +6,16 @@
   function choir(){
     var c=window.__snActx;
     var master=window.__snMaster;
-    if(!c || !master){
-      var AC=window.AudioContext||window.webkitAudioContext;
-      if(!AC) return;
-      if(!c){ c=new AC(); window.__snActx=c; }
-      if(c.state==="suspended") c.resume();
-      if(!master){
-        master=c.createGain();
-        master.gain.value=0.8;
-        master.connect(c.destination);
-        window.__snMaster=master;
-      }
-    }
+    var AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC) return;
+    if(!c){ c=new AC(); window.__snActx=c; }
     if(c.state==="suspended") c.resume();
+    if(!master){
+      master=c.createGain();
+      master.gain.value=0.82;
+      master.connect(c.destination);
+      window.__snMaster=master;
+    }
     var t0=c.currentTime;
     var T=13.6;
     var A=432;
@@ -67,12 +64,10 @@
       o.stop(at+dur+0.03); lfo.stop(at+dur+0.03);
     }
 
-    /* purr bed — sinks with the whale floor */
     purr(A/16, t0+0.2, T-0.5, 0.16);
     purr(A/8, t0+0.4, T-0.7, 0.12);
     purr(A/4, t0+1.0, 8.8, 0.08);
 
-    /* cat meows on every 432 band, falling with the dolphin whistles */
     meow(A/8, A/4, A/16, t0+0.35, 1.1, 0.22);
     meow(A/4, A/2, A/8, t0+0.9, 1.0, 0.2);
     meow(A/2, A, A/4, t0+1.6, 0.95, 0.22);
@@ -88,22 +83,25 @@
     meow(A, A/2, A/16, t0+11.8, 1.6, 0.14);
   }
 
+  function armThrow(){
+    choir();
+    setTimeout(choir, 3200);
+  }
+
   function hook(){
-    if(!window.SNThrow || SNThrow.__cats) return;
-    var orig=SNThrow.throw;
-    SNThrow.throw=function(job){
-      orig.apply(this, arguments);
-      setTimeout(choir, 80);
-      setTimeout(choir, 3280);
-    };
-    if(SNThrow.splash && SNThrow.splash!==SNThrow.throw){
-      var splash=SNThrow.splash;
-      SNThrow.splash=function(job){
-        splash.apply(this, arguments);
-        setTimeout(choir, 80);
+    if(window.SNThrow && !SNThrow.__cats){
+      var orig=SNThrow.throw;
+      SNThrow.throw=function(job){
+        orig.apply(this, arguments);
+        armThrow();
       };
+      SNThrow.__cats=true;
     }
-    SNThrow.__cats=true;
+    var btn=document.getElementById("sn-tasks-btn");
+    if(btn && !btn.__snCats){
+      btn.__snCats=true;
+      btn.addEventListener("click", function(){ setTimeout(armThrow, 40); }, true);
+    }
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", hook);
   else hook();
