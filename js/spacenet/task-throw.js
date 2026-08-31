@@ -84,42 +84,67 @@
     var c=ctx();
     if(!c) return;
     var t0=c.currentTime;
-    function tone(type, f0, f1, g0, dur, delay){
+    var T=13.4;
+    function env(g, t, a, peak, hold, rel, lvl){
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(lvl, t+a);
+      g.gain.setValueAtTime(lvl, t+a+hold);
+      g.gain.exponentialRampToValueAtTime(0.0001, t+a+hold+rel);
+    }
+    function osc(type, f0, f1, t, dur, lvl){
       var o=c.createOscillator(), g=c.createGain(), f=c.createBiquadFilter();
       o.type=type;
       f.type="lowpass";
-      o.frequency.setValueAtTime(f0, t0+delay);
-      o.frequency.exponentialRampToValueAtTime(Math.max(30,f1), t0+delay+dur);
-      f.frequency.setValueAtTime(Math.max(800,f0*2), t0+delay);
-      f.frequency.exponentialRampToValueAtTime(280, t0+delay+dur);
-      g.gain.setValueAtTime(0.0001, t0+delay);
-      g.gain.exponentialRampToValueAtTime(g0, t0+delay+0.16);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0+delay+dur);
+      f.Q.value=0.7;
+      o.frequency.setValueAtTime(f0, t);
+      o.frequency.exponentialRampToValueAtTime(Math.max(20,f1), t+dur);
+      f.frequency.setValueAtTime(Math.min(18000, Math.max(f0,f1)*2), t);
+      f.frequency.exponentialRampToValueAtTime(Math.max(80, Math.min(f0,f1)*1.4), t+dur);
+      env(g, t, 0.12, lvl, Math.max(0.05, dur-0.9), 0.7, lvl);
       o.connect(f); f.connect(g); g.connect(c.destination);
-      o.start(t0+delay); o.stop(t0+delay+dur+0.05);
+      o.start(t); o.stop(t+dur+0.05);
     }
-    tone("sawtooth", 2100, 95, 0.18, 1.85, 0);
-    tone("sine", 880, 62, 0.11, 1.9, 0.04);
-    tone("triangle", 420, 48, 0.08, 1.7, 0.12);
-    var splashT=1.82;
-    var n=Math.floor(c.sampleRate*0.3), buf=c.createBuffer(1,n,c.sampleRate), d=buf.getChannelData(0), i;
-    for(i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n, 2.2);
-    var src=c.createBufferSource(), bp=c.createBiquadFilter(), sg=c.createGain();
-    src.buffer=buf; bp.type="bandpass"; bp.frequency.value=1600; bp.Q.value=0.7;
-    sg.gain.setValueAtTime(0.32, t0+splashT);
-    sg.gain.exponentialRampToValueAtTime(0.0001, t0+splashT+0.32);
-    src.connect(bp); bp.connect(sg); sg.connect(c.destination);
-    src.start(t0+splashT);
-    var thud=c.createOscillator(), tg=c.createGain();
-    thud.type="sine";
-    thud.frequency.setValueAtTime(110, t0+splashT);
-    thud.frequency.exponentialRampToValueAtTime(32, t0+splashT+0.4);
-    tg.gain.setValueAtTime(0.36, t0+splashT);
-    tg.gain.exponentialRampToValueAtTime(0.0001, t0+splashT+0.42);
-    thud.connect(tg); tg.connect(c.destination);
-    thud.start(t0+splashT); thud.stop(t0+splashT+0.45);
+    function noiseBand(t, dur, freq, q, lvl, type){
+      var n=Math.floor(c.sampleRate*dur), buf=c.createBuffer(1,n,c.sampleRate), d=buf.getChannelData(0), i;
+      for(i=0;i<n;i++) d[i]=Math.random()*2-1;
+      var src=c.createBufferSource(); src.buffer=buf;
+      var bp=c.createBiquadFilter(); bp.type=type||"bandpass"; bp.frequency.value=freq; bp.Q.value=q;
+      var g=c.createGain();
+      env(g, t, 0.04, lvl, dur*0.35, dur*0.6, lvl);
+      src.connect(bp); bp.connect(g); g.connect(c.destination);
+      src.start(t); src.stop(t+dur+0.02);
+    }
+    /* jet: high scream down through the pass, 13s of air */
+    osc("sawtooth", 9800, 180, t0, T-0.4, 0.16);
+    osc("sawtooth", 6400, 90, t0+0.15, T-0.6, 0.12);
+    osc("sine", 4200, 55, t0+0.2, T-0.5, 0.1);
+    osc("triangle", 1800, 40, t0+0.35, T-0.7, 0.09);
+    osc("sine", 220, 28, t0+0.5, T-0.8, 0.14);
+    osc("sine", 80, 22, t0+0.8, T-1.0, 0.16);
+    /* full-spectrum wash so it cuts any room noise */
+    noiseBand(t0+0.05, T-0.2, 80, 0.4, 0.1, "lowpass");
+    noiseBand(t0+0.1, T-0.3, 250, 0.6, 0.08, "bandpass");
+    noiseBand(t0+0.12, T-0.3, 900, 0.7, 0.09, "bandpass");
+    noiseBand(t0+0.14, T-0.35, 2500, 0.8, 0.1, "bandpass");
+    noiseBand(t0+0.16, T-0.4, 6000, 0.9, 0.11, "bandpass");
+    noiseBand(t0+0.18, T-0.45, 10000, 0.8, 0.1, "highpass");
+    noiseBand(t0+0.2, T-0.5, 14000, 0.7, 0.08, "highpass");
+    /* splash hit ~1.8s then a second body hit, long decay to 13s */
+    function splash(at, lvl){
+      noiseBand(at, 4.8, 60, 0.3, lvl*0.9, "lowpass");
+      noiseBand(at, 3.6, 400, 0.5, lvl*0.7, "bandpass");
+      noiseBand(at, 3.2, 1800, 0.6, lvl, "bandpass");
+      noiseBand(at, 2.8, 5000, 0.7, lvl*0.95, "bandpass");
+      noiseBand(at, 2.4, 9000, 0.6, lvl*0.85, "highpass");
+      noiseBand(at, 2.0, 15000, 0.5, lvl*0.7, "highpass");
+      osc("sine", 140, 32, at, 5.2, lvl*0.9);
+      osc("triangle", 90, 24, at, 6.0, lvl*0.7);
+      osc("sawtooth", 3200, 120, at, 3.4, lvl*0.35);
+    }
+    splash(t0+1.75, 0.28);
+    splash(t0+3.1, 0.18);
+    splash(t0+6.2, 0.12);
   }
-
   function overlayNote(job){
     var title="TASK  "+euro(job.price,false);
     var body=km(job.km)+" · "+job.vendor+" → "+job.client;
