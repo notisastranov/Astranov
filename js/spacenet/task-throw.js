@@ -340,6 +340,21 @@
 
   function throwSplash(job){
     css();
+    ctx();
+    if(job && !job.__delayed){
+      job.__delayed=true;
+      try{ if(window.SN&&SN.talk) SN.talk("Three seconds. Home screen."); }catch(e){}
+      var btn=document.getElementById("sn-tasks-btn");
+      var left=3;
+      if(btn) btn.textContent="3";
+      var iv=setInterval(function(){
+        left--;
+        if(btn) btn.textContent=left>0?String(left):"TASKS";
+        if(left<=0) clearInterval(iv);
+      }, 1000);
+      setTimeout(function(){ throwSplash(job); }, 3200);
+      return;
+    }
     var el=document.getElementById("sn-throw");
     if(!el){
       el=document.createElement("div");
