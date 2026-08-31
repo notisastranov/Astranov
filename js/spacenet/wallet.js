@@ -1,4 +1,4 @@
-/* SpaceNet wallet 4104 — personal AV€ only. Pool is owner-only. */
+/* SpaceNet wallet 4105 — personal AV€ only. Pool is owner-only. */
 (function(){
   var OWNER = {
     "notisastranov@gmail.com":1
@@ -60,19 +60,34 @@
     }
     return Math.max(0, isl.clientWidth-used-28);
   }
+  function euro(n, dec){
+    n=Number(n)||0;
+    var sign=n<0?"−":"";
+    n=Math.abs(n);
+    var cents=Math.round((n-Math.floor(n+1e-9))*100);
+    var whole=dec?Math.floor(n+1e-9):Math.round(n);
+    var s=String(whole), bits=[];
+    while(s.length>3){ bits.unshift(s.slice(-3)); s=s.slice(0,-3); }
+    if(s) bits.unshift(s);
+    var out=sign+"AV€ "+bits.join(".");
+    if(dec && cents) out+=","+(cents<10?"0":"")+cents;
+    return out;
+  }
+  function bankOpen(){
+    var cash=document.getElementById("sn-cash");
+    return !!(cash && cash.classList.contains("on"));
+  }
   function fmt(n){
     n=Number(n)||0;
+    var dec=bankOpen();
     var btn=document.getElementById("sn-money");
-    var font=(btn&&window.getComputedStyle)?getComputedStyle(btn).font:"800 13px system-ui";
+    var font=(btn&&window.getComputedStyle)?getComputedStyle(btn).font:"800 13px ui-monospace,system-ui";
     var room=roomFor(btn);
     var pad=28;
-    var full="AV€ "+n.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});
+    var full=euro(n, dec);
     if(measure(full,font)+pad<=room) return full;
-    var whole="AV€ "+Math.round(n).toLocaleString("en-GB");
-    if(measure(whole,font)+pad<=room) return whole;
-    if(n>=1000000) return "AV€ "+(n/1000000).toFixed(n%1000000?1:0)+"M";
-    if(n>=10000) return "AV€ "+Math.round(n/1000)+"k";
-    return whole;
+    if(n>=1000000) return "AV€ "+String(Math.round(n/1000000))+"M";
+    return full;
   }
   function paint(){
     var btn=document.getElementById("sn-money");
