@@ -3,6 +3,7 @@
   if(window.__snTaskThrow) return;
   window.__snTaskThrow=true;
 
+  function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
   function euro(n, dec){
     n=Number(n)||0;
     var sign=n<0?"−":"";
@@ -200,13 +201,28 @@
     var pay=document.getElementById("sn-throw-pay");
     var route=document.getElementById("sn-throw-route");
     if(pay) pay.textContent=euro(job.price, false);
-    if(route) route.innerHTML=
-      "<b>ROUTE</b>"+
-      '<div class="row"><span>Distance</span><span>'+km(job.km)+"</span></div>"+
-      '<div class="row"><span>Vendor</span><span>'+job.vendor+"</span></div>"+
-      '<div class="row"><span>Client</span><span>'+job.client+"</span></div>"+
-      '<div class="row"><span>From</span><span>'+job.from+"</span></div>"+
-      '<div class="row"><span>To</span><span>'+job.to+"</span></div>";
+    if(route){
+      if(job.labor){
+        var extras=(job.extras||[]).join(" · ")||"None";
+        route.innerHTML=
+          "<b>OPEN TASK</b>"+
+          '<div class="row"><span>What</span><span>'+esc(job.what||"Labor")+"</span></div>"+
+          '<div class="row"><span>Hours</span><span>'+String(job.hours).replace(".",",")+"</span></div>"+
+          '<div class="row"><span>Labor</span><span>'+euro(job.base||0,false)+"</span></div>"+
+          '<div class="row"><span>Specials</span><span>'+esc(extras)+"</span></div>"+
+          '<div class="row"><span>Special fee</span><span>'+euro(job.extra||0,false)+" fixed</span></div>"+
+          '<div class="row"><span>Client</span><span>'+esc(job.client||"YOU")+"</span></div>"+
+          '<div class="row"><span>Vendor</span><span>Open board — any associate</span></div>';
+      } else {
+        route.innerHTML=
+          "<b>ROUTE</b>"+
+          '<div class="row"><span>Distance</span><span>'+km(job.km)+"</span></div>"+
+          '<div class="row"><span>Vendor</span><span>'+esc(job.vendor)+"</span></div>"+
+          '<div class="row"><span>Client</span><span>'+esc(job.client)+"</span></div>"+
+          '<div class="row"><span>From</span><span>'+esc(job.from)+"</span></div>"+
+          '<div class="row"><span>To</span><span>'+esc(job.to)+"</span></div>";
+      }
+    }
     el.classList.remove("on");
     void el.offsetWidth;
     el.classList.add("on");
@@ -280,7 +296,7 @@
       SN.pack.__throw=true;
     }
   }
-  window.SNThrow={throw:function(){ throwSplash(jobOf()); }, park:park, euro:euro};
+  window.SNThrow={throw:function(job){ throwSplash(job||jobOf()); }, park:park, euro:euro, splash:throwSplash};
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", hook);
   else hook();
   window.addEventListener("resize", park);
