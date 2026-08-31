@@ -81,8 +81,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--sn);outline-off
 #sn-pill{position:fixed;z-index:46;display:none;height:36px;padding:0 14px;border-radius:999px;border:1px solid rgba(126,233,255,.65);background:rgba(4,16,28,.92);color:#7ee9ff;font:800 11px/1 system-ui;letter-spacing:.16em;pointer-events:auto}
 #sn-pill.on{display:block}
 #sn-pill.glow{animation:pillglow 1.5s ease-in-out infinite}
-#sn-tasks-btn{position:fixed;z-index:46;display:none;height:36px;padding:0 12px;border-radius:999px;border:1px solid rgba(126,233,255,.65);background:rgba(4,16,28,.92);color:#7ee9ff;font:800 11px/1 system-ui;letter-spacing:.16em;pointer-events:auto}
-#sn-tasks-btn.on{display:block}
+#sn-tasks-btn{position:fixed;z-index:50;display:flex;align-items:center;justify-content:center;height:36px;padding:0 12px;border-radius:999px;border:1px solid rgba(126,233,255,.65);background:rgba(4,16,28,.92);color:#7ee9ff;font:800 11px/1 system-ui;letter-spacing:.16em;pointer-events:auto}
+#sn-tasks-btn.on{display:flex}
 #sn-layer{position:fixed;z-index:46;display:none;height:36px;padding:0 12px;border-radius:999px;border:1px solid rgba(126,233,255,.65);background:rgba(4,16,28,.92);color:#7ee9ff;font:800 11px/1 system-ui;letter-spacing:.16em;pointer-events:auto}
 #sn-layer.on{display:block}
 #sn-layers{position:fixed;z-index:72;display:none;min-width:160px;padding:8px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.45);border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,.5);pointer-events:auto}
@@ -219,9 +219,10 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
 <script src="/js/vendor/leaflet.js?v=4080"></script>
 <script src="/js/spacenet/work.js?v=4080"></script>
 <script src="/js/spacenet/app.js?v=4080"></script>
-<script src="/js/spacenet/auth.js?v=4104"></script>
+<script src="/js/spacenet/auth.js?v=4105"></script>
 <script src="/js/spacenet/profile.js?v=4103"></script>
-<script src="/js/spacenet/wallet.js?v=4104"></script>
+<script src="/js/spacenet/wallet.js?v=4105"></script>
+<script src="/js/spacenet/task-throw.js?v=4105"></script>
 <script>
 (function(){
   var VER="4080";
