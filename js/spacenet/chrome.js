@@ -60,6 +60,7 @@
     }
     park(pwr,"left");
     park(sup,"right");
+    if(window.SNThrow&&SNThrow.park) SNThrow.park();
     fitMoney();
   }
   function hook(){
