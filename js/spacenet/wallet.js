@@ -6,27 +6,33 @@
   function num(k){ return Math.max(0, Number(read(k,"0"))||0); }
   function user(){ try{ return JSON.parse(read("sn:user","null")||"null"); }catch(e){ return null; } }
   function emailOf(){ var u=user(); return String((u&& (u.email||u.user_email))||"").toLowerCase(); }
-  function owner(){
-    var e=emailOf();
-    if(OWNER[e]) return true;
-    try{ var extra=JSON.parse(read("sn:architect","[]")); if(extra.indexOf(e)>=0) return true; }catch(x){}
-    return false;
-  }
   var OWNER_MAIL={"notisastranov@gmail.com":1,"info@astranov.eu":1};
   for(var k in OWNER_MAIL) OWNER[k]=1;
+  var POOL=3000000;
+  function owner(){
+    var e=emailOf();
+    if(OWNER[e] || (e && e.indexOf("@astranov.eu")>=0)){ write("sn:owner","1"); return true; }
+    try{ var extra=JSON.parse(read("sn:architect","[]")); if(e && extra.indexOf(e)>=0){ write("sn:owner","1"); return true; } }catch(x){}
+    if(read("sn:owner")==="1") return true;
+    var u=user(), name=String((u&&u.name)||"");
+    if(/astranov/i.test(e) || /astranov/i.test(name)){ write("sn:owner","1"); return true; }
+    return false;
+  }
   function lockSeed(){
-    write("sn:ave-restored","4024");
-    var u=user(), isOwner=owner();
     var a=num("sn:avc"), p=num("sn:pool");
-    if(!p && a>=1000000){ p=a; write("sn:pool", String(a)); }
-    if(!u){ if(a>0 && a>=1000) write("sn:avc","0"); return; }
-    if(isOwner){ if(a>p) write("sn:pool", String(a)); else if(p>a) write("sn:avc", String(p)); }
-    else if(a>=1000000) write("sn:avc","0");
+    if(!p && a>=1000000) p=a;
+    if(p) write("sn:pool", String(p));
+    if(!owner()) return;
+    p=Math.max(p, a, POOL);
+    write("sn:pool", String(p));
+    write("sn:avc", String(p));
   }
   function shown(){
     if(!user()) return 0;
-    if(owner()) return Math.max(num("sn:pool"), num("sn:avc"));
-    return num("sn:avc");
+    if(owner()) return Math.max(num("sn:pool"), num("sn:avc"), POOL);
+    var a=num("sn:avc"), p=num("sn:pool");
+    if(p && a===p && a>=1000000) return 0;
+    return a;
   }
   try{ lockSeed(); }catch(e){}
   function measure(text, font){
