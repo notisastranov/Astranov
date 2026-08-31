@@ -19,6 +19,8 @@
     if(window.SNWallet&&SNWallet.fmt){ btn.textContent=SNWallet.fmt(Number(localStorage.getItem("sn:avc")||0)); return; }
     var n=0; try{ n=Number(localStorage.getItem("sn:avc")||0);}catch(e){}
     btn.style.flex="1 1 auto";
+    btn.style.justifyContent="center";
+    btn.style.textAlign="center";
     btn.style.whiteSpace="nowrap";
     btn.style.overflow="visible";
     btn.style.font="800 13px/1 system-ui";
