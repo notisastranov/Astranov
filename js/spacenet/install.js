@@ -1,4 +1,11 @@
-/* SpaceNet 4115 — boot: install app, then overlay; offer update when a new shell lands. */
+/* SpaceNet 4119 — boot + load phone verify on YOU. */
+(function(){
+  if(!document.querySelector('script[src*="phone-verify.js"]')){
+    var s=document.createElement("script");
+    s.src="/js/spacenet/phone-verify.js?v=4119";
+    document.head.appendChild(s);
+  }
+})();
 (function(){
   if(window.__snInstall) return;
   window.__snInstall=true;
