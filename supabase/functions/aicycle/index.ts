@@ -83,8 +83,8 @@ async function callAnthropic(key: string, system: string, messages: Msg[]): Prom
   } catch { return null }
 }
 
-const LLM_TIMEOUT_MS = 14000
-const PAID_TIMEOUT_MS = 28000
+const LLM_TIMEOUT_MS = 28000
+const PAID_TIMEOUT_MS = 45000
 const PAID_MAX_TOKENS = 4096
 
 async function withTimeout<T>(p: Promise<T>, ms = LLM_TIMEOUT_MS): Promise<T | null> {
@@ -115,7 +115,8 @@ async function callOpenAICompat(
     }
     if (opts.tools && opts.tools.length) {
       body.tools = opts.tools
-      body.tool_choice = 'auto'
+      var hasFn = opts.tools.some(function (x) { return x && x.type === 'function' })
+      if (hasFn) body.tool_choice = 'auto'
     }
     const r = await fetch(url, {
       method: 'POST',
@@ -169,6 +170,11 @@ async function callOpenRouter(key: string, system: string, messages: Msg[], mode
   )
 }
 
+const NET = [
+  { type: 'web_search' },
+  { type: 'x_search' },
+]
+
 const HANDS = [
   {
     type: 'function',
@@ -198,7 +204,7 @@ const HANDS = [
 
 async function callXAI(key: string, system: string, messages: Msg[], noHands = false): Promise<string | null> {
   const primary = Deno.env.get('XAI_MODEL') || Deno.env.get('GROK_MODEL') || 'grok-4-1-fast-non-reasoning'
-  const paidOpts = { maxTokens: PAID_MAX_TOKENS, timeoutMs: PAID_TIMEOUT_MS, tools: noHands ? undefined : HANDS }
+  const paidOpts = { maxTokens: PAID_MAX_TOKENS, timeoutMs: PAID_TIMEOUT_MS, tools: noHands ? NET : NET.concat(HANDS) }
   const models = [primary, 'grok-4-1-fast-non-reasoning', 'grok-4', 'grok-4-0709', 'grok-3']
   const seen = new Set<string>()
   for (const m of models) {
@@ -416,7 +422,7 @@ serve(async (req) => {
         userMemory.slice(0, 6).map((c, i) => `${i + 1}. ${c}`).join('\n')
     }
     if (mayUsePaidXai) {
-      system += `\n\nHANDS: You are the full paid flagship mind. You have tools. When they name a YouTube clip, call youtube_search. When they name a place, call fly_earth. When they want a picture, call imagine_image. Do the job — do not describe searching. You may write a few sentences, not one clipped line.`
+      system += `\n\nHANDS: You are the full paid flagship mind. You have tools. When they name a YouTube clip, call youtube_search. When they name a place, call fly_earth. When they want a picture, call imagine_image. For where, best, news, weather, legal, reviews, mooring, or anything that exists in the world: use web_search and x_search first, then pin a pick plus alternatives. Do the job — do not describe searching. You may write a few sentences, not one clipped line.`
     }
     }
 
