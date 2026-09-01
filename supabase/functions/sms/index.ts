@@ -22,28 +22,43 @@ function twiml(msg: string) {
     '</Message></Response>'
   return new Response(body, { status: 200, headers: { ...CORS, 'Content-Type': 'text/xml' } })
 }
+function takeSid(s: string) {
+  const m = String(s || '').match(/AC[a-fA-F0-9]{32}/)
+  return m ? m[0] : ''
+}
 function creds() {
   const raw = (Deno.env.get('Twilio') || Deno.env.get('TWILIO') || Deno.env.get('TWILIO_AUTH_TOKEN') || '').trim()
-  let sid = Deno.env.get('TWILIO_ACCOUNT_SID') || Deno.env.get('TWILIO_SID') || SID_DEFAULT
-  let token = raw
+  let sid = takeSid(Deno.env.get('TWILIO_ACCOUNT_SID') || '') || takeSid(Deno.env.get('TWILIO_SID') || '')
+  let token = ''
   let from = Deno.env.get('TWILIO_FROM') || Deno.env.get('TWILIO_NUMBER') || FROM_DEFAULT
-  let user = sid
+  let user = ''
   if (raw.startsWith('{')) {
     try {
       const j = JSON.parse(raw)
-      sid = j.sid || j.accountSid || j.account_sid || sid
-      token = j.token || j.authToken || j.auth_token || j.secret || j.key || token
-      from = j.from || j.number || from
-      if (String(j.key || j.apiKey || '').startsWith('SK')) user = j.key || j.apiKey
+      sid = takeSid(String(j.sid || j.accountSid || j.account_sid || j.TWILIO_ACCOUNT_SID || j.AccountSid || '')) || sid
+      token = String(j.token || j.authToken || j.auth_token || j.secret || j.TWILIO_AUTH_TOKEN || '')
+      from = String(j.from || j.number || from)
+      if (String(j.key || j.apiKey || '').startsWith('SK')) user = String(j.key || j.apiKey)
     } catch { /* keep */ }
-  } else if (raw.includes('|') || (raw.includes(':') && (raw.startsWith('AC') || raw.startsWith('SK')))) {
+  } else if (raw.startsWith('AC') && raw.length >= 34) {
+    sid = takeSid(raw) || sid
+    const rest = raw.slice(34).replace(/^[:|]/, '')
+    if (rest && !rest.startsWith('AC')) token = rest
+    else if (raw.includes('|') || raw.includes(':')) {
+      const sep = raw.includes('|') ? '|' : ':'
+      token = raw.slice(raw.indexOf(sep) + 1)
+      sid = takeSid(raw.split(sep)[0]) || sid
+    }
+  } else if (raw.startsWith('SK') && (raw.includes(':') || raw.includes('|'))) {
     const sep = raw.includes('|') ? '|' : ':'
-    const a = raw.split(sep)[0]
-    const b = raw.slice(a.length + 1)
-    if (a.startsWith('AC')) { sid = a; token = b; user = a }
-    else if (a.startsWith('SK')) { token = b; user = a }
+    user = raw.split(sep)[0]
+    token = raw.slice(user.length + 1)
+  } else if (raw && !raw.startsWith('AC')) {
+    token = raw
   }
-  if (token.startsWith('SK') && !token.includes(':')) user = token
+  sid = sid || takeSid(SID_DEFAULT)
+  if (!token && raw && !raw.startsWith('{') && !raw.startsWith('AC')) token = raw
+  user = user || sid
   return { sid, token, from, user }
 }
 function sb() {
@@ -133,7 +148,7 @@ serve(async (req) => {
   const ct = req.headers.get('content-type') || ''
   if (req.method === 'GET') {
     const { sid, token, from, user } = creds()
-    return json({ ok: true, configured: !!token, from, account: sid.slice(0, 10) + '…', phone_verify: token ? 'ready' : 'missing_secret' })
+    return json({ ok: true, configured: !!token, from, account: (sid||'').slice(0, 10) + '…', sid_len: (sid||'').length, phone_verify: (sid||'').length===34 && token ? 'ready' : 'bad_sid' })
   }
   let form: Record<string, string> = {}
   let body: Record<string, unknown> = {}
