@@ -18,13 +18,14 @@
   var listening=false, speaking=false, wantEar=false, rec=null, permsTried=false, mindHist=[], paying=false;
   function say(t){ if(lineEl&&t!=null) lineEl.textContent=String(t); packSoon(); }
   function noCoords(t){ return String(t||"").replace(/\b-?\d+\.\d+\s*[NS],?\s*-?\d+\.\d+\s*[EW]\b/gi,"").replace(/\b-?\d{1,3}\.\d+\s*,\s*-?\d{1,3}\.\d+\b/g,"").replace(/\s{2,}/g," ").trim(); }
-  function talk(t){ t=noCoords(t); if(!t) return; say(t); stopListen(); speaking=true; try{ if(window.speechSynthesis){ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t)); var v=pickVoice(t); if(v) u.voice=v; u.lang=(v&&v.lang)||(/[\u0370-\u03FF]/.test(t)?"el-GR":"en-GB"); u.pitch=0.72; u.rate=0.86; u.volume=1; u.onend=function(){ speaking=false; }; u.onerror=function(){ speaking=false; }; speechSynthesis.speak(u); return; } }catch(e){} speaking=false; }
+  function talk(t){ t=noCoords(t); if(!t) return; say(t); stopListen(); speaking=true; try{ if(window.speechSynthesis){ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(String(t)); var v=pickVoice(t); if(v) u.voice=v; u.lang=(v&&v.lang)||(/[\u0370-\u03FF]/.test(t)?"el-GR":"en-GB"); u.pitch=0.95; u.rate=0.88; u.volume=1; u.onend=function(){ speaking=false; }; u.onerror=function(){ speaking=false; }; speechSynthesis.speak(u); return; } }catch(e){} speaking=false; }
   var voicePick=null, voiceEl=null;
   function scoreVoice(v, greek){
     var n=((v&&v.name)||"")+" "+((v&&v.lang)||"");
     var s=0;
-    if(/male/i.test(n) && !/female/i.test(n)) return -10;
-    if(greek){ if(/^el/i.test(v.lang)) s+=8; } else { if(/^en-GB/i.test(v.lang)) s+=6; else if(/^en/i.test(v.lang)) s+=4; }
+    if(/en-in|en-pk|india|indian|pakistan|urdu|hindi|bengali|tamil|malayalam|rishi|compact|pakistani/i.test(n)) return -100;
+    if(/male/i.test(n) && !/female/i.test(n)) return -40;
+    if(greek){ if(/^el/i.test(v.lang)) s+=8; } else { if(/^en-GB/i.test(v.lang)) s+=16; else if(/^en-US/i.test(v.lang)) s+=8; else if(/^en/i.test(v.lang)) s+=2; }
     if(/uk english female|google uk.*female|samantha|moira|fiona|karen|tessa|zira|hazel|susan|serena|victoria/i.test(n)) s+=10;
     if(/female|woman/i.test(n)) s+=6;
     if(/google/i.test(n)) s+=2;
@@ -1026,8 +1027,8 @@
   function avcAdd(n){ avcSet(avcGet()+Number(n||0)); }
   function humanName(j){ if(!j) return ""; var a=j.address||j.properties||{}; var blob=String((j.name||"")+" "+(j.display_name||"")+" "+(a.name||"")+" "+(a.water||"")).toLowerCase(); var n=j.name||a.amenity||a.shop||a.road||a.street||a.neighbourhood||a.suburb||a.village||a.town||a.city||a.locality||a.municipality||a.county||""; if(/ocean|sea|gulf|strait|bay of/.test(blob) && !a.road && !a.street && !a.amenity && !a.shop) return ""; n=String(n||"").trim(); if(/^-?\d+\.\d+/.test(n)) return ""; return n; }
   function overpassFilters(q){ var l=q.toLowerCase(); if(/beer|μπύρα|μπυρα|ale|lager|pub/.test(l)) return ['["amenity"~"pub|bar|biergarten",i]','["shop"~"alcohol|beverages",i]','["name"~"beer|pub|bar|μπύρα",i]']; if(/pizza|πιτσ/.test(l)) return ['["cuisine"~"pizza",i]','["name"~"pizza|pizzeria|πιτσ",i]']; if(/burger|hamburger|cheeseburger|μπέργκερ|μπουργκερ/.test(l)) return ['["cuisine"~"burger",i]','["name"~"burger|hamburger|goody|mcdonald|burger king",i]','["amenity"="fast_food"]']; if(/gyro|gyros|souvlaki|kebab|shawarma|γυρο|σουβλ/.test(l)) return ['["cuisine"~"kebab|greek|grill",i]','["name"~"gyro|gyros|souvlaki|kebab|γυρο|σουβλ",i]','["amenity"="fast_food"]']; if(/coffee|cafe|καφ/.test(l)) return ['["amenity"="cafe"]']; if(/pharm|medicine|φαρμα/.test(l)) return ['["amenity"="pharmacy"]']; if(/ice|gelato|παγω/.test(l)) return ['["amenity"="ice_cream"]','["cuisine"~"ice_cream",i]']; if(/food|restaurant|eat|φαγη|soup|salad|sushi/.test(l)) return ['["amenity"~"restaurant|fast_food|cafe"]']; if(/supermarket|grocery|market/.test(l)) return ['["shop"~"supermarket|convenience"]']; if(/shop|store/.test(l)) return ['["shop"]']; var e=escOverpass(q); return ['["name"~"'+e+'",i]','["cuisine"~"'+e+'",i]','["amenity"~"'+e+'",i]','["shop"~"'+e+'",i]']; }
-  function isBrand(q){ var l=String(q||"").trim(); if(!l) return false; if(/^(pizza|pizzeria|burger|beer|coffee|cafe|gyro|souvlaki|food|restaurant|shop|pharmacy|ice cream|φαγητό|πιτσα|πιτσαρία)$/i.test(l)) return false; return l.length>=5; }
-  function nameHit(v,q){ var n=String((v&&v.name)||"").toLowerCase().replace(/[^a-z0-9\u0370-\u03ff]+/g,""); var qq=String(q||"").toLowerCase().replace(/[^a-z0-9\u0370-\u03ff]+/g,""); if(!qq||qq.length<3) return true; return n.indexOf(qq)>=0; }
+  function isBrand(q){ var l=String(q||"").trim(); if(!l) return false; if(/\b(pizza|pizzeria|burger|beer|coffee|cafe|gyro|souvlaki|food|restaurant|shop|pharmacy|ice cream|best|near|φαγητό|πιτσα|πιτσαρία)\b/i.test(l)) return false; if(/\b(rhodes|rodos|ρόδο|greece|ελλάδ|athens|αθήνα)\b/i.test(l)) return false; if(/^(pizza|pizzeria|burger|beer|coffee|cafe|gyro|souvlaki|food|restaurant|shop|pharmacy|ice cream|φαγητό|πιτσα|πιτσαρία)$/i.test(l)) return false; return l.length>=5; }
+  function nameHit(v,q){ var hay=(String((v&&v.name)||"")+" "+String((v&&v.raw)||"")).toLowerCase(); var qq=String(q||"").toLowerCase(); var toks=qq.split(/[^a-z0-9\u0370-\u03ff]+/).filter(function(t){ return t.length>=3 && !/^(the|and|best|near|find|who|makes|for|want|good|around|here|greece)$/.test(t); }); if(!toks.length) return true; if(/pizza|πιτσ/.test(qq) && /pizza|pizzeria|πιτσ/.test(hay)) return true; var cat=toks.filter(function(t){ return /pizza|πιτσ|beer|burger|coffee|gyro|food/.test(t); }); if(cat.length) return cat.some(function(t){ return hay.indexOf(t)>=0; }); var compact=hay.replace(/[^a-z0-9\u0370-\u03ff]+/g,""); var q2=qq.replace(/[^a-z0-9\u0370-\u03ff]+/g,""); return compact.indexOf(q2)>=0 || toks.every(function(t){ return hay.indexOf(t)>=0; }); }
   function photonQuery(q){ if(isBrand(q)) return q; var l=String(q||"").toLowerCase(); if(/beer|μπύρα|μπυρα|ale|lager|pub/.test(l)) return "pub"; if(/pizza|πιτσ/.test(l)) return "pizza"; if(/food|eat|φαγη|restaurant/.test(l)) return "restaurant"; if(/shop|store/.test(l)) return "shop"; if(/coffee|cafe|καφ/.test(l)) return "cafe"; if(/pharm|φαρμα/.test(l)) return "pharmacy"; return q; }
   function overpassPlaces(q,from){ from=from||here; if(!from) return Promise.resolve([]); var clauses; if(isBrand(q)) clauses='nwr(around:80000,'+from.lat+','+from.lng+')["name"~"'+escOverpass(q)+'",i];'; else clauses=overpassFilters(q).map(function(f){ return 'nwr(around:12000,'+from.lat+','+from.lng+')["name"]'+f+';'; }).join(""); var query='[out:json][timeout:6];('+clauses+');out center tags 20;'; return fetchJson("https://overpass.kumi.systems/api/interpreter?data="+encodeURIComponent(query),{headers:{Accept:"application/json"}},5000).then(function(j){return j.elements||[];}).catch(function(){return [];}).then(function(rows){ return rows.map(function(r){ var p=pointOf(r),t=r.tags||{}; return {id:"osm-"+r.type+"-"+r.id,name:t.name,lat:p.lat,lng:p.lng,raw:t["addr:street"]||"OpenStreetMap",tags:t}; }).filter(function(v){return v.name&&isFinite(v.lat)&&isFinite(v.lng);}); }); }
   function photonPlaces(q,from){ var brand=isBrand(q); var terms=[], raw=String(q||"").trim(); if(raw) terms.push(raw); if(brand){ terms.push(raw+" Rhodes"); terms.push(raw+" Ρόδος"); terms.push(raw+" Ανάληψη"); } if(!brand && hereName) terms.push(raw+" "+hereName); if(!brand){ var simp=photonQuery(raw); if(simp && simp!==raw) terms.push(simp); } function one(term){ var url="https://photon.komoot.io/api/?q="+encodeURIComponent(term)+"&limit=20"; if(from && !brand) url+="&lat="+from.lat+"&lon="+from.lng; return fetchJson(url,{headers:{Accept:"application/json"}},8000).then(function(j){ return (j.features||[]).map(function(f){ var c=f.geometry&&f.geometry.coordinates, pr=f.properties||{}; if(!c||!pr.name) return null; return {id:"osm-"+(pr.osm_type||"n")+"-"+(pr.osm_id||""), name:pr.name, lat:+c[1], lng:+c[0], raw:[pr.street,pr.city||pr.locality||pr.district].filter(Boolean).join(", ")||"OpenStreetMap", tags:pr}; }).filter(Boolean); }).catch(function(){return [];}); } return Promise.all(terms.map(one)).then(function(g){ var out=[]; g.forEach(function(list){ out=out.concat(list||[]); }); return out; }); }
@@ -1048,7 +1049,7 @@
         return out.slice(0,1);
       }
       if(from) out.sort(function(a,b){ return km(from,a)-km(from,b); });
-      var close=from?out.filter(function(v){ return km(from,v)<=40; }):out;
+      var close=from?out.filter(function(v){ return km(from,v)<=90; }):out;
       return close.length?close:out.slice(0,8);
     }
     function showList(list){
@@ -1067,6 +1068,7 @@
       if(!list.length) return;
       huntLanded=true;
       aim=list[0];
+      try{ showMap(list[0], 14); }catch(e){}
       paintHuntPins(list, list[0], true);
       if(spoken) return;
       spoken=true;
@@ -1078,7 +1080,8 @@
     if(extra&&extra.length) merge(extra);
     photonPlaces(q,from).then(function(list){ merge(list); });
     nominatimPlaces(q,from).then(function(list){ merge(list); });
-    if(from) overpassPlaces(q,from).then(function(list){ merge(list); });
+    webFind(q,from).then(function(list){ merge(list); });
+    overpassPlaces(q,from||{lat:36.434,lng:28.217}).then(function(list){ merge(list); });
     setTimeout(function(){ if(seq!==huntSeq) return; if(selected && job && job.status==="chosen") return; if(!acc.length) talk("No pin for "+q+". Tap the map and list it."); }, 7000);
   }
   function loadMap(){
