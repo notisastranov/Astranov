@@ -1,4 +1,4 @@
-/** Named place hunt — SpaceNet / OSM. Not Google. Never invent a shop. */
+/** Named + category hunt — OSM + Overpass. Never invent a shop. */
 const UA = "AstranovSpaceNet/1 (https://astranov.eu)";
 
 function cors(res) {
@@ -10,23 +10,17 @@ function cors(res) {
 function readBody(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
   if (typeof req.body === "string") {
-    try {
-      return JSON.parse(req.body);
-    } catch (_) {
-      return {};
-    }
+    try { return JSON.parse(req.body); } catch (_) { return {}; }
   }
   return {};
 }
 
 async function grab(url, ms) {
   var ctl = new AbortController();
-  var t = setTimeout(function () {
-    ctl.abort();
-  }, ms || 8000);
+  var t = setTimeout(function () { ctl.abort(); }, ms || 8000);
   try {
     var r = await fetch(url, {
-      headers: { "User-Agent": UA, Accept: "application/json,text/html;q=0.9" },
+      headers: { "User-Agent": UA, Accept: "application/json" },
       signal: ctl.signal,
       redirect: "follow",
     });
@@ -38,9 +32,30 @@ async function grab(url, ms) {
   }
 }
 
+function tokens(s) {
+  return String(s || "")
+    .toLowerCase()
+    .split(/[^a-z0-9\u0370-\u03ff]+/)
+    .filter(function (t) { return t.length >= 3; });
+}
+
+function nameOk(name, raw, q) {
+  var hay = (String(name || "") + " " + String(raw || "")).toLowerCase();
+  var qq = tokens(q);
+  var stop = { the:1, and:1, best:1, near:1, find:1, who:1, makes:1, for:1, want:1, greece:1, good:1, around:1, here:1 };
+  var place = qq.filter(function (t) { return /rhodes|rodos|\u03c1\u03cc\u03b4|athens|\u03b1\u03b8\u03ae\u03bd/.test(t); });
+  var need = qq.filter(function (t) { return !stop[t] && place.indexOf(t) < 0; });
+  if (!need.length) need = qq.filter(function (t) { return !stop[t]; });
+  if (!need.length) return true;
+  if (place.length && !place.some(function (t) { return hay.indexOf(t) >= 0; }) && !/rhodes|rodos|\u03c1\u03cc\u03b4/.test(hay)) {
+    /* city asked but not in this row — still ok if we searched that city */
+  }
+  return need.some(function (t) { return hay.indexOf(t) >= 0; });
+}
+
 async function nominatim(q) {
   var txt = await grab(
-    "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=1&q=" + encodeURIComponent(q),
+    "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&addressdetails=1&q=" + encodeURIComponent(q),
     8000
   );
   try {
@@ -55,67 +70,56 @@ async function nominatim(q) {
           phone: (r.extratags && (r.extratags.phone || r.extratags["contact:phone"])) || "",
         };
       })
-      .filter(function (p) {
-        return p.name && isFinite(p.lat) && isFinite(p.lng);
-      });
+      .filter(function (p) { return p.name && isFinite(p.lat) && isFinite(p.lng); });
   } catch (_) {
     return [];
   }
 }
 
-function phones(s) {
-  var out = [];
-  String(s || "").replace(/(?:\+?30[\s.\-/]?)?(?:2\d{9}|69\d{8})/g, function (m) {
-    var d = m.replace(/[^\d+]/g, "");
-    if (d[0] !== "+" && d.length === 10) d = "+30" + d;
-    if (out.indexOf(d) < 0) out.push(d);
-    return m;
-  });
-  return out;
-}
-
-function strip(html) {
-  return String(html || "")
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&/g, "&")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ");
-}
-
-function nameOk(name, q) {
-  var n = String(name || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\u0370-\u03ff]+/g, "");
-  var qq = String(q || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\u0370-\u03ff]+/g, "");
-  if (!qq || qq.length < 4) return false;
-  return n.indexOf(qq) >= 0 || qq.indexOf(n) >= 0;
+async function overpassPizza(bbox) {
+  var q =
+    '[out:json][timeout:10];nwr(' + bbox + ')["name"]["amenity"~"restaurant|fast_food|cafe"]["cuisine"~"pizza",i];out center tags 16;';
+  var txt = await grab("https://overpass.kumi.systems/api/interpreter?data=" + encodeURIComponent(q), 12000);
+  try {
+    var j = JSON.parse(txt);
+    return (j.elements || []).map(function (e) {
+      var c = e.center || e;
+      var t = e.tags || {};
+      return {
+        name: t.name,
+        lat: Number(c.lat),
+        lng: Number(c.lon || c.lng),
+        raw: [t["addr:street"], t["addr:city"] || "Rhodes"].filter(Boolean).join(", "),
+        phone: t.phone || t["contact:phone"] || "",
+      };
+    }).filter(function (p) { return p.name && isFinite(p.lat); });
+  } catch (_) {
+    return [];
+  }
 }
 
 module.exports = async function handler(req, res) {
   cors(res);
-  if (req.method === "OPTIONS") {
-    res.status(204).end();
-    return;
-  }
+  if (req.method === "OPTIONS") { res.status(204).end(); return; }
   var b = req.method === "GET" ? req.query || {} : readBody(req);
   var q = String(b.q || b.name || "").slice(0, 80).trim();
   var city = String(b.city || b.place || "").slice(0, 80).trim();
-  if (!q) {
-    res.status(400).json({ ok: false, error: "empty" });
-    return;
+  if (!q) { res.status(400).json({ ok: false, error: "empty" }); return; }
+  var wantPizza = /pizza|pizzeria|\u03c0\u03b9\u03c4\u03c3/i.test(q);
+  var wantRhodes = /rhodes|rodos|\u03c1\u03cc\u03b4/i.test(q + " " + city) || !city;
+  var terms = [];
+  if (wantPizza && wantRhodes) {
+    terms.push("pizza Rhodes Greece");
+    terms.push("pizzeria Rhodes");
   }
-  var terms = [q];
+  terms.push(q);
   if (city) terms.push(q + " " + city);
-  terms.push(q + " Greece");
-  var places = [],
-    seen = {};
+  if (!/greece|hellas|rhodes|athens/i.test(q)) terms.push(q + " Greece");
+  var places = [], seen = {};
   function add(list) {
     (list || []).forEach(function (p) {
       if (!p || !isFinite(p.lat)) return;
-      if (!nameOk(p.name, q) && !nameOk(p.raw, q)) return;
+      if (!nameOk(p.name, p.raw, q) && !(wantPizza && /pizza|pizzeria|\u03c0\u03b9\u03c4\u03c3/i.test(p.name + " " + p.raw))) return;
       var k = (+p.lat).toFixed(4) + "|" + (+p.lng).toFixed(4);
       if (seen[k]) return;
       seen[k] = 1;
@@ -123,16 +127,9 @@ module.exports = async function handler(req, res) {
     });
   }
   var i;
-  for (i = 0; i < terms.length && places.length < 4; i++) add(await nominatim(terms[i]));
-  if (!places.length) {
-    var html = await grab("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q + (city ? " " + city : "") + " τηλέφωνο address"), 8000);
-    var text = strip(html);
-    var tel = phones(text)[0] || "";
-    var m = text.match(/([A-ZΑ-Ω][^\n,]{4,40}\d{0,4}[^\n,]{0,20}(?:Rhodes|Rodos|Ρόδος|Athens|Αθήνα)[^\n]{0,40})/i);
-    var addr = m ? m[1].replace(/\s+/g, " ").trim().slice(0, 80) : "";
-    if (addr) add(await nominatim(addr));
-    if (!places.length && addr) add(await nominatim(q + " " + addr));
-    if (places.length && tel) places[0].phone = places[0].phone || tel;
+  for (i = 0; i < terms.length && places.length < 8; i++) add(await nominatim(terms[i]));
+  if (wantPizza && wantRhodes && places.length < 3) {
+    add(await overpassPizza("36.05,27.70,36.50,28.35"));
   }
-  res.status(200).json({ ok: true, places: places.slice(0, 6) });
+  res.status(200).json({ ok: true, places: places.slice(0, 8) });
 };
