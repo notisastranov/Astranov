@@ -18,7 +18,7 @@ const SYS =
   'Reply with ONE JSON object only, no markdown. The "say" field IS what you speak — write it as a human would say it: ' +
   '{"say":"natural spoken reply","act":"hunt|talk|now|pay|reload|globe|locate|map|city|national|post|call|shop|drop|driver|priority|justice|pick|menu|listing","q":"search words","places":[{"name":"Pizzarium","lat":36.4251,"lng":28.2111,"raw":"Αθηνάς Ταρσούλη 1, Ανάληψη, Ρόδος","phone":"+302241601878"}],"id":"task-id","ok":true,"phone":"+302241601878","hours":"","items":[{"name":"Margherita","price":9,"sample":true}],"split":{"customer":0,"vendor":0,"driver":0}} ' +
   'act=hunt when they want a thing found. act=locate only if they ask you to find them. act=talk when they are just talking. act=now sends an Astranov Delivery Agent (registered base only). Never act=mail or pickup. Never invent an agent who has not listed a base. ' +
-  'act=post|call|shop|drop|driver opens that city sheet. act=priority when they ask to jump a task — set ok=true ONLY for a real emerging difficulty (breakdown, spoilage, medical, safety, no-show, weather). ok=false for profit, preference, skipping work they dislike, or jumping the queue. act=justice when a held job is in dispute — split AV€ between customer, vendor, driver. Platform take is always 0 on a failed job. Customer gets goods or credit, never neither for long. Vendor is paid only for work already done. Agent is paid only for miles actually moved. Do not invent GPS traces we do not have. Never let them game SpaceNet. English default; Greek when they write Greek. Owner is Notis Astranov in Rhodes.';
+  'act=post|call|shop|drop|driver opens that city sheet. act=priority when they ask to jump a task — set ok=true ONLY for a real emerging difficulty (breakdown, spoilage, medical, safety, no-show, weather). ok=false for profit, preference, skipping work they dislike, or jumping the queue. act=justice when a held job is in dispute — split AV€ between customer, vendor, driver. Platform take is always 0 on a failed job. Customer gets goods or credit, never neither for long. Vendor is paid only for work already done. Agent is paid only for miles actually moved. Do not invent GPS traces we do not have. RESEARCH LAW: You have live web search. Use it on every find, best, where, news, yacht, weather, legal, review, or preference question. Do not keyword-match a shop name and stop. Search news, reviews, posts, AIS, port notices, weather, wind, pollution, permits. Then pin a pick and 2 to 4 alternatives. Example: cleanest legal water to moor a yacht with privacy on the lee of the wind — check wastewater outfalls, swimming bans, no-anchor zones, harbour master, this week's wind. If a megayacht is sitting on a sewage outfall, say that from sources, then offer cleaner legal coves. places[0] is the pick. Each place: name,lat,lng,raw,note (why / legal / wind / privacy). say is spoken research, 4 to 8 short sentences, no raw coordinates in say. Never invent a pin. Never let them game SpaceNet. English default; Greek when they write Greek. Owner is Notis Astranov in Rhodes.';
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -70,11 +70,11 @@ function parseAct(text) {
 
 
 async function fillHunt(req, text, message, here) {
-  var p = parseAct(text);
-  var want = /pizza|pizzeria|beer|food|burger|coffee|gyro|best|find|near|shop|\u03c0\u03b9\u03c4\u03c3/i.test(message + " " + (p.q || ""));
-  if ((p.places && p.places.length) || (!want && p.act && p.act !== "hunt" && p.act !== "find")) {
-    return { text: text, places: p.places || [] };
-  }
+    var p = parseAct(text);
+  if (p.places && p.places.length) return { text: text, places: p.places };
+  var research = /moor|yacht|anchor|weather|wind|news|review|permit|legal|cleanest|privacy|sewage|pollut|scandal|harbour|harbor/i.test(message);
+  var want = /pizza|pizzeria|beer|burger|coffee|gyro|souvlaki|restaurant/i.test(message + " " + (p.q || ""));
+  if (research || !want) return { text: text, places: p.places || [] };
   try {
     var host = req.headers.host || "astranov.eu";
     var proto = (req.headers["x-forwarded-proto"] || "https").split(",")[0];
@@ -107,26 +107,77 @@ async function fillHunt(req, text, message, here) {
   }
 }
 
-async function grokChat(key, messages, model) {
-  async function once(search) {
-    var body = { model: model, messages: messages, temperature: 0.5, max_tokens: 900 };
-    if (search) body.search_parameters = { mode: "on", return_citations: true, max_search_results: 8 };
-    return fetch('https://api.x.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-      body: JSON.stringify(body),
-    });
-  }
-  var r = await once(true);
-  if (!r.ok) r = await once(false);
-  const j = await r.json().catch(function () {
-    return {};
+function pullText(j) {
+  if (!j) return '';
+  if (j.output_text) return String(j.output_text);
+  var t = '';
+  (j.output || []).forEach(function (o) {
+    if (!o) return;
+    var c = o.content || (o.message && o.message.content);
+    if (typeof c === 'string') t += c;
+    else (c || []).forEach(function (p) { t += (p && (p.text || p.output_text || '')) || ''; });
   });
-  const text = String(
-    (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || j.text || ''
-  ).trim();
-  return { ok: r.ok && !!text, status: r.status, text: text, usage: j.usage || {}, error: j.error || j.message, model: model };
+  if (!t && j.choices && j.choices[0] && j.choices[0].message) t = j.choices[0].message.content || '';
+  return String(t || j.text || '').trim();
 }
+
+async function grokChat(key, messages, model) {
+  var hdr = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key };
+  var input = messages.map(function (m) { return { role: m.role, content: m.content }; });
+  async function post(url, body) {
+    var r = await fetch(url, { method: 'POST', headers: hdr, body: JSON.stringify(body) });
+    var j = await r.json().catch(function () { return {}; });
+    return { ok: r.ok, status: r.status, text: pullText(j), usage: j.usage || {}, error: j.error || j.message, model: model };
+  }
+  var g = await post('https://api.x.ai/v1/responses', {
+    model: model,
+    input: input,
+    tools: [{ type: 'web_search' }, { type: 'x_search' }],
+    temperature: 0.4,
+  });
+  if (g.ok && g.text) return g;
+  g = await post('https://api.x.ai/v1/chat/completions', {
+    model: model,
+    messages: messages,
+    temperature: 0.4,
+    max_tokens: 1200,
+    tools: [{ type: 'web_search' }, { type: 'x_search' }],
+  });
+  if (g.ok && g.text) return g;
+  g = await post('https://api.x.ai/v1/chat/completions', {
+    model: model,
+    messages: messages,
+    temperature: 0.4,
+    max_tokens: 1200,
+    search_parameters: { mode: 'on', return_citations: true, max_search_results: 10 },
+  });
+  if (g.ok && g.text) return g;
+  return post('https://api.x.ai/v1/chat/completions', {
+    model: model,
+    messages: messages,
+    temperature: 0.4,
+    max_tokens: 900,
+  });
+}
+
+async function weatherOf(lat, lng) {
+  lat = Number(lat); lng = Number(lng);
+  if (!isFinite(lat) || !isFinite(lng)) { lat = 36.434; lng = 28.217; }
+  try {
+    var r = await fetch(
+      'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lng +
+      '&current=wind_speed_10m,wind_direction_10m,temperature_2m,weather_code&wind_speed_unit=kn'
+    );
+    var j = await r.json();
+    var c = j.current || {};
+    var dir = Number(c.wind_direction_10m);
+    var compass = ['N','NE','E','SE','S','SW','W','NW'][Math.round((((dir % 360) + 360) % 360) / 45) % 8];
+    return 'Wind ' + Math.round(Number(c.wind_speed_10m) || 0) + ' kn from ' + compass + ', air ' + Math.round(Number(c.temperature_2m) || 0) + '°C.';
+  } catch (_) {
+    return '';
+  }
+}
+
 
 module.exports = async function handler(req, res) {
   cors(res);
@@ -181,14 +232,17 @@ module.exports = async function handler(req, res) {
   const key = process.env.XAI_API_KEY || process.env.GROK_API_KEY || '';
   const history = Array.isArray(body.history) ? body.history.slice(-16) : [];
   const here = body.here && typeof body.here === 'object' ? body.here : {};
+  const wx = await weatherOf(here.lat, here.lng);
   const whereLine =
     'View: ' +
     (here.level || 'globe') +
     (here.place ? ' at ' + String(here.place) : ' (no GPS yet)') +
+    '. Weather now: ' + (wx || 'unknown') +
     '. AVC ' +
     (here.avc || 0) +
     (here.shop ? '. Selected ' + here.shop : '') +
-    (here.vendors && here.vendors.length ? '. Nearby: ' + here.vendors.join('; ') : '');
+    (here.vendors && here.vendors.length ? '. Nearby: ' + here.vendors.join('; ') : '') +
+    '. Search the live web and X. Pin a pick plus alternatives.';
   const messages = [{ role: 'system', content: SYS }];
   history.forEach(function (h) {
     if (!h || !h.content) return;
