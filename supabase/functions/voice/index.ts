@@ -10,7 +10,7 @@ const CORS = {
 
 const PERSONA = {
   name: 'Astranov',
-  style: 'female mid-tone calm grounded',
+  style: 'deep sexy American English female, calm, never British, never Indian',
   openai_voice: 'nova',
   gemini_voice: 'Vindemiatrix',
   speed: 0.91,
@@ -19,7 +19,7 @@ const PERSONA = {
 type SynthResult = { bytes: Uint8Array; mime: string } | null
 
 function geminiPrompt(text: string) {
-  return `Speak this calmly in a grounded female mid-tone voice. Read only the line below:\n${text}`
+  return `You are a woman from the United States. Speak in a deep, warm, slightly sexy American English accent. Slow and calm. Never British. Never Indian. Never robotic. Read only the line below:\n${text}`
 }
 
 function b64ToBytes(data: string): Uint8Array {
@@ -144,17 +144,17 @@ serve(async (req) => {
     let audio: SynthResult = null
     let engine = 'none'
 
-    if (elevenKey && voiceId) {
-      audio = await synthElevenLabs(text, elevenKey, voiceId)
-      if (audio) engine = 'elevenlabs'
+    if (openaiKey) {
+      audio = await synthOpenAI(text, openaiKey)
+      if (audio) engine = 'openai-nova'
     }
     if (!audio && geminiKey) {
       audio = await synthGemini(text, geminiKey)
       if (audio) engine = 'gemini-astranov'
     }
-    if (!audio && openaiKey) {
-      audio = await synthOpenAI(text, openaiKey)
-      if (audio) engine = 'openai-nova'
+    if (!audio && elevenKey && voiceId) {
+      audio = await synthElevenLabs(text, elevenKey, voiceId)
+      if (audio) engine = 'elevenlabs'
     }
 
     if (!audio) {
