@@ -1,60 +1,54 @@
-/* SpaceNet voice 4088 — calm deep female. Never the default robot. */
+/* SpaceNet voice 4122 — calm UK female. Never IN/PK compact robot. */
 (function(){
-  if(!window.speechSynthesis || speechSynthesis.__snDeep) return;
+  if(!window.speechSynthesis) return;
   var synth=window.speechSynthesis;
   var orig=synth.speak.bind(synth);
   synth.__snDeep=true;
-  var pick=null, pickEl=null;
-  function score(v, greek){
+  var pick=null;
+  function bad(n){
+    return /en-in|en-pk|en_in|en_pk|india|indian|pakistan|urdu|hindi|bengali|tamil|telugu|malayalam|kannada|rishi|kiran|heera|neerja|compact|lele|pakistani/i.test(n);
+  }
+  function score(v){
     var n=((v&&v.name)||"")+" "+((v&&v.lang)||"")+" "+((v&&v.voiceURI)||"");
+    if(bad(n)) return -100;
+    if(/male|\bman\b|david|daniel|george|thomas|fred|rishi/i.test(n) && !/female|woman|samantha/i.test(n)) return -40;
     var s=0;
-    if(/male|\bman\b|david|daniel|george|thomas|fred|rbc|malayalam/i.test(n) && !/female|woman|samantha/i.test(n)) return -30;
-    if(greek){ if(/^el/i.test(v.lang)) s+=14; }
-    else {
-      if(/^en-GB/i.test(v.lang)) s+=12;
-      else if(/^en/i.test(v.lang)) s+=5;
-    }
-    if(/uk english female|google uk.*female|samantha|moira|fiona|karen|tessa|serena|hazel|susan|victoria|libby|sonia|aria|jenny|eva|zira/i.test(n)) s+=18;
-    if(/female|woman/i.test(n)) s+=12;
-    if(/network|neural|natural|premium|enhanced|wavenet|studio|online/i.test(n)) s+=14;
-    if(/google/i.test(n)) s+=4;
-    if(/compact/i.test(n)) s-=4;
-    if(/local/i.test(n) && !/network|neural/i.test(n)) s-=1;
+    if(/^en-GB/i.test(v.lang)) s+=20;
+    else if(/^en-US/i.test(v.lang)) s+=10;
+    else if(/^en/i.test(v.lang)) s+=4;
+    if(/uk english female|google uk.*female|en-gb-x-.*network|samantha|moira|fiona|karen|tessa|serena|hazel|susan|victoria|libby|sonia|aria|jenny/i.test(n)) s+=24;
+    if(/female|woman/i.test(n)) s+=14;
+    if(/network|neural|natural|premium|enhanced|wavenet|studio|online/i.test(n)) s+=16;
+    if(/google/i.test(n)) s+=6;
+    if(/local/i.test(n) && !/network|neural/i.test(n)) s-=2;
     return s;
   }
-  function choose(text){
-    var greek=/[\u0370-\u03FF]/.test(text||"");
+  function choose(){
+    if(pick && pick.voiceURI) return pick;
     var list=synth.getVoices()||[], i, best=null, bestS=-1;
     for(i=0;i<list.length;i++){
-      var s=score(list[i], greek);
+      var s=score(list[i]);
       if(s>bestS){ bestS=s; best=list[i]; }
     }
-    if(best && bestS>=0){ if(greek) pickEl=best; else pick=best; return best; }
-    return greek?pickEl:pick;
+    if(best && bestS>=0) pick=best;
+    return pick;
   }
   function dress(u){
-    var text=u&&u.text||"";
-    var v=choose(text);
-    if(v){ u.voice=v; u.lang=v.lang||u.lang; }
-    else u.lang=/[\u0370-\u03FF]/.test(text)?"el-GR":"en-GB";
-    u.pitch=0.68;
-    u.rate=0.82;
+    var v=choose();
+    if(v){ u.voice=v; u.lang=v.lang||"en-GB"; }
+    else u.lang="en-GB";
+    u.pitch=0.95;
+    u.rate=0.88;
     u.volume=1;
   }
-  try{ synth.getVoices(); synth.addEventListener("voiceschanged", function(){ pick=null; pickEl=null; }); }catch(e){}
+  try{ synth.getVoices(); synth.addEventListener("voiceschanged", function(){ pick=null; }); }catch(e){}
   synth.speak=function(u){
     if(!u) return;
     try{ dress(u); }catch(e){}
-    var list=synth.getVoices()||[];
-    if(list.length){ orig(u); return; }
+    if((synth.getVoices()||[]).length){ orig(u); return; }
     var sent=false;
-    function go(){
-      if(sent) return;
-      sent=true;
-      try{ dress(u); }catch(e){}
-      orig(u);
-    }
+    function go(){ if(sent) return; sent=true; try{ dress(u); }catch(e){} orig(u); }
     try{ synth.addEventListener("voiceschanged", go); }catch(e){}
-    setTimeout(go, 500);
+    setTimeout(go, 400);
   };
 })();
