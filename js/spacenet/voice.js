@@ -1,54 +1,72 @@
-/* SpaceNet voice 4122 — calm UK female. Never IN/PK compact robot. */
+/* SpaceNet 4126 — deep American female. Cloud TTS. Never device IN/PK robot. */
 (function(){
-  if(!window.speechSynthesis) return;
-  var synth=window.speechSynthesis;
-  var orig=synth.speak.bind(synth);
-  synth.__snDeep=true;
-  var pick=null;
+  var ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb2F0cmtodWlnZG9sbmpzYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODIwOTIsImV4cCI6MjA5NDQ1ODA5Mn0.qf6Kg93YLJ0coTdVQa4baU0ppOdFY5WkmVzMvEV6ejI";
+  var VOICE_URL="https://lkoatrkhuigdolnjsbie.supabase.co/functions/v1/voice";
+  var player=null, lastObj="";
   function bad(n){
-    return /en-in|en-pk|en_in|en_pk|india|indian|pakistan|urdu|hindi|bengali|tamil|telugu|malayalam|kannada|rishi|kiran|heera|neerja|compact|lele|pakistani/i.test(n);
+    return /en-in|en-pk|en_in|en_pk|india|indian|pakistan|urdu|hindi|bengali|tamil|telugu|malayalam|kannada|rishi|kiran|heera|neerja|compact|lele|pakistani|en-in-x/i.test(n);
   }
   function score(v){
     var n=((v&&v.name)||"")+" "+((v&&v.lang)||"")+" "+((v&&v.voiceURI)||"");
     if(bad(n)) return -100;
-    if(/male|\bman\b|david|daniel|george|thomas|fred|rishi/i.test(n) && !/female|woman|samantha/i.test(n)) return -40;
+    if(/male|\bman\b|david|daniel|george|thomas|fred|guy|davis|rishi/i.test(n) && !/female|woman|samantha/i.test(n)) return -50;
     var s=0;
-    if(/^en-GB/i.test(v.lang)) s+=20;
-    else if(/^en-US/i.test(v.lang)) s+=10;
-    else if(/^en/i.test(v.lang)) s+=4;
-    if(/uk english female|google uk.*female|en-gb-x-.*network|samantha|moira|fiona|karen|tessa|serena|hazel|susan|victoria|libby|sonia|aria|jenny/i.test(n)) s+=24;
-    if(/female|woman/i.test(n)) s+=14;
-    if(/network|neural|natural|premium|enhanced|wavenet|studio|online/i.test(n)) s+=16;
-    if(/google/i.test(n)) s+=6;
-    if(/local/i.test(n) && !/network|neural/i.test(n)) s-=2;
+    if(/^en-US/i.test(v.lang)) s+=28;
+    else if(/^en-GB/i.test(v.lang)) s+=2;
+    else if(/^en/i.test(v.lang)) s+=1;
+    else return -20;
+    if(/samantha|aria|jenny|zira|google us english|en-us-x-sfg|en-us-x-tpf|en-us-neural|us english female/i.test(n)) s+=30;
+    if(/female|woman/i.test(n)) s+=16;
+    if(/network|neural|natural|premium|enhanced|wavenet|studio|online/i.test(n)) s+=12;
+    if(/local|compact/i.test(n)) s-=8;
     return s;
   }
-  function choose(){
-    if(pick && pick.voiceURI) return pick;
-    var list=synth.getVoices()||[], i, best=null, bestS=-1;
+  function pickUS(){
+    if(!window.speechSynthesis) return null;
+    var list=speechSynthesis.getVoices()||[], i, best=null, bestS=-1;
     for(i=0;i<list.length;i++){
       var s=score(list[i]);
       if(s>bestS){ bestS=s; best=list[i]; }
     }
-    if(best && bestS>=0) pick=best;
-    return pick;
+    return (best && bestS>=8) ? best : null;
   }
-  function dress(u){
-    var v=choose();
-    if(v){ u.voice=v; u.lang=v.lang||"en-GB"; }
-    else u.lang="en-GB";
-    u.pitch=0.95;
-    u.rate=0.88;
+  function fallbackUtter(u){
+    if(!window.speechSynthesis || !u) return;
+    var v=pickUS();
+    if(v){ u.voice=v; u.lang=v.lang||"en-US"; }
+    else { u.voice=null; u.lang="en-US"; }
+    u.pitch=0.82;
+    u.rate=0.84;
     u.volume=1;
+    orig(u);
   }
-  try{ synth.getVoices(); synth.addEventListener("voiceschanged", function(){ pick=null; }); }catch(e){}
+  function playCloud(text, u){
+    fetch(VOICE_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json", apikey:ANON, Authorization:"Bearer "+ANON},
+      body:JSON.stringify({text:String(text).slice(0,800), persona:"deep-american-female"})
+    }).then(function(r){
+      if(!r.ok) throw new Error("tts");
+      return r.blob();
+    }).then(function(b){
+      if(player){ try{ player.pause(); }catch(e){} }
+      if(lastObj){ try{ URL.revokeObjectURL(lastObj); }catch(e){} }
+      lastObj=URL.createObjectURL(b);
+      player=new Audio(lastObj);
+      player.onended=function(){ try{ u.onend && u.onend(); }catch(e){} };
+      player.onerror=function(){ fallbackUtter(u); };
+      return player.play();
+    }).catch(function(){ fallbackUtter(u); });
+  }
+  if(!window.speechSynthesis) return;
+  var synth=window.speechSynthesis;
+  var orig=synth.speak.bind(synth);
   synth.speak=function(u){
     if(!u) return;
-    try{ dress(u); }catch(e){}
-    if((synth.getVoices()||[]).length){ orig(u); return; }
-    var sent=false;
-    function go(){ if(sent) return; sent=true; try{ dress(u); }catch(e){} orig(u); }
-    try{ synth.addEventListener("voiceschanged", go); }catch(e){}
-    setTimeout(go, 400);
+    try{ synth.cancel(); }catch(e){}
+    var text=String(u.text||"");
+    if(!text) return;
+    playCloud(text, u);
   };
+  try{ synth.getVoices(); }catch(e){}
 })();
