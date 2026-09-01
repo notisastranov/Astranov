@@ -4,23 +4,6 @@
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
-  var earthBmp=null, earthW=0, earthH=0;
-  (function loadEarth(){
-    var urls=["https://unpkg.com/three-globe@2.31.3/example/img/earth-blue-marble.jpg","https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57752/land_shallow_topo_2048.jpg"];
-    var i=0, im=new Image();
-    im.crossOrigin="anonymous";
-    im.onload=function(){
-      var c=document.createElement("canvas");
-      c.width=1024; c.height=512;
-      var x=c.getContext("2d");
-      x.drawImage(im,0,0,1024,512);
-      earthBmp=x.getImageData(0,0,1024,512).data;
-      earthW=1024; earthH=512;
-      drawSig="";
-    };
-    im.onerror=function(){ i++; if(i<urls.length){ im.src=urls[i]; } };
-    im.src=urls[0];
-  })();
   var cityEl=document.getElementById("city");
   var lineEl=document.getElementById("line");
   var inEl=document.getElementById("in");
@@ -2127,55 +2110,7 @@
   }
   function size(){ if(!canvas) return; var d=Math.min(2,devicePixelRatio||1); canvas.width=Math.max(1,Math.floor((innerWidth||320)*d)); canvas.height=Math.max(1,Math.floor((innerHeight||480)*d)); drawSig=""; pack(); needTick(); }
   function sph(latDeg,lngDeg,cx,cy,R){ var la=latDeg*Math.PI/180, ln=lngDeg*Math.PI/180-yaw; var x=Math.cos(la)*Math.sin(ln); var y=Math.sin(la); var z=Math.cos(la)*Math.cos(ln); var y2=y*Math.cos(pitch)-z*Math.sin(pitch); var z2=y*Math.sin(pitch)+z*Math.cos(pitch); if(z2<=0.02) return null; return {x:cx+R*x, y:cy-R*y2, z:z2}; }
-  function sampleEarth(lat,lng){
-    if(!earthBmp) return null;
-    var u=((lng+180)%360)/360; if(u<0) u+=1;
-    var v=(90-lat)/180; if(v<0) v=0; if(v>1) v=1;
-    var ix=Math.floor(u*(earthW-1)), iy=Math.floor(v*(earthH-1));
-    var i=(iy*earthW+ix)*4;
-    return earthBmp[i]+","+earthBmp[i+1]+","+earthBmp[i+2];
-  }
-  function drawGrid(ctx,cx,cy,R){
-    var lat,lng,a,b,p00,p10,p01,p11,step,rgb,d=Math.min(2,devicePixelRatio||1);
-    var glow=ctx.createRadialGradient(cx,cy,R*0.88,cx,cy,R*1.14);
-    glow.addColorStop(0,"rgba(77,240,255,0)");
-    glow.addColorStop(0.7,"rgba(50,180,255,0.10)");
-    glow.addColorStop(1,"rgba(8,24,48,0)");
-    ctx.fillStyle=glow;
-    ctx.beginPath(); ctx.arc(cx,cy,R*1.14,0,Math.PI*2); ctx.fill();
-    ctx.save();
-    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.clip();
-    ctx.fillStyle="#041018";
-    ctx.fillRect(cx-R,cy-R,R*2,R*2);
-    if(earthBmp){
-      step=6;
-      for(lat=84; lat>-84; lat-=step){
-        for(lng=-180; lng<180; lng+=step){
-          p00=sph(lat,lng,cx,cy,R); p10=sph(lat,lng+step,cx,cy,R);
-          p01=sph(lat-step,lng,cx,cy,R); p11=sph(lat-step,lng+step,cx,cy,R);
-          if(!p00||!p10||!p01||!p11) continue;
-          rgb=sampleEarth(lat-step/2, lng+step/2);
-          if(!rgb) continue;
-          ctx.fillStyle="rgb("+rgb+")";
-          ctx.beginPath();
-          ctx.moveTo(p00.x,p00.y); ctx.lineTo(p10.x,p10.y); ctx.lineTo(p11.x,p11.y); ctx.lineTo(p01.x,p01.y);
-          ctx.fill();
-        }
-      }
-    }
-    ctx.lineWidth=Math.max(0.6, d*0.45);
-    ctx.strokeStyle="rgba(77,240,255,0.08)";
-    step=30;
-    for(lat=-60; lat<=60; lat+=step){
-      ctx.beginPath(); a=null;
-      for(lng=-180; lng<=180; lng+=8){ b=sph(lat,lng,cx,cy,R); if(b&&a){ ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);} a=b; }
-      ctx.stroke();
-    }
-    ctx.restore();
-    ctx.strokeStyle="rgba(126,233,255,0.42)";
-    ctx.lineWidth=Math.max(1.2, d*0.8);
-    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
-  }
+  function drawGrid(ctx,cx,cy,R){ var lat,lng,a,b,step=15; ctx.lineWidth=Math.max(1, (devicePixelRatio||1)*0.7); ctx.strokeStyle="rgba(77,240,255,0.22)"; for(lat=-75; lat<=75; lat+=step){ ctx.beginPath(); a=null; for(lng=-180; lng<=180; lng+=6){ b=sph(lat,lng,cx,cy,R); if(b&&a){ ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); } a=b; } ctx.stroke(); } ctx.strokeStyle="rgba(77,240,255,0.28)"; for(lng=-180; lng<180; lng+=step){ ctx.beginPath(); a=null; for(lat=-90; lat<=90; lat+=4){ b=sph(lat,lng,cx,cy,R); if(b&&a){ ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); } a=b; } ctx.stroke(); } ctx.strokeStyle="rgba(126,233,255,0.55)"; ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke(); }
   function pinLabel(p, fallback){ var n=String((p&&p.name)||fallback||""); if(!n || /^-?\d+\.\d+/.test(n) || /\d+\.\d+[NS]/.test(n)) return fallback||"PIN"; return n.slice(0,18); }
   function drawBond3d(ctx,a,b,cx,cy,R){
     if(!a||!b) return;
