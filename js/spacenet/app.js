@@ -4,6 +4,23 @@
   window.__SN_ALIVE=true;
   try{ if(navigator.vibrate) navigator.vibrate=function(){return false;}; }catch(e){}
   var canvas=document.getElementById("g");
+  var earthBmp=null, earthW=0, earthH=0;
+  (function loadEarth(){
+    var urls=["https://unpkg.com/three-globe@2.31.3/example/img/earth-blue-marble.jpg","https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57752/land_shallow_topo_2048.jpg"];
+    var i=0, im=new Image();
+    im.crossOrigin="anonymous";
+    im.onload=function(){
+      var c=document.createElement("canvas");
+      c.width=1024; c.height=512;
+      var x=c.getContext("2d");
+      x.drawImage(im,0,0,1024,512);
+      earthBmp=x.getImageData(0,0,1024,512).data;
+      earthW=1024; earthH=512;
+      drawSig="";
+    };
+    im.onerror=function(){ i++; if(i<urls.length){ im.src=urls[i]; } };
+    im.src=urls[0];
+  })();
   var cityEl=document.getElementById("city");
   var lineEl=document.getElementById("line");
   var inEl=document.getElementById("in");
@@ -1886,7 +1903,7 @@
   function parseMind(j, raw){ var text=String((j&&(j.text||j.response||j.answer||j.say))||""); var act=String((j&&j.act)||"").toLowerCase(), q=(j&&j.q)||"", s=(j&&j.say)||"", ok=j&&j.priority_ok, id=(j&&(j.task_id||j.id))||"", split=j&&j.split, items=j&&j.items, places=j&&j.places, lat=j&&j.lat, lng=j&&j.lng; var m=text.match(/\{[\s\S]*\}/); if(m){ try{ var o=JSON.parse(m[0]); if(o){ if(o.act) act=String(o.act).toLowerCase(); if(o.q) q=String(o.q); if(o.say) s=String(o.say); if(!s && o.text) s=String(o.text); if(o.ok!=null) ok=o.ok; if(o.id) id=String(o.id); if(o.split) split=o.split; if(o.items) items=o.items; if(o.places) places=o.places; if(o.lat!=null) lat=o.lat; if(o.lng!=null) lng=o.lng; if(o.name) raw=o.name; if(o.phone) j.phone=o.phone; if(o.hours) j.hours=o.hours; if(o.note) j.note=o.note; if(o.open) j.open=o.open; if(o.cover) j.cover=o.cover; if(o.dishes) j.dishes=o.dishes; } }catch(e){} } if(!s) s=text.replace(/\{[\s\S]*\}/,"").trim(); return {act:act||"talk", q:q||raw, say:s||"", ok:ok, id:id, split:split, items:items||[], places:places||[], lat:lat, lng:lng, phone:j&&j.phone||"", hours:j&&j.hours||"", note:j&&j.note||"", open:j&&j.open||"", cover:j&&j.cover||"", dishes:j&&j.dishes||[], name:raw}; }
   function applyMind(m, raw){ if(!m) return; var a=String(m.act||"talk").toLowerCase(); if(m.say && a!=="hunt" && a!=="order" && a!=="find" && a!=="priority") talk(m.say); else if(m.say && a!=="priority") say(m.say); if(a==="talk"||!a) return; if(a==="priority"){ var ok=m.ok===true||m.ok==="true"||m.ok===1; bumpTask(m.id||(awaiting&&awaiting.id), ok, m.say); awaiting=null; return; } if(a==="justice"){ applyJustice(m); awaiting=null; return; } if(a==="pick"){ var q=String(m.q||m.id||"").toLowerCase(); var v=(vendors||[]).find(function(x){ var n=String(x.name||"").toLowerCase(); return n && q && (n===q || n.indexOf(q)>=0 || q.indexOf(n)>=0); }); if(v) return selectVendor(v); return; } if(a==="menu"){ var items=(m.items||[]).filter(function(it){ return it&&it.name; }).map(function(it){ return {name:String(it.name), price:Number(it.price)||0, sample:it.sample!==false, photo:it.photo||""}; }); if(window.__snMenuCb) window.__snMenuCb(items); return; } if(a==="listing"){ if(window.SNWork&&SNWork.applyFill) SNWork.applyFill({name:m.name,phone:m.phone,hours:m.hours,note:m.note,open:m.open,cover:m.cover,dishes:m.dishes&&m.dishes.length?m.dishes:m.items}); return; } if(a==="locate") return goHere(); if(a==="globe"){ showGlobe(); return; } if(a==="national") return showNational(aim||here||facingPoint()); if(a==="map"||a==="city"||a==="streets") return showCity(selected||aim||here); if(a==="now") return startDeliver(); if(a==="mail"||a==="pickup"||a==="pick up") return startDeliver(); if(a==="pay"){ if(!(job&&job.cart&&job.cart.length)) return; return spendAvc(priceOf(job&&job.carrier)); } if(a==="reload") return; if(a==="post"||a==="call"||a==="shop"||a==="drop"||a==="driver"||a==="base"){ if(window.SNWork) return SNWork.open(aim||here, a==="base"?"driver":a); return; } if(a==="hunt"||a==="order"||a==="find"){ var pins=[]; (m.places||[]).forEach(function(p){ if(!p||!isFinite(+p.lat)||!isFinite(+p.lng)) return; pins.push({id:"grok-"+(+p.lat).toFixed(5)+"-"+(+p.lng).toFixed(5),name:p.name||m.q||raw,lat:+p.lat,lng:+p.lng,raw:p.raw||p.addr||"",note:p.note||p.why||"",tags:{phone:p.phone||""},grok:true}); }); if(isFinite(+m.lat)&&isFinite(+m.lng)) pins.push({id:"grok-one",name:m.q||raw,lat:+m.lat,lng:+m.lng,raw:"",grok:true}); if(typeof huntMergeFn==="function" && pins.length) huntMergeFn(pins); else hunt(m.q||raw, here||aim, pins); return; } }
   function grokListing(p){ if(!p) return; grok("LISTING FILL act=listing for "+(p.name||"shop")+" at "+(p.raw||p.place||"")+" lat "+p.lat+" lng "+p.lng+". Official phone, hours, dishes from the public Google Business Profile. Rhodes Pizzarium Analipsi phone +302241601878 if this is that shop. sample=true on prices unless published."); }
-  function grok(text){ var raw=String(text||"").trim(); if(!raw) return; say("Grok…"); var origin=aim||here; var ctx={ place:(aim&&aim.name)||hereName||"", lat:origin&&origin.lat, lng:origin&&origin.lng, avc:avcGet(), shop:selected&&selected.name||"", query:job&&job.query||"", level:viewLevel(), vendors:(vendors||[]).slice(0,6).map(function(v){ var b=shopBits(v); return {id:v.id,name:v.name,km:origin?Math.round(km(origin,v)*10)/10:null,cuisine:b.cuisine,hours:b.hours,phone:!!b.phone,listed:!!b.menu}; }), tasks:loadTasks().filter(function(t){return t.status!=="done";}).slice(0,8).map(function(t){return {id:t.id,title:t.title,pri:t.pri,role:t.role,next:t.next};}), escrow:loadEscrow().filter(function(e){return e&&e.held;}).slice(0,4) }; if(awaiting&&awaiting.kind==="priority") ctx.priority_request={id:awaiting.id, reason:raw}; if(awaiting&&awaiting.kind==="justice") ctx.justice_request={id:awaiting.id, reason:raw}; var ctl=window.AbortController?new AbortController():null; var to=ctl&&setTimeout(function(){try{ctl.abort();}catch(e){}},45000); fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:raw, message:raw, here:ctx, history:mindHist, spacenet:true, fast:true, force_paid:true, allow_paid:true}),signal:ctl&&ctl.signal}).then(function(r){return r.json().then(function(j){ j.http=r.status; return j; });}).then(function(j){ if(to) clearTimeout(to); var m=parseMind(j, raw); mindHist.push({role:"user",content:raw}); mindHist.push({role:"assistant",content:m.say||m.act||""}); if(mindHist.length>16) mindHist=mindHist.slice(-16); applyMind(m, raw); }).catch(function(){ if(to) clearTimeout(to); if(!vendors.length) talk("Grok is slow. Searching the map."); }); }
+  function grok(text){ var raw=String(text||"").trim(); if(!raw) return; say(""); var origin=aim||here; var ctx={ place:(aim&&aim.name)||hereName||"", lat:origin&&origin.lat, lng:origin&&origin.lng, avc:avcGet(), shop:selected&&selected.name||"", query:job&&job.query||"", level:viewLevel(), vendors:(vendors||[]).slice(0,6).map(function(v){ var b=shopBits(v); return {id:v.id,name:v.name,km:origin?Math.round(km(origin,v)*10)/10:null,cuisine:b.cuisine,hours:b.hours,phone:!!b.phone,listed:!!b.menu}; }), tasks:loadTasks().filter(function(t){return t.status!=="done";}).slice(0,8).map(function(t){return {id:t.id,title:t.title,pri:t.pri,role:t.role,next:t.next};}), escrow:loadEscrow().filter(function(e){return e&&e.held;}).slice(0,4) }; if(awaiting&&awaiting.kind==="priority") ctx.priority_request={id:awaiting.id, reason:raw}; if(awaiting&&awaiting.kind==="justice") ctx.justice_request={id:awaiting.id, reason:raw}; var ctl=window.AbortController?new AbortController():null; var to=ctl&&setTimeout(function(){try{ctl.abort();}catch(e){}},45000); fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:raw, message:raw, here:ctx, history:mindHist, spacenet:true, fast:false, force_paid:true, allow_paid:true}),signal:ctl&&ctl.signal}).then(function(r){return r.json().then(function(j){ j.http=r.status; return j; });}).then(function(j){ if(to) clearTimeout(to); var m=parseMind(j, raw); mindHist.push({role:"user",content:raw}); mindHist.push({role:"assistant",content:m.say||m.act||""}); if(mindHist.length>16) mindHist=mindHist.slice(-16); applyMind(m, raw); }).catch(function(){ if(to) clearTimeout(to); if(!vendors.length) say("Still looking."); }); }
   function savePost(a, text){ var row={level:a.level, lat:a.at&&a.at.lat, lng:a.at&&a.at.lng, name:(a.at&&a.at.name)||"", text:String(text||"").trim(), t:Date.now(), kind:"post", id:"p"+Date.now().toString(36)}; try{ var list=JSON.parse(localStorage.getItem("sn:posts")||"[]"); list.unshift(row); localStorage.setItem("sn:posts", JSON.stringify(list.slice(0,80))); }catch(e){} if(window.SNWork&&SNWork.publish) SNWork.publish(row); talk("Posted at "+(row.name||a.level)+"."); if(window.SN&&SN.repaint) SN.repaint(); }
   function startAwait(kind, level, p){ awaiting={kind:kind, level:level, at:p}; if(inEl){ inEl.value=""; inEl.placeholder= kind==="post"?"Post at this place": kind==="add"?"Name what you add":"Task at this place"; try{ inEl.focus(); }catch(e){} } var n=(p&&p.name)||level; if(kind==="post") talk("Post at "+n+". Write it."); else if(kind==="add") talk("Add at "+n+". Name it."); else talk("Task at "+n+". Say what you want."); }
   function doCall(p){ if(window.SNWork){ SNWork.open(p,"call"); return; } nameAim(p).then(function(n){ var t=n.tags||{}; var phone=t.phone||t["contact:phone"]||t.tel||""; if(phone){ talk("Calling "+(n.name||"place")+"."); location.href="tel:"+String(phone).replace(/[^\d+]/g,""); } else talk("No phone listed for "+(n.name||"this place")+"."); }); }
@@ -2110,7 +2127,55 @@
   }
   function size(){ if(!canvas) return; var d=Math.min(2,devicePixelRatio||1); canvas.width=Math.max(1,Math.floor((innerWidth||320)*d)); canvas.height=Math.max(1,Math.floor((innerHeight||480)*d)); drawSig=""; pack(); needTick(); }
   function sph(latDeg,lngDeg,cx,cy,R){ var la=latDeg*Math.PI/180, ln=lngDeg*Math.PI/180-yaw; var x=Math.cos(la)*Math.sin(ln); var y=Math.sin(la); var z=Math.cos(la)*Math.cos(ln); var y2=y*Math.cos(pitch)-z*Math.sin(pitch); var z2=y*Math.sin(pitch)+z*Math.cos(pitch); if(z2<=0.02) return null; return {x:cx+R*x, y:cy-R*y2, z:z2}; }
-  function drawGrid(ctx,cx,cy,R){ var lat,lng,a,b,step=15; ctx.lineWidth=Math.max(1, (devicePixelRatio||1)*0.7); ctx.strokeStyle="rgba(77,240,255,0.22)"; for(lat=-75; lat<=75; lat+=step){ ctx.beginPath(); a=null; for(lng=-180; lng<=180; lng+=6){ b=sph(lat,lng,cx,cy,R); if(b&&a){ ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); } a=b; } ctx.stroke(); } ctx.strokeStyle="rgba(77,240,255,0.28)"; for(lng=-180; lng<180; lng+=step){ ctx.beginPath(); a=null; for(lat=-90; lat<=90; lat+=4){ b=sph(lat,lng,cx,cy,R); if(b&&a){ ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); } a=b; } ctx.stroke(); } ctx.strokeStyle="rgba(126,233,255,0.55)"; ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke(); }
+  function sampleEarth(lat,lng){
+    if(!earthBmp) return null;
+    var u=((lng+180)%360)/360; if(u<0) u+=1;
+    var v=(90-lat)/180; if(v<0) v=0; if(v>1) v=1;
+    var ix=Math.floor(u*(earthW-1)), iy=Math.floor(v*(earthH-1));
+    var i=(iy*earthW+ix)*4;
+    return earthBmp[i]+","+earthBmp[i+1]+","+earthBmp[i+2];
+  }
+  function drawGrid(ctx,cx,cy,R){
+    var lat,lng,a,b,p00,p10,p01,p11,step,rgb,d=Math.min(2,devicePixelRatio||1);
+    var glow=ctx.createRadialGradient(cx,cy,R*0.88,cx,cy,R*1.14);
+    glow.addColorStop(0,"rgba(77,240,255,0)");
+    glow.addColorStop(0.7,"rgba(50,180,255,0.10)");
+    glow.addColorStop(1,"rgba(8,24,48,0)");
+    ctx.fillStyle=glow;
+    ctx.beginPath(); ctx.arc(cx,cy,R*1.14,0,Math.PI*2); ctx.fill();
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.clip();
+    ctx.fillStyle="#041018";
+    ctx.fillRect(cx-R,cy-R,R*2,R*2);
+    if(earthBmp){
+      step=6;
+      for(lat=84; lat>-84; lat-=step){
+        for(lng=-180; lng<180; lng+=step){
+          p00=sph(lat,lng,cx,cy,R); p10=sph(lat,lng+step,cx,cy,R);
+          p01=sph(lat-step,lng,cx,cy,R); p11=sph(lat-step,lng+step,cx,cy,R);
+          if(!p00||!p10||!p01||!p11) continue;
+          rgb=sampleEarth(lat-step/2, lng+step/2);
+          if(!rgb) continue;
+          ctx.fillStyle="rgb("+rgb+")";
+          ctx.beginPath();
+          ctx.moveTo(p00.x,p00.y); ctx.lineTo(p10.x,p10.y); ctx.lineTo(p11.x,p11.y); ctx.lineTo(p01.x,p01.y);
+          ctx.fill();
+        }
+      }
+    }
+    ctx.lineWidth=Math.max(0.6, d*0.45);
+    ctx.strokeStyle="rgba(77,240,255,0.08)";
+    step=30;
+    for(lat=-60; lat<=60; lat+=step){
+      ctx.beginPath(); a=null;
+      for(lng=-180; lng<=180; lng+=8){ b=sph(lat,lng,cx,cy,R); if(b&&a){ ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);} a=b; }
+      ctx.stroke();
+    }
+    ctx.restore();
+    ctx.strokeStyle="rgba(126,233,255,0.42)";
+    ctx.lineWidth=Math.max(1.2, d*0.8);
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
+  }
   function pinLabel(p, fallback){ var n=String((p&&p.name)||fallback||""); if(!n || /^-?\d+\.\d+/.test(n) || /\d+\.\d+[NS]/.test(n)) return fallback||"PIN"; return n.slice(0,18); }
   function drawBond3d(ctx,a,b,cx,cy,R){
     if(!a||!b) return;
