@@ -160,6 +160,45 @@ async function grokChat(key, messages, model) {
   });
 }
 
+
+async function grabText(url, ms) {
+  var ctl = new AbortController();
+  var t = setTimeout(function () { ctl.abort(); }, ms || 7000);
+  try {
+    var r = await fetch(url, { headers: { 'User-Agent': 'AstranovSpaceNet/1 (https://astranov.eu)', Accept: 'text/html,application/json' }, signal: ctl.signal });
+    return await r.text();
+  } catch (_) { return ''; }
+  finally { clearTimeout(t); }
+}
+
+async function netResearch(q, here) {
+  q = String(q || '').slice(0, 120);
+  var city = (here && (here.place || '')) || 'Rhodes';
+  var jobs = [];
+  jobs.push(grabText('https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q + ' ' + city + ' 2026'), 7000));
+  jobs.push(grabText('https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&format=json&titles=' + encodeURIComponent(q.split(' ').slice(0, 6).join(' ')), 6000));
+  if (/moor|yacht|anchor|sewage|pollut|cleanest|permit/i.test(q)) {
+    jobs.push(grabText('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q=' + encodeURIComponent('wastewater treatment Rhodes Greece'), 6000));
+    jobs.push(grabText('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&q=' + encodeURIComponent('Lindos Bay Rhodes'), 6000));
+  }
+  var parts = await Promise.all(jobs);
+  var ddg = String(parts[0] || '').replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 1800);
+  var wiki = '';
+  try {
+    var w = JSON.parse(parts[1] || '{}');
+    var pages = w.query && w.query.pages;
+    for (var k in pages) wiki = String(pages[k].extract || '').slice(0, 700);
+  } catch (_) {}
+  var osm = '';
+  try {
+    (JSON.parse(parts[2] || '[]') || []).forEach(function (p) {
+      osm += (p.display_name || p.name || '') + ' | ';
+    });
+  } catch (_) {}
+  var pack = 'LIVE NET:\n' + (wiki ? 'Wiki: ' + wiki + '\n' : '') + (osm ? 'OSM: ' + osm + '\n' : '') + (ddg ? 'Web: ' + ddg : '');
+  return pack.slice(0, 2800);
+}
+
 async function weatherOf(lat, lng) {
   lat = Number(lat); lng = Number(lng);
   if (!isFinite(lat) || !isFinite(lng)) { lat = 36.434; lng = 28.217; }
@@ -251,7 +290,8 @@ module.exports = async function handler(req, res) {
       content: String(h.content).slice(0, 800),
     });
   });
-  messages.push({ role: 'user', content: whereLine + '\nHuman: ' + message });
+  var net = await netResearch(message, here);
+  messages.push({ role: 'user', content: whereLine + '\n' + net + '\nHuman: ' + message });
   body.messages = messages;
 
   function send(text, extra) {
