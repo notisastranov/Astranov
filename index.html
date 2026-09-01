@@ -220,7 +220,7 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
 <script src="/js/spacenet/leave-flat.js?v=4126"></script>
 <script src="/js/spacenet/work.js?v=4127"></script>
 <script src="/js/spacenet/voice.js?v=4126"></script>
-<script src="/js/spacenet/app.js?v=4126"></script>
+<script src="/js/spacenet/app.js?v=4128"></script>
 <script src="/js/spacenet/auth.js?v=4105"></script>
 <script src="/js/spacenet/profile.js?v=4103"></script>
 <script src="/js/spacenet/wallet.js?v=4121"></script>
@@ -237,7 +237,7 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
   try{ if(navigator.serviceWorker) navigator.serviceWorker.register("/sw.js?v="+VER,{scope:"/"}).catch(function(){}); }catch(e){}
   if(!window.SN || !window.SN.run){
     var s=document.createElement("script");
-    s.src="/js/spacenet/app.js?v=4127";
+    s.src="/js/spacenet/app.js?v=4128";
     s.onerror=function(){ console.warn("SN app load failed"); };
     document.body.appendChild(s);
   }
