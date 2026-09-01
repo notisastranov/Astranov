@@ -68,20 +68,57 @@ function parseAct(text) {
   return out;
 }
 
+
+async function fillHunt(req, text, message, here) {
+  var p = parseAct(text);
+  var want = /pizza|pizzeria|beer|food|burger|coffee|gyro|best|find|near|shop|\u03c0\u03b9\u03c4\u03c3/i.test(message + " " + (p.q || ""));
+  if ((p.places && p.places.length) || (!want && p.act && p.act !== "hunt" && p.act !== "find")) {
+    return { text: text, places: p.places || [] };
+  }
+  try {
+    var host = req.headers.host || "astranov.eu";
+    var proto = (req.headers["x-forwarded-proto"] || "https").split(",")[0];
+    var q = p.q || message;
+    var city = (here && (here.place || here.city)) || "";
+    if (/pizza/i.test(q) && !/rhodes|rodos|athens|greece/i.test(q + " " + city)) city = city || "Rhodes";
+    var r = await fetch(proto + "://" + host + "/api/find", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ q: q, city: city }),
+    });
+    var j = await r.json().catch(function () { return {}; });
+    var places = (j && j.places) || [];
+    if (!places.length) return { text: text, places: [] };
+    p.act = "hunt";
+    p.places = places;
+    if (!p.say || /hunting pizza/i.test(p.say)) {
+      p.say = (places[0].name || "A pizza place") + " is on the map. " + (places.length > 1 ? places.length + " pins around Rhodes." : "Tap the pin.");
+    }
+    var packed = JSON.stringify({
+      say: p.say,
+      act: "hunt",
+      q: q,
+      places: places.slice(0, 8),
+      ok: true,
+    });
+    return { text: packed, places: places };
+  } catch (_) {
+    return { text: text, places: p.places || [] };
+  }
+}
+
 async function grokChat(key, messages, model) {
-  const r = await fetch('https://api.x.ai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer ' + key,
-    },
-    body: JSON.stringify({
-      model: model,
-      messages: messages,
-      temperature: 0.7,
-      max_tokens: 900,
-    }),
-  });
+  async function once(search) {
+    var body = { model: model, messages: messages, temperature: 0.5, max_tokens: 900 };
+    if (search) body.search_parameters = { mode: "on", return_citations: true, max_search_results: 8 };
+    return fetch('https://api.x.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+      body: JSON.stringify(body),
+    });
+  }
+  var r = await once(true);
+  if (!r.ok) r = await once(false);
   const j = await r.json().catch(function () {
     return {};
   });
@@ -172,7 +209,7 @@ module.exports = async function handler(req, res) {
       say: p.say,
       act: p.act,
       q: p.q,
-      places: p.places || [],
+      places: (extra.places && extra.places.length ? extra.places : p.places) || [],
       lat: p.lat,
       lng: p.lng,
       task_id: p.id || '',
@@ -195,7 +232,8 @@ module.exports = async function handler(req, res) {
       try {
         const g = await grokChat(key, messages, m);
         if (g.ok) {
-          send(g.text, { via: 'xai-grok', model: g.model, usage: g.usage });
+          var filled = await fillHunt(req, g.text, message, here);
+          send(filled.text, { via: 'xai-grok', model: g.model, usage: g.usage, places: filled.places });
           return;
         }
       } catch (e) {}
@@ -217,7 +255,8 @@ module.exports = async function handler(req, res) {
     });
     const text = String((j && (j.text || j.response || j.answer)) || '');
     if (text) {
-      send(text, { via: 'supabase-aicycle', model: (j && j.model) || MODEL });
+      var filled = await fillHunt(req, text, message, here);
+      send(filled.text, { via: 'supabase-aicycle', model: (j && j.model) || MODEL, places: filled.places });
       return;
     }
   } catch (_) {}
