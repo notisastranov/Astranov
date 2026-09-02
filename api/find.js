@@ -76,6 +76,32 @@ async function nominatim(q) {
   }
 }
 
+async function overpassNear(lat, lng) {
+  var q =
+    '[out:json][timeout:12];(' +
+    'nwr(around:6000,' + lat + ',' + lng + ')["name"]["amenity"~"restaurant|fast_food|cafe|pharmacy|bar"];' +
+    'nwr(around:6000,' + lat + ',' + lng + ')["name"]["shop"~"supermarket|convenience|bakery"];' +
+    ');out center tags 30;';
+  var txt = await grab("https://overpass.kumi.systems/api/interpreter?data=" + encodeURIComponent(q), 14000);
+  try {
+    var j = JSON.parse(txt);
+    return (j.elements || []).map(function (e) {
+      var c = e.center || e;
+      var t = e.tags || {};
+      return {
+        name: t.name,
+        lat: Number(c.lat),
+        lng: Number(c.lon || c.lng),
+        raw: [t["addr:street"], t.amenity || t.shop, t["addr:city"] || ""].filter(Boolean).join(", "),
+        phone: t.phone || t["contact:phone"] || "",
+        kind: t.amenity || t.shop || "shop",
+      };
+    }).filter(function (p) { return p.name && isFinite(p.lat); });
+  } catch (_) {
+    return [];
+  }
+}
+
 async function overpassPizza(bbox) {
   var q =
     '[out:json][timeout:10];nwr(' + bbox + ')["name"]["amenity"~"restaurant|fast_food|cafe"]["cuisine"~"pizza",i];out center tags 16;';
@@ -104,6 +130,14 @@ module.exports = async function handler(req, res) {
   var b = req.method === "GET" ? req.query || {} : readBody(req);
   var q = String(b.q || b.name || "").slice(0, 80).trim();
   var city = String(b.city || b.place || "").slice(0, 80).trim();
+  var lat=Number(b.lat), lng=Number(b.lng);
+  var wantNear=/vendor|shop|near|amenity|places/i.test(q) && isFinite(lat) && isFinite(lng);
+  if (!q && !(isFinite(lat)&&isFinite(lng))) { res.status(400).json({ ok: false, error: "empty" }); return; }
+  if (wantNear || (!q && isFinite(lat))) {
+    var near=await overpassNear(lat, lng);
+    res.status(200).json({ ok: true, places: near.slice(0, 16) });
+    return;
+  }
   if (!q) { res.status(400).json({ ok: false, error: "empty" }); return; }
   var wantPizza = /pizza|pizzeria|\u03c0\u03b9\u03c4\u03c3/i.test(q);
   var wantRhodes = /rhodes|rodos|\u03c1\u03cc\u03b4/i.test(q + " " + city) || !city;
