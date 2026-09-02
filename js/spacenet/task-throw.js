@@ -1,4 +1,4 @@
-/* SpaceNet 4130 — task offers live on the map. Arc, faces, money. No rectangle. Multi-offer FCFS + chain. */
+/* SpaceNet 4131 — map offers, waypoints, en-route gap fill, surge to 1 AV€/km floor. */
 (function(){
   if(window.__snTaskThrow) return;
   window.__snTaskThrow=true;
@@ -7,6 +7,8 @@
   var offers=[];
   var layers=[];
   var selected=null;
+  var skipped={};
+  var AVKM=1;
 
   function esc(s){ return String(s||"").replace(/[&<>"']/g,function(c){return "&#"+c.charCodeAt(0)+";";}); }
   function euro(n){
@@ -63,6 +65,10 @@
       ".sn-off-acts b{background:#19e68c;color:#00140a;box-shadow:0 0 10px #19e68c}"+
       ".sn-off-acts i{background:#000;color:#ff3b4e;border:1.5px solid #ff3b4e;box-shadow:0 0 8px #ff3b4e}"+
       ".sn-off-sel .sn-off-pay{color:#fff;text-shadow:0 0 10px #ffd85a}"+
+      ".sn-off-way{position:absolute;left:-4px;bottom:12px;width:18px;height:18px;border-radius:99px;background:#02040a;border:1.5px solid var(--c,#4df0ff);color:#7ee9ff;font:800 10px/16px system-ui;text-align:center;z-index:3}"+
+      ".sn-off-loy{font:800 9px/1 system-ui;letter-spacing:.12em;color:#ffd85a;text-shadow:0 0 8px #ffd85a;margin:0 0 3px}"+
+      ".sn-off-fit{font:800 9px/1 system-ui;letter-spacing:.12em;color:#19e68c;text-shadow:0 0 8px #19e68c;margin:0 0 4px}"+
+      ".sn-off-adv{font:700 9px/1.2 system-ui;color:#ffe14a;margin-top:4px;letter-spacing:.04em}"+
       "#sn-drive{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 58px);transform:translateX(-50%);z-index:70;width:min(360px,94vw);padding:10px;border-radius:14px;background:rgba(4,14,28,.94);border:1px solid rgba(126,233,255,.45);color:#c6f6ff;font:600 12px/1.3 system-ui;display:none;pointer-events:auto}"+
       "#sn-drive.on{display:block}"+
       "#sn-drive b{display:block;color:#7ee9ff;font:800 10px/1 system-ui;letter-spacing:.16em;margin:0 0 8px}"+
@@ -111,6 +117,71 @@
     var df=(b.lat-a.lat)*Math.PI/180, dl=(b.lng-a.lng)*Math.PI/180;
     var x=Math.sin(df/2)*Math.sin(df/2)+Math.cos(f1)*Math.cos(f2)*Math.sin(dl/2)*Math.sin(dl/2);
     return 2*R*Math.asin(Math.min(1, Math.sqrt(x)));
+  }
+  function travelMin(a,b){ return Math.max(2, Math.round(haversine(a,b)*2.4)); }
+  function floorPrice(km){ return Math.max(1, Math.ceil((Number(km)||0)*AVKM)); }
+  function floorTime(km){ return Math.max(6, Math.round((Number(km)||0)*2.4)+3); }
+  function applyLaw(j){
+    if(!j||!j.from||!j.to) return j;
+    j.km=+haversine(j.from,j.to).toFixed(1);
+    var floor=floorPrice(j.km), need=floorTime(j.km);
+    if(j.basePrice==null) j.basePrice=Math.max(Number(j.price)||0, floor);
+    j.price=Math.max(j.basePrice, floor);
+    j.tight=(j.deliverMin||0)<need;
+    j.needMin=Math.max(j.deliverMin||need, need);
+    if(!j.t0) j.t0=Date.now();
+    j.loyalty=j.loyalty||0;
+    j.flexMin=j.flexMin||0;
+    return j;
+  }
+  function surgeTick(){
+    var now=Date.now(), dirty=false;
+    offers.forEach(function(j){
+      var steps=Math.floor((now-(j.t0||now))/18000);
+      var loy=Math.min(30, steps);
+      var bump=Math.min(20, steps);
+      var np=Math.max(floorPrice(j.km), (j.basePrice||j.price)+bump);
+      var flex=steps>=8?5:0;
+      if(loy!==j.loyalty || np!==j.price || flex!==(j.flexMin||0)){
+        j.loyalty=loy; j.price=np; j.flexMin=flex; dirty=true;
+      }
+    });
+    if(dirty) paint();
+  }
+  function timelineOk(jobs, you){
+    var t=0, here=you, i, j, due;
+    for(i=0;i<jobs.length;i++){
+      j=jobs[i];
+      if(j.priority && i>0) return false;
+      t+=travelMin(here, j.from);
+      t=Math.max(t, j.readyMin||0);
+      t+=travelMin(j.from, j.to);
+      due=(j.deliverMin||30)+(j.flexMin||0);
+      if(j.tight) due=Math.max(due, j.needMin||due);
+      if(t>due+2) return false;
+      here=j.to;
+    }
+    return true;
+  }
+  function extraKm(ch, i, job, you){
+    var prev=i===0?you:ch[i-1].to;
+    var nxt=i<ch.length?ch[i].from:null;
+    var add=haversine(prev, job.from)+haversine(job.from, job.to);
+    if(nxt) add+=haversine(job.to, nxt)-haversine(prev, nxt);
+    return add;
+  }
+  function bestInsert(job, ch, you){
+    if(!job) return null;
+    if(job.priority && ch.length) return null;
+    if(ch.some(function(x){ return x.priority; })) return null;
+    var best=null, i, next, extra;
+    for(i=0;i<=ch.length;i++){
+      next=ch.slice(0,i).concat([job], ch.slice(i));
+      if(!timelineOk(next, you)) continue;
+      extra=extraKm(ch, i, job, you);
+      if(!best || extra<best.extra) best={at:i, extra:extra};
+    }
+    return best;
   }
   function arcPts(a,b){
     var lat1=a.lat, lng1=a.lng, lat2=b.lat, lng2=b.lng;
@@ -167,9 +238,8 @@
       {id:"off-"+t+"-c", price:33, what:"Grocery haul", kind:"grocery", kg:12, vol:"box", vendor:"Lidl Rhodes", client:who(), from:c, to:away(you,0.6,80), readyMin:20, deliverMin:45, priority:false, vendorPhoto:"", clientPhoto:userPhoto()},
       {id:"off-"+t+"-d", price:28, what:"Documents", kind:"parcel", kg:0.4, vol:"bag", vendor:"Notary", client:"Port desk", from:d, to:away(you,2.1,15), readyMin:8, deliverMin:22, priority:false, vendorPhoto:"", clientPhoto:""}
     ].map(function(j){
-      j.km=+haversine(j.from,j.to).toFixed(1);
       j.to.name=j.client; j.from.name=j.vendor;
-      return j;
+      return applyLaw(j);
     });
   }
 
@@ -187,34 +257,37 @@
   }
 
   function fitsChain(job, ch){
-    if(!ch||!ch.length) return true;
-    if(job.priority) return false;
-    if(ch.some(function(x){ return x.priority; })) return false;
-    var last=ch[ch.length-1];
-    return (last.etaMin||0)+5 <= (job.readyMin||0)+(job.deliverMin||20);
+    return !!bestInsert(job, ch||[], pin());
   }
 
   function faceHtml(src, letter, color){
     var img=src?'<img alt="" src="'+esc(src)+'">':esc((letter||"?").slice(0,1).toUpperCase());
     return '<div class="sn-off-face" style="--c:'+color+'">'+img+"</div>";
   }
-  function endIcon(job, which, color){
+  function endIcon(job, which, color, way){
     var shop=which==="v";
     var name=shop?job.vendor:job.client;
     var pic=shop?job.vendorPhoto:job.clientPhoto;
     var badge=shop?("Ready "+(job.readyMin||13)+" min"):(job.priority?"PRIORITY":("Due "+(job.deliverMin||30)+" min"));
     var cls=(!shop&&job.priority)?"sn-off-badge pri":"sn-off-badge";
-    var html='<div class="sn-off-end" style="--c:'+color+'"><div class="'+cls+'">'+esc(badge)+"</div>"+faceHtml(pic,name,color)+'<div class="sn-off-nm">'+esc(String(name||"").slice(0,16))+"</div></div>";
+    var wayHtml=way?('<div class="sn-off-way">'+esc(String(way))+"</div>"):"";
+    var html='<div class="sn-off-end" style="--c:'+color+'"><div class="'+cls+'">'+esc(badge)+"</div>"+faceHtml(pic,name,color)+wayHtml+'<div class="sn-off-nm">'+esc(String(name||"").slice(0,16))+"</div></div>";
     return window.L.divIcon({className:"", html:html, iconSize:[56,72], iconAnchor:[28,36]});
   }
   function midIcon(job, color, on){
-    var html='<div class="sn-off-mid'+(on?" sn-off-sel":"")+'" data-id="'+esc(job.id)+'">'+
+    var loy=job.loyalty?('<div class="sn-off-loy">+'+job.loyalty+"% LOYAL</div>"):"";
+    var fit=job.fit?('<div class="sn-off-fit">FITS YOUR RUN</div>'):"";
+    var adv=[];
+    if(job.price<=floorPrice(job.km)) adv.push("FLOOR 1/km");
+    if(job.tight) adv.push("NEED "+job.needMin+" MIN");
+    if(job.flexMin) adv.push("+"+job.flexMin+" MIN?");
+    var advHtml=adv.length?('<div class="sn-off-adv">'+esc(adv.join(" · "))+"</div>"):"";
+    var html='<div class="sn-off-mid'+(on?" sn-off-sel":"")+'" data-id="'+esc(job.id)+'">'+loy+fit+
       '<div class="sn-off-pay" style="color:'+color+'">'+esc(euro(job.price))+"</div>"+
-      '<div class="sn-off-acts"><b data-x="yes" data-id="'+esc(job.id)+'">\u2713</b><i data-x="no" data-id="'+esc(job.id)+'">\u00d7</i></div>'+
-      '<div class="sn-off-km">'+esc(kmTxt(job.km))+"</div></div>";
-    return window.L.divIcon({className:"", html:html, iconSize:[160,90], iconAnchor:[80,40]});
+      '<div class="sn-off-acts"><b data-x="yes" data-id="'+esc(job.id)+'">+</b><i data-x="no" data-id="'+esc(job.id)+'">×</i></div>'+
+      '<div class="sn-off-km">'+esc(kmTxt(job.km))+"</div>"+advHtml+"</div>";
+    return window.L.divIcon({className:"", html:html, iconSize:[170,110], iconAnchor:[85,48]});
   }
-
   function clearLayers(){
     layers.forEach(function(g){ try{ var m=getMap(); if(m) m.removeLayer(g); }catch(e){} });
     layers=[];
@@ -226,79 +299,110 @@
     if(!map||!window.L) return;
     clearLayers();
     var you=pin();
-    var bounds=[];
-    bounds.push([you.lat,you.lng]);
+    var ch=chain();
+    var bounds=[[you.lat,you.lng]];
+    var n=1;
+    function addLine(pts, color, w, dash, click){
+      var g=L.layerGroup();
+      var opt={color:color,weight:w,opacity:0.9,className:"sn-arc-fill"};
+      if(dash) opt.dashArray=dash;
+      var line=L.polyline(pts, opt);
+      if(click) line.on("click", click);
+      g.addLayer(line);
+      g.addTo(map); layers.push(g);
+      return g;
+    }
+    ch.forEach(function(job, i){
+      applyLaw(job);
+      var color="#4df0ff";
+      var prev=i===0?you:ch[i-1].to;
+      addLine(arcPts(prev, job.from), "#19e68c", 3, "4 8");
+      addLine(arcPts(job.from, job.to), color, 5);
+      var g=L.layerGroup();
+      g.addLayer(L.marker([job.from.lat,job.from.lng],{icon:endIcon(job,"v",color,n++),keyboard:false,zIndexOffset:1900}));
+      g.addLayer(L.marker([job.to.lat,job.to.lng],{icon:endIcon(job,"c",color,n++),keyboard:false,zIndexOffset:1900}));
+      var mid=midPt(arcPts(job.from, job.to));
+      g.addLayer(L.marker(mid,{icon:window.L.divIcon({className:"",html:'<div class="sn-off-pay">'+esc(euro(job.price))+"</div>",iconSize:[120,24],iconAnchor:[60,12]}),interactive:false,zIndexOffset:2100}));
+      g.addTo(map); layers.push(g);
+      bounds.push([job.from.lat,job.from.lng],[job.to.lat,job.to.lng]);
+    });
     offers.forEach(function(job, i){
+      if(skipped[job.id]) return;
+      applyLaw(job);
+      var ins=bestInsert(job, ch, you);
+      job.fit=!!ins;
+      if(ch.length && !ins) return;
       var color=COLORS[i%COLORS.length];
       var pts=arcPts(job.from, job.to);
       var g=L.layerGroup();
-      var line=L.polyline(pts,{color:color,weight:job.id===selected?7:4,opacity:job.id===selected?1:0.85,className:"sn-arc-fill"});
-      line.on("click", function(e){ try{ L.DomEvent.stopPropagation(e);}catch(_){}
-        selected=job.id; paint(); talkOne(job);
-      });
+      var line=L.polyline(pts,{color:color,weight:job.id===selected?7:4,opacity:0.9,className:"sn-arc-fill"});
+      line.on("click", function(e){ try{ L.DomEvent.stopPropagation(e);}catch(_){} selected=job.id; paint(); talkOne(job); });
       g.addLayer(line);
-      g.addLayer(L.marker([job.from.lat,job.from.lng],{icon:endIcon(job,"v",color),keyboard:false,zIndexOffset:1800}));
-      g.addLayer(L.marker([job.to.lat,job.to.lng],{icon:endIcon(job,"c",color),keyboard:false,zIndexOffset:1800}));
-      var mid=midPt(pts);
-      var mk=L.marker(mid,{icon:midIcon(job,color,job.id===selected),keyboard:false,zIndexOffset:2200});
+      var wayV=null, wayC=null;
+      if(ins){ wayV=n+ins.at*2; wayC=wayV+1; }
+      g.addLayer(L.marker([job.from.lat,job.from.lng],{icon:endIcon(job,"v",color,wayV),keyboard:false,zIndexOffset:1800}));
+      g.addLayer(L.marker([job.to.lat,job.to.lng],{icon:endIcon(job,"c",color,wayC),keyboard:false,zIndexOffset:1800}));
+      var mk=L.marker(midPt(pts),{icon:midIcon(job,color,job.id===selected),keyboard:false,zIndexOffset:2200});
       mk.on("click", function(e){
         try{ L.DomEvent.stopPropagation(e);}catch(_){}
-        var t=e.originalEvent&&e.originalEvent.target;
-        var x=t&&t.getAttribute&&t.getAttribute("data-x");
-        var id=t&&t.getAttribute&&t.getAttribute("data-id")||job.id;
+        var tg=e.originalEvent&&e.originalEvent.target;
+        var x=tg&&tg.getAttribute&&tg.getAttribute("data-x");
+        var id=tg&&tg.getAttribute&&tg.getAttribute("data-id")||job.id;
         if(x==="yes"){ accept(id); return; }
         if(x==="no"){ decline(id); return; }
         selected=job.id; paint(); talkOne(job);
       });
       g.addLayer(mk);
-      g.addTo(map);
-      layers.push(g);
+      g.addTo(map); layers.push(g);
+      if(ins && ch.length){
+        var prev=ins.at===0?you:ch[ins.at-1].to;
+        addLine(arcPts(prev, job.from), "#19e68c", 2, "6 8");
+        if(ins.at<ch.length) addLine(arcPts(job.to, ch[ins.at].from), "#19e68c", 2, "6 8");
+      }
       bounds.push([job.from.lat,job.from.lng],[job.to.lat,job.to.lng]);
     });
-    var ch=chain();
-    if(ch.length>=1 && offers.length){
-      var last=ch[ch.length-1];
-      offers.forEach(function(job){
-        if(!fitsChain(job,ch) || !last.to) return;
-        try{
-          var pts=arcPts(last.to, job.from);
-          var g=L.layerGroup();
-          g.addLayer(L.polyline(pts,{color:"#19e68c",weight:2,opacity:0.7,dashArray:"6 8"}));
-          g.addTo(map); layers.push(g);
-        }catch(e){}
-      });
-    }
     if(bounds.length>=2){
       try{ map.fitBounds(bounds,{padding:[72,96],maxZoom:15,animate:true}); }catch(e){}
     }
   }
-
   function talkOne(job){
-    var line=job.what+". "+euro(job.price)+". "+kmTxt(job.km)+". "+(job.priority?"Priority. No stops.":("Deliver in "+job.deliverMin+" minutes."))+" Ready in "+job.readyMin+".";
-    try{ if(window.SN&&SN.talk) SN.talk(line); }catch(e){}
+    var bits=[job.what, euro(job.price), kmTxt(job.km)];
+    if(job.fit) bits.push("Fits your run.");
+    bits.push(job.priority?"Priority. No stops.":("Due in "+(job.deliverMin||30)+" minutes."));
+    bits.push("Ready in "+job.readyMin+".");
+    bits.push("Floor one AVE per kilometer.");
+    if(job.loyalty) bits.push("Plus "+job.loyalty+" percent loyalty.");
+    try{ if(window.SN&&SN.talk) SN.talk(bits.join(" ")); }catch(e){}
   }
 
   function accept(id){
     var job=offers.filter(function(x){ return x.id===id; })[0];
     if(!job) return;
+    applyLaw(job);
+    var you=pin();
     var ch=chain();
-    var chained=fitsChain(job,ch);
+    var ins=bestInsert(job, ch, you);
+    if(ch.length && !ins){
+      try{ if(window.SN&&SN.talk) SN.talk("Does not fit your time. Ignore it or wait."); }catch(e){}
+      return;
+    }
+    var at=ins?ins.at:ch.length;
     job.etaMin=(job.readyMin||0)+(job.deliverMin||20);
-    if(chained) ch.push(job); else ch=[job];
+    ch=ch.slice(0,at).concat([job], ch.slice(at));
     saveChain(ch);
     offers=offers.filter(function(x){ return x.id!==id; });
     selected=null;
     paint();
     try{
-      if(window.SN&&SN.talk) SN.talk(ch.length>1?("Chained. "+ch.length+" stops. First come first served."):("Accepted. "+euro(job.price)+"."));
+      if(window.SN&&SN.talk) SN.talk(ch.length>1?("Stacked. Waypoint "+(at*2+1)+". "+ch.length+" jobs. First come first served."):("Accepted. "+euro(job.price)+". One AVE per kilometer."));
     }catch(e){}
     ping();
   }
   function decline(id){
-    offers=offers.filter(function(x){ return x.id!==id; });
+    skipped[id]=1;
     if(selected===id) selected=null;
     paint();
-    try{ if(window.SN&&SN.talk) SN.talk("Declined."); }catch(e){}
+    try{ if(window.SN&&SN.talk) SN.talk("Ignored. It will climb until someone takes it."); }catch(e){}
   }
 
   function throwOffers(list){
@@ -311,10 +415,12 @@
       openPrefs();
       return;
     }
-    selected=offers[0].id;
+    selected=offers[0]&&offers[0].id;
     ensureMap(function(){
       paint();
-      try{ if(window.SN&&SN.talk) SN.talk(offers.length+" offers on the map. First come first served."); }catch(e){}
+      var ch=chain();
+      var fit=offers.filter(function(j){ return !ch.length || bestInsert(j,ch,pin()); }).length;
+      try{ if(window.SN&&SN.talk) SN.talk((ch.length?fit+" gap fills on your run. ":"")+offers.length+" offers. First come first served. Floor one AVE per kilometer."); }catch(e){}
     });
   }
 
@@ -418,4 +524,5 @@
   else hook();
   window.addEventListener("resize", park);
   setInterval(hook, 900);
+  setInterval(surgeTick, 4000);
 })();
