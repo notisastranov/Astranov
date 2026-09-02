@@ -1,4 +1,4 @@
-/* SpaceNet 4134 — offer mode: waypoint faces + numbers. OSRM draws the road. */
+/* SpaceNet 4135 — TASKS fires a sample now. Power is red/blue only. */
 (function(){
   if(window.__snTaskThrow) return;
   window.__snTaskThrow=true;
@@ -303,15 +303,20 @@
   }
   function ensureMap(then){
     hookMap();
-    var m=getMap();
-    var el=document.getElementById("city");
-    if(el&&el.classList.contains("on")&&m){ then(m); return; }
+    function go(){
+      var el=document.getElementById("city");
+      if(el) el.classList.add("on");
+      var m=getMap();
+      if(m){ then(m); return true; }
+      return false;
+    }
+    if(go()) return;
     var you=pin();
-    if(window.SN&&SN.showMap) SN.showMap(you, 14);
+    try{ if(window.SN&&SN.showMap) SN.showMap(you, 14); }catch(e){}
+    try{ if(window.SN&&SN.showCity) SN.showCity(you); }catch(e){}
     var n=0, t=setInterval(function(){
-      m=getMap();
-      if(m||++n>40){ clearInterval(t); if(m) then(m); }
-    }, 80);
+      if(go()||++n>50){ clearInterval(t); if(!getMap()) then(null); }
+    }, 60);
   }
 
   function kindOf(s){
@@ -574,26 +579,41 @@
     revealT=setTimeout(revealStep, 500);
   }
 
+  function seedJobs(){
+    var you=pin();
+    var a=away(you, 2.2, 310);
+    var b=away(you, 1.5, 340);
+    return jobsFromShops([
+      {name:"Kalithea Oven", lat:a.lat, lng:a.lng, kind:"restaurant"},
+      {name:who(), lat:you.lat, lng:you.lng, kind:"client"},
+      {name:"Night Pharmacy", lat:b.lat, lng:b.lng, kind:"pharmacy"}
+    ]);
+  }
   function throwOffers(list){
     css();
     ctx();
     stopReveal();
     shown=0;
     try{ if(window.SNVoice&&SNVoice.stop) SNVoice.stop(); }catch(e){}
+    try{ var card=document.getElementById("sn-tasks"); if(card) card.classList.remove("on"); }catch(e){}
     function start(list2){
-      offers=(list2||[]).filter(mine);
-      if(!offers.length){
-        try{ if(window.SN&&SN.talk) SN.talk("No real shops on land fit your bag and clock."); }catch(e){}
-        openPrefs();
-        return;
-      }
+      var next=(list2||[]).filter(mine);
+      if(!next.length) next=seedJobs().filter(mine);
+      if(!next.length) next=seedJobs();
+      offers=next;
+      selected=offers[0]&&offers[0].id;
       ensureMap(function(){
         ping();
         revealStep();
       });
     }
     if(list&&list.length) start(list);
-    else crawl(start);
+    else {
+      start(seedJobs());
+      crawl(function(real){
+        if(real&&real.length && shown<=1) start(real);
+      });
+    }
   }
 
   function openPrefs(){
@@ -667,7 +687,7 @@
       var holdT=null, held=false;
       btn.addEventListener("pointerdown", function(){
         held=false;
-        holdT=setTimeout(function(){ held=true; openPrefs(); }, 520);
+        holdT=setTimeout(function(){ held=true; openPrefs(); }, 900);
       });
       btn.addEventListener("pointerup", function(){ if(holdT) clearTimeout(holdT); });
       btn.addEventListener("pointerleave", function(){ if(holdT) clearTimeout(holdT); });
