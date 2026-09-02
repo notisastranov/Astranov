@@ -280,7 +280,7 @@
       return;
     }
     if(act==="home"){ view="home"; resetPhotos(); render(); return; }
-    if(act==="post"||act==="call"||act==="shop"||act==="drop"||act==="driver"||act==="list"||act==="report"){
+    if(act==="post"||act==="call"||act==="shop"||act==="drop"||act==="driver"||act==="list"||act==="report"||act==="upload"){
       if((act==="shop"||act==="drop"||act==="driver") && at && at.kind!==act){ at.id=""; }
       view=act; resetPhotos(); render(); if(window.SN&&SN.repaint) SN.repaint(); return;
     }
@@ -959,17 +959,17 @@
     var title=placeName(at);
     var sub=placeLine(at);
     if(view==="home"||view==="list"){
-      var three=
-        '<button type="button" class="opt" data-act="shop"><b>List a vendor</b><span>Menu with photos, prices, stock, schedule.</span></button>'+
-        '<button type="button" class="opt" data-act="driver"><b>List a driver base</b><span>Starting point, trips, range, schedule. 1 AV€/km.</span></button>'+
-        '<button type="button" class="opt" data-act="drop"><b>List a secret drop</b><span>Only the agent on that task sees it. Never the shop. Never the public map.</span></button>';
       card.innerHTML=head(title, sub)+
-        '<button type="button" class="opt" data-act="you"><b>This is my location</b><span>YOU pin. Not a shop.</span></button>'+
-        '<button type="button" class="opt" data-act="fix"><b>Fix my location</b><span>Next tap on the map is YOU. Order stays.</span></button>'+
-        '<button type="button" class="opt" data-act="post"><b>Post something here</b><span>News, a note, a photo. It shows on SpaceNet.</span></button>'+
-        '<button type="button" class="opt" data-act="report"><b>Report something here</b><span>A problem at this pin. It posts on SpaceNet.</span></button>'+
-        '<button type="button" class="opt" data-act="call"><b>Start a call from here</b><span>Video if they are on SpaceNet. Or search a name and dial.</span></button>'+
-        three;
+        '<button type="button" class="opt" data-act="post"><b>POST SOMETHING</b><span>Social, vendor, driver.</span></button>'+
+        '<button type="button" class="opt" data-act="call"><b>CALL SOMEBODY</b><span>Voice, video, find a name.</span></button>'+
+        '<button type="button" class="opt" data-act="upload"><b>UPLOAD</b><span>Photo, file, cover.</span></button>';
+      return;
+    }
+    if(view==="upload"){
+      card.innerHTML=head("Upload", title)+
+        '<button type="button" class="opt" data-act="post"><b>PHOTO / FILE</b><span>Goes on a post at this pin.</span></button>'+
+        '<button type="button" class="opt" data-act="shop"><b>VENDOR COVER</b><span>List or edit the shop cover.</span></button>'+
+        '<button type="button" class="opt" data-act="driver"><b>DRIVER PHOTO</b><span>Your face or vehicle.</span></button>';
       return;
     }
     if(view==="report"){
