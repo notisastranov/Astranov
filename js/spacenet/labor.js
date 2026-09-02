@@ -219,19 +219,8 @@
     }
     el.classList.add("on");
   }
-  function bind(){
-    var plus=document.getElementById("plus");
-    if(!plus||plus.__snLabor) return;
-    plus.__snLabor=true;
-    plus.addEventListener("click", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      if(e.stopImmediatePropagation) e.stopImmediatePropagation();
-      if(plus.dataset.skipClick==="1"){ plus.dataset.skipClick=""; return; }
-      chooser();
-    }, true);
-  }
-  function hook(){ css(); bind(); wrapSync(); }
+  function bind(){ /* plus belongs to SNTree */ }
+  function hook(){ css(); wrapSync(); }
   window.SNLabor={open:open, rate:RATE, load:load};
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", hook);
   else hook();
