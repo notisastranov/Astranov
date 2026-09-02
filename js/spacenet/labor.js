@@ -1,4 +1,4 @@
-/* SpaceNet 4106 — PLUS starts an open labor task. 33 / hour + 33 fixed per special. */
+/* SpaceNet 4136 — PLUS chooser: list vendor or open labor. Never steal listing. */
 (function(){
   if(window.__snLabor) return;
   window.__snLabor=true;
@@ -43,7 +43,13 @@
       "#sn-labor .chip.on{background:#4df0ff;color:#031018;border-color:#4df0ff}"+
       "#sn-labor .sum{margin:12px 0;padding:12px;border-radius:14px;border:1px solid rgba(77,240,255,.4);background:rgba(0,18,32,.6);color:#c6f6ff;font:600 13px/1.45 system-ui}"+
       "#sn-labor .sum .big{display:block;font:900 32px/1 ui-monospace,system-ui;color:#e8fbff;text-shadow:0 0 12px #4df0ff;margin-top:6px}"+
-      "#sn-labor .post{width:100%;height:46px;border:0;border-radius:14px;background:#4df0ff;color:#031018;font:800 12px/1 system-ui;letter-spacing:.16em}";
+      "#sn-labor .post{width:100%;height:46px;border:0;border-radius:14px;background:#4df0ff;color:#031018;font:800 12px/1 system-ui;letter-spacing:.16em}"+
+      "#sn-plus-pick{position:fixed;inset:0;z-index:132;display:none;pointer-events:none}"+
+      "#sn-plus-pick.on{display:block;pointer-events:auto}"+
+      "#sn-plus-pick .bg{position:absolute;inset:0;background:rgba(0,8,18,.4)}"+
+      "#sn-plus-pick .card{position:absolute;left:10px;bottom:calc(env(safe-area-inset-bottom) + 78px);width:min(240px,70vw);padding:10px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.5);border-radius:16px}"+
+      "#sn-plus-pick button{display:block;width:100%;height:44px;margin:0 0 6px;border-radius:12px;border:1px solid rgba(77,240,255,.55);background:rgba(4,16,28,.94);color:#7ee9ff;font:800 12px/1 system-ui;letter-spacing:.12em}"+
+      "#sn-plus-pick button.x{border-color:rgba(126,233,255,.28);color:#8ec8d8;margin:0}";
     document.head.appendChild(s);
   }
   function state(){
@@ -186,6 +192,33 @@
     };
     SN.syncTasks.__labor=true;
   }
+  function listVendor(){
+    try{
+      if(window.SN&&SN.listHere){ SN.listHere(); return; }
+      if(window.SN&&SN.openPlace){ SN.openPlace(); return; }
+      if(window.SN&&SN.hands){ SN.hands(); return; }
+    }catch(e){}
+    if(window.SN&&SN.talk) SN.talk("Set your place first. GPS or tap the map, then +.");
+  }
+  function chooser(){
+    css();
+    var el=document.getElementById("sn-plus-pick");
+    if(!el){
+      el=document.createElement("div");
+      el.id="sn-plus-pick";
+      el.innerHTML='<div class="bg" data-x="x"></div><div class="card"><button type="button" data-x="vendor">LIST VENDOR</button><button type="button" data-x="labor">OPEN TASK</button><button type="button" class="x" data-x="x">CANCEL</button></div>';
+      document.body.appendChild(el);
+      el.addEventListener("click", function(e){
+        var b=e.target.closest && e.target.closest("[data-x]");
+        var x=b&&b.getAttribute("data-x");
+        if(!x) return;
+        el.classList.remove("on");
+        if(x==="vendor") listVendor();
+        if(x==="labor") open();
+      });
+    }
+    el.classList.add("on");
+  }
   function bind(){
     var plus=document.getElementById("plus");
     if(!plus||plus.__snLabor) return;
@@ -195,7 +228,7 @@
       e.stopPropagation();
       if(e.stopImmediatePropagation) e.stopImmediatePropagation();
       if(plus.dataset.skipClick==="1"){ plus.dataset.skipClick=""; return; }
-      open();
+      chooser();
     }, true);
   }
   function hook(){ css(); bind(); wrapSync(); }
