@@ -1,4 +1,4 @@
-/* SpaceNet 4133 — one voice. One arc at a time. Real OSM vendors only. */
+/* SpaceNet 4134 — offer mode: waypoint faces + numbers. OSRM draws the road. */
 (function(){
   if(window.__snTaskThrow) return;
   window.__snTaskThrow=true;
@@ -68,7 +68,7 @@
       ".sn-off-acts b{background:#19e68c;color:#00140a;box-shadow:0 0 10px #19e68c}"+
       ".sn-off-acts i{background:#000;color:#ff3b4e;border:1.5px solid #ff3b4e;box-shadow:0 0 8px #ff3b4e}"+
       ".sn-off-sel .sn-off-pay{color:#fff;text-shadow:0 0 14px #4df0ff}"+
-      ".sn-off-way{position:absolute;left:-4px;bottom:12px;width:18px;height:18px;border-radius:99px;background:#02040a;border:1.5px solid var(--c,#4df0ff);color:#7ee9ff;font:800 10px/16px system-ui;text-align:center;z-index:3}"+
+      ".sn-off-way{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:22px;height:22px;border-radius:99px;background:#4df0ff;color:#02040a;font:800 13px/22px system-ui;text-align:center;z-index:3;box-shadow:0 0 10px #4df0ff}"+
       ".sn-off-loy,.sn-off-fit,.sn-off-adv{font:800 9px/1.2 system-ui;letter-spacing:.12em;color:#4df0ff;text-shadow:0 0 8px #4df0ff;margin:0 0 3px}"+
       ".sn-off-hot .sn-off-face,.sn-off-hot .sn-off-pay{animation:snHot 1.1s ease-in-out infinite}"+
       "@keyframes snHot{0%,100%{transform:scale(1);filter:drop-shadow(0 0 4px #4df0ff)}50%{transform:scale(1.14);filter:drop-shadow(0 0 16px #4df0ff)}}"+
@@ -411,16 +411,14 @@
     var img=src?'<img alt="" src="'+esc(src)+'">':esc((letter||"?").slice(0,1).toUpperCase());
     return '<div class="sn-off-face" style="--c:'+color+'">'+img+"</div>";
   }
-  function endIcon(job, which, color, way){
+  function endIcon(job, which, way, acts){
     var shop=which==="v";
     var name=shop?job.vendor:job.client;
     var pic=shop?job.vendorPhoto:job.clientPhoto;
-    var badge=shop?("Ready "+(job.readyMin||13)+" min"):(job.priority?"PRIORITY":("Due "+(job.deliverMin||30)+" min"));
-    var cls=(!shop&&job.priority)?"sn-off-badge pri":"sn-off-badge";
     var wayHtml=way?('<div class="sn-off-way">'+esc(String(way))+"</div>"):"";
-    var hot=isHot(job)?" sn-off-hot":"";
-    var html='<div class="sn-off-end'+hot+'" style="--c:'+NEON+'"><div class="'+cls+'">'+esc(badge)+"</div>"+faceHtml(pic,name,NEON)+wayHtml+'<div class="sn-off-nm">'+esc(String(name||"").slice(0,16))+"</div></div>";
-    return window.L.divIcon({className:"", html:html, iconSize:[56,72], iconAnchor:[28,36]});
+    var act=acts?('<div class="sn-off-acts"><b data-x="yes" data-id="'+esc(job.id)+'">+</b><i data-x="no" data-id="'+esc(job.id)+'">×</i></div>'):"";
+    var html='<div class="sn-off-end" data-id="'+esc(job.id)+'" style="--c:'+NEON+'">'+faceHtml(pic,name,NEON)+wayHtml+act+'<div class="sn-off-nm">'+esc(String(name||"").slice(0,16))+"</div></div>";
+    return window.L.divIcon({className:"", html:html, iconSize:[56,84], iconAnchor:[28,40]});
   }
   function midIcon(job, color, on){
     var loy=job.loyalty?('<div class="sn-off-loy">+'+job.loyalty+"% LOYAL</div>"):"";
@@ -441,6 +439,33 @@
     layers=[];
   }
 
+  var routeReq=0, lastFit="";
+  function osrmStops(stops, then){
+    var pts=(stops||[]).filter(function(p){ return p&&isFinite(Number(p.lat)); });
+    if(pts.length<2){ then(pts.map(function(p){ return [p.lat,p.lng]; })); return; }
+    var path=pts.map(function(p){ return p.lng+","+p.lat; }).join(";");
+    var my=++routeReq;
+    fetch("https://router.project-osrm.org/route/v1/driving/"+path+"?overview=full&geometries=geojson")
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if(my!==routeReq) return;
+        var c=j&&j.routes&&j.routes[0]&&j.routes[0].geometry&&j.routes[0].geometry.coordinates;
+        if(!c||!c.length) throw new Error("nogeom");
+        then(c.map(function(x){ return [x[1],x[0]]; }));
+      })
+      .catch(function(){
+        if(my!==routeReq) return;
+        then(pts.map(function(p){ return [p.lat,p.lng]; }));
+      });
+  }
+  function currentJob(){
+    if(selected){
+      var hit=offers.filter(function(x){ return x.id===selected && !skipped[x.id]; })[0];
+      if(hit) return hit;
+    }
+    var vis=offers.slice(0, shown).filter(function(x){ return !skipped[x.id]; });
+    return vis.length?vis[vis.length-1]:null;
+  }
   function paint(){
     hookMap();
     var map=getMap();
@@ -448,77 +473,50 @@
     clearLayers();
     var you=pin();
     var ch=chain();
-    var bounds=[[you.lat,you.lng]];
-    var n=1;
-    function addLine(pts, color, w, dash, click){
-      var g=L.layerGroup();
-      var opt={color:color,weight:w,opacity:0.9,className:"sn-arc-fill"};
-      if(dash) opt.dashArray=dash;
-      var line=L.polyline(pts, opt);
-      if(click) line.on("click", click);
-      g.addLayer(line);
-      g.addTo(map); layers.push(g);
-      return g;
+    var job=currentJob();
+    if(job) applyLaw(job);
+    var ins=job?bestInsert(job, ch, you):null;
+    if(job) job.fit=!!ins || !ch.length;
+    if(job && ch.length && !ins) job=null;
+    var at=(ins?ins.at:ch.length);
+    var n=1, marks=[], stops=[you], i, j;
+    function pushJob(jj, acts){
+      marks.push({job:jj, which:"v", p:jj.from, n:n++, acts:!!acts});
+      marks.push({job:jj, which:"c", p:jj.to, n:n++, acts:false});
+      stops.push(jj.from); stops.push(jj.to);
     }
-    shops.forEach(function(s){
-      try{
-        var mk=L.circleMarker([s.lat,s.lng],{radius:5,color:NEON,weight:1,fillColor:NEON,fillOpacity:0.85,opacity:0.9});
-        mk.bindTooltip(s.name,{permanent:false,direction:"top",className:"sn-off-nm"});
-        mk.addTo(map); layers.push(mk);
-        bounds.push([s.lat,s.lng]);
-      }catch(e){}
-    });
-    ch.forEach(function(job, i){
-      applyLaw(job);
-      var color="#4df0ff";
-      var prev=i===0?you:ch[i-1].to;
-      addLine(arcPts(prev, job.from), NEON, 3, "4 8");
-      addLine(arcPts(job.from, job.to), NEON, isHot(job)?7:5);
-      var g=L.layerGroup();
-      g.addLayer(L.marker([job.from.lat,job.from.lng],{icon:endIcon(job,"v",color,n++),keyboard:false,zIndexOffset:1900}));
-      g.addLayer(L.marker([job.to.lat,job.to.lng],{icon:endIcon(job,"c",color,n++),keyboard:false,zIndexOffset:1900}));
-      var mid=midPt(arcPts(job.from, job.to));
-      g.addLayer(L.marker(mid,{icon:window.L.divIcon({className:"",html:'<div class="sn-off-pay">'+esc(euro(job.price))+"</div>",iconSize:[120,24],iconAnchor:[60,12]}),interactive:false,zIndexOffset:2100}));
-      g.addTo(map); layers.push(g);
-      bounds.push([job.from.lat,job.from.lng],[job.to.lat,job.to.lng]);
-    });
-    offers.slice(0, shown).forEach(function(job){
-      applyLaw(job);
-      if(!mine(job)) return;
-      var ins=bestInsert(job, ch, you);
-      job.fit=!!ins || !ch.length;
-      var color=NEON;
-      var pts=arcPts(job.from, job.to);
-      var g=L.layerGroup();
-      var line=L.polyline(pts,{color:NEON,weight:(isHot(job)||job.id===selected)?7:4,opacity:1,className:"sn-arc-fill"});
-      line.on("click", function(e){ try{ L.DomEvent.stopPropagation(e);}catch(_){} selected=job.id; paint(); talkOne(job); });
-      g.addLayer(line);
-      var wayV=null, wayC=null;
-      if(ins){ wayV=n+ins.at*2; wayC=wayV+1; }
-      g.addLayer(L.marker([job.from.lat,job.from.lng],{icon:endIcon(job,"v",color,wayV),keyboard:false,zIndexOffset:1800}));
-      g.addLayer(L.marker([job.to.lat,job.to.lng],{icon:endIcon(job,"c",color,wayC),keyboard:false,zIndexOffset:1800}));
-      var mk=L.marker(midPt(pts),{icon:midIcon(job,color,job.id===selected),keyboard:false,zIndexOffset:2200});
+    for(i=0;i<ch.length;i++){
+      if(job && i===at) pushJob(job, true);
+      applyLaw(ch[i]);
+      pushJob(ch[i], false);
+    }
+    if(job && at>=ch.length) pushJob(job, true);
+    marks.forEach(function(m){
+      var mk=L.marker([m.p.lat,m.p.lng],{icon:endIcon(m.job,m.which,m.n,m.acts),keyboard:false,zIndexOffset:1800+m.n});
       mk.on("click", function(e){
         try{ L.DomEvent.stopPropagation(e);}catch(_){}
         var tg=e.originalEvent&&e.originalEvent.target;
         var x=tg&&tg.getAttribute&&tg.getAttribute("data-x");
-        var id=tg&&tg.getAttribute&&tg.getAttribute("data-id")||job.id;
+        var id=(tg&&tg.getAttribute&&tg.getAttribute("data-id"))||m.job.id;
         if(x==="yes"){ accept(id); return; }
         if(x==="no"){ decline(id); return; }
-        selected=job.id; paint(); talkOne(job);
+        selected=m.job.id; talkOne(m.job);
       });
-      g.addLayer(mk);
-      g.addTo(map); layers.push(g);
-      if(ins && ch.length){
-        var prev=ins.at===0?you:ch[ins.at-1].to;
-        addLine(arcPts(prev, job.from), NEON, 2, "6 8");
-        if(ins.at<ch.length) addLine(arcPts(job.to, ch[ins.at].from), NEON, 2, "6 8");
-      }
-      bounds.push([job.from.lat,job.from.lng],[job.to.lat,job.to.lng]);
+      mk.addTo(map); layers.push(mk);
     });
-    if(bounds.length>=2){
-      try{ map.fitBounds(bounds,{padding:[72,96],maxZoom:15,animate:true}); }catch(e){}
+    var key=stops.map(function(p){ return (+p.lat).toFixed(4)+","+(+p.lng).toFixed(4); }).join("|");
+    if(key!==lastFit && stops.length>=2){
+      lastFit=key;
+      try{ map.fitBounds(stops.map(function(p){ return [p.lat,p.lng]; }),{padding:[72,88],maxZoom:16,animate:true}); }catch(e){}
     }
+    osrmStops(stops, function(line){
+      var map2=getMap();
+      if(!map2||!window.L||!line||line.length<2) return;
+      var glow=L.polyline(line,{color:NEON,weight:12,opacity:0.16,lineCap:"round",interactive:false});
+      var road=L.polyline(line,{color:NEON,weight:4,opacity:0.95,lineCap:"round",className:"sn-arc-fill"});
+      glow.addTo(map2); road.addTo(map2);
+      layers.push(glow, road);
+    });
   }
   function talkOne(job){
     var bits=[
