@@ -1,9 +1,9 @@
-/* SpaceNet 4131 — map offers, waypoints, en-route gap fill, surge to 1 AV€/km floor. */
+/* SpaceNet 4132 — neon-blue up-arcs only. No water. No scissors. Only what fits this bag and clock. */
 (function(){
   if(window.__snTaskThrow) return;
   window.__snTaskThrow=true;
 
-  var COLORS=["#4df0ff","#ff8ad4","#ffd85a","#19e68c","#b44dff"];
+  var NEON="#4df0ff";
   var offers=[];
   var layers=[];
   var selected=null;
@@ -55,7 +55,7 @@
       ".sn-off-face{width:44px;height:44px;margin:14px auto 0;border-radius:99px;overflow:hidden;border:2px solid var(--c,#4df0ff);background:#000;box-shadow:0 0 12px var(--c,#4df0ff);display:flex;align-items:center;justify-content:center;font:800 16px system-ui;color:#4df0ff}"+
       ".sn-off-face img{width:100%;height:100%;object-fit:cover;display:block}"+
       ".sn-off-badge{position:absolute;left:50%;top:0;transform:translate(-50%,-2px);white-space:nowrap;font:800 10px/1.1 system-ui;letter-spacing:.06em;color:#fff;background:rgba(0,8,16,.82);border:1px solid var(--c,#4df0ff);border-radius:8px;padding:3px 6px;text-shadow:0 0 6px var(--c,#4df0ff);z-index:2}"+
-      ".sn-off-badge.pri{color:#02040a;background:#ffd85a;border-color:#ffd85a;text-shadow:none}"+
+      ".sn-off-badge.pri{color:#4df0ff;background:#000;border-color:#4df0ff;text-shadow:0 0 8px #4df0ff}"+
       ".sn-off-nm{position:absolute;left:50%;top:60px;transform:translateX(-50%);white-space:nowrap;font:800 9px/1 system-ui;letter-spacing:.04em;color:#c6f6ff;text-shadow:0 0 6px #02040a}"+
       ".sn-off-mid{text-align:center;pointer-events:auto;transform:translate(-50%,-70%)}"+
       ".sn-off-pay{font:900 20px/1 ui-monospace,system-ui;color:#4df0ff;text-shadow:0 0 8px #3d6bff,0 0 18px #4df0ff;white-space:nowrap}"+
@@ -64,11 +64,11 @@
       ".sn-off-acts b,.sn-off-acts i{display:flex;width:28px;height:28px;align-items:center;justify-content:center;border-radius:99px;font:800 14px/1 system-ui;font-style:normal;cursor:pointer}"+
       ".sn-off-acts b{background:#19e68c;color:#00140a;box-shadow:0 0 10px #19e68c}"+
       ".sn-off-acts i{background:#000;color:#ff3b4e;border:1.5px solid #ff3b4e;box-shadow:0 0 8px #ff3b4e}"+
-      ".sn-off-sel .sn-off-pay{color:#fff;text-shadow:0 0 10px #ffd85a}"+
+      ".sn-off-sel .sn-off-pay{color:#fff;text-shadow:0 0 14px #4df0ff}"+
       ".sn-off-way{position:absolute;left:-4px;bottom:12px;width:18px;height:18px;border-radius:99px;background:#02040a;border:1.5px solid var(--c,#4df0ff);color:#7ee9ff;font:800 10px/16px system-ui;text-align:center;z-index:3}"+
-      ".sn-off-loy{font:800 9px/1 system-ui;letter-spacing:.12em;color:#ffd85a;text-shadow:0 0 8px #ffd85a;margin:0 0 3px}"+
-      ".sn-off-fit{font:800 9px/1 system-ui;letter-spacing:.12em;color:#19e68c;text-shadow:0 0 8px #19e68c;margin:0 0 4px}"+
-      ".sn-off-adv{font:700 9px/1.2 system-ui;color:#ffe14a;margin-top:4px;letter-spacing:.04em}"+
+      ".sn-off-loy,.sn-off-fit,.sn-off-adv{font:800 9px/1.2 system-ui;letter-spacing:.12em;color:#4df0ff;text-shadow:0 0 8px #4df0ff;margin:0 0 3px}"+
+      ".sn-off-hot .sn-off-face,.sn-off-hot .sn-off-pay{animation:snHot 1.1s ease-in-out infinite}"+
+      "@keyframes snHot{0%,100%{transform:scale(1);filter:drop-shadow(0 0 4px #4df0ff)}50%{transform:scale(1.14);filter:drop-shadow(0 0 16px #4df0ff)}}"+
       "#sn-drive{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 58px);transform:translateX(-50%);z-index:70;width:min(360px,94vw);padding:10px;border-radius:14px;background:rgba(4,14,28,.94);border:1px solid rgba(126,233,255,.45);color:#c6f6ff;font:600 12px/1.3 system-ui;display:none;pointer-events:auto}"+
       "#sn-drive.on{display:block}"+
       "#sn-drive b{display:block;color:#7ee9ff;font:800 10px/1 system-ui;letter-spacing:.16em;margin:0 0 8px}"+
@@ -178,21 +178,107 @@
     for(i=0;i<=ch.length;i++){
       next=ch.slice(0,i).concat([job], ch.slice(i));
       if(!timelineOk(next, you)) continue;
+      if(scissors(job, ch, you)) continue;
       extra=extraKm(ch, i, job, you);
       if(!best || extra<best.extra) best={at:i, extra:extra};
     }
     return best;
   }
+  function orient(p,q,r){
+    var v=(q.lng-p.lng)*(r.lat-p.lat)-(q.lat-p.lat)*(r.lng-p.lng);
+    if(Math.abs(v)<1e-12) return 0;
+    return v>0?1:-1;
+  }
+  function segsCross(a,b,c,d){
+    if(!a||!b||!c||!d) return false;
+    if(Math.abs(a.lat-c.lat)<1e-5 && Math.abs(a.lng-c.lng)<1e-5) return false;
+    if(Math.abs(a.lat-d.lat)<1e-5 && Math.abs(a.lng-d.lng)<1e-5) return false;
+    if(Math.abs(b.lat-c.lat)<1e-5 && Math.abs(b.lng-c.lng)<1e-5) return false;
+    if(Math.abs(b.lat-d.lat)<1e-5 && Math.abs(b.lng-d.lng)<1e-5) return false;
+    var o1=orient(a,b,c), o2=orient(a,b,d), o3=orient(c,d,a), o4=orient(c,d,b);
+    return o1!==o2 && o3!==o4;
+  }
+  function scissors(job, ch, you){
+    var segs=[], prev=you;
+    (ch||[]).forEach(function(j){
+      segs.push([prev, j.from]); segs.push([j.from, j.to]); prev=j.to;
+    });
+    return segs.some(function(s){ return segsCross(job.from, job.to, s[0], s[1]); });
+  }
+  function bagCap(){
+    var v=(prefs().vol||"box");
+    if(v==="bag") return {kg:8, size:1};
+    if(v==="van") return {kg:80, size:3};
+    return {kg:25, size:2};
+  }
+  function sizeOf(vol){ return vol==="van"?3:vol==="box"?2:1; }
+  function carryOk(job){
+    if(!job||!allowed(job)) return false;
+    var cap=bagCap(), used=0;
+    chain().forEach(function(j){ used+=Number(j.kg)||0; });
+    if(used+(Number(job.kg)||0)>cap.kg+0.05) return false;
+    if(sizeOf(job.vol)>sizeOf(prefs().vol||"box")) return false;
+    return true;
+  }
+  function isHot(job){ return !!(job && (job.priority || (job.loyalty||0)>=8)); }
+  function mine(job){
+    if(!job || skipped[job.id]) return false;
+    if(!carryOk(job)) return false;
+    if(overWater(job.from, job.to)) return false;
+    var you=pin(), ch=chain();
+    if(ch.length){
+      if(!bestInsert(job, ch, you)) return false;
+      if(scissors(job, ch, you)) return false;
+    }
+    return true;
+  }
+  function landBox(a,b){
+    var minLat=Math.min(a.lat,b.lat), maxLat=Math.max(a.lat,b.lat);
+    var minLng=Math.min(a.lng,b.lng), maxLng=Math.max(a.lng,b.lng);
+    var pad=Math.max(0.005, Math.hypot(maxLat-minLat, maxLng-minLng)*0.18);
+    return {minLat:minLat-pad, maxLat:maxLat+pad, minLng:minLng-pad, maxLng:maxLng+pad};
+  }
+  function inBox(p, box){
+    return p.lat>=box.minLat && p.lat<=box.maxLat && p.lng>=box.minLng && p.lng<=box.maxLng;
+  }
+  function overWater(a,b){
+    if(!a||!b) return true;
+    var km=haversine(a,b);
+    if(km>16) return true;
+    var dlat=Math.abs(a.lat-b.lat), dlng=Math.abs(a.lng-b.lng);
+    if(km>7 && dlat<0.035 && dlng>0.07) return true;
+    return false;
+  }
   function arcPts(a,b){
     var lat1=a.lat, lng1=a.lng, lat2=b.lat, lng2=b.lng;
     var dlat=lat2-lat1, dlng=lng2-lng1;
     var ox=-dlng, oy=dlat, n=Math.hypot(ox,oy)||1;
-    var lift=Math.max(0.012, Math.hypot(dlat,dlng)*0.42);
-    var cx=(lat1+lat2)/2+ox/n*lift, cy=(lng1+lng2)/2+oy/n*lift;
+    ox/=n; oy/=n;
+    var span=Math.hypot(dlat,dlng);
+    var lift=Math.max(0.005, span*0.3);
+    function ctrl(sign){ return {lat:(lat1+lat2)/2+ox*lift*sign, lng:(lng1+lng2)/2+oy*lift*sign}; }
+    function pickUp(c1,c2){
+      var map=getMap();
+      if(map && map.latLngToContainerPoint){
+        try{
+          var p1=map.latLngToContainerPoint([c1.lat,c1.lng]);
+          var p2=map.latLngToContainerPoint([c2.lat,c2.lng]);
+          return p1.y<=p2.y?c1:c2;
+        }catch(e){}
+      }
+      return c1.lat>=c2.lat?c1:c2;
+    }
+    var up=pickUp(ctrl(1), ctrl(-1));
+    var box=landBox(a,b);
+    if(!inBox(up, box)){
+      lift*=0.32;
+      up=pickUp(ctrl(1), ctrl(-1));
+      if(!inBox(up, box)) up={lat:(lat1+lat2)/2 + 0.002, lng:(lng1+lng2)/2};
+    }
     var pts=[], i, t, u;
     for(i=0;i<=24;i++){
       t=i/24; u=1-t;
-      pts.push([u*u*lat1+2*u*t*cx+t*t*lat2, u*u*lng1+2*u*t*cy+t*t*lng2]);
+      pts.push([u*u*lat1+2*u*t*up.lat+t*t*lat2, u*u*lng1+2*u*t*up.lng+t*t*lng2]);
     }
     return pts;
   }
@@ -227,10 +313,10 @@
 
   function samples(){
     var you=pin();
-    var a=away(you, 3.4, 38);
-    var b=away(you, 1.8, 210);
-    var c=away(you, 6.1, 120);
-    var d=away(you, 4.2, 300);
+    var a=away(you, 2.4, 320);
+    var b=away(you, 1.6, 350);
+    var c=away(you, 3.1, 290);
+    var d=away(you, 2.2, 20);
     var t=Date.now();
     return [
       {id:"off-"+t+"-a", price:24, what:"Pizza delivery", kind:"food", kg:2, vol:"bag", vendor:"Kalithea Oven", client:who(), from:a, to:{lat:you.lat,lng:you.lng}, readyMin:13, deliverMin:30, priority:false, vendorPhoto:"", clientPhoto:userPhoto()},
@@ -271,7 +357,8 @@
     var badge=shop?("Ready "+(job.readyMin||13)+" min"):(job.priority?"PRIORITY":("Due "+(job.deliverMin||30)+" min"));
     var cls=(!shop&&job.priority)?"sn-off-badge pri":"sn-off-badge";
     var wayHtml=way?('<div class="sn-off-way">'+esc(String(way))+"</div>"):"";
-    var html='<div class="sn-off-end" style="--c:'+color+'"><div class="'+cls+'">'+esc(badge)+"</div>"+faceHtml(pic,name,color)+wayHtml+'<div class="sn-off-nm">'+esc(String(name||"").slice(0,16))+"</div></div>";
+    var hot=isHot(job)?" sn-off-hot":"";
+    var html='<div class="sn-off-end'+hot+'" style="--c:'+NEON+'"><div class="'+cls+'">'+esc(badge)+"</div>"+faceHtml(pic,name,NEON)+wayHtml+'<div class="sn-off-nm">'+esc(String(name||"").slice(0,16))+"</div></div>";
     return window.L.divIcon({className:"", html:html, iconSize:[56,72], iconAnchor:[28,36]});
   }
   function midIcon(job, color, on){
@@ -282,8 +369,8 @@
     if(job.tight) adv.push("NEED "+job.needMin+" MIN");
     if(job.flexMin) adv.push("+"+job.flexMin+" MIN?");
     var advHtml=adv.length?('<div class="sn-off-adv">'+esc(adv.join(" · "))+"</div>"):"";
-    var html='<div class="sn-off-mid'+(on?" sn-off-sel":"")+'" data-id="'+esc(job.id)+'">'+loy+fit+
-      '<div class="sn-off-pay" style="color:'+color+'">'+esc(euro(job.price))+"</div>"+
+    var html='<div class="sn-off-mid'+(on?" sn-off-sel":"")+(isHot(job)?" sn-off-hot":"")+'" data-id="'+esc(job.id)+'">'+loy+fit+
+      '<div class="sn-off-pay">'+esc(euro(job.price))+"</div>"+
       '<div class="sn-off-acts"><b data-x="yes" data-id="'+esc(job.id)+'">+</b><i data-x="no" data-id="'+esc(job.id)+'">×</i></div>'+
       '<div class="sn-off-km">'+esc(kmTxt(job.km))+"</div>"+advHtml+"</div>";
     return window.L.divIcon({className:"", html:html, iconSize:[170,110], iconAnchor:[85,48]});
@@ -316,8 +403,8 @@
       applyLaw(job);
       var color="#4df0ff";
       var prev=i===0?you:ch[i-1].to;
-      addLine(arcPts(prev, job.from), "#19e68c", 3, "4 8");
-      addLine(arcPts(job.from, job.to), color, 5);
+      addLine(arcPts(prev, job.from), NEON, 3, "4 8");
+      addLine(arcPts(job.from, job.to), NEON, isHot(job)?7:5);
       var g=L.layerGroup();
       g.addLayer(L.marker([job.from.lat,job.from.lng],{icon:endIcon(job,"v",color,n++),keyboard:false,zIndexOffset:1900}));
       g.addLayer(L.marker([job.to.lat,job.to.lng],{icon:endIcon(job,"c",color,n++),keyboard:false,zIndexOffset:1900}));
@@ -326,16 +413,15 @@
       g.addTo(map); layers.push(g);
       bounds.push([job.from.lat,job.from.lng],[job.to.lat,job.to.lng]);
     });
-    offers.forEach(function(job, i){
-      if(skipped[job.id]) return;
+    offers.forEach(function(job){
       applyLaw(job);
+      if(!mine(job)) return;
       var ins=bestInsert(job, ch, you);
-      job.fit=!!ins;
-      if(ch.length && !ins) return;
-      var color=COLORS[i%COLORS.length];
+      job.fit=!!ins || !ch.length;
+      var color=NEON;
       var pts=arcPts(job.from, job.to);
       var g=L.layerGroup();
-      var line=L.polyline(pts,{color:color,weight:job.id===selected?7:4,opacity:0.9,className:"sn-arc-fill"});
+      var line=L.polyline(pts,{color:NEON,weight:(isHot(job)||job.id===selected)?7:4,opacity:1,className:"sn-arc-fill"});
       line.on("click", function(e){ try{ L.DomEvent.stopPropagation(e);}catch(_){} selected=job.id; paint(); talkOne(job); });
       g.addLayer(line);
       var wayV=null, wayC=null;
@@ -356,8 +442,8 @@
       g.addTo(map); layers.push(g);
       if(ins && ch.length){
         var prev=ins.at===0?you:ch[ins.at-1].to;
-        addLine(arcPts(prev, job.from), "#19e68c", 2, "6 8");
-        if(ins.at<ch.length) addLine(arcPts(job.to, ch[ins.at].from), "#19e68c", 2, "6 8");
+        addLine(arcPts(prev, job.from), NEON, 2, "6 8");
+        if(ins.at<ch.length) addLine(arcPts(job.to, ch[ins.at].from), NEON, 2, "6 8");
       }
       bounds.push([job.from.lat,job.from.lng],[job.to.lat,job.to.lng]);
     });
@@ -409,7 +495,7 @@
     css();
     ctx();
     ping();
-    offers=(list&&list.length?list:samples()).filter(allowed);
+    offers=(list&&list.length?list:samples()).filter(mine);
     if(!offers.length){
       try{ if(window.SN&&SN.talk) SN.talk("No offers match your preferences."); }catch(e){}
       openPrefs();
@@ -418,9 +504,7 @@
     selected=offers[0]&&offers[0].id;
     ensureMap(function(){
       paint();
-      var ch=chain();
-      var fit=offers.filter(function(j){ return !ch.length || bestInsert(j,ch,pin()); }).length;
-      try{ if(window.SN&&SN.talk) SN.talk((ch.length?fit+" gap fills on your run. ":"")+offers.length+" offers. First come first served. Floor one AVE per kilometer."); }catch(e){}
+      try{ if(window.SN&&SN.talk) SN.talk(offers.length?(offers.length+" for you. Time and bag. First come first served."):"Nothing fits your bag and clock."); }catch(e){}
     });
   }
 
