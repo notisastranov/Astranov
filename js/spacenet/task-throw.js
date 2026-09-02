@@ -1,4 +1,4 @@
-/* SpaceNet 4132 — neon-blue up-arcs only. No water. No scissors. Only what fits this bag and clock. */
+/* SpaceNet 4133 — one voice. One arc at a time. Real OSM vendors only. */
 (function(){
   if(window.__snTaskThrow) return;
   window.__snTaskThrow=true;
@@ -9,6 +9,9 @@
   var selected=null;
   var skipped={};
   var AVKM=1;
+  var shown=0;
+  var revealT=null;
+  var shops=[];
 
   function esc(s){ return String(s||"").replace(/[&<>"']/g,function(c){return "&#"+c.charCodeAt(0)+";";}); }
   function euro(n){
@@ -311,24 +314,82 @@
     }, 80);
   }
 
-  function samples(){
-    var you=pin();
-    var a=away(you, 2.4, 320);
-    var b=away(you, 1.6, 350);
-    var c=away(you, 3.1, 290);
-    var d=away(you, 2.2, 20);
-    var t=Date.now();
-    return [
-      {id:"off-"+t+"-a", price:24, what:"Pizza delivery", kind:"food", kg:2, vol:"bag", vendor:"Kalithea Oven", client:who(), from:a, to:{lat:you.lat,lng:you.lng}, readyMin:13, deliverMin:30, priority:false, vendorPhoto:"", clientPhoto:userPhoto()},
-      {id:"off-"+t+"-b", price:18, what:"Pharmacy run", kind:"parcel", kg:1, vol:"bag", vendor:"Night Pharmacy", client:who(), from:b, to:{lat:you.lat,lng:you.lng}, readyMin:5, deliverMin:12, priority:true, vendorPhoto:"", clientPhoto:userPhoto()},
-      {id:"off-"+t+"-c", price:33, what:"Grocery haul", kind:"grocery", kg:12, vol:"box", vendor:"Lidl Rhodes", client:who(), from:c, to:away(you,0.6,80), readyMin:20, deliverMin:45, priority:false, vendorPhoto:"", clientPhoto:userPhoto()},
-      {id:"off-"+t+"-d", price:28, what:"Documents", kind:"parcel", kg:0.4, vol:"bag", vendor:"Notary", client:"Port desk", from:d, to:away(you,2.1,15), readyMin:8, deliverMin:22, priority:false, vendorPhoto:"", clientPhoto:""}
-    ].map(function(j){
-      j.to.name=j.client; j.from.name=j.vendor;
-      return applyLaw(j);
-    });
+  function kindOf(s){
+    var k=String((s&&s.kind)||"").toLowerCase();
+    if(/pharm/.test(k)) return {kind:"parcel", what:"Pharmacy run", kg:1, vol:"bag"};
+    if(/super|grocery|convenience|bakery/.test(k)) return {kind:"grocery", what:"Grocery haul", kg:8, vol:"box"};
+    if(/cafe|bar/.test(k)) return {kind:"food", what:"Cafe run", kg:2, vol:"bag"};
+    return {kind:"food", what:"Food delivery", kg:2, vol:"bag"};
   }
-
+  function dedupeShops(list){
+    var seen={}, out=[];
+    (list||[]).forEach(function(p){
+      if(!p||!p.name||!isFinite(Number(p.lat))) return;
+      var k=(+p.lat).toFixed(4)+"|"+(+p.lng).toFixed(4);
+      if(seen[k]) return; seen[k]=1;
+      out.push({name:String(p.name).slice(0,28), lat:+p.lat, lng:+p.lng, kind:p.kind||p.raw||"shop", phone:p.phone||""});
+    });
+    return out;
+  }
+  function jobsFromShops(list){
+    var you=pin();
+    var rows=dedupeShops(list).filter(function(p){ return !overWater(you,p) || haversine(you,p)<8; });
+    rows.sort(function(a,b){ return haversine(you,a)-haversine(you,b); });
+    shops=rows;
+    var jobs=[], i, from, to, meta, km, t0=Date.now();
+    for(i=0;i<rows.length && jobs.length<4;i++){
+      from=rows[i];
+      to=rows[i+1]||null;
+      if(!to || overWater(from,to) || haversine(from,to)<0.35 || haversine(from,to)>12){
+        if(!overWater(from,you) && haversine(from,you)>=0.4 && haversine(from,you)<=10) to=you;
+        else continue;
+      }
+      km=haversine(from,to);
+      if(overWater(from,to)) continue;
+      meta=kindOf(from);
+      jobs.push(applyLaw({
+        id:"off-"+t0+"-"+i,
+        price:Math.max(floorPrice(km), Math.round(km*1)+12),
+        what:meta.what,
+        kind:meta.kind,
+        kg:meta.kg,
+        vol:meta.vol,
+        vendor:from.name,
+        client:to.name||who(),
+        from:{lat:from.lat,lng:from.lng,name:from.name},
+        to:{lat:to.lat,lng:to.lng,name:to.name||who()},
+        readyMin:meta.kind==="food"?13:8,
+        deliverMin:Math.max(18, floorTime(km)+8),
+        priority:false,
+        vendorPhoto:"",
+        clientPhoto:to===you?userPhoto():""
+      }));
+    }
+    return jobs;
+  }
+  function crawl(then){
+    var you=pin(), left=2, acc=[];
+    function add(list){ acc=acc.concat(list||[]); }
+    function done(){
+      if(--left>0) return;
+      then(jobsFromShops(acc));
+    }
+    var q='[out:json][timeout:10];(nwr(around:5000,'+you.lat+','+you.lng+')["name"]["amenity"~"restaurant|fast_food|cafe|pharmacy"];nwr(around:5000,'+you.lat+','+you.lng+')["name"]["shop"~"supermarket|bakery|convenience"];);out center tags 24;';
+    fetch("https://overpass.kumi.systems/api/interpreter?data="+encodeURIComponent(q))
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        add((j.elements||[]).map(function(e){
+          var c=e.center||e, tags=e.tags||{};
+          return {name:tags.name, lat:+c.lat, lng:+(c.lon||c.lng), kind:tags.amenity||tags.shop||"shop", phone:tags.phone||""};
+        }));
+        done();
+      }).catch(function(){ done(); });
+    fetch("/api/find",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({q:"vendors",city:"Rhodes",lat:you.lat,lng:you.lng})})
+      .then(function(r){ return r.json(); })
+      .then(function(j){ add(j&&j.places); done(); })
+      .catch(function(){ done(); });
+  }
+  function samples(){ return jobsFromShops(shops); }
   function allowed(j){
     var p=prefs();
     if(j.kind==="food"&&!p.food) return false;
@@ -399,6 +460,14 @@
       g.addTo(map); layers.push(g);
       return g;
     }
+    shops.forEach(function(s){
+      try{
+        var mk=L.circleMarker([s.lat,s.lng],{radius:5,color:NEON,weight:1,fillColor:NEON,fillOpacity:0.85,opacity:0.9});
+        mk.bindTooltip(s.name,{permanent:false,direction:"top",className:"sn-off-nm"});
+        mk.addTo(map); layers.push(mk);
+        bounds.push([s.lat,s.lng]);
+      }catch(e){}
+    });
     ch.forEach(function(job, i){
       applyLaw(job);
       var color="#4df0ff";
@@ -413,7 +482,7 @@
       g.addTo(map); layers.push(g);
       bounds.push([job.from.lat,job.from.lng],[job.to.lat,job.to.lng]);
     });
-    offers.forEach(function(job){
+    offers.slice(0, shown).forEach(function(job){
       applyLaw(job);
       if(!mine(job)) return;
       var ins=bestInsert(job, ch, you);
@@ -452,13 +521,27 @@
     }
   }
   function talkOne(job){
-    var bits=[job.what, euro(job.price), kmTxt(job.km)];
+    var bits=[
+      job.vendor+" to "+job.client+".",
+      job.what+".",
+      euro(job.price)+".",
+      kmTxt(job.km)+".",
+      "Ready in "+(job.readyMin||13)+" minutes.",
+      "Due in "+(job.deliverMin||30)+" minutes."
+    ];
     if(job.fit) bits.push("Fits your run.");
-    bits.push(job.priority?"Priority. No stops.":("Due in "+(job.deliverMin||30)+" minutes."));
-    bits.push("Ready in "+job.readyMin+".");
-    bits.push("Floor one AVE per kilometer.");
-    if(job.loyalty) bits.push("Plus "+job.loyalty+" percent loyalty.");
     try{ if(window.SN&&SN.talk) SN.talk(bits.join(" ")); }catch(e){}
+  }
+  function stopReveal(){ if(revealT){ clearTimeout(revealT); revealT=null; } }
+  function revealStep(){
+    stopReveal();
+    if(shown>=offers.length) return;
+    shown++;
+    selected=offers[shown-1]&&offers[shown-1].id;
+    paint();
+    var job=offers[shown-1];
+    if(job) talkOne(job);
+    revealT=setTimeout(revealStep, 5600);
   }
 
   function accept(id){
@@ -478,34 +561,41 @@
     saveChain(ch);
     offers=offers.filter(function(x){ return x.id!==id; });
     selected=null;
+    stopReveal();
     paint();
     try{
-      if(window.SN&&SN.talk) SN.talk(ch.length>1?("Stacked. Waypoint "+(at*2+1)+". "+ch.length+" jobs. First come first served."):("Accepted. "+euro(job.price)+". One AVE per kilometer."));
+      if(window.SN&&SN.talk) SN.talk(ch.length>1?("Stacked. Waypoint "+(at*2+1)+"."):("Accepted. "+euro(job.price)+"."));
     }catch(e){}
-    ping();
+    revealT=setTimeout(revealStep, 2200);
   }
   function decline(id){
     skipped[id]=1;
     if(selected===id) selected=null;
     paint();
-    try{ if(window.SN&&SN.talk) SN.talk("Ignored. It will climb until someone takes it."); }catch(e){}
+    stopReveal();
+    revealT=setTimeout(revealStep, 500);
   }
 
   function throwOffers(list){
     css();
     ctx();
-    ping();
-    offers=(list&&list.length?list:samples()).filter(mine);
-    if(!offers.length){
-      try{ if(window.SN&&SN.talk) SN.talk("No offers match your preferences."); }catch(e){}
-      openPrefs();
-      return;
+    stopReveal();
+    shown=0;
+    try{ if(window.SNVoice&&SNVoice.stop) SNVoice.stop(); }catch(e){}
+    function start(list2){
+      offers=(list2||[]).filter(mine);
+      if(!offers.length){
+        try{ if(window.SN&&SN.talk) SN.talk("No real shops on land fit your bag and clock."); }catch(e){}
+        openPrefs();
+        return;
+      }
+      ensureMap(function(){
+        ping();
+        revealStep();
+      });
     }
-    selected=offers[0]&&offers[0].id;
-    ensureMap(function(){
-      paint();
-      try{ if(window.SN&&SN.talk) SN.talk(offers.length?(offers.length+" for you. Time and bag. First come first served."):"Nothing fits your bag and clock."); }catch(e){}
-    });
+    if(list&&list.length) start(list);
+    else crawl(start);
   }
 
   function openPrefs(){
@@ -524,7 +614,7 @@
         if(k==="km5") p.maxKm=5; if(k==="km12") p.maxKm=12; if(k==="km25") p.maxKm=25; if(k==="km99") p.maxKm=99;
         if(k==="kg5") p.maxKg=5; if(k==="kg15") p.maxKg=15; if(k==="kg30") p.maxKg=30;
         if(k==="bag"||k==="box"||k==="van") p.vol=k;
-        savePrefs(p); drawPrefs(); throwOffers(samples());
+        savePrefs(p); drawPrefs(); throwOffers();
       });
     }
     function drawPrefs(){
