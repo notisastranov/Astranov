@@ -1,14 +1,14 @@
 /* SpaceNet 4120 — boot extras: English voice + YOU phone SMS. */
 (function(){
   function add(src){
-    if(document.querySelector('script[src*="'+src.split("/").pop()+'" ]')) return;
+    if(document.querySelector('script[src*="'+src.split("/").pop().split("?")[0]+'"]')) return;
     var s=document.createElement("script");
     s.src=src;
     document.head.appendChild(s);
   }
   add("/js/spacenet/speak-en.js?v=4120");
   add("/js/spacenet/phone-verify.js?v=4120");
-  add("/js/spacenet/offer-song.js?v=4118");
+  /* choir off — one voice */
 })();
 (function(){
   if(!window.__snOfferRead){
