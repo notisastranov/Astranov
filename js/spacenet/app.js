@@ -2207,26 +2207,28 @@
     });
   }
   bindDrag(gpsBtn, "gps");
-  function powerGet(){ try{ return localStorage.getItem("sn:power")||"idle"; }catch(e){ return "idle"; } }
+  function powerGet(){ try{ return localStorage.getItem("sn:power")==="on"?"on":"off"; }catch(e){ return "off"; } }
   function paintPower(){
     var el=document.getElementById("sn-power");
     if(!el) return;
     var st=powerGet();
     el.classList.remove("on","off","idle");
-    el.classList.add(st==="on"?"on":st==="off"?"off":"idle");
+    el.classList.add(st==="on"?"on":"off");
     el.setAttribute("aria-pressed", st==="on"?"true":"false");
+    el.setAttribute("aria-label", st==="on"?"Offerings on":"Offerings off");
   }
   function setPower(st){
+    st=st==="on"?"on":"off";
     try{ localStorage.setItem("sn:power", st); }catch(e){}
     paintPower();
     if(window.SNWork&&SNWork.setOffer) SNWork.setOffer(st==="on");
-    if(st==="on") talk("Offerings on. Jobs can reach you.");
-    else if(st==="off") talk("Offerings off.");
+    if(st==="on") talk("Offerings on.");
+    else talk("Offerings off.");
   }
   function togglePower(){
     setPower(powerGet()==="on"?"off":"on");
   }
-  try{ localStorage.setItem("sn:power","idle"); }catch(e){}
+  try{ localStorage.setItem("sn:power","off"); }catch(e){}
   paintPower();
   var powerBtn=document.getElementById("sn-power");
   bindDrag(powerBtn, "power");
