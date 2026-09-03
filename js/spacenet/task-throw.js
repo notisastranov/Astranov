@@ -1,4 +1,4 @@
-/* SpaceNet 4135 — TASKS fires a sample now. Power is red/blue only. */
+/* SpaceNet 4138 — real tasks only. Top splash + overlay. Route driver-vendor-client. */
 (function(){
   if(window.__snTaskThrow) return;
   window.__snTaskThrow=true;
@@ -77,7 +77,16 @@
       "#sn-drive b{display:block;color:#7ee9ff;font:800 10px/1 system-ui;letter-spacing:.16em;margin:0 0 8px}"+
       "#sn-drive .row{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}"+
       "#sn-drive button{height:32px;padding:0 10px;border-radius:9px;border:1px solid rgba(126,233,255,.35);background:rgba(4,16,28,.9);color:#7ee9ff;font:800 10px/1 system-ui;letter-spacing:.06em}"+
-      "#sn-drive button.on{border-color:#4df0ff;background:rgba(20,60,80,.7);box-shadow:0 0 10px rgba(77,240,255,.45)}";
+      "#sn-drive button.on{border-color:#4df0ff;background:rgba(20,60,80,.7);box-shadow:0 0 10px rgba(77,240,255,.45)}"+
+      "#sn-splash{position:fixed;left:50%;top:max(52px,env(safe-area-inset-top));transform:translateX(-50%);z-index:120;display:none;width:min(280px,78vw);padding:10px 12px;background:rgba(0,8,16,.94);border:1.5px solid #4df0ff;border-radius:16px;box-shadow:0 0 18px rgba(77,240,255,.45);pointer-events:auto;text-align:center}"+
+      "#sn-splash.on{display:block}"+
+      "#sn-splash .pay{font:900 28px/1 ui-monospace,system-ui;color:#4df0ff;text-shadow:0 0 10px #4df0ff}"+
+      "#sn-splash .meta{margin:6px 0 8px;font:700 12px/1.35 system-ui;color:#c6f6ff}"+
+      "#sn-splash .acts{display:flex;gap:8px}"+
+      "#sn-splash .yes,#sn-splash .no{flex:1;height:40px;border-radius:10px;font:800 11px/1 system-ui;letter-spacing:.12em}"+
+      "#sn-splash .yes{background:#19e68c;border:0;color:#00140a}"+
+      "#sn-splash .no{background:#000;border:1.5px solid #ff3b4e;color:#ff3b4e}"+
+      ".sn-off-addr{position:absolute;left:50%;top:76px;transform:translateX(-50%);white-space:nowrap;max-width:90px;overflow:hidden;text-overflow:ellipsis;font:600 9px/1 system-ui;color:#8ec8d8}";
     document.head.appendChild(s);
   }
 
@@ -420,10 +429,11 @@
     var shop=which==="v";
     var name=shop?job.vendor:job.client;
     var pic=shop?job.vendorPhoto:job.clientPhoto;
+    var addr=shop?((job.from&&(job.from.raw||job.from.name))||name):((job.to&&(job.to.raw||job.to.name))||name);
+    var badge=shop?("Ready "+(job.readyMin||13)+" min"):("Due "+(job.deliverMin||30)+" min");
     var wayHtml=way?('<div class="sn-off-way">'+esc(String(way))+"</div>"):"";
-    var act=acts?('<div class="sn-off-acts"><b data-x="yes" data-id="'+esc(job.id)+'">+</b><i data-x="no" data-id="'+esc(job.id)+'">×</i></div>'):"";
-    var html='<div class="sn-off-end" data-id="'+esc(job.id)+'" style="--c:'+NEON+'">'+faceHtml(pic,name,NEON)+wayHtml+act+'<div class="sn-off-nm">'+esc(String(name||"").slice(0,16))+"</div></div>";
-    return window.L.divIcon({className:"", html:html, iconSize:[56,84], iconAnchor:[28,40]});
+    var html='<div class="sn-off-end" data-id="'+esc(job.id)+'" style="--c:'+NEON+'"><div class="sn-off-badge">'+esc(badge)+"</div>"+faceHtml(pic,name,NEON)+wayHtml+'<div class="sn-off-nm">'+esc(String(name||"").slice(0,14))+'</div><div class="sn-off-addr">'+esc(String(addr||"").slice(0,18))+"</div></div>";
+    return window.L.divIcon({className:"", html:html, iconSize:[64,96], iconAnchor:[32,44]});
   }
   function midIcon(job, color, on){
     var loy=job.loyalty?('<div class="sn-off-loy">+'+job.loyalty+"% LOYAL</div>"):"";
@@ -543,7 +553,7 @@
     selected=offers[shown-1]&&offers[shown-1].id;
     paint();
     var job=offers[shown-1];
-    if(job) talkOne(job);
+    if(job){ splash(job); overlay(job); talkOne(job); }
     revealT=setTimeout(revealStep, 5600);
   }
 
@@ -565,6 +575,7 @@
     offers=offers.filter(function(x){ return x.id!==id; });
     selected=null;
     stopReveal();
+    splash(null);
     paint();
     try{
       if(window.SN&&SN.talk) SN.talk(ch.length>1?("Stacked. Waypoint "+(at*2+1)+"."):("Accepted. "+euro(job.price)+"."));
@@ -574,20 +585,49 @@
   function decline(id){
     skipped[id]=1;
     if(selected===id) selected=null;
+    splash(null);
     paint();
     stopReveal();
     revealT=setTimeout(revealStep, 500);
   }
 
-  function seedJobs(){
-    var you=pin();
-    var a=away(you, 2.2, 310);
-    var b=away(you, 1.5, 340);
-    return jobsFromShops([
-      {name:"Kalithea Oven", lat:a.lat, lng:a.lng, kind:"restaurant"},
-      {name:who(), lat:you.lat, lng:you.lng, kind:"client"},
-      {name:"Night Pharmacy", lat:b.lat, lng:b.lng, kind:"pharmacy"}
-    ]);
+  function splash(job){
+    css();
+    var el=document.getElementById("sn-splash");
+    if(!el){
+      el=document.createElement("div");
+      el.id="sn-splash";
+      document.body.appendChild(el);
+      el.addEventListener("click", function(e){
+        var b=e.target.closest&&e.target.closest("[data-x]");
+        var x=b&&b.getAttribute("data-x");
+        if(x==="yes") accept(el.getAttribute("data-id"));
+        if(x==="no") decline(el.getAttribute("data-id"));
+      });
+    }
+    if(!job){ el.classList.remove("on"); return; }
+    el.setAttribute("data-id", job.id);
+    el.innerHTML='<div class="pay">'+esc(euro(job.price))+'</div><div class="meta">'+esc(kmTxt(job.km))+" · prep "+esc(String(job.readyMin||13))+" min · due "+esc(String(job.deliverMin||30))+" min</div>"+
+      '<div class="acts"><button type="button" class="yes" data-x="yes">ACCEPT</button><button type="button" class="no" data-x="no">DECLINE</button></div>';
+    el.classList.add("on");
+  }
+  function overlay(job){
+    try{ if(window.SNInstall&&SNInstall.overlay) SNInstall.overlay(); }catch(e){}
+    if(!job||!window.Notification) return;
+    function ping(){
+      try{
+        var n=new Notification("SpaceNet "+euro(job.price),{
+          body:kmTxt(job.km)+" · prep "+(job.readyMin||13)+" min · due "+(job.deliverMin||30)+" min · "+(job.vendor||"")+" → "+(job.client||""),
+          tag:"sn-task-"+(job.id||""),
+          requireInteraction:true
+        });
+        n.onclick=function(){ try{ window.focus(); }catch(e){} splash(job); };
+      }catch(e){}
+    }
+    if(Notification.permission==="granted") ping();
+    else if(Notification.permission!=="denied"){
+      try{ Notification.requestPermission().then(function(p){ if(p==="granted") ping(); }); }catch(e){}
+    }
   }
   function throwOffers(list){
     css();
@@ -597,25 +637,23 @@
     try{ if(window.SNVoice&&SNVoice.stop) SNVoice.stop(); }catch(e){}
     try{ var card=document.getElementById("sn-tasks"); if(card) card.classList.remove("on"); }catch(e){}
     function start(list2){
-      var next=(list2||[]).filter(mine);
-      if(!next.length) next=seedJobs().filter(mine);
-      if(!next.length) next=seedJobs();
+      var next=(list2||[]).filter(function(x){ return x && !x.demo && mine(x); });
+      if(!next.length) next=(list2||[]).filter(function(x){ return x && !x.demo; });
       offers=next;
       selected=offers[0]&&offers[0].id;
+      if(!offers.length){
+        splash(null);
+        try{ if(window.SN&&SN.talk) SN.talk("No live tasks on land for your bag and clock."); }catch(e){}
+        return;
+      }
       ensureMap(function(){
         ping();
         revealStep();
       });
     }
     if(list&&list.length) start(list);
-    else {
-      start(seedJobs());
-      crawl(function(real){
-        if(real&&real.length && shown<=1) start(real);
-      });
-    }
+    else crawl(start);
   }
-
   function openPrefs(){
     css();
     var box=document.getElementById("sn-drive");
