@@ -26,6 +26,10 @@ function takeSid(s: string) {
   const m = String(s || '').match(/AC[a-fA-F0-9]{32}/)
   return m ? m[0] : ''
 }
+function takeKey(s: string) {
+  const m = String(s || '').match(/SK[a-fA-F0-9]{32}/)
+  return m ? m[0] : ''
+}
 function creds() {
   const raw = (Deno.env.get('Twilio') || Deno.env.get('TWILIO') || Deno.env.get('TWILIO_AUTH_TOKEN') || '').trim()
   let sid = takeSid(Deno.env.get('TWILIO_ACCOUNT_SID') || '') || takeSid(Deno.env.get('TWILIO_SID') || '')
@@ -36,30 +40,39 @@ function creds() {
     try {
       const j = JSON.parse(raw)
       sid = takeSid(String(j.sid || j.accountSid || j.account_sid || j.TWILIO_ACCOUNT_SID || j.AccountSid || '')) || sid
-      token = String(j.token || j.authToken || j.auth_token || j.secret || j.TWILIO_AUTH_TOKEN || '')
+      token = String(j.token || j.authToken || j.auth_token || j.secret || j.TWILIO_AUTH_TOKEN || j.apiSecret || '')
       from = String(j.from || j.number || from)
-      if (String(j.key || j.apiKey || '').startsWith('SK')) user = String(j.key || j.apiKey)
+      user = takeKey(String(j.key || j.apiKey || j.username || '')) || user
     } catch { /* keep */ }
-  } else if (raw.startsWith('AC') && raw.length >= 34) {
+  } else if (raw.startsWith('AC')) {
     sid = takeSid(raw) || sid
-    const rest = raw.slice(34).replace(/^[:|]/, '')
-    if (rest && !rest.startsWith('AC')) token = rest
-    else if (raw.includes('|') || raw.includes(':')) {
-      const sep = raw.includes('|') ? '|' : ':'
-      token = raw.slice(raw.indexOf(sep) + 1)
-      sid = takeSid(raw.split(sep)[0]) || sid
-    }
-  } else if (raw.startsWith('SK') && (raw.includes(':') || raw.includes('|'))) {
-    const sep = raw.includes('|') ? '|' : ':'
-    user = raw.split(sep)[0]
-    token = raw.slice(user.length + 1)
-  } else if (raw && !raw.startsWith('AC')) {
+    const rest = raw.slice((takeSid(raw) || '').length).replace(/^[:|]/, '')
+    if (rest) token = rest
+  } else if (raw.startsWith('SK')) {
+    user = takeKey(raw) || raw.split(/[:|]/)[0]
+    const rest = raw.slice(user.length).replace(/^[:|]/, '')
+    if (rest) token = rest
+    else token = raw
+  } else if (raw) {
     token = raw
   }
   sid = sid || takeSid(SID_DEFAULT)
-  if (!token && raw && !raw.startsWith('{') && !raw.startsWith('AC')) token = raw
+  if (!token && raw && !raw.startsWith('{') && !raw.startsWith('AC') && !raw.startsWith('SK')) token = raw
+  if (token.startsWith('SK') && !user) user = takeKey(token) || token
   user = user || sid
   return { sid, token, from, user }
+}
+let cachedSid = ''
+async function resolveSid(user: string, token: string, sid: string) {
+  if (takeSid(sid)) return takeSid(sid)
+  if (cachedSid) return cachedSid
+  const auth = 'Basic ' + btoa((user || sid || 'x') + ':' + token)
+  const r = await fetch('https://api.twilio.com/2010-04-01/Accounts.json?Status=active&PageSize=1', { headers: { Authorization: auth } })
+  const j = await r.json().catch(() => ({} as Record<string, unknown>))
+  const acc = Array.isArray((j as { accounts?: { sid?: string }[] }).accounts) ? (j as { accounts: { sid?: string }[] }).accounts[0] : null
+  const found = takeSid(String(acc && acc.sid || ''))
+  if (found) { cachedSid = found; return found }
+  return sid
 }
 function sb() {
   const url = Deno.env.get('SUPABASE_URL') || ''
@@ -68,12 +81,14 @@ function sb() {
   return createClient(url, key)
 }
 function normPhone(s: string) {
-  const d = String(s || '').replace(/[^\d+]/g, '')
+  let d = String(s || '').replace(/[^\d+]/g, '')
+  if (d.startsWith('00')) d = '+' + d.slice(2)
   if (d.startsWith('+')) return d
-  if (d.length === 10) return '+1' + d
-  if (d.length === 11 && d.startsWith('1')) return '+' + d
-  if (d.length >= 10) return '+' + d
   return d
+}
+function e164(s: string) {
+  const d = normPhone(s)
+  return /^\+[1-9]\d{7,14}$/.test(d) ? d : ''
 }
 async function setStatus(phone: string, status: string) {
   const c = sb()
@@ -87,21 +102,23 @@ async function isIn(phone: string) {
   return !!(data && data.status === 'in')
 }
 async function sendSms(to: string, body: string) {
-  const { sid, token, from, user } = creds()
-  if (!token) return { ok: false, error: 'no_twilio_secret' }
-  const dest = normPhone(to)
-  const params = new URLSearchParams({ From: from, To: dest, Body: body })
+  const c = creds()
+  if (!c.token) return { ok: false, error: 'no_twilio_secret' }
+  const dest = e164(to) || normPhone(to)
+  const account = await resolveSid(c.user, c.token, c.sid)
+  if (!takeSid(account)) return { ok: false, error: 'no_twilio_account' }
+  const params = new URLSearchParams({ From: c.from, To: dest, Body: body })
   async function attempt(userId: string, pass: string) {
-    const r = await fetch('https://api.twilio.com/2010-04-01/Accounts/' + sid + '/Messages.json', {
+    const r = await fetch('https://api.twilio.com/2010-04-01/Accounts/' + account + '/Messages.json', {
       method: 'POST',
       headers: { Authorization: 'Basic ' + btoa(userId + ':' + pass), 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params,
     })
-    const j = await r.json().catch(() => ({}))
+    const j = await r.json().catch(() => ({} as Record<string, string>))
     return { ok: r.ok, status: r.status, sid: j.sid || null, error: j.message || j.error_message || null }
   }
-  let r = await attempt(user, token)
-  if (!r.ok && user !== sid) r = await attempt(sid, token)
+  let r = await attempt(c.user || account, c.token)
+  if (!r.ok && c.user && c.user !== account) r = await attempt(account, c.token)
   return r
 }
 async function sha256(s: string) {
@@ -148,7 +165,8 @@ serve(async (req) => {
   const ct = req.headers.get('content-type') || ''
   if (req.method === 'GET') {
     const { sid, token, from, user } = creds()
-    return json({ ok: true, configured: !!token, from, account: (sid||'').slice(0, 10) + '…', sid_len: (sid||'').length, phone_verify: (sid||'').length===34 && token ? 'ready' : 'bad_sid' })
+    const account = token ? await resolveSid(user, token, sid) : sid
+    return json({ ok: true, configured: !!token, from, account: (account||'').slice(0, 10) + '…', sid_len: (account||'').length, phone_verify: takeSid(account) && token ? 'ready' : 'bad_sid' })
   }
   let form: Record<string, string> = {}
   let body: Record<string, unknown> = {}
@@ -174,8 +192,8 @@ serve(async (req) => {
     return json({ ok: true, configured: !!token, from, phone_verify: token ? 'ready' : 'missing_secret', account: sid.slice(0, 10) + '…' })
   }
   if (act === 'send_code' || act === 'verify_start') {
-    const to = normPhone(String(body.to || body.phone || ''))
-    if (to.length < 11) return json({ ok: false, error: 'need_phone' }, 400)
+    const to = e164(String(body.to || body.phone || ''))
+    if (!to) return json({ ok: false, error: 'Type it like +306971930225. Plus, country code, number. No spaces.' }, 400)
     const row = await loadRow(to)
     const last = row && row.last_sent_at ? Date.parse(String(row.last_sent_at)) : 0
     if (last && Date.now() - last < 45000) return json({ ok: false, error: 'wait' }, 429)
@@ -186,9 +204,9 @@ serve(async (req) => {
     return json({ ok: r.ok, sent: r.ok, from, to, ttl: 600, error: r.error || null }, r.ok ? 200 : 502)
   }
   if (act === 'check_code' || act === 'verify_check') {
-    const to = normPhone(String(body.to || body.phone || ''))
+    const to = e164(String(body.to || body.phone || ''))
     const code = String(body.code || body.token || '').replace(/\D/g, '').slice(0, 8)
-    if (to.length < 11 || code.length < 4) return json({ ok: false, error: 'need_phone_and_code' }, 400)
+    if (!to || code.length < 4) return json({ ok: false, error: 'need_phone_and_code' }, 400)
     const row = await loadRow(to)
     if (!row || !row.code_hash) return json({ ok: false, error: 'no_code' }, 400)
     if (row.code_expires && Date.parse(String(row.code_expires)) < Date.now()) return json({ ok: false, error: 'expired' }, 400)
