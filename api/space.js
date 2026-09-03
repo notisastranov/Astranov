@@ -25,53 +25,23 @@ function slim(row) {
   if (!row || typeof row !== 'object') return null;
   const out = {};
   const keep = [
-    'id',
-    'kind',
-    'lat',
-    'lng',
-    'name',
-    'label',
-    'text',
-    'menu',
-    'hours',
-    'open',
-    'phone',
-    'note',
-    'peer',
-    'presence',
-    'routes',
-    'vehicles',
-    'range',
-    'carry',
-    'pref',
-    'street',
-    'number',
-    'floor',
-    'bell',
-    'bellName',
-    'place',
-    'raw',
-    't',
-    'held',
-    'status',
-    'avc',
-    'ride',
-    'how',
-    'query',
-    'shop',
-    'driver',
-    'drop',
-    'customerPeer',
-    'holdMin',
-    'flag',
-    'strict',
+    'id','kind','lat','lng','name','label','text','menu','hours','open','phone','note','peer',
+    'presence','routes','vehicles','range','carry','pref','street','number','floor','bell','bellName',
+    'place','raw','t','held','status','avc','ride','how','query','shop','driver','drop',
+    'customerPeer','holdMin','flag','strict','web','email','source'
   ];
   keep.forEach(function (k) {
     if (row[k] != null && row[k] !== '') out[k] = row[k];
   });
   ['cover', 'profile', 'photo'].forEach(function (k) {
-    if (typeof row[k] === 'string' && row[k].indexOf('data:image') === 0 && row[k].length < 180000) out[k] = row[k];
+    if (typeof row[k] !== 'string' || !row[k]) return;
+    if (row[k].indexOf('data:image') === 0 && row[k].length < 180000) out[k] = row[k];
+    else if (/^https?:\/\//i.test(row[k]) && row[k].length < 400) out[k] = row[k];
   });
+  if (Array.isArray(row.dishes) && row.dishes.length) {
+    out.dishes = row.dishes.slice(0, 24);
+    if (!out.menu) out.menu = out.dishes.map(function (d) { return (d && d.name ? d.name + ' — ' + (d.price || 0) : ''); }).filter(Boolean).join('\n');
+  }
   if (Array.isArray(row.menuPhotos)) {
     out.menuPhotos = row.menuPhotos.filter(function (p) {
       return typeof p === 'string' && p.length < 180000;
