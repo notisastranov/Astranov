@@ -652,7 +652,16 @@
       });
     }
     if(list&&list.length) start(list);
-    else crawl(start);
+    else {
+      var real=[];
+      try{
+        (JSON.parse(localStorage.getItem("sn:labor")||"[]")||[]).forEach(function(j){
+          if(!j||j.status==="done"||j.status==="declined") return;
+          real.push(j);
+        });
+      }catch(e){}
+      start(real);
+    }
   }
   function openPrefs(){
     css();
