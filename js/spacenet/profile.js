@@ -121,7 +121,9 @@
       '<div class="icn-ttl">DETAILS</div>'+
       "<label>NAME</label><input id=\"sn-p-name\" value=\""+esc(p.name)+"\" placeholder=\"Your name\">"+
       "<label>EMAIL</label><input id=\"sn-p-email\" value=\""+esc(p.email|| (u&&u.email)||"")+"\" placeholder=\"you@email\" inputmode=\"email\">"+
-      "<label>PHONE</label><input id=\"sn-p-phone\" value=\""+esc(p.phone)+"\" placeholder=\"Phone (unverified)\" inputmode=\"tel\">"+
+      "<label>PHONE</label>"+
+      '<p class="note" id="sn-p-phone-hint">Type the full number. Plus, then the country code, then the rest. No spaces. Example: <b>+306971930225</b></p>'+
+      "<input id=\"sn-p-phone\" value=\""+esc(p.phone)+"\" placeholder=\"+306971930225\" inputmode=\"tel\" autocomplete=\"tel\">"+
       "<label>DELIVERY ADDRESS</label><textarea id=\"sn-p-address\" placeholder=\"Door, floor, bell\">"+esc(p.address)+"</textarea>"+
       "<label>DRIVER BASE</label><textarea id=\"sn-p-base\" placeholder=\"Where your vehicle lives\">"+esc(p.base)+"</textarea>"+
       '<button type="button" class="go" data-act="use-gps">USE MY GPS AS BASE</button>'+
