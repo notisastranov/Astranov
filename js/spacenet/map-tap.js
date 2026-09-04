@@ -25,7 +25,17 @@
     if (tapping() && SNPlusJob.pick) { SNPlusJob.pick(p); return; }
     if (SNPlusJob.showMenu) SNPlusJob.showMenu(p);
   }
+  function wrapStart() {
+    if (!window.SNPlusJob || !SNPlusJob.start || SNPlusJob.start.__tap) return;
+    var st = SNPlusJob.start;
+    SNPlusJob.start = function (kind, p) {
+      st(kind, p);
+      if (p && isFinite(p.lat) && SNPlusJob.pick) SNPlusJob.pick(p);
+    };
+    SNPlusJob.start.__tap = true;
+  }
   function bind() {
+    wrapStart();
     var m = getMap();
     if (m && m.on && !m.__snMapTap) {
       m.__snMapTap = true;

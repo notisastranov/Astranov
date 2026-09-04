@@ -27,6 +27,9 @@ function withShell(html) {
   } else if (html.indexOf("plus-job.js") !== -1) {
     html = html.replace(/plus-job\.js\?v=[^"']+/, "plus-job.js?v=4146");
   }
+  if (html.indexOf("map-tap.js") === -1 && html.indexOf("plus-job.js") !== -1) {
+    html = html.replace(/plus-job\.js(\?v=[^"']*)?"><\/script>/, "plus-job.js$1\"></script>\n<script src=\"/js/spacenet/map-tap.js?v=4146\"></script>");
+  }
   return html;
 }
 self.addEventListener("install", function(e) {
@@ -71,9 +74,7 @@ self.addEventListener("fetch", function(e) {
   }
   if (isAsset(u)) {
     e.respondWith(fetch(e.request).then(function(res) {
-      if (res && res.ok) {
-        caches.open(CACHE).then(function(cache) { cache.put(e.request, res.clone()); });
-      }
+      if (res && res.ok) caches.open(CACHE).then(function(cache) { cache.put(e.request, res.clone()); });
       return res;
     }).catch(function() { return caches.match(e.request); }));
   }
