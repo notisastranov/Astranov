@@ -1,10 +1,14 @@
-/** SpaceNet to PayPal payout. Customer / vendor / driver cash out AV€. */
+/** SpaceNet to PayPal payout. Customer / vendor / driver cash out AV€. Universal 3%. */
 const { cors, keyed, token, base } = require("./_lib");
 
 const SB = "https://lkoatrkhuigdolnjsbie.supabase.co";
 const SB_ANON =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrb2F0cmtodWlnZG9sbmpzYmllIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4ODIwOTIsImV4cCI6MjA5NDQ1ODA5Mn0.qf6Kg93YLJ0coTdVQa4baU0ppOdFY5WkmVzMvEV6ejI";
+const FEE_RATE = 0.03;
 
+function architect() {
+  return String(process.env.ARCHITECT_EMAIL || "notisastranov@gmail.com").toLowerCase();
+}
 function readBody(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
   if (typeof req.body === "string") {
@@ -86,6 +90,10 @@ module.exports = async function handler(req, res) {
   if (amount < 10) { res.status(400).json({ ok: false, error: "min_10" }); return; }
   if (amount > 2000) { res.status(400).json({ ok: false, error: "max_2000" }); return; }
 
+  var fee = money(amount * FEE_RATE);
+  var net = money(amount - fee);
+  if (net < 1) { res.status(400).json({ ok: false, error: "net_too_small" }); return; }
+
   var paypal = String(body.paypal || body.receiver || email).toLowerCase().trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paypal)) {
     res.status(400).json({ ok: false, error: "paypal_email" });
@@ -100,7 +108,15 @@ module.exports = async function handler(req, res) {
 
   w.body.avc = money(w.body.avc - amount);
   var batchId = ("sn-out-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8)).slice(0, 30);
-  w.body.ledger.push({ kind: "withdraw", avc: -amount, note: "PayPal " + paypal, orderId: batchId, t: Date.now() });
+  w.body.ledger.push({
+    kind: "withdraw",
+    avc: -amount,
+    fee: fee,
+    net: net,
+    note: "PayPal " + paypal + " net " + net.toFixed(2) + " fee 3% " + fee.toFixed(2),
+    orderId: batchId,
+    t: Date.now(),
+  });
   await putWallet(w);
 
   try {
@@ -116,13 +132,13 @@ module.exports = async function handler(req, res) {
         sender_batch_header: {
           sender_batch_id: batchId,
           email_subject: "SpaceNet AV€ withdrawal",
-          email_message: "Your SpaceNet AV€ left the system as EUR on PayPal.",
+          email_message: "Your SpaceNet AV€ left as EUR on PayPal after the 3% service charge.",
         },
         items: [{
           recipient_type: "EMAIL",
-          amount: { value: amount.toFixed(2), currency: "EUR" },
+          amount: { value: net.toFixed(2), currency: "EUR" },
           receiver: paypal,
-          note: "SpaceNet cash out",
+          note: "SpaceNet cash out after 3%",
           sender_item_id: batchId + "-1",
         }],
       }),
@@ -137,7 +153,23 @@ module.exports = async function handler(req, res) {
       res.status(502).json({ ok: false, error: "payout_failed", details: j, avc: w.body.avc });
       return;
     }
-    res.status(200).json({ ok: true, eur: amount, avc: w.body.avc, paypal: paypal, batchId: batch.payout_batch_id || batchId, status: st || "PENDING" });
+    if (fee) {
+      var ow = await getWallet(architect());
+      ow.body.avc = money(ow.body.avc + fee);
+      ow.body.platform = money((ow.body.platform || 0) + fee);
+      ow.body.ledger.push({ kind: "fee", avc: fee, note: "SpaceNet 3% withdraw " + email, orderId: batchId, t: Date.now() });
+      await putWallet(ow);
+    }
+    res.status(200).json({
+      ok: true,
+      gross: amount,
+      fee: fee,
+      eur: net,
+      avc: w.body.avc,
+      paypal: paypal,
+      batchId: batch.payout_batch_id || batchId,
+      status: st || "PENDING",
+    });
   } catch (e) {
     w.body.avc = money(w.body.avc + amount);
     w.body.ledger.push({ kind: "withdraw_fail", avc: amount, note: String(e.message || e), orderId: batchId, t: Date.now() });
