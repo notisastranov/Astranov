@@ -5,8 +5,12 @@ const SB_ANON =
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'content-type');
+  res.setHeader('Access-Control-Allow-Headers', 'authorization, content-type');
   res.setHeader('Cache-Control', 'no-store');
+}
+
+function architect() {
+  return String(process.env.ARCHITECT_EMAIL || 'notisastranov@gmail.com').toLowerCase();
 }
 
 function readBody(req) {
@@ -21,50 +25,35 @@ function readBody(req) {
   return {};
 }
 
+function bearer(req) {
+  var h = String((req.headers && (req.headers.authorization || req.headers.Authorization)) || '');
+  var m = h.match(/^Bearer\s+(\S+)/i);
+  return m ? m[1] : '';
+}
+
+async function userOf(req) {
+  var t = bearer(req);
+  if (!t || t.length < 20) return null;
+  try {
+    var r = await fetch(SB + '/auth/v1/user', { headers: { apikey: SB_ANON, Authorization: 'Bearer ' + t } });
+    if (!r.ok) return null;
+    var u = await r.json().catch(function () { return null; });
+    return u && u.email ? u : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 function slim(row) {
   if (!row || typeof row !== 'object') return null;
   const out = {};
   const keep = [
-    'id',
-    'kind',
-    'lat',
-    'lng',
-    'name',
-    'label',
-    'text',
-    'menu',
-    'hours',
-    'open',
-    'phone',
-    'note',
-    'peer',
-    'presence',
-    'routes',
-    'vehicles',
-    'range',
-    'carry',
-    'pref',
-    'street',
-    'number',
-    'floor',
-    'bell',
-    'bellName',
-    'place',
-    'raw',
-    't',
-    'held',
-    'status',
-    'avc',
-    'ride',
-    'how',
-    'query',
-    'shop',
-    'driver',
-    'drop',
-    'customerPeer',
-    'holdMin',
-    'flag',
-    'strict',
+    'id', 'kind', 'lat', 'lng', 'name', 'label', 'text', 'menu', 'hours', 'open',
+    'phone', 'note', 'peer', 'presence', 'routes', 'vehicles', 'range', 'carry',
+    'pref', 'street', 'number', 'floor', 'bell', 'bellName', 'place', 'raw', 't',
+    'held', 'status', 'avc', 'ride', 'how', 'query', 'shop', 'driver', 'drop',
+    'customerPeer', 'holdMin', 'flag', 'strict', 'approved', 'email', 'dest',
+    'langMain', 'langAlt',
   ];
   keep.forEach(function (k) {
     if (row[k] != null && row[k] !== '') out[k] = row[k];
@@ -87,6 +76,11 @@ function slim(row) {
   }
   if (json.length > 350000) return null;
   return out;
+}
+
+function isApprovedDriver(b) {
+  if (!b) return false;
+  return b.approved === true || b.approved === 1 || b.approved === '1' || b.flag === 'driver-ok';
 }
 
 async function sb(path, opt) {
@@ -118,13 +112,26 @@ module.exports = async function handler(req, res) {
     const q = req.query || {};
     const lat = Number(q.lat);
     const lng = Number(q.lng);
+    const peer = String(q.peer || '');
+    const user = await userOf(req);
+    const email = user ? String(user.email).toLowerCase() : '';
+    const isOwner = email && email === architect();
     const got = await sb('sn_listings?select=id,kind,lat,lng,body,updated_at&order=updated_at.desc&limit=80');
     if (!got.ok) {
       res.status(200).json({ ok: false, local: true, status: got.status, shops: [], drops: [], drivers: [], posts: [], jobs: [] });
       return;
     }
+    const rows = got.json || [];
+    let viewerApproved = isOwner;
+    if (!viewerApproved && email) {
+      rows.forEach(function (row) {
+        const b = row.body || {};
+        if (row.kind === 'driver' && isApprovedDriver(b) && String(b.email || '').toLowerCase() === email) viewerApproved = true;
+        if (row.kind === 'driver' && isApprovedDriver(b) && peer && String(b.peer || '') === peer) viewerApproved = true;
+      });
+    }
     const buckets = { shops: [], drops: [], drivers: [], posts: [], jobs: [] };
-    (got.json || []).forEach(function (row) {
+    rows.forEach(function (row) {
       const body = row.body || {};
       body.id = body.id || row.id;
       body.kind = body.kind || row.kind;
@@ -142,10 +149,17 @@ module.exports = async function handler(req, res) {
         if (km > 80) return;
       }
       const k = body.kind === 'shop' ? 'shops' : body.kind === 'driver' ? 'drivers' : body.kind === 'post' ? 'posts' : body.kind === 'job' ? 'jobs' : '';
-      if (k === 'jobs' && body.drop) {
-        const peer = String(q.peer || '');
-        const allow = peer && ((body.driver && body.driver.peer === peer) || body.customerPeer === peer);
-        if (!allow) delete body.drop;
+      if (k === 'drivers') {
+        const self = (email && String(body.email || '').toLowerCase() === email) || (peer && body.peer === peer);
+        if (!isOwner && !self && !isApprovedDriver(body)) return;
+        if (!isOwner && !self && (body.presence === 'pending' || body.presence === 'off')) return;
+      }
+      if (k === 'jobs') {
+        const selfJob = (peer && ((body.driver && body.driver.peer === peer) || body.customerPeer === peer || body.peer === peer)) ||
+          (email && String(body.email || '').toLowerCase() === email);
+        if (!isOwner && !viewerApproved && !selfJob) return;
+        const allowDrop = peer && ((body.driver && body.driver.peer === peer) || body.customerPeer === peer);
+        if (!allowDrop && !isOwner) delete body.drop;
       }
       if (k) buckets[k].push(body);
     });
@@ -158,6 +172,9 @@ module.exports = async function handler(req, res) {
     return;
   }
 
+  const user = await userOf(req);
+  const email = user ? String(user.email).toLowerCase() : '';
+  const isOwner = email && email === architect();
   const body = readBody(req);
   const row = slim(body.row || body);
   if (row && (row.kind === 'drop' || row.secret)) {
@@ -167,6 +184,12 @@ module.exports = async function handler(req, res) {
   if (!row || !row.id || !row.kind || !isFinite(Number(row.lat))) {
     res.status(400).json({ ok: false, error: 'row' });
     return;
+  }
+  if (row.kind === 'driver' && !isOwner && row.approved !== true && row.flag !== 'driver-ok') {
+    row.approved = false;
+    row.presence = 'pending';
+    row.flag = 'driver-apply';
+    if (email) row.email = email;
   }
   const put = await sb('sn_listings?on_conflict=id', {
     method: 'POST',
