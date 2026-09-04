@@ -1,4 +1,4 @@
-/* SpaceNet wallet 4143 — AV€ in via PayPal, AV€ out via PayPal. */
+/* SpaceNet wallet 4144 — AV€ in/out PayPal. Universal 3% on withdraw. */
 (function(){
   var OWNER = { "notisastranov@gmail.com":1 };
   function read(k, d){ try{ var v=localStorage.getItem(k); return v==null?d:v; }catch(e){ return d; } }
@@ -94,7 +94,7 @@
     }
     bits.push('<div class="bal">'+fmt(bal)+'</div>');
     bits.push('<p>'+String(u.name||u.email||"You").replace(/[<>]/g,"")+' \u00b7 '+String(u.email||"").replace(/[<>]/g,"")+'</p>');
-    bits.push('<p>In and out through PayPal. Same coins pay shops and agents.</p>');
+    bits.push('<p>In and out through PayPal. Withdrawals take the universal 3%.</p>');
     if(owner()){
       bits.push('<p>Owner pool: '+fmt(num("sn:pool"))+'</p>');
       bits.push('<p>SpaceNet 3% filed: '+fmt(num("sn:platform"))+'</p>');
@@ -149,7 +149,9 @@
     eur=Math.max(10, Number(eur)||10);
     if(!user()){ lineSay("Sign in first."); return; }
     if(!token()){ lineSay("Sign in so SpaceNet can send PayPal."); return; }
-    lineSay("Sending "+fmt(eur)+" to PayPal…");
+    var fee=Math.round(eur*0.03*100)/100;
+    var net=Math.round((eur-fee)*100)/100;
+    lineSay("Sending "+fmt(net)+" to PayPal after 3% · "+fmt(fee)+".");
     fetch("/api/paypal/payout",{
       method:"POST",
       headers:authHeaders(),
@@ -161,7 +163,9 @@
           var next=Math.max(0, num("sn:avc")-eur);
           if(!owner()) write("sn:avc", String(next));
           paint();
-          lineSay("Sent "+fmt(eur)+" to PayPal "+emailOf()+". Left "+fmt(j.avc!=null?j.avc:next)+".");
+          var got=j.eur!=null?j.eur:net;
+          var took=j.fee!=null?j.fee:fee;
+          lineSay("PayPal "+fmt(got)+" to "+emailOf()+". 3% "+fmt(took)+". Left "+fmt(j.avc!=null?j.avc:next)+".");
           return;
         }
         if(j&&j.error==="insufficient") lineSay("Not enough AV\u20ac on the ledger. Reload or earn first. Ledger "+fmt(j.avc||0)+".");
