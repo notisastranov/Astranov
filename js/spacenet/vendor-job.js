@@ -1,7 +1,7 @@
-/* SpaceNet 4149 — shop then client. Phone + address. 13.3 cap. Notis accept/decline. */
+/* SpaceNet 4150 — over 13.3 splits into return trips. Km billed back and forth. */
 (function () {
   window.__snVendorJob = true;
-  var FEE = 0.03, SUR = 3, MAX = 13.3, HEAVY = 13;
+  var FEE = 0.03, SUR = 3, CAP = 13.3, HEAVY = 13;
   var from = null, to = null, quote = null, armed = "";
   function line(s) { var el = document.getElementById("line"); if (el) el.textContent = s || ""; }
   function read(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
@@ -51,14 +51,20 @@
     SNWork.publish.__vj = true;
   }
   function deliveryBase(dist) { return dist <= 3 ? 3 : 3 + Math.ceil(dist - 3); }
-  function extras(q) {
-    var n = 0; if (q.night) n++; if (q.rain) n++; if (q.vip) n++; if (q.floor) n++; if (q.heavy) n++; return n;
-  }
+  function tripsOf(mass) { mass = Number(mass) || 0; if (mass <= CAP) return 1; return Math.ceil(mass / CAP); }
+  function extras(q) { var n = 0; if (q.night) n++; if (q.rain) n++; if (q.vip) n++; if (q.floor) n++; if (q.heavy) n++; return n; }
   function price(q) {
-    q.base = deliveryBase(q.km); q.surcharge = extras(q) * SUR; q.ride = money(q.base + q.surcharge);
-    q.fee = money(q.ride * FEE); q.pay = money(q.ride + q.fee); return q;
+    q.trips = tripsOf(q.mass);
+    q.oneWay = Number(q.oneWay || q.leg || 0) || 0;
+    q.km = money(q.trips * 2 * q.oneWay);
+    q.heavy = (q.mass || 0) > HEAVY;
+    q.base = deliveryBase(q.km);
+    q.surcharge = extras(q) * SUR;
+    q.ride = money(q.base + q.surcharge);
+    q.fee = money(q.ride * FEE);
+    q.pay = money(q.ride + q.fee);
+    return q;
   }
-  function rainAt(p, cb) { cb(false); }
   function reverse(p, cb) {
     if (!p) { cb(""); return; }
     fetch("https://photon.komoot.io/reverse?lat=" + p.lat + "&lon=" + p.lng).then(function (r) { return r.json(); }).then(function (j) {
@@ -70,17 +76,16 @@
     if (!p || !isFinite(p.lat)) return false;
     var shop = shopNear(p);
     if (!from || armed === "from") {
-      from = shop ? { lat: +shop.lat, lng: +shop.lng, name: shop.name, id: shop.id, kind: "shop", email: shop.email || "" } : { lat: +p.lat, lng: +p.lng, name: nameOf(p) };
+      from = shop ? { lat: +shop.lat, lng: +shop.lng, name: shop.name, id: shop.id, kind: "shop" } : { lat: +p.lat, lng: +p.lng, name: nameOf(p) };
       armed = "to"; line("From " + nameOf(from) + ". Tap the client."); return true;
     }
     to = { lat: +p.lat, lng: +p.lng, name: nameOf(p) }; armed = "";
-    reverse(to, function (addr) { to.address = addr || nameOf(to); to.name = to.address; rainAt(from, function () { buildQuote(false); }); });
+    reverse(to, function (addr) {
+      to.address = addr || nameOf(to); to.name = to.address;
+      quote = { from: from, to: to, oneWay: +Math.max(0.1, km(from, to)).toFixed(2), km: 0, phone: "", address: to.address, floor: false, vip: false, heavy: false, mass: 0, trips: 1, night: nightNow(), rain: false };
+      price(quote); showQuote();
+    });
     return true;
-  }
-  function buildQuote() {
-    if (!from || !to) return;
-    quote = { from: from, to: to, km: +Math.max(0.1, km(from, to)).toFixed(1), phone: "", address: to.address || nameOf(to), floor: false, vip: false, heavy: false, mass: 0, night: nightNow(), rain: false };
-    price(quote); showQuote();
   }
   function css() {
     if (document.getElementById("sn-vj-css")) return;
@@ -100,7 +105,7 @@
         if (e.target.id === "sn-job-night") quote.night = !!e.target.checked;
         if (e.target.id === "sn-job-phone") quote.phone = String(e.target.value || "").trim();
         if (e.target.id === "sn-job-addr") quote.address = String(e.target.value || "").trim();
-        if (e.target.id === "sn-job-mass") { quote.mass = Number(e.target.value) || 0; quote.heavy = quote.mass > HEAVY && quote.mass <= MAX; }
+        if (e.target.id === "sn-job-mass") { quote.mass = Number(e.target.value) || 0; }
         price(quote); showQuote();
       });
       el.addEventListener("click", function (e) {
@@ -109,17 +114,13 @@
         if (b.getAttribute("data-act") === "cancel") { el.classList.remove("on"); from = to = quote = null; armed = ""; }
       });
     }
-    if (q.mass > MAX) {
-      el.innerHTML = "<p>Over 13.3 kilos or litres. Not accepted.</p><button type=\"button\" class=\"no\" data-act=\"cancel\">CLOSE</button>";
-      el.classList.add("on"); return;
-    }
-    var bits = [q.km + " km · first 3 km AV€ 3 · extra km AV€ 1"];
+    var bits = [q.trips + " run" + (q.trips > 1 ? "s" : "") + " · " + (q.trips * 2) + " legs back-forth · " + q.km + " km billed"];
     if (q.night) bits.push("night 21-09 +3"); if (q.vip) bits.push("VIP +3"); if (q.floor) bits.push("floor +3"); if (q.heavy) bits.push("over 13 +3");
     el.innerHTML = '<div class="pay">AV€ ' + q.pay.toFixed(2) + "</div><p>" + nameOf(q.from) + " → client</p><p>" + bits.join(" · ") + " · 3% AV€ " + q.fee.toFixed(2) + "</p>" +
       '<label>Client address<input id="sn-job-addr" type="text" value="' + String(q.address || "").replace(/"/g, "") + '"></label>' +
       '<label>Client telephone<input id="sn-job-phone" type="tel" value="' + String(q.phone || "") + '"></label>' +
-      '<label>Kg or litres<input id="sn-job-mass" type="number" min="0" max="13.3" step="0.1" value="' + (q.mass || 0) + '"> max 13.3</label>' +
-      '<label><input type="checkbox" id="sn-job-vip"' + (q.vip ? " checked" : "") + '> VIP fast straight + AV€ 3</label>' +
+      '<label>Kg or litres<input id="sn-job-mass" type="number" min="0" step="0.1" value="' + (q.mass || 0) + '"> over 13.3 = extra return trips</label>' +
+      '<label><input type="checkbox" id="sn-job-vip"' + (q.vip ? " checked" : "") + '> VIP + AV€ 3</label>' +
       '<label><input type="checkbox" id="sn-job-floor"' + (q.floor ? " checked" : "") + '> Floor / room + AV€ 3</label>' +
       '<label><input type="checkbox" id="sn-job-night"' + (q.night ? " checked" : "") + '> Night 21:00-09:00 + AV€ 3</label>' +
       '<button type="button" class="go" data-act="pay">THROW TO NOTIS</button><button type="button" class="no" data-act="cancel">CANCEL</button>';
@@ -130,19 +131,17 @@
     quote.phone = String((document.getElementById("sn-job-phone") || {}).value || quote.phone || "").trim();
     quote.address = String((document.getElementById("sn-job-addr") || {}).value || quote.address || "").trim();
     quote.mass = Number((document.getElementById("sn-job-mass") || {}).value || quote.mass || 0);
-    if (quote.mass > MAX) { line("Over 13.3 kg / L. Not accepted."); showQuote(); return; }
-    quote.heavy = quote.mass > HEAVY; price(quote);
+    price(quote);
     if (!quote.address) { line("Verify the client address."); return; }
     if (!quote.phone || quote.phone.replace(/\D/g, "").length < 8) { line("Client telephone is required."); return; }
     if (!user()) { line("Sign in."); return; }
     var q = quote, id = "j" + Date.now().toString(36);
-    var row = { id: id, kind: "job", what: "Delivery", status: "offered", from: { lat: q.from.lat, lng: q.from.lng, name: nameOf(q.from), id: q.from.id || "" }, to: { lat: q.to.lat, lng: q.to.lng, name: q.address, address: q.address }, phone: q.phone, address: q.address, km: q.km, ride: q.ride, fee: q.fee, pay: q.pay, floor: !!q.floor, vip: !!q.vip, night: !!q.night, heavy: !!q.heavy, mass: q.mass, goods: 0, payer: email(), peer: peer(), email: email(), toOwner: "notisastranov@gmail.com", shop: q.from.id ? { id: q.from.id, name: nameOf(q.from), lat: q.from.lat, lng: q.from.lng } : null, drop: { name: q.address, lat: q.to.lat, lng: q.to.lng, phone: q.phone }, t: Date.now() };
+    var row = { id: id, kind: "job", what: "Delivery", status: "offered", from: { lat: q.from.lat, lng: q.from.lng, name: nameOf(q.from), id: q.from.id || "" }, to: { lat: q.to.lat, lng: q.to.lng, name: q.address, address: q.address }, phone: q.phone, address: q.address, km: q.km, oneWay: q.oneWay, trips: q.trips, ride: q.ride, fee: q.fee, pay: q.pay, floor: !!q.floor, vip: !!q.vip, night: !!q.night, heavy: !!q.heavy, mass: q.mass, goods: 0, payer: email(), peer: peer(), email: email(), toOwner: "notisastranov@gmail.com", shop: q.from.id ? { id: q.from.id, name: nameOf(q.from), lat: q.from.lat, lng: q.from.lng } : null, drop: { name: q.address, lat: q.to.lat, lng: q.to.lng, phone: q.phone }, t: Date.now() };
     try { var tasks = JSON.parse(read("sn:tasks", "[]") || "[]"); tasks.unshift(row); write("sn:tasks", tasks.slice(0, 80)); } catch (e) {}
     fetch("/api/space", { method: "POST", headers: headers(), body: JSON.stringify({ row: row }) }).catch(function () {});
-    if (window.SN && SN.ingestJobs) SN.ingestJobs([row]);
     var el = document.getElementById("sn-jobq"); if (el) el.classList.remove("on");
     from = to = quote = null; armed = "";
-    line("Job offered to Notis. AV€ " + q.pay.toFixed(2) + ".");
+    line((q.trips > 1 ? (q.trips + " runs · ") : "") + "Offered to Notis. AV€ " + q.pay.toFixed(2) + ".");
     paintBoard();
   }
   function tasks() { try { return JSON.parse(read("sn:tasks", "[]") || "[]"); } catch (e) { return []; } }
@@ -154,7 +153,7 @@
     write("sn:tasks", list.slice(0, 80));
     fetch("/api/space", { method: "POST", headers: headers(), body: JSON.stringify({ row: row }) }).catch(function () {});
     if (yes) fetch("/api/pay", { method: "POST", headers: headers(), body: JSON.stringify({ action: "settle", orderId: id, goods: 0, ride: row.ride, fee: row.fee, vendorEmail: row.email || "", driverEmail: "notisastranov@gmail.com" }) }).catch(function () {});
-    line(yes ? ("Accepted · " + (row.phone || "")) : "Declined.");
+    line(yes ? ("Accepted · " + (row.trips > 1 ? row.trips + " runs · " : "") + (row.phone || "")) : "Declined.");
     paintBoard();
   }
   function paintBoard() {
@@ -172,7 +171,7 @@
     }
     if (!list.length) { el.classList.remove("on"); return; }
     el.innerHTML = "<p>JOBS FOR NOTIS</p>" + list.map(function (t) {
-      return "<p><b>" + nameOf(t.from) + " → " + (t.address || "") + "</b><br>AV€ " + Number(t.pay || 0).toFixed(2) + " · " + (t.phone || "") + (t.vip ? " · VIP" : "") + (t.floor ? " · floor" : "") + (t.night ? " · night" : "") + (t.heavy ? " · heavy" : "") +
+      return "<p><b>" + nameOf(t.from) + " → " + (t.address || "") + "</b><br>AV€ " + Number(t.pay || 0).toFixed(2) + " · " + (t.phone || "") + (t.trips > 1 ? (" · " + t.trips + " runs · " + t.km + " km") : "") + (t.vip ? " · VIP" : "") + (t.floor ? " · floor" : "") + (t.night ? " · night" : "") +
         '</p><button type="button" class="yes" data-act="yes" data-id="' + t.id + '">ACCEPT</button><button type="button" class="no" data-act="no" data-id="' + t.id + '">DECLINE</button>';
     }).join("") + '<button type="button" class="no" data-act="x">HIDE</button>';
     el.classList.add("on");
