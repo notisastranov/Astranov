@@ -1,5 +1,5 @@
-/* SpaceNet SW 4151 — shell network-first. Never serve HTML as JS. */
-var CACHE = "sn-shell-4151";
+/* SpaceNet SW 4152 — shell network-first. Never serve HTML as JS. */
+var CACHE = "sn-shell-4152";
 var TILES = "sn-tiles-1";
 function isTile(url) {
   return /tile\.openstreetmap\.org|openstreetmap\.fr\/hot|tiles\.maps\.eox\.at|server\.arcgisonline\.com/.test(url);
@@ -10,36 +10,41 @@ function isAsset(url) {
 function withShell(html) {
   if (!html || html.indexOf("leaflet.js") === -1) return html;
   if (html.indexOf("leave-flat.js") === -1) {
-    html = html.replace(/leaflet\.js(\?v=[^"']*)?"><\/script>/, "leaflet.js$1\"></script>\n<script src=\"/js/spacenet/voice.js?v=4151\"></script>\n<script src=\"/js/spacenet/leave-flat.js?v=4151\"></script>\n<script src=\"/js/spacenet/wallet.js?v=4151\"></script>\n<script src=\"/js/spacenet/power.js?v=4151\"></script>\n<script src=\"/js/spacenet/task-throw.js?v=4151\"></script>");
+    html = html.replace(/leaflet\.js(\?v=[^"']*)?"><\/script>/, "leaflet.js$1\"></script>\n<script src=\"/js/spacenet/voice.js?v=4152\"></script>\n<script src=\"/js/spacenet/leave-flat.js?v=4152\"></script>\n<script src=\"/js/spacenet/wallet.js?v=4152\"></script>\n<script src=\"/js/spacenet/power.js?v=4152\"></script>\n<script src=\"/js/spacenet/task-throw.js?v=4152\"></script>");
   } else if (html.indexOf("voice.js") === -1) {
-    html = html.replace(/leaflet\.js(\?v=[^"']*)?"><\/script>/, "leaflet.js$1\"></script>\n<script src=\"/js/spacenet/voice.js?v=4151\"></script>");
+    html = html.replace(/leaflet\.js(\?v=[^"']*)?"><\/script>/, "leaflet.js$1\"></script>\n<script src=\"/js/spacenet/voice.js?v=4152\"></script>");
   } else if (html.indexOf("wallet.js") === -1) {
-    html = html.replace(/leave-flat\.js(\?v=[^"']*)?"><\/script>/, "leave-flat.js$1\"></script>\n<script src=\"/js/spacenet/wallet.js?v=4151\"></script>");
+    html = html.replace(/leave-flat\.js(\?v=[^"']*)?"><\/script>/, "leave-flat.js$1\"></script>\n<script src=\"/js/spacenet/wallet.js?v=4152\"></script>");
   }
   if (html.indexOf("tree.js") === -1 && html.indexOf("labor.js") !== -1) {
-    html = html.replace(/labor\.js(\?v=[^"']*)?"><\/script>/, "labor.js$1\"><\/script>\n<script src=\"/js/spacenet/tree.js?v=4151\"><\/script>");
+    html = html.replace(/labor\.js(\?v=[^"']*)?"><\/script>/, "labor.js$1\"><\/script>\n<script src=\"/js/spacenet/tree.js?v=4152\"><\/script>");
   }
   if (html.indexOf("/js/spacenet/auth.js") === -1 && html.indexOf("app.js") !== -1) {
-    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/auth.js?v=4151\"></script>\n<script src=\"/js/spacenet/order-menu.js?v=4151\"></script>\n<script src=\"/js/spacenet/support-gate.js?v=4151\"></script>\n<script src=\"/js/spacenet/approvals.js?v=4151\"></script>");
+    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/auth.js?v=4152\"></script>\n<script src=\"/js/spacenet/order-menu.js?v=4152\"></script>\n<script src=\"/js/spacenet/support-gate.js?v=4152\"></script>\n<script src=\"/js/spacenet/approvals.js?v=4152\"></script>");
   }
   if (html.indexOf("plus-job.js") === -1 && html.indexOf("app.js") !== -1) {
-    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/plus-job.js?v=4151\"></script>");
+    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/plus-job.js?v=4152\"></script>");
   } else if (html.indexOf("plus-job.js") !== -1) {
-    html = html.replace(/plus-job\.js\?v=[^"']+/, "plus-job.js?v=4151");
+    html = html.replace(/plus-job\.js\?v=[^"']+/, "plus-job.js?v=4152");
   }
   if (html.indexOf("map-tap.js") === -1 && html.indexOf("plus-job.js") !== -1) {
-    html = html.replace(/plus-job\.js(\?v=[^"']*)?"><\/script>/, "plus-job.js$1\"></script>\n<script src=\"/js/spacenet/map-tap.js?v=4151\"></script>");
+    html = html.replace(/plus-job\.js(\?v=[^"']*)?"><\/script>/, "plus-job.js$1\"></script>\n<script src=\"/js/spacenet/map-tap.js?v=4152\"></script>");
   }
   if (html.indexOf("vendor-job.js") === -1 && html.indexOf("app.js") !== -1) {
-    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/vendor-job.js?v=4151\"></script>");
+    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/vendor-job.js?v=4152\"></script>");
   }
   if (html.indexOf("plus-first.js") === -1 && html.indexOf("vendor-job.js") !== -1) {
-    html = html.replace(/vendor-job\.js(\?v=[^"']*)?"><\/script>/, "vendor-job.js$1\"></script>\n<script src=\"/js/spacenet/plus-first.js?v=4151\"></script>");
+    html = html.replace(/vendor-job\.js(\?v=[^"']*)?"><\/script>/, "vendor-job.js$1\"></script>\n<script src=\"/js/spacenet/plus-first.js?v=4152\"></script>");
   } else if (html.indexOf("plus-first.js") === -1 && html.indexOf("app.js") !== -1) {
-    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/plus-first.js?v=4151\"></script>");
+    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/plus-first.js?v=4152\"></script>");
+  }
+  if (html.indexOf("jobs-stack.js") === -1 && html.indexOf("plus-first.js") !== -1) {
+    html = html.replace(/plus-first\.js(\?v=[^"']*)?"><\/script>/, "plus-first.js$1\"></script>\n<script src=\"/js/spacenet/jobs-stack.js?v=4152\"></script>");
+  } else if (html.indexOf("jobs-stack.js") === -1 && html.indexOf("app.js") !== -1) {
+    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/jobs-stack.js?v=4152\"></script>");
   }
   if (html.indexOf("owner-drive.js") === -1 && html.indexOf("app.js") !== -1) {
-    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/owner-drive.js?v=4151\"></script>\n<script src=\"/js/spacenet/driver-gate.js?v=4151\"></script>");
+    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/owner-drive.js?v=4152\"></script>\n<script src=\"/js/spacenet/driver-gate.js?v=4152\"></script>");
   }
   return html;
 }
