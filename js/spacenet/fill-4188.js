@@ -1,6 +1,6 @@
 (function(){
-  if(window.__SN_FILL_4188) return;
-  window.__SN_FILL_4188=true;
+  if(window.__SN_FILL_4189) return;
+  window.__SN_FILL_4189=true;
   var BRAND={
     "pizza inn":{phone:"+254 700 323 323",hours:"Mon–Sun 8:00–23:00",dishes:[
       {name:"Regina (Medium)",price:7.0},{name:"Hawaiian (Medium)",price:7.0},
@@ -25,14 +25,41 @@
   var lastShop=null;
   var filling={};
 
+  function scrubSay(s){
+    s=String(s==null?"":s).trim();
+    if(!s) return "";
+    if(/^\s*\{[\s\S]*"say"\s*:/.test(s)){
+      try{
+        var o=JSON.parse(s);
+        if(o && o.say!=null) return String(o.say).trim();
+      }catch(e){}
+      var m=s.match(/"say"\s*:\s*"((?:\\.|[^"\\])*)"/);
+      if(m){
+        try{ return JSON.parse('"'+m[1]+'"'); }catch(e){ return m[1]; }
+      }
+    }
+    // strip accidental nested say-blob inside longer text
+    if(/\{[\s\S]*"say"\s*:/.test(s) && s.length>40){
+      var m2=s.match(/\{[\s\S]*\}/);
+      if(m2){
+        try{
+          var o2=JSON.parse(m2[0]);
+          if(o2 && o2.say) return String(o2.say).trim();
+        }catch(e){}
+      }
+    }
+    return s;
+  }
+
+
   function css(){
-    if(document.getElementById("sn-fill-4188-css")) return;
+    if(document.getElementById("sn-fill-4189-css")) return;
     var s=document.createElement("style");
-    s.id="sn-fill-4188-css";
+    s.id="sn-fill-4189-css";
     s.textContent=
-      "#sn-paypath-4188,#sn-call-4188{display:flex!important}"+ 
-      ".sn-menu-grid .dish.sheet.head .cols,#sn-live .dish.sheet.head .cols,#sn-sheet .dish.sheet.head .cols{"+COLS+"}"+ 
-      ".sn-menu-grid .dish.sheet.head .cols > span,#sn-live .dish.sheet.head .cols > span,#sn-sheet .dish.sheet.head .cols > span{"+SPAN+"}"+ 
+      "#sn-paypath-4189,#sn-call-4189{display:flex!important}"+
+      ".sn-menu-grid .dish.sheet.head .cols,#sn-live .dish.sheet.head .cols,#sn-sheet .dish.sheet.head .cols{"+COLS+"}"+
+      ".sn-menu-grid .dish.sheet.head .cols > span,#sn-live .dish.sheet.head .cols > span,#sn-sheet .dish.sheet.head .cols > span{"+SPAN+"}"+
       "#sn-sheet .card .dish.sheet.head .cols,#sn-menu .card .dish.sheet.head .cols{"+COLS+"}";
     document.head.appendChild(s);
   }
@@ -47,14 +74,14 @@
     return (list||[]).map(function(it){
       if(typeof it==="string"){
         var m=it.split(/\s*[—\-]\s*/);
-        var nm=String(m[0]||"").trim();
+        var nm=scrubSay(String(m[0]||"").trim());
         if(!nm) return null;
         return {name:nm,price:Number(m[1])||0,hours:hours||"",stock:20,stock0:20,photo:"",sample:false};
       }
       if(!it||!(it.name||it.desc)) return null;
       if(it.sample===true||it.sample===1||it.sample==="true") return null;
       return {
-        name:String(it.name||it.desc).trim(),
+        name:scrubSay(String(it.name||it.desc).trim()),
         price:Number(it.price)||0,
         hours:it.hours||hours||"",
         stock:it.stock!=null?it.stock:20,
@@ -62,7 +89,7 @@
         photo:it.photo||"",
         sample:false
       };
-    }).filter(function(d){ return d&&d.name; });
+    }).filter(function(d){ return d&&d.name&&!/^\s*\{/.test(d.name)&&!("say"===d.name); });
   }
   function shopPhone(shop){
     var p=String((shop&&(shop.phone||(shop.tags&&shop.tags.phone)))||"").trim();
@@ -104,7 +131,7 @@
   function scrubCallShop(host, phone){
     if(!host) return;
     host.querySelectorAll("a,button").forEach(function(el){
-      if(el.id==="sn-call-4188" || el.id==="sn-call-4175" || el.id==="sn-call-4173") return;
+      if(el.id==="sn-call-4189" || el.id==="sn-call-4175" || el.id==="sn-call-4173") return;
       var t=String(el.textContent||"").replace(/\s+/g," ").trim();
       if(/^CALL(\s+SHOP)?$/i.test(t)){
         if(phone){
@@ -124,14 +151,14 @@
     var phone=shopPhone(shop||lastShop)||String(fill.phone||"").trim();
     if(phone && !/\d/.test(phone)) phone="";
 
-    var call=document.getElementById("sn-call-4188");
+    var call=document.getElementById("sn-call-4189");
     var old=document.getElementById("sn-call-4175")||document.getElementById("sn-call-4173");
     if(old && old.parentNode) old.parentNode.removeChild(old);
 
     if(phone){
       if(!call){
         call=document.createElement("a");
-        call.id="sn-call-4188";
+        call.id="sn-call-4189";
         call.style.cssText="display:flex!important;align-items:center;justify-content:center;margin:8px 0 4px;height:40px;border-radius:12px;border:1px solid rgba(77,240,255,.7);background:rgba(4,16,28,.95);color:#4df0ff;font:800 12px system-ui;text-decoration:none";
       }
       call.textContent="CALL "+phone;
@@ -142,35 +169,61 @@
     }
     scrubCallShop(host, phone);
 
-    var bar=document.getElementById("sn-paypath-4188")||document.getElementById("sn-paypath-4175")||document.getElementById("sn-paypath-4165");
+    var bar=document.getElementById("sn-paypath-4189")||document.getElementById("sn-paypath-4175")||document.getElementById("sn-paypath-4165");
     if(!bar){
       bar=document.createElement("div");
-      bar.id="sn-paypath-4188";
+      bar.id="sn-paypath-4189";
       bar.style.cssText="display:flex!important;flex-wrap:wrap;gap:8px;margin:10px 0 4px;padding:0 2px";
       bar.innerHTML=
         '<button type="button" data-act="now" style="flex:1;min-width:88px;height:40px;border-radius:12px;border:1px solid rgba(77,240,255,.7);background:rgba(4,16,28,.95);color:#4df0ff;font:800 12px system-ui">NOW</button>'+
         '<button type="button" data-act="pay" style="flex:1;min-width:88px;height:40px;border-radius:12px;border:1px solid rgba(77,240,255,.7);background:rgba(4,16,28,.95);color:#4df0ff;font:800 12px system-ui">PAY</button>'+
         '<button type="button" data-act="reload" style="flex:1;min-width:88px;height:40px;border-radius:12px;border:1px solid rgba(77,240,255,.7);background:rgba(4,16,28,.95);color:#7ee9ff;font:800 12px system-ui">RELOAD</button>';
     }else{
-      bar.id="sn-paypath-4188";
+      bar.id="sn-paypath-4189";
     }
     if(bar.parentNode!==host) host.appendChild(bar);
     spaceHeads();
+    ensureHead(host);
   }
   function headHtml(){
-    return '<div class="dish sheet head order"><div class="cols" style="'+COLS+'">'+ 
-      '<span style="'+SPAN+'">Photo</span><span style="'+SPAN+'">Description</span><span style="'+SPAN+'">AV€</span>'+ 
+    return '<div class="dish sheet head order"><div class="cols" style="'+COLS+'">'+
+      '<span style="'+SPAN+'">Photo</span><span style="'+SPAN+'">Description</span><span style="'+SPAN+'">AV€</span>'+
       '<span style="'+SPAN+'">Hours</span><span style="'+SPAN+'">Initial</span><span style="'+SPAN+'">Left</span></div></div>';
   }
   function rowHtml(it, hours){
     var n=String(it.name||"").replace(/"/g,"&quot;").replace(/</g,"&lt;");
     var hrs=String(it.hours||hours||"-").replace(/</g,"&lt;");
-    return '<div class="dish sheet order" data-dish="'+n+'"><div class="cols" style="'+COLS+'">'+ 
-      '<span class="pic">+</span><b>'+n+'</b><span class="px">AV€ '+(Number(it.price)||0).toFixed(2)+'</span>'+ 
+    return '<div class="dish sheet order" data-dish="'+n+'"><div class="cols" style="'+COLS+'">'+
+      '<span class="pic">+</span><b>'+n+'</b><span class="px">AV€ '+(Number(it.price)||0).toFixed(2)+'</span>'+
       '<span class="hrs">'+hrs+'</span><span class="st">20</span><span class="st">20</span></div></div>';
   }
   function emptyHtml(){
     return '<p class="note" style="margin:10px 4px;font:600 12px/1.4 system-ui;color:#7ee9ff">No public menu listed yet for this shop.</p>';
+  }
+  function ensureHead(host){
+    host = host || hostEl();
+    if(!host) return;
+    css();
+    var head = host.querySelector(".dish.sheet.head");
+    if(!head){
+      var wrap=document.createElement("div");
+      wrap.innerHTML=headHtml();
+      var note=host.querySelector("p.note");
+      var first=note||host.firstChild;
+      while(wrap.firstChild) host.insertBefore(wrap.firstChild, first);
+      head=host.querySelector(".dish.sheet.head");
+    }
+    spaceHeads();
+    // scrub JSON blobs in description cells / dish names
+    host.querySelectorAll(".dish.sheet.order b, .dish.sheet .cols > b, .dish.sheet .cols > span").forEach(function(el){
+      if(el.classList && (el.classList.contains("pic")||el.classList.contains("px")||el.classList.contains("hrs")||el.classList.contains("st"))) return;
+      var t=String(el.textContent||"");
+      if(/"say"\s*:/.test(t) || /^\s*\{/.test(t)){
+        var clean=scrubSay(t);
+        if(clean && clean!==t) el.textContent=clean;
+        else if(/^\s*\{/.test(t)) el.textContent="—";
+      }
+    });
   }
   function writeShop(shop, fill){
     if(!shop||!fill) return shop;
@@ -245,6 +298,8 @@
     }
     mountChrome(shop);
     spaceHeads();
+    ensureHead(host);
+    ensureHead(live);
   }
   function timed(promise, ms){
     return new Promise(function(resolve){
@@ -323,9 +378,10 @@
       mountChrome(shop);
       filling[id]=false;
     });
-    [40,120,300,700,1400].forEach(function(ms){
+    [40,120,300,700,1400,2400].forEach(function(ms){
       setTimeout(function(){
         spaceHeads();
+        ensureHead();
         mountChrome(shop);
         scrubCallShop(hostEl(), shopPhone(shop)||(fill&&fill.phone)||"");
       }, ms);
@@ -333,7 +389,7 @@
   }
   function wrapFn(name){
     if(!window.SN||!SN[name]) return false;
-    if(SN[name].__fill4188) return true;
+    if(SN[name].__fill4189) return true;
     var orig=SN[name].bind(SN);
     SN[name]=function(v){
       try{ seedAny(v); }catch(e){}
@@ -341,7 +397,7 @@
       try{ openShop(v); }catch(e){}
       return r;
     };
-    SN[name].__fill4188=true;
+    SN[name].__fill4189=true;
     return true;
   }
   function wrap(){
@@ -351,10 +407,11 @@
   function watch(){
     ["sn-live","sn-sheet","sn-menu"].forEach(function(id){
       var el=document.getElementById(id);
-      if(!el||el.__snFill4188Obs) return;
-      el.__snFill4188Obs=true;
+      if(!el||el.__snFill4189Obs) return;
+      el.__snFill4189Obs=true;
       new MutationObserver(function(){
         spaceHeads();
+        ensureHead();
         scrubCallShop(hostEl(), shopPhone(lastShop)||"");
         if(lastShop) mountChrome(lastShop);
       }).observe(el,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]});
@@ -363,5 +420,5 @@
   css();
   wrap();
   watch();
-  setInterval(function(){ wrap(); watch(); css(); if(lastShop){ mountChrome(lastShop); spaceHeads(); } }, 1500);
+  setInterval(function(){ wrap(); watch(); css(); ensureHead(); if(lastShop){ mountChrome(lastShop); spaceHeads(); ensureHead(); } else { var sheet=document.getElementById('sn-sheet'); if(sheet&&sheet.classList.contains('on')) ensureHead(); } }, 900);
 })();
