@@ -1,5 +1,5 @@
-/* SpaceNet SW 4165 — network-first shell. Never cache a stub. Never serve HTML as JS. */
-var CACHE = "sn-shell-4165";
+/* SpaceNet SW 4166 — network-first shell. Never cache a stub. Never serve HTML as JS. */
+var CACHE = "sn-shell-4166";
 var TILES = "sn-tiles-1";
 function isTile(url) {
   return /tile\.openstreetmap\.org|openstreetmap\.fr\/hot|tiles\.maps\.eox\.at|server\.arcgisonline\.com/.test(url);
@@ -25,6 +25,7 @@ function withShell(html) {
   inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/plus-mic.js?v=4164");
   inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/install.js?v=4164");
   inject('list-4161.js?v=4163"></script>', "/js/spacenet/calm-4164.js?v=4164");
+  inject('calm-4164.js?v=4164"></script>', "/js/spacenet/radar-4166.js?v=4166");
   inject('land-4162.js?v=4163"></script>', "/js/spacenet/calm-4164.js?v=4164");
   return html;
 }
@@ -39,9 +40,9 @@ self.addEventListener("activate", function(e) {
   }).then(function() { return self.clients.claim(); }).then(function() {
     return self.clients.matchAll({ type: "window" }).then(function(cs) {
       cs.forEach(function(c) {
-        try { c.postMessage({ type: "SN_RELOAD", v: "4165" }); } catch (err) {}
+        try { c.postMessage({ type: "SN_RELOAD", v: "4166" }); } catch (err) {}
         if (c.navigate) {
-          try { c.navigate("/?v=4165&t=" + Date.now()); } catch (err) {}
+          try { c.navigate("/?v=4166&t=" + Date.now()); } catch (err) {}
         }
       });
     });
