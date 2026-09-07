@@ -1,4 +1,4 @@
-/* SpaceNet wallet 4120 — personal AV€ only. Phone is on YOU, not here. */
+/* SpaceNet wallet 4158 — personal AV€ only. POOL fraud seed killed. */
 (function(){
   var OWNER = { "notisastranov@gmail.com":1 };
   function read(k, d){ try{ var v=localStorage.getItem(k); return v==null?d:v; }catch(e){ return d; } }
@@ -8,7 +8,7 @@
   function emailOf(){ var u=user(); return String((u&& (u.email||u.user_email))||"").toLowerCase(); }
   var OWNER_MAIL={"notisastranov@gmail.com":1,"info@astranov.eu":1};
   for(var k in OWNER_MAIL) OWNER[k]=1;
-  var POOL=3000000;
+  var POOL=0; // was 3000000 fraud seed — guest never inherits pool
   function owner(){
     var e=emailOf();
     if(OWNER[e] || (e && e.indexOf("@astranov.eu")>=0)){ write("sn:owner","1"); return true; }
@@ -34,6 +34,12 @@
     if(p && a===p && a>=1000000) return 0;
     return a;
   }
+  try{
+    var dig=function(v){ return String(v==null?"":v).replace(/[^0-9]/g,""); };
+    if(dig(localStorage.getItem("sn:avc"))==="3000000") localStorage.setItem("sn:avc","0");
+    if(dig(localStorage.getItem("sn:pool"))==="3000000") localStorage.setItem("sn:pool","0");
+    localStorage.setItem("sn:ave-restored","4024");
+  }catch(e){}
   try{ lockSeed(); }catch(e){}
   function measure(text, font){
     var s=document.createElement("span");
