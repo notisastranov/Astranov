@@ -16,11 +16,12 @@
         },
         {
           "key": "X-Astranov-Build",
-          "value": "4199"
+
+          "value": "4200"
         },
         {
           "key": "X-Astranov-Ship",
-          "value": "4199-head-direct-talk"
+          "value": "4200-scout-waypoint"
         },
         {
           "key": "Content-Security-Policy",
@@ -41,11 +42,12 @@
         },
         {
           "key": "X-Astranov-Build",
-          "value": "4199"
+
+          "value": "4200"
         },
         {
           "key": "X-Astranov-Ship",
-          "value": "4199-head-direct-talk"
+          "value": "4200-scout-waypoint"
         },
         {
           "key": "Content-Security-Policy",
