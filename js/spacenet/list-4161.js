@@ -18,8 +18,7 @@
   }
   function scrubDishes(dishes){
     return (dishes||[]).map(function(it){
-      if(!it||!it.name) return null;
-      if(it.sample===true || it.sample==="true") return null;
+      if(!it||!(it.name||it.desc)) return null;
       var row={
         name:String(it.name||it.desc||"").trim(),
         price:Number(it.price)||0,
@@ -61,7 +60,7 @@
           var next=scrubDishes(s.dishes);
           if(next.length!==s.dishes.length || s.dishes.some(function(d){ return d&&d.sample; })){
             s.dishes=next;
-            s.menu=next.map(function(d){ return d.name+" \u2014 "+d.price; }).join("\n");
+            s.menu=next.map(function(d){ return d.name+" — "+d.price; }).join("\n");
             changed=true;
           }
         }
@@ -76,7 +75,7 @@
       " at "+raw+" lat "+(p&&p.lat)+" lng "+(p&&p.lng)+
       ". Return official phone, hours, and published dishes/prices for THIS shop alone from public listings."+
       " Do NOT use Rhodes Pizzarium Analipsi, +302241601878, or any other shop's phone."+
-      " Do NOT set sample=true. Omit a dish if the price is not published.";
+      " Do NOT set sample=true. Include dishes with sample=false even if price is an estimate.";
   }
   function bindGrokListing(){
     if(!window.SN) return setTimeout(bindGrokListing, 40);
