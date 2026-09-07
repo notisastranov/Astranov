@@ -30,9 +30,9 @@
     var s=document.createElement("style");
     s.id="sn-fill-4188-css";
     s.textContent=
-      "#sn-paypath-4188,#sn-call-4188{display:flex!important}"+
-      ".sn-menu-grid .dish.sheet.head .cols,#sn-live .dish.sheet.head .cols,#sn-sheet .dish.sheet.head .cols{"+COLS+"}"+
-      ".sn-menu-grid .dish.sheet.head .cols > span,#sn-live .dish.sheet.head .cols > span,#sn-sheet .dish.sheet.head .cols > span{"+SPAN+"}"+
+      "#sn-paypath-4188,#sn-call-4188{display:flex!important}"+ 
+      ".sn-menu-grid .dish.sheet.head .cols,#sn-live .dish.sheet.head .cols,#sn-sheet .dish.sheet.head .cols{"+COLS+"}"+ 
+      ".sn-menu-grid .dish.sheet.head .cols > span,#sn-live .dish.sheet.head .cols > span,#sn-sheet .dish.sheet.head .cols > span{"+SPAN+"}"+ 
       "#sn-sheet .card .dish.sheet.head .cols,#sn-menu .card .dish.sheet.head .cols{"+COLS+"}";
     document.head.appendChild(s);
   }
@@ -66,4 +66,48 @@
   }
   function shopPhone(shop){
     var p=String((shop&&(shop.phone||(shop.tags&&shop.tags.phone)))||"").trim();
-    if(/^CALL(\s+SHOP)?$/i.test(t)) return "";
+    if(/^CALL(\s+SHOP)?$/i.test(p)) return "";
+    if(!p || !/\d/.test(p)) return "";
+    return p;
+  }
+  function brandFill(shop){
+    var key=brandKey(shop&&(shop.name||shop.place||shop.raw));
+    if(!key||!BRAND[key]) return null;
+    var b=BRAND[key];
+    return {phone:b.phone||shopPhone(shop)||"",hours:b.hours||(shop&&shop.hours)||"",dishes:normDishes(b.dishes,b.hours)};
+  }
+  function localFill(shop){
+    if(!shop) return null;
+    var dishes=normDishes(shop.dishes||shop.items||(shop.tags&&shop.tags.dishes)||[], shop.hours||"");
+    if(!dishes.length && shop.menu){
+      dishes=normDishes(String(shop.menu).split(/\n+/), shop.hours||"");
+    }
+    var phone=shopPhone(shop);
+    var hours=String(shop.hours||(shop.tags&&shop.tags.hours)||"").trim();
+    if(!dishes.length && !phone && !hours) return null;
+    return {phone:phone,hours:hours,dishes:dishes};
+  }
+  function hostEl(){
+    return document.querySelector("#sn-sheet.on .card")
+      || document.querySelector("#sn-menu.on .card")
+      || document.getElementById("sn-live");
+  }
+  function spaceHeads(){
+    document.querySelectorAll(".dish.sheet.head .cols, #sn-sheet .cols, #sn-live .cols").forEach(function(cols){
+      if(!cols || !cols.children || cols.children.length<4) return;
+      cols.setAttribute("style", COLS);
+      Array.prototype.forEach.call(cols.children||[], function(ch){
+        if(ch&&ch.tagName==="SPAN") ch.setAttribute("style", SPAN);
+      });
+    });
+  }
+  function scrubCallShop(host, phone){
+    if(!host) return;
+    host.querySelectorAll("a,button").forEach(function(el){
+      if(el.id==="sn-call-4188" || el.id==="sn-call-4175" || el.id==="sn-call-4173") return;
+      var t=String(el.textContent||"").replace(/\s+/g," ").trim();
+      if(/^CALL(\s+SHOP)?$/i.test(t)){
+        if(phone){
+          el.textContent="CALL "+phone;
+          if(el.tagName==="A") el.setAttribute("href","tel:"+phone.replace(/[^\d+]/g,""));
+        }else{
