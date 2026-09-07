@@ -1,5 +1,5 @@
-/* SpaceNet SW 4164 — network-first shell. Never cache a stub. Never serve HTML as JS. */
-var CACHE = "sn-shell-4164";
+/* SpaceNet SW 4165 — network-first shell. Never cache a stub. Never serve HTML as JS. */
+var CACHE = "sn-shell-4165";
 var TILES = "sn-tiles-1";
 function isTile(url) {
   return /tile\.openstreetmap\.org|openstreetmap\.fr\/hot|tiles\.maps\.eox\.at|server\.arcgisonline\.com/.test(url);
@@ -39,9 +39,9 @@ self.addEventListener("activate", function(e) {
   }).then(function() { return self.clients.claim(); }).then(function() {
     return self.clients.matchAll({ type: "window" }).then(function(cs) {
       cs.forEach(function(c) {
-        try { c.postMessage({ type: "SN_RELOAD", v: "4164" }); } catch (err) {}
+        try { c.postMessage({ type: "SN_RELOAD", v: "4165" }); } catch (err) {}
         if (c.navigate) {
-          try { c.navigate("/?v=4164&t=" + Date.now()); } catch (err) {}
+          try { c.navigate("/?v=4165&t=" + Date.now()); } catch (err) {}
         }
       });
     });

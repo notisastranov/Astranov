@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="4164" />
+<meta name="astranov-build" content="4165" />
 <meta name="theme-color" content="#02040a" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -27,14 +27,14 @@ button,[role=button]{cursor:pointer}
 #top{top:max(8px,env(safe-area-inset-top));padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));box-sizing:border-box}
 #dock{bottom:0;padding:0 10px max(12px,env(safe-area-inset-bottom))}
 #island,#panel{pointer-events:auto}
-#island{display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(4,14,28,.78);border:1px solid rgba(80,220,255,.35);border-radius:18px;width:100%;max-width:none;box-shadow:0 0 22px rgba(40,200,255,.18)}
+#island{display:flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(4,14,28,.78);border:1px solid rgba(80,220,255,.35);border-radius:18px;width:auto;max-width:none;box-shadow:0 0 22px rgba(40,200,255,.18)}
 #island b{font:800 13px/1.15 system-ui;letter-spacing:.08em}
 #island .a{color:#4df0ff;text-shadow:0 0 6px #4df0ff}
 #island .s{color:#7ee9ff}
 #island .k{color:#4a7a94}
 #ver{font:800 12px/1.15 system-ui;color:#4df0ff}
 #heal{width:6px;height:6px;border-radius:99px;background:#4df0ff;box-shadow:0 0 10px #4df0ff}
-#island #sn-money{display:inline-flex;margin-left:auto;align-items:center;justify-content:center;height:28px;min-width:72px;padding:0 12px;border-radius:999px;border:1px solid rgba(126,233,255,.7);background:rgba(4,16,28,.94);color:#7ee9ff;font:800 13px/1 ui-monospace,system-ui}
+#sn-money{position:fixed;top:calc(max(8px,env(safe-area-inset-top)) + 44px);right:max(8px,env(safe-area-inset-right));z-index:40;display:inline-flex;align-items:center;justify-content:center;height:28px;min-width:72px;padding:0 12px;border-radius:999px;border:1px solid rgba(126,233,255,.7);background:rgba(4,16,28,.94);color:#7ee9ff;font:800 13px/1 ui-monospace,system-ui;pointer-events:auto}
 #panel{width:min(520px,100%);padding:8px 6px 4px;background:linear-gradient(180deg,transparent,rgba(2,8,18,.92))}
 form#f{display:flex;align-items:center;gap:10px;min-height:48px;border-bottom:1px solid rgba(126,233,255,.4)}
 input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font:500 16px system-ui;outline:none}
@@ -71,7 +71,8 @@ img.cover{display:block;width:100%;max-height:88px;object-fit:cover;border-radiu
 <button type="button" id="sn-tasks-btn">TASKS</button>
 <button type="button" id="sn-cart-btn">CART</button>
 <button type="button" id="sn-layer">LAYER</button>
-<div id="top"><div id="island" title="Tap brand to reboot"><span id="heal"></span><b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b> <span id="ver">V1</span><button type="button" id="sn-money">AV€ 0</button></div></div>
+<div id="top"><div id="island" title="Tap brand to reboot"><span id="heal"></span><b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b> <span id="ver">V1</span></div></div>
+<button type="button" id="sn-money">AV€ 0</button>
 <button type="button" id="sn-power" class="idle" aria-label="Offerings" aria-pressed="false"></button>
 <a id="sn-support" href="https://grok.com/project/ca0652ee-24d4-44d1-8a4b-65d41583532b" target="_blank" rel="noopener noreferrer" aria-label="Support">🎧</a>
 <div id="sn-cash"><div class="bg" data-act="min"></div><div class="card"><div class="bar"><b class="ttl">AV€</b><button type="button" class="x" data-act="min">✕</button></div><div id="sn-cash-body"></div></div></div>
@@ -94,7 +95,7 @@ img.cover{display:block;width:100%;max-height:88px;object-fit:cover;border-radiu
 <script src="/js/spacenet/phone-verify.js?v=4126"></script>
 <script>
 (function(){
-  var VER="4164";
+  var VER="4165";
   function nuclear(){ var go=function(){ location.replace("/?v="+VER+"&t="+Date.now()); }; var tasks=[]; try{ if(window.caches) tasks.push(caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); })); }catch(e){} try{ if(navigator.serviceWorker) tasks.push(navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })); }catch(e){} Promise.all(tasks).then(go).catch(go); setTimeout(go,1400); }
   window.SNReboot=nuclear;
   var brand=document.getElementById("island"); if(brand) brand.addEventListener("click", function(e){ if(e.target&&e.target.closest&&e.target.closest("#sn-money")) return; nuclear(); });
