@@ -234,13 +234,23 @@
           hits.push({ lat: +coords[1], lng: +coords[0], name: name, address: name });
         }
         if (!hits.length) { then(null); return; }
+        var box = null;
+        var hint = (t + " " + ((near && near.name) || "")).toLowerCase();
+        if (/rhodes|ρόδ|rodos|analipsi|ανάληψ|kalithea|καλλιθέ|lindos|faliraki/.test(hint)) box = [35.85, 27.7, 36.52, 28.35];
+        else if (/athens|αθήν|athina/.test(hint)) box = [37.82, 23.55, 38.12, 23.9];
         var pool = hits;
-        if (near && isFinite(+near.lat)) {
+        if (box) {
+          var inBox = hits.filter(function (h) { return h.lat >= box[0] && h.lat <= box[2] && h.lng >= box[1] && h.lng <= box[3]; });
+          if (inBox.length) pool = inBox;
+        } else if (near && isFinite(+near.lat)) {
           var local = hits.filter(function (h) { return km(h, near) <= 80; });
           if (local.length) pool = local;
         }
         var numbered = pool.filter(function (h) { return /\d/.test(h.name || ""); });
-        then(numbered[0] || pool[0] || null);
+        var cand = numbered[0] || pool[0] || null;
+        if (cand && near && km(cand, near) > 250) cand = null;
+        if (cand && box && (cand.lat < box[0] || cand.lat > box[2] || cand.lng < box[1] || cand.lng > box[3])) cand = null;
+        then(cand);
       })
       .catch(function () { then(null); });
   }
