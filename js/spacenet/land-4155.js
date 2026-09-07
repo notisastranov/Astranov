@@ -1,17 +1,7 @@
 (function(){
   if(window.__SN_LAND_4155) return;
   window.__SN_LAND_4155=true;
-  // 4157 pizza hunt: load place-aware overlay (Nairobi not Rhodes defaults)
-  try{
-    if(!window.__SN_HUNT_4157_LOADER){
-      window.__SN_HUNT_4157_LOADER=true;
-      var hs=document.createElement("script");
-      hs.src="/js/spacenet/hunt-4157.js?v=4157";
-      hs.async=true;
-      (document.head||document.documentElement).appendChild(hs);
-    }
-  }catch(e){}
-  // Kill fraudulent 3M (4156 scrub on 4155 file). app.js avcGet reseeds 3000000 unless sn:ave-restored==="4024".
+  // Kill fraudulent 3M. app.js avcGet reseeds 3000000 unless sn:ave-restored==="4024".
   try{
     var dig=function(v){ return String(v==null?"":v).replace(/[^0-9]/g,""); };
     if(dig(localStorage.getItem("sn:avc"))==="3000000") localStorage.setItem("sn:avc","0");
@@ -28,6 +18,22 @@
     var m=t.match(/^(?:land(?:\s+(?:in|at|on))?|go(?:\s+to)?|fly(?:\s+to)?)\s+(.+)$/i);
     if(m) return m[1].replace(/[.!?]+$/,"").trim();
     if(/^nairobi(?:\s*,?\s*kenya)?$/i.test(low)) return t;
+    return "";
+  }
+  function isFood(t){
+    return /\b(pizza|pizzeria|πιτσ|burger|coffee|cafe|gyro|souvlaki|kebab|sushi|beer|pharm|pharmacy|ice\s*cream|restaurant|food|φαγη)\b/i.test(String(t||""));
+  }
+  function hasPlaceCue(t){
+    return /\b(?:near|in|at|around|by)\s+[A-Za-z\u00C0-\u024F]/i.test(String(t||""));
+  }
+  function lastPlaceName(){
+    try{
+      var sp=JSON.parse(localStorage.getItem("sn:place")||"null");
+      if(sp && (sp.name||sp.place)) return String(sp.name||sp.place);
+    }catch(e){}
+    try{
+      if(window.SN && SN.here && (SN.here.name||SN.here.place)) return String(SN.here.name||SN.here.place);
+    }catch(e){}
     return "";
   }
   function geocode(q){
@@ -60,6 +66,11 @@
     SN.run=function(t){
       var q=landQ(t);
       if(q){ goNamed(q); return; }
+      // 4158: after goNamed land, bare pizza/food uses sn:place — never Rhodes HQ
+      if(isFood(t) && !hasPlaceCue(t)){
+        var nm=lastPlaceName();
+        if(nm) t=String(t||"").trim()+" near "+nm;
+      }
       return orig.apply(this, arguments);
     };
   }
