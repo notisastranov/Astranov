@@ -1,11 +1,22 @@
-/* SpaceNet SW 4173 — network-first shell. Never cache a stub. Never serve HTML as JS. */
-var CACHE = "sn-shell-4173";
+/* SpaceNet SW 4175 LOCK — network-first shell. Never cache a stub. Never serve HTML as JS. */
+var CACHE = "sn-shell-4175";
 var TILES = "sn-tiles-1";
 function isTile(url) {
   return /tile\.openstreetmap\.org|openstreetmap\.fr\/hot|tiles\.maps\.eox\.at|server\.arcgisonline\.com/.test(url);
 }
 function isAsset(url) {
   return /\/js\/|\.js(\?|$)|\/css\/|\.css(\?|$)|leaflet|icon-192|icon-512|apple-touch-icon|manifest/.test(url);
+}
+function isStub(html) {
+  if (!html) return true;
+  if (html.length < 4000) return true;
+  if (/PLACEHOLDER|sn-index\/c|index\.part|boot failed/i.test(html)) return true;
+  if (html.indexOf('id="g"') === -1) return true;
+  if (html.indexOf('id="plus"') === -1) return true;
+  if (html.indexOf('id="go"') === -1) return true;
+  if (html.indexOf('id="in"') === -1) return true;
+  if (html.indexOf('id="island"') === -1) return true;
+  return false;
 }
 function withShell(html) {
   if (!html || html.indexOf("leaflet.js") === -1) return html;
@@ -31,6 +42,7 @@ function withShell(html) {
   inject('post-4170.js?v=4170"></script>', "/js/spacenet/post-4171.js?v=4171");
   inject('post-4171.js?v=4171"></script>', "/js/spacenet/post-4173.js?v=4173");
   inject('land-4162.js?v=4163"></script>', "/js/spacenet/calm-4164.js?v=4164");
+  inject('post-4173.js?v=4173"></script>', "/js/spacenet/ui-lock.js?v=4175");
   return html;
 }
 self.addEventListener("install", function(e) {
@@ -41,16 +53,7 @@ self.addEventListener("install", function(e) {
 self.addEventListener("activate", function(e) {
   e.waitUntil(caches.keys().then(function(ks) {
     return Promise.all(ks.filter(function(k) { return k !== CACHE && k !== TILES; }).map(function(k) { return caches.delete(k); }));
-  }).then(function() { return self.clients.claim(); }).then(function() {
-    return self.clients.matchAll({ type: "window" }).then(function(cs) {
-      cs.forEach(function(c) {
-        try { c.postMessage({ type: "SN_RELOAD", v: "4173" }); } catch (err) {}
-        if (c.navigate) {
-          try { c.navigate("/?v=4173&t=" + Date.now()); } catch (err) {}
-        }
-      });
-    });
-  }));
+  }).then(function() { return self.clients.claim(); }));
 });
 self.addEventListener("message", function(e) {
   if (e.data === "SKIP_WAITING" && self.skipWaiting) self.skipWaiting();
@@ -77,6 +80,16 @@ self.addEventListener("fetch", function(e) {
       var ct = res.headers.get("content-type") || "";
       if (ct.indexOf("text/html") === -1) return res;
       return res.text().then(function(t) {
+        if (isStub(t)) {
+          return fetch("/index.html?lock=1", { cache: "no-store" }).then(function(r) {
+            if (!r || !r.ok) return new Response(t, { status: res.status, headers: res.headers });
+            return r.text().then(function(full) {
+              if (isStub(full)) return new Response(t, { status: res.status, headers: res.headers });
+              var h = new Headers(r.headers); h.set("Cache-Control", "no-store");
+              return new Response(withShell(full), { status: 200, headers: h });
+            });
+          });
+        }
         t = withShell(t);
         var h = new Headers(res.headers);
         h.set("Cache-Control", "no-store");
