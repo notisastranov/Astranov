@@ -1,65 +1,52 @@
-/* SpaceNet SW 4154 — shell network-first. Never serve HTML as JS. */
-var CACHE = "sn-shell-4154";
+/* SpaceNet SW 4160 — network-first shell. Never cache a stub. Never serve HTML as JS. */
+var CACHE = "sn-shell-4160";
 var TILES = "sn-tiles-1";
 function isTile(url) {
   return /tile\.openstreetmap\.org|openstreetmap\.fr\/hot|tiles\.maps\.eox\.at|server\.arcgisonline\.com/.test(url);
 }
 function isAsset(url) {
-  return /\/js\/|\.js(\?|$)|\/css\/|\.css(\?|$)|leaflet/.test(url);
+  return /\/js\/|\.js(\?|$)|\/css\/|\.css(\?|$)|leaflet|icon-192|icon-512|apple-touch-icon|manifest/.test(url);
 }
 function withShell(html) {
   if (!html || html.indexOf("leaflet.js") === -1) return html;
-  if (html.indexOf("leave-flat.js") === -1) {
-    html = html.replace(/leaflet\.js(\?v=[^"']*)?"><\/script>/, "leaflet.js$1\"></script>\n<script src=\"/js/spacenet/voice.js?v=4154\"></script>\n<script src=\"/js/spacenet/leave-flat.js?v=4154\"></script>\n<script src=\"/js/spacenet/wallet.js?v=4154\"></script>\n<script src=\"/js/spacenet/power.js?v=4154\"></script>\n<script src=\"/js/spacenet/task-throw.js?v=4154\"></script>");
-  } else if (html.indexOf("voice.js") === -1) {
-    html = html.replace(/leaflet\.js(\?v=[^"']*)?"><\/script>/, "leaflet.js$1\"></script>\n<script src=\"/js/spacenet/voice.js?v=4154\"></script>");
-  } else if (html.indexOf("wallet.js") === -1) {
-    html = html.replace(/leave-flat\.js(\?v=[^"']*)?"><\/script>/, "leave-flat.js$1\"></script>\n<script src=\"/js/spacenet/wallet.js?v=4154\"></script>");
+  function inject(afterNeedle, src) {
+    if (html.indexOf(src.split("/").pop().split("?")[0]) !== -1) return;
+    var tag = '<script src="' + src + '"><\/script>';
+    if (html.indexOf(afterNeedle) !== -1) {
+      html = html.replace(afterNeedle, afterNeedle + "\n" + tag);
+    }
   }
-  if (html.indexOf("tree.js") === -1 && html.indexOf("labor.js") !== -1) {
-    html = html.replace(/labor\.js(\?v=[^"']*)?"><\/script>/, "labor.js$1\"><\/script>\n<script src=\"/js/spacenet/tree.js?v=4154\"><\/script>");
-  }
-  if (html.indexOf("/js/spacenet/auth.js") === -1 && html.indexOf("app.js") !== -1) {
-    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/auth.js?v=4154\"></script>\n<script src=\"/js/spacenet/order-menu.js?v=4154\"></script>\n<script src=\"/js/spacenet/support-gate.js?v=4154\"></script>\n<script src=\"/js/spacenet/approvals.js?v=4154\"></script>");
-  }
-  if (html.indexOf("plus-job.js") === -1 && html.indexOf("app.js") !== -1) {
-    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/plus-job.js?v=4154\"></script>");
-  } else if (html.indexOf("plus-job.js") !== -1) {
-    html = html.replace(/plus-job\.js\?v=[^"']+/, "plus-job.js?v=4154");
-  }
-  if (html.indexOf("map-tap.js") === -1 && html.indexOf("plus-job.js") !== -1) {
-    html = html.replace(/plus-job\.js(\?v=[^"']*)?"><\/script>/, "plus-job.js$1\"></script>\n<script src=\"/js/spacenet/map-tap.js?v=4154\"></script>");
-  }
-  if (html.indexOf("vendor-job.js") === -1 && html.indexOf("app.js") !== -1) {
-    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/vendor-job.js?v=4154\"></script>");
-  }
-  if (html.indexOf("plus-first.js") === -1 && html.indexOf("vendor-job.js") !== -1) {
-    html = html.replace(/vendor-job\.js(\?v=[^"']*)?"><\/script>/, "vendor-job.js$1\"></script>\n<script src=\"/js/spacenet/plus-first.js?v=4154\"></script>");
-  } else if (html.indexOf("plus-first.js") === -1 && html.indexOf("app.js") !== -1) {
-    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/plus-first.js?v=4154\"></script>");
-  }
-  if (html.indexOf("jobs-stack.js") === -1 && html.indexOf("plus-first.js") !== -1) {
-    html = html.replace(/plus-first\.js(\?v=[^"']*)?"><\/script>/, "plus-first.js$1\"></script>\n<script src=\"/js/spacenet/jobs-stack.js?v=4154\"></script>");
-  } else if (html.indexOf("jobs-stack.js") === -1 && html.indexOf("app.js") !== -1) {
-    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/jobs-stack.js?v=4154\"></script>");
-  }
-  if (html.indexOf("plus-mic.js") === -1 && html.indexOf("jobs-stack.js") !== -1) {
-    html = html.replace(/jobs-stack\.js(\?v=[^"']*)?"><\/script>/, "jobs-stack.js$1\"></script>\n<script src=\"/js/spacenet/plus-mic.js?v=4154\"></script>");
-  } else if (html.indexOf("plus-mic.js") === -1 && html.indexOf("app.js") !== -1) {
-    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/plus-mic.js?v=4154\"></script>");
-  }
-  if (html.indexOf("owner-drive.js") === -1 && html.indexOf("app.js") !== -1) {
-    html = html.replace(/spacenet\/app\.js(\?v=[^"']*)?"><\/script>/, "spacenet/app.js$1\"></script>\n<script src=\"/js/spacenet/owner-drive.js?v=4154\"></script>\n<script src=\"/js/spacenet/driver-gate.js?v=4154\"></script>");
-  }
+  inject('leaflet.js?v=4127"></script>', "/js/spacenet/voice.js?v=4160");
+  inject('leaflet.js?v=4127"></script>', "/js/spacenet/leave-flat.js?v=4160");
+  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/auth.js?v=4160");
+  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/order-menu.js?v=4160");
+  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/plus-job.js?v=4160");
+  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/jobs-stack.js?v=4160");
+  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/plus-mic.js?v=4160");
+  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/install.js?v=4160");
   return html;
 }
 self.addEventListener("install", function(e) {
-  e.waitUntil(caches.open(CACHE).then(function(c) { return c.addAll(["/", "/index.html", "/manifest.webmanifest"]); }).then(function() { return self.skipWaiting(); }));
+  e.waitUntil(caches.open(CACHE).then(function(c) {
+    return c.addAll(["/manifest.webmanifest", "/icon-192.png", "/icon-512.png", "/apple-touch-icon.png"]);
+  }).then(function() { return self.skipWaiting(); }));
 });
 self.addEventListener("activate", function(e) {
   e.waitUntil(caches.keys().then(function(ks) {
     return Promise.all(ks.filter(function(k) { return k !== CACHE && k !== TILES; }).map(function(k) { return caches.delete(k); }));
-  }).then(function() { return self.clients.claim(); }));
+  }).then(function() { return self.clients.claim(); }).then(function() {
+    return self.clients.matchAll({ type: "window" }).then(function(cs) {
+      cs.forEach(function(c) {
+        try { c.postMessage({ type: "SN_RELOAD", v: "4160" }); } catch (err) {}
+        if (c.navigate) {
+          try { c.navigate("/?v=4160&t=" + Date.now()); } catch (err) {}
+        }
+      });
+    });
+  }));
+});
+self.addEventListener("message", function(e) {
+  if (e.data === "SKIP_WAITING" && self.skipWaiting) self.skipWaiting();
 });
 self.addEventListener("fetch", function(e) {
   var u = e.request.url;
@@ -78,7 +65,7 @@ self.addEventListener("fetch", function(e) {
   }
   if (u.indexOf(self.location.origin) !== 0) return;
   if (e.request.mode === "navigate" || (e.request.headers.get("accept") || "").indexOf("text/html") !== -1) {
-    e.respondWith(fetch(e.request).then(function(res) {
+    e.respondWith(fetch(e.request, { cache: "no-store" }).then(function(res) {
       if (!res || !res.ok) return res;
       var ct = res.headers.get("content-type") || "";
       if (ct.indexOf("text/html") === -1) return res;
@@ -89,7 +76,7 @@ self.addEventListener("fetch", function(e) {
         return new Response(t, { status: res.status, statusText: res.statusText, headers: h });
       });
     }).catch(function() {
-      return caches.match("/index.html").then(function(r) { return r || new Response("offline", { status: 503 }); });
+      return new Response("SpaceNet offline — open astranov.eu when you have signal.", { status: 503, headers: { "Content-Type": "text/plain" } });
     }));
     return;
   }
