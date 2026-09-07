@@ -1,7 +1,7 @@
-/* SpaceNet SW 4190 LOCK — network-first shell. Never cache a stub. */
-var CACHE = "sn-shell-4190";
+/* SpaceNet SW 4191 LOCK — network-first shell. Never cache a stub. */
+var CACHE = "sn-shell-4191";
 var TILES = "sn-tiles-1";
-var VER = "4190";
+var VER = "4191";
 function isTile(url) {
   return /tile\.openstreetmap\.org|openstreetmap\.fr\/hot|tiles\.maps\.eox\.at|server\.arcgisonline\.com/.test(url);
 }
@@ -56,6 +56,7 @@ function withShell(html) {
   inject('brand-wipe-4185.js?v=4185"></script>', "/js/spacenet/talk-4186.js?v=4186");
   inject('talk-4186.js?v=4186"></script>', "/js/spacenet/route-4187.js?v=4187");
   inject('route-4187.js?v=4187"></script>', "/js/spacenet/route-4190.js?v=4190");
+  inject('route-4190.js?v=4190"></script>', "/js/spacenet/ver-4191.js?v=4191");
   return html;
 }
 self.addEventListener("install", function(e) {
