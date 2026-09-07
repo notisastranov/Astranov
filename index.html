@@ -1,1 +1,9 @@
-PLACEHOLDER_REPLACE
+<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="astranov-build" content="4157"/><meta http-equiv="Cache-Control" content="no-store"/><title>Astranov SpaceNet Grok</title></head><body><script>
+(async function(){
+  try{
+    var parts=await Promise.all([1,2,3].map(function(i){ return fetch("/index.part"+i+".txt?v=4158").then(function(r){ return r.text(); }); }));
+    var html=parts.join("");
+    document.open(); document.write(html); document.close();
+  }catch(e){ document.body.textContent="SpaceNet boot failed: "+e; }
+})();
+</script></body></html>
