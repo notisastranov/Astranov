@@ -1,5 +1,5 @@
-/* SpaceNet SW 4179 LOCK — network-first shell. Never cache a stub. */
-var CACHE = "sn-shell-4179";
+/* SpaceNet SW 4180 LOCK — network-first shell. Never cache a stub. */
+var CACHE = "sn-shell-4180";
 var TILES = "sn-tiles-1";
 function isTile(url) {
   return /tile\.openstreetmap\.org|openstreetmap\.fr\/hot|tiles\.maps\.eox\.at|server\.arcgisonline\.com/.test(url);
@@ -47,6 +47,7 @@ function withShell(html) {
   inject('job-chain-4176.js?v=4176"></script>', "/js/spacenet/search-4177.js?v=4177");
   inject('search-4177.js?v=4177"></script>', "/js/spacenet/vendor-card-4178.js?v=4178");
   inject('vendor-card-4178.js?v=4178"></script>', "/js/spacenet/vendor-ask-4179.js?v=4179");
+  inject('vendor-ask-4179.js?v=4179"></script>', "/js/spacenet/plus-upload-4180.js?v=4180");
   return html;
 }
 self.addEventListener("install", function(e) {
