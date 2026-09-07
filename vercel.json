@@ -16,11 +16,11 @@
         },
         {
           "key": "X-Astranov-Build",
-          "value": "4194"
+          "value": "4197"
         },
         {
           "key": "X-Astranov-Ship",
-          "value": "4194-pin-open-full"
+          "value": "4197-hold-pin"
         },
         {
           "key": "Content-Security-Policy",
@@ -41,11 +41,11 @@
         },
         {
           "key": "X-Astranov-Build",
-          "value": "4194"
+          "value": "4197"
         },
         {
           "key": "X-Astranov-Ship",
-          "value": "4194-pin-open-full"
+          "value": "4197-hold-pin"
         },
         {
           "key": "Content-Security-Policy",
