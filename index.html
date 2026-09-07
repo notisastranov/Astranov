@@ -44,11 +44,12 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
 #sn-me{left:max(10px,env(safe-area-inset-left));z-index:90}
 #gps{right:max(10px,env(safe-area-inset-right));z-index:120}
 #sn-me .lbl,#gps .lbl{display:block;font:800 8px/1 system-ui;letter-spacing:.16em;text-align:center;margin:0 0 4px}
-#sn-me .tgt,#gps .tgt{display:flex;align-items:center;justify-content:center;width:var(--u);height:var(--u);margin:0 auto;border-radius:999px;border:1.5px solid rgba(77,240,255,.95);background:radial-gradient(circle at 50% 50%,rgba(77,240,255,.22),rgba(2,10,18,.8) 70%)}
+#sn-me .tgt,#gps .tgt{display:flex;align-items:center;justify-content:center;width:var(--u);height:var(--u);margin:0 auto;border-radius:999px;border:1.5px solid rgba(77,240,255,.95);background:radial-gradient(circle at 50% 50%,rgba(77,240,255,.22),rgba(2,10,18,.8) 70%);font-size:18px;line-height:1}
 #sn-sheet,#sn-menu,#sn-tasks,#sn-cart,#sn-cash,#sn-video,#sn-layers,#sn-place,#sn-pick{display:none}
 #sn-sheet.on,#sn-menu.on,#sn-tasks.on,#sn-cart.on,#sn-cash.on,#sn-layers.on,#sn-place.on,#sn-pick.on{display:block}
 #sn-video.on{display:flex}
-#sn-support,#sn-power,#sn-pill,#sn-tasks-btn,#sn-cart-btn,#sn-layer,#sn-fix{display:none}
+#sn-support,#sn-power,#sn-pill,#sn-cart-btn,#sn-layer,#sn-fix{display:none}
+#sn-tasks-btn{display:inline-flex!important;position:fixed!important;top:calc(max(8px,env(safe-area-inset-top)) + 52px);left:3.6rem;z-index:50;align-items:center;justify-content:center;height:32px;min-width:70px;padding:0 12px;border-radius:999px;border:1px solid rgba(80,220,255,.35);background:rgba(4,16,28,.94);color:#4df0ff;font:800 11px/1 system-ui;letter-spacing:.14em;pointer-events:auto;visibility:visible;opacity:1}
 #sn-sheet{position:fixed;inset:0;z-index:80;pointer-events:none}
 #sn-sheet .card{position:absolute;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom) + 78px);max-width:min(420px,94vw);max-height:42vh;overflow:auto;margin:0 auto;padding:12px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.5);border-radius:16px;pointer-events:auto;box-sizing:border-box}
 .sn-pillpin{width:44px;height:44px;overflow:hidden;border-radius:999px}
@@ -65,10 +66,10 @@ img.cover{display:block;width:100%;max-height:88px;object-fit:cover;border-radiu
 <div id="sn-pick"><span class="msg">Tap the other end, or search</span><button type="button" data-act="cancel-pick">CANCEL</button></div>
 <div id="city" class="dark"></div>
 <button type="button" id="sn-me" class="out" aria-label="Login" onclick="if(window.SNAuth&&SNAuth.open)SNAuth.open();"><span class="lbl">LOGIN</span><span class="tgt"><span class="ph">IN</span></span></button>
-<button type="button" id="gps" aria-label="GPS"><span class="lbl">GPS</span><span class="tgt"><span class="dot"></span></span></button>
+<button type="button" id="gps" aria-label="GPS"><span class="lbl">GPS</span><span class="tgt">🎯</span></button>
 <button type="button" id="sn-fix">CLICK MAP TO SET LOCATION MANUALLY</button>
 <button type="button" id="sn-pill">VENDORS</button>
-<button type="button" id="sn-tasks-btn">TASKS</button>
+<button type="button" id="sn-tasks-btn">JOBS</button>
 <button type="button" id="sn-cart-btn">CART</button>
 <button type="button" id="sn-layer">LAYER</button>
 <div id="top"><div id="island" title="Tap brand to reboot"><span id="heal"></span><b class="a">ASTRANOV</b><b class="s">SPACENET</b><b class="k">GROK</b> <span id="ver">V1</span></div></div>
@@ -131,9 +132,8 @@ img.cover{display:block;width:100%;max-height:88px;object-fit:cover;border-radiu
 <script src="/js/spacenet/pin-4165.js?v=4167"></script>
 <script src="/js/spacenet/post-4169.js?v=4169"></script>
 <script src="/js/spacenet/fill-4168.js?v=4168"></script>
-<script src="/js/spacenet/fill-4173.js?v=4173"></script>
 <script src="/js/spacenet/post-4170.js?v=4170"></script>
 <script src="/js/spacenet/post-4171.js?v=4171"></script>
-<script src="/js/spacenet/post-4172.js?v=4172"></script>
+<script src="/js/spacenet/post-4173.js?v=4173"></script>
 </body>
 </html>
