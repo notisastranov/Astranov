@@ -19,6 +19,10 @@
           "value": "4196"
         },
         {
+          "key": "X-Astranov-Ship",
+          "value": "4194-pin-open"
+        },
+        {
           "key": "Content-Security-Policy",
           "value": "frame-ancestors 'self' https://astranov.eu https://*.astranov.eu https://investors.astranov.eu https://exchange.astranov.eu"
         }
@@ -38,6 +42,10 @@
         {
           "key": "X-Astranov-Build",
           "value": "4196"
+        },
+        {
+          "key": "X-Astranov-Ship",
+          "value": "4194-pin-open"
         },
         {
           "key": "Content-Security-Policy",
