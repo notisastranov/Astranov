@@ -1,13 +1,13 @@
 (function(){
   if(window.__SN_LAND_4155) return;
   window.__SN_LAND_4155=true;
-  // Wipe fraudulent guest 3M seed (pill may show 0 while sn:avc is 3000000)
+  // Kill fraudulent 3M (4156 scrub on 4155 file). app.js avcGet reseeds 3000000 unless sn:ave-restored==="4024".
   try{
-    var raw=localStorage.getItem("sn:avc");
-    if(raw!=null && String(raw).replace(/[^0-9]/g,"")==="3000000"){
-      localStorage.setItem("sn:avc","0");
-      localStorage.removeItem("sn:ave-restored");
-    }
+    var dig=function(v){ return String(v==null?"":v).replace(/[^0-9]/g,""); };
+    if(dig(localStorage.getItem("sn:avc"))==="3000000") localStorage.setItem("sn:avc","0");
+    if(dig(localStorage.getItem("sn:pool"))==="3000000") localStorage.setItem("sn:pool","0");
+    localStorage.setItem("sn:ave-restored","4024");
+    if(dig(localStorage.getItem("sn:avc"))==="3000000") localStorage.setItem("sn:avc","0");
   }catch(e){}
   function landQ(t){
     t=String(t||"").trim();
