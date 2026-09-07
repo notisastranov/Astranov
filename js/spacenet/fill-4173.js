@@ -81,6 +81,7 @@
     if(!host) return;
     var brand=brandFill(shop||lastShop);
     var phone=String((shop&&shop.phone)||(brand&&brand.phone)||(lastShop&&lastShop.phone)||"").trim();
+    // CALL
     var call=document.getElementById("sn-call-4175");
     if(phone){
       if(!call){
@@ -92,6 +93,7 @@
       call.href="tel:"+phone.replace(/[^\d+]/g,"");
       if(call.parentNode!==host) host.appendChild(call);
     }
+    // Also rewrite any CALL SHOP labels in host
     if(phone){
       host.querySelectorAll("a,button").forEach(function(el){
         if(el.id==="sn-call-4175") return;
@@ -102,6 +104,7 @@
         }
       });
     }
+    // NOW / PAY / RELOAD
     var bar=document.getElementById("sn-paypath-4175");
     if(!bar){
       bar=document.createElement("div");
