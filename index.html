@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="4163" />
+<meta name="astranov-build" content="4164" />
 <meta name="theme-color" content="#02040a" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -42,11 +42,19 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
 #line{margin:0 4px 8px;font:500 12px/1.5 ui-monospace,monospace;color:#7ee9ff;max-height:4.5rem;overflow:auto;white-space:pre-wrap}
 #sn-me,#gps{position:fixed;bottom:calc(env(safe-area-inset-bottom) + 72px);z-index:45;width:var(--u);padding:0;border:0;background:transparent;color:#4df0ff}
 #sn-me{left:max(10px,env(safe-area-inset-left));z-index:90}
-#gps{right:max(10px,env(safe-area-inset-right))}
+#gps{right:max(10px,env(safe-area-inset-right));z-index:120}
 #sn-me .lbl,#gps .lbl{display:block;font:800 8px/1 system-ui;letter-spacing:.16em;text-align:center;margin:0 0 4px}
 #sn-me .tgt,#gps .tgt{display:flex;align-items:center;justify-content:center;width:var(--u);height:var(--u);margin:0 auto;border-radius:999px;border:1.5px solid rgba(77,240,255,.95);background:radial-gradient(circle at 50% 50%,rgba(77,240,255,.22),rgba(2,10,18,.8) 70%)}
 #sn-sheet,#sn-menu,#sn-tasks,#sn-cart,#sn-cash,#sn-video,#sn-layers,#sn-place,#sn-pick{display:none}
+#sn-sheet.on,#sn-menu.on,#sn-tasks.on,#sn-cart.on,#sn-cash.on,#sn-layers.on,#sn-place.on,#sn-pick.on{display:block}
+#sn-video.on{display:flex}
 #sn-support,#sn-power,#sn-pill,#sn-tasks-btn,#sn-cart-btn,#sn-layer,#sn-fix{display:none}
+#sn-sheet{position:fixed;inset:0;z-index:80;pointer-events:none}
+#sn-sheet .card{position:absolute;left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom) + 78px);max-width:min(420px,94vw);max-height:42vh;overflow:auto;margin:0 auto;padding:12px;background:rgba(4,14,28,.96);border:1px solid rgba(126,233,255,.5);border-radius:16px;pointer-events:auto;box-sizing:border-box}
+.sn-pillpin{width:44px;height:44px;overflow:hidden;border-radius:999px}
+.sn-pillpin img,img.face{width:44px;height:44px;object-fit:cover;display:block}
+img.cover{display:block;width:100%;max-height:88px;object-fit:cover;border-radius:10px}
+#sn-dest{display:block;width:100%;height:44px;margin:8px 0;border-radius:12px;border:1px solid rgba(126,233,255,.55);background:rgba(4,16,28,.96);color:#e8fbff;font:700 14px system-ui}
 </style>
 </head>
 <body>
@@ -86,7 +94,7 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
 <script src="/js/spacenet/phone-verify.js?v=4126"></script>
 <script>
 (function(){
-  var VER="4163";
+  var VER="4164";
   function nuclear(){ var go=function(){ location.replace("/?v="+VER+"&t="+Date.now()); }; var tasks=[]; try{ if(window.caches) tasks.push(caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); })); }catch(e){} try{ if(navigator.serviceWorker) tasks.push(navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })); }catch(e){} Promise.all(tasks).then(go).catch(go); setTimeout(go,1400); }
   window.SNReboot=nuclear;
   var brand=document.getElementById("island"); if(brand) brand.addEventListener("click", function(e){ if(e.target&&e.target.closest&&e.target.closest("#sn-money")) return; nuclear(); });
@@ -117,5 +125,6 @@ input#in{flex:1;min-width:0;height:40px;border:0;background:0;color:#e8fbff;font
 <script src="/js/spacenet/hunt-4157.js?v=4160"></script>
 <script src="/js/spacenet/land-4162.js?v=4163"></script>
 <script src="/js/spacenet/list-4161.js?v=4163"></script>
+<script src="/js/spacenet/calm-4164.js?v=4164"></script>
 </body>
 </html>

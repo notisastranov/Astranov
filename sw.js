@@ -1,5 +1,5 @@
-/* SpaceNet SW 4160 — network-first shell. Never cache a stub. Never serve HTML as JS. */
-var CACHE = "sn-shell-4160";
+/* SpaceNet SW 4164 — network-first shell. Never cache a stub. Never serve HTML as JS. */
+var CACHE = "sn-shell-4164";
 var TILES = "sn-tiles-1";
 function isTile(url) {
   return /tile\.openstreetmap\.org|openstreetmap\.fr\/hot|tiles\.maps\.eox\.at|server\.arcgisonline\.com/.test(url);
@@ -16,14 +16,16 @@ function withShell(html) {
       html = html.replace(afterNeedle, afterNeedle + "\n" + tag);
     }
   }
-  inject('leaflet.js?v=4127"></script>', "/js/spacenet/voice.js?v=4160");
-  inject('leaflet.js?v=4127"></script>', "/js/spacenet/leave-flat.js?v=4160");
-  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/auth.js?v=4160");
-  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/order-menu.js?v=4160");
-  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/plus-job.js?v=4160");
-  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/jobs-stack.js?v=4160");
-  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/plus-mic.js?v=4160");
-  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/install.js?v=4160");
+  inject('leaflet.js?v=4127"></script>', "/js/spacenet/voice.js?v=4164");
+  inject('leaflet.js?v=4127"></script>', "/js/spacenet/leave-flat.js?v=4164");
+  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/auth.js?v=4164");
+  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/order-menu.js?v=4164");
+  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/plus-job.js?v=4164");
+  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/jobs-stack.js?v=4164");
+  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/plus-mic.js?v=4164");
+  inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/install.js?v=4164");
+  inject('list-4161.js?v=4163"></script>', "/js/spacenet/calm-4164.js?v=4164");
+  inject('land-4162.js?v=4163"></script>', "/js/spacenet/calm-4164.js?v=4164");
   return html;
 }
 self.addEventListener("install", function(e) {
@@ -37,9 +39,9 @@ self.addEventListener("activate", function(e) {
   }).then(function() { return self.clients.claim(); }).then(function() {
     return self.clients.matchAll({ type: "window" }).then(function(cs) {
       cs.forEach(function(c) {
-        try { c.postMessage({ type: "SN_RELOAD", v: "4160" }); } catch (err) {}
+        try { c.postMessage({ type: "SN_RELOAD", v: "4164" }); } catch (err) {}
         if (c.navigate) {
-          try { c.navigate("/?v=4160&t=" + Date.now()); } catch (err) {}
+          try { c.navigate("/?v=4164&t=" + Date.now()); } catch (err) {}
         }
       });
     });
