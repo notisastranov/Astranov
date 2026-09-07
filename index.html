@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
 <title>Astranov SpaceNet Grok</title>
-<meta name="astranov-build" content="4168" />
+<meta name="astranov-build" content="4170" />
 <meta name="theme-color" content="#02040a" />
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -95,7 +95,7 @@ img.cover{display:block;width:100%;max-height:88px;object-fit:cover;border-radiu
 <script src="/js/spacenet/phone-verify.js?v=4126"></script>
 <script>
 (function(){
-  var VER="4168";
+  var VER="4170";
   function nuclear(){ var go=function(){ location.replace("/?v="+VER+"&t="+Date.now()); }; var tasks=[]; try{ if(window.caches) tasks.push(caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); })); }catch(e){} try{ if(navigator.serviceWorker) tasks.push(navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })); }catch(e){} Promise.all(tasks).then(go).catch(go); setTimeout(go,1400); }
   window.SNReboot=nuclear;
   var brand=document.getElementById("island"); if(brand) brand.addEventListener("click", function(e){ if(e.target&&e.target.closest&&e.target.closest("#sn-money")) return; nuclear(); });
@@ -129,7 +129,8 @@ img.cover{display:block;width:100%;max-height:88px;object-fit:cover;border-radiu
 <script src="/js/spacenet/calm-4164.js?v=4164"></script>
 <script src="/js/spacenet/radar-4166.js?v=4166"></script>
 <script src="/js/spacenet/pin-4165.js?v=4167"></script>
-<script src="/js/spacenet/post-4167.js?v=4168"></script>
+<script src="/js/spacenet/post-4169.js?v=4169"></script>
 <script src="/js/spacenet/fill-4168.js?v=4168"></script>
+<script src="/js/spacenet/post-4170.js?v=4170"></script>
 </body>
 </html>
