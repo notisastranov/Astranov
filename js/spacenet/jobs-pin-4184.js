@@ -16,7 +16,6 @@
     b.style.transform = "none";
     b.style.top = "calc(max(8px, env(safe-area-inset-top)) + 52px)";
     b.classList.remove("loose", "drag", "o");
-    if (b.textContent && /^JOBS\s+\d+/.test(b.textContent.trim())) b.textContent = "JOBS";
   }
   css(); pin(); setInterval(pin, 400);
 })();

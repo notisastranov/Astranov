@@ -80,6 +80,13 @@
     el.style.setProperty("display", "flex", "important");
     el.style.setProperty("visibility", "visible", "important");
     el.style.setProperty("opacity", "1", "important");
+    el.style.setProperty("position", "fixed", "important");
+    el.style.setProperty("top", "calc(max(8px, env(safe-area-inset-top)) + 44px)", "important");
+    el.style.setProperty("left", "max(8px, env(safe-area-inset-left))", "important");
+    el.style.setProperty("right", "auto", "important");
+    el.style.setProperty("bottom", "auto", "important");
+    el.style.setProperty("width", "44px", "important");
+    el.style.setProperty("height", "44px", "important");
   }
 
   function labelBtn() {
@@ -99,28 +106,16 @@
     b.style.setProperty("opacity", "1", "important");
     b.style.setProperty("pointer-events", "auto", "important");
     b.style.setProperty("z-index", "50", "important");
-    var pwr = document.getElementById("sn-power");
-    var r = pwr && pwr.getBoundingClientRect();
-    var y;
-    var x;
-    if (r && r.height > 8) {
-      y = Math.round(r.top + Math.max(0, (r.height - 32) / 2));
-      x = Math.round(r.right + 8);
-    } else {
-      var isl = document.getElementById("island");
-      var ir = isl && isl.getBoundingClientRect();
-      y = ir ? Math.round(ir.bottom + 8) : 58;
-      x = 60;
-    }
-    b.style.setProperty("top", y + "px", "important");
-    b.style.setProperty("left", x + "px", "important");
+    b.style.setProperty("top", "calc(max(8px, env(safe-area-inset-top)) + 52px)", "important");
+    b.style.setProperty("left", "3.6rem", "important");
     b.style.setProperty("right", "auto", "important");
     b.style.setProperty("bottom", "auto", "important");
+    b.style.setProperty("transform", "none", "important");
     labelBtn();
     var drop = document.getElementById("sn-jobs-drop");
     if (drop) {
-      drop.style.top = y + 36 + "px";
-      drop.style.left = x + "px";
+      drop.style.setProperty("top", "calc(max(8px, env(safe-area-inset-top)) + 90px)", "important");
+      drop.style.setProperty("left", "3.6rem", "important");
     }
   }
 
