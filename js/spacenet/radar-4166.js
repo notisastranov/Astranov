@@ -81,10 +81,18 @@
         out.push({ lat: lat, lng: lng, kind: kind, name: x[nameKey] || x.title || x.name || x.where || "" });
       });
     }
-    add(readJson("sn:jobs", []), "job", "title");
-    add(readJson("sn:tasks", []), "job", "title");
-    add(readJson("sn:shops", []), "shop", "name");
-    add(readJson("sn:posts", []), "post", "body");
+    function live(list) {
+      if (window.__SN_IS_LIVE_JOB) return (list || []).filter(window.__SN_IS_LIVE_JOB);
+      return (list || []).filter(function (t) {
+        if (!t || t.demo || t.sample) return false;
+        if (String(t.id || "").indexOf("off-") === 0) return false;
+        var k = String(t.kind || "").toLowerCase();
+        if (/find|hunt|shop|pin|place|vendor|post|call/.test(k)) return false;
+        return !!(t.phone || t.pay != null || t.ave != null || t.thrown || t.driver);
+      });
+    }
+    add(live(readJson("sn:jobs", [])), "job", "title");
+    add(live(readJson("sn:tasks", [])), "job", "title");
     return out;
   }
   function zones(you, pts) {
@@ -118,7 +126,7 @@
     }
     var top = hots[0];
     var d = km(you, top).toFixed(1);
-    return "Radar: " + near + ". Hot: " + (top.jobs || top.count) + " jobs · " + d + " km " + compass(you, top) + " — go there next.";
+    return "Radar: " + near + ". Hot: " + (top.jobs || 0) + " jobs · " + d + " km " + compass(you, top) + " — go there next.";
   }
   function sig(zs) {
     return zs.map(function (z) { return (z.you ? "Y" : "H") + ":" + z.jobs + ":" + z.lat.toFixed(3) + ":" + z.lng.toFixed(3); }).join("|");
@@ -170,7 +178,7 @@
         }),
       });
       if (!z.you) {
-        try { mark.bindTooltip((z.jobs || z.count) + " JOBS", { permanent: true, direction: "center", className: "sn-tip sn-radar-lab", opacity: 0.92 }); } catch (e) {}
+        try { if (z.jobs) mark.bindTooltip(z.jobs + " JOBS", { permanent: true, direction: "center", className: "sn-tip sn-radar-lab", opacity: 0.92 }); } catch (e) {}
       }
       mark.addTo(map);
       layers.push(mark);

@@ -1,7 +1,7 @@
-/* SpaceNet SW 4191 LOCK — network-first shell. Never cache a stub. */
-var CACHE = "sn-shell-4191";
+/* SpaceNet SW 4192 LOCK — network-first shell. Never cache a stub. */
+var CACHE = "sn-shell-4192";
 var TILES = "sn-tiles-1";
-var VER = "4191";
+var VER = "4192";
 function isTile(url) {
   return /tile\.openstreetmap\.org|openstreetmap\.fr\/hot|tiles\.maps\.eox\.at|server\.arcgisonline\.com/.test(url);
 }
@@ -37,8 +37,9 @@ function withShell(html) {
   inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/plus-mic.js?v=4164");
   inject('spacenet/app.js?v=4160"></script>', "/js/spacenet/install.js?v=4164");
   inject('list-4161.js?v=4163"></script>', "/js/spacenet/calm-4164.js?v=4164");
-  inject('calm-4164.js?v=4164"></script>', "/js/spacenet/radar-4166.js?v=4166");
-  inject('radar-4166.js?v=4166"></script>', "/js/spacenet/post-4169.js?v=4169");
+  inject('calm-4164.js?v=4164"></script>', "/js/spacenet/jobs-4192.js?v=4192");
+  inject('jobs-4192.js?v=4192"></script>', "/js/spacenet/radar-4166.js?v=4192");
+  inject('radar-4166.js?v=4192"></script>', "/js/spacenet/post-4169.js?v=4169");
   inject('post-4169.js?v=4169"></script>', "/js/spacenet/post-4170.js?v=4170");
   inject('post-4170.js?v=4170"></script>', "/js/spacenet/post-4171.js?v=4171");
   inject('post-4171.js?v=4171"></script>', "/js/spacenet/post-4173.js?v=4173");
