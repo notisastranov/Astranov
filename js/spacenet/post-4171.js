@@ -223,7 +223,7 @@
       .then(function (r) { return r.json(); })
       .then(function (j) {
         var feats = (j && j.features) || [];
-        var best = null;
+        var hits = [];
         for (var i = 0; i < feats.length; i++) {
           var f = feats[i];
           var coords = f.geometry && f.geometry.coordinates;
@@ -231,11 +231,16 @@
           var pr = f.properties || {};
           var street = [pr.street, pr.housenumber].filter(Boolean).join(" ");
           var name = [street || pr.name, pr.city || pr.locality].filter(Boolean).join(", ") || t;
-          var geo = { lat: +coords[1], lng: +coords[0], name: name, address: name };
-          if (pr.housenumber || /\d/.test(name)) { then(geo); return; }
-          if (!best) best = geo;
+          hits.push({ lat: +coords[1], lng: +coords[0], name: name, address: name });
         }
-        then(best);
+        if (!hits.length) { then(null); return; }
+        var pool = hits;
+        if (near && isFinite(+near.lat)) {
+          var local = hits.filter(function (h) { return km(h, near) <= 80; });
+          if (local.length) pool = local;
+        }
+        var numbered = pool.filter(function (h) { return /\d/.test(h.name || ""); });
+        then(numbered[0] || pool[0] || null);
       })
       .catch(function () { then(null); });
   }
