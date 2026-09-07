@@ -1,6 +1,16 @@
 (function(){
   if(window.__SN_LAND_4155) return;
   window.__SN_LAND_4155=true;
+  // 4157 pizza hunt: load place-aware overlay (Nairobi not Rhodes defaults)
+  try{
+    if(!window.__SN_HUNT_4157_LOADER){
+      window.__SN_HUNT_4157_LOADER=true;
+      var hs=document.createElement("script");
+      hs.src="/js/spacenet/hunt-4157.js?v=4157";
+      hs.async=true;
+      (document.head||document.documentElement).appendChild(hs);
+    }
+  }catch(e){}
   // Kill fraudulent 3M (4156 scrub on 4155 file). app.js avcGet reseeds 3000000 unless sn:ave-restored==="4024".
   try{
     var dig=function(v){ return String(v==null?"":v).replace(/[^0-9]/g,""); };
