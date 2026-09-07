@@ -3,7 +3,7 @@
   "name": "Astranov SpaceNet",
   "short_name": "SpaceNet",
   "description": "Astranov SpaceNet — Earth is the desktop. Install as a normal app, outside browser chrome.",
-  "start_url": "/?source=pwa&v=4160",
+  "start_url": "/boot?source=pwa",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "fullscreen", "minimal-ui"],
@@ -14,7 +14,7 @@
   "lang": "en",
   "dir": "ltr",
   "handle_links": "preferred",
-  "launch_handler": { "client_mode": ["focus-existing", "auto"] },
+  "launch_handler": { "client_mode": ["navigate-existing", "auto"] },
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
@@ -23,7 +23,7 @@
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ],
   "shortcuts": [
-    { "name": "GPS", "short_name": "GPS", "url": "/?v=4160&gps=1", "description": "Land on your city" }
+    { "name": "GPS", "short_name": "GPS", "url": "/boot?gps=1", "description": "Land on your city" }
   ],
   "prefer_related_applications": false
 }

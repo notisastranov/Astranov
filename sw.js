@@ -1,6 +1,7 @@
-/* SpaceNet SW 4184 LOCK — network-first shell. Never cache a stub. */
-var CACHE = "sn-shell-4184";
+/* SpaceNet SW 4185 LOCK — network-first shell. Never cache a stub. */
+var CACHE = "sn-shell-4185";
 var TILES = "sn-tiles-1";
+var VER = "4185";
 function isTile(url) {
   return /tile\.openstreetmap\.org|openstreetmap\.fr\/hot|tiles\.maps\.eox\.at|server\.arcgisonline\.com/.test(url);
 }
@@ -49,9 +50,9 @@ function withShell(html) {
   inject('vendor-card-4178.js?v=4178"></script>', "/js/spacenet/vendor-ask-4179.js?v=4179");
   inject('vendor-ask-4179.js?v=4179"></script>', "/js/spacenet/plus-upload-4180.js?v=4180");
   inject('plus-upload-4180.js?v=4180"></script>', "/js/spacenet/jobs-real-4181.js?v=4181");
-  inject('jobs-real-4181.js?v=4181"></script>', "/js/spacenet/brand-wipe-4182.js?v=4182");
-  inject('brand-wipe-4182.js?v=4182"></script>', "/js/spacenet/money-own-4183.js?v=4183");
+  inject('jobs-real-4181.js?v=4181"></script>', "/js/spacenet/money-own-4183.js?v=4183");
   inject('money-own-4183.js?v=4183"></script>', "/js/spacenet/jobs-pin-4184.js?v=4184");
+  inject('jobs-pin-4184.js?v=4184"></script>', "/js/spacenet/brand-wipe-4185.js?v=4185");
   return html;
 }
 self.addEventListener("install", function(e) {
@@ -62,7 +63,16 @@ self.addEventListener("install", function(e) {
 self.addEventListener("activate", function(e) {
   e.waitUntil(caches.keys().then(function(ks) {
     return Promise.all(ks.filter(function(k) { return k !== CACHE && k !== TILES; }).map(function(k) { return caches.delete(k); }));
-  }).then(function() { return self.clients.claim(); }));
+  }).then(function() { return self.clients.claim(); }).then(function() {
+    return self.clients.matchAll({ type: "window" }).then(function(cs) {
+      cs.forEach(function(c) {
+        try { c.postMessage({ type: "SN_RELOAD", v: VER }); } catch (err) {}
+        if (c.navigate) {
+          try { c.navigate("/boot?v=" + VER + "&t=" + Date.now() + "&wipe=1"); } catch (err) {}
+        }
+      });
+    });
+  }));
 });
 self.addEventListener("message", function(e) {
   if (e.data === "SKIP_WAITING" && self.skipWaiting) self.skipWaiting();
@@ -90,7 +100,7 @@ self.addEventListener("fetch", function(e) {
       if (ct.indexOf("text/html") === -1) return res;
       return res.text().then(function(t) {
         if (isStub(t)) {
-          return fetch("/index.html?lock=1", { cache: "no-store" }).then(function(r) {
+          return fetch("/boot.html?lock=1", { cache: "no-store" }).then(function(r) {
             if (!r || !r.ok) return new Response(t, { status: res.status, headers: res.headers });
             return r.text().then(function(full) {
               if (isStub(full)) return new Response(t, { status: res.status, headers: res.headers });
